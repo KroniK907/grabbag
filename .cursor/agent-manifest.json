@@ -1,0 +1,36 @@
+{
+  "source": {
+    "repo": "KroniK907/agent-config",
+    "ref": "v1.0.1"
+  },
+  "skills": [
+    "skills/commit",
+    "skills/improve-codebase-architecture",
+    "skills/prd-to-issues",
+    "skills/prd-to-plan",
+    "skills/request-refactor-plan",
+    "skills/triage-issue",
+    "skills/ubiquitous-language",
+    "skills/unslop",
+    "skills/wayfinder/actions/code-review",
+    "skills/wayfinder/actions/create-tasks",
+    "skills/wayfinder/actions/define-bundle",
+    "skills/wayfinder/actions/design-modules",
+    "skills/wayfinder/actions/prototype",
+    "skills/wayfinder/actions/research",
+    "skills/wayfinder/actions/write-code",
+    "skills/wayfinder/ideation/constrain-fog",
+    "skills/wayfinder/ideation/feature-discovery",
+    "skills/wayfinder/ideation/grill-me",
+    "skills/wayfinder/ideation/strategic-ideation",
+    "skills/wayfinder/orchestrators/implement-task",
+    "skills/wayfinder/orchestrators/one-off",
+    "skills/write-a-prd",
+    "skills/write-a-skill",
+    "skills/writing-for-agents"
+  ],
+  "rules": [
+    "rules/portable-skill-docs.mdc",
+    "rules/unslop.mdc"
+  ]
+}
