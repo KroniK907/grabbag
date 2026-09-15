@@ -1,0 +1,13 @@
+{{define "board-roster"}}
+<section
+  id="board-roster"
+  hx-get="/lobby/partials/board-roster"
+  hx-trigger="sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  <h2>Players</h2>
+  <ul>
+    {{range .Players}}<li>{{.DisplayName}}</li>{{else}}<li>No players yet.</li>{{end}}
+  </ul>
+</section>
+{{end}}

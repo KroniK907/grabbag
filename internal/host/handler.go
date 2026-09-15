@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/KroniK907/hackbox/internal/lobby"
+	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
 )
 
@@ -25,8 +26,10 @@ var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.h
 // host is loopback. It may be empty when no usable LAN IPv4 exists. A public
 // hostname such as a Cloudflare tunnel replaces that fallback.
 func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
+	events := hub.New()
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: adminCookieName,
+		Events:          events,
 		PasswordMatches: passwordMatches,
 		SecureCookie:    secureAdminCookie,
 	})

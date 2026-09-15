@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/hackbox/internal/lobby"
+	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
 )
 
@@ -470,6 +471,7 @@ func testLobby(t *testing.T) (*store.DB, http.Handler, *lobby.Lobby) {
 	}
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: "hackbox_admin",
+		Events:          hub.New(),
 		PasswordMatches: func(hash, password string) bool {
 			return hash == "stored-hash" && password == "correct horse"
 		},
