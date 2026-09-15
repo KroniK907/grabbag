@@ -14,6 +14,7 @@ func Funcs() template.FuncMap {
 	return template.FuncMap{
 		"avatar": AvatarSVG,
 		"color":  SeedColor,
+		"static": StaticPath,
 		"qr": func(content string) (template.HTML, error) {
 			return QRCodeSVG(content)
 		},

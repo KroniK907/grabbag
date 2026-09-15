@@ -20,6 +20,9 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	if !strings.Contains(body, `data-theme="neon-light"`) {
 		t.Fatalf("join default theme = %q", body)
 	}
+	if !strings.Contains(body, `/static/live.css?v=`+ui.AssetVersion) {
+		t.Fatalf("join CSS URL is not versioned: %q", body)
+	}
 	if !strings.Contains(body, "Reroll face") || !strings.Contains(body, `name="avatar_seed"`) {
 		t.Fatalf("join missing avatar reroll: %q", body)
 	}

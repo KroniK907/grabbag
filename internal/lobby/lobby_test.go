@@ -422,9 +422,9 @@ func TestPagesRefetchPartialsOnRosterEventAndReconnect(t *testing.T) {
 func assertLivePage(t *testing.T, body, partialPath string) {
 	t.Helper()
 	for _, want := range []string{
-		`src="/static/htmx.min.js"`,
-		`src="/static/sse.min.js"`,
-		`href="/static/live.css"`,
+		`src="/static/htmx.min.js?v=`,
+		`src="/static/sse.min.js?v=`,
+		`href="/static/live.css?v=`,
 		`hx-ext="sse"`,
 		`sse-connect="/lobby/events"`,
 		`hx-get="` + partialPath + `"`,
