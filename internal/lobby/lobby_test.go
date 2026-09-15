@@ -1,6 +1,7 @@
 package lobby_test
 
 import (
+	"bufio"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/KroniK907/hackbox/internal/lobby"
 	"github.com/KroniK907/hackbox/internal/store"
@@ -323,6 +325,136 @@ func TestClaimHostRaceHasOneWinner(t *testing.T) {
 	}
 	if adminCookies != 1 || claimedHosts != 1 {
 		t.Fatalf("race winners: admin cookies=%d claimed hosts=%d, want 1 and 1", adminCookies, claimedHosts)
+	}
+}
+
+func TestJoinAndLeavePublishRosterEvents(t *testing.T) {
+	t.Parallel()
+	_, handler, _ := testLobby(t)
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	t.Cleanup(cancel)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL+"/lobby/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response, err := server.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = response.Body.Close() })
+	if got := response.Header.Get("Content-Type"); got != "text/event-stream" {
+		t.Fatalf("event stream content type = %q, want text/event-stream", got)
+	}
+	events := bufio.NewReader(response.Body)
+	readSSEEvent(t, events, ": connected")
+
+	joined := lobbyRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/lobby/join",
+		url.Values{
+			"display_name":   {"Host"},
+			"admin_password": {"correct horse"},
+		},
+		nil,
+	)
+	readSSEEvent(t, events, "event: roster")
+
+	lobbyRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/lobby/leave",
+		nil,
+		cookieNamed(t, joined, lobby.PlayerCookieName),
+	)
+	readSSEEvent(t, events, "event: roster")
+}
+
+func TestPagesRefetchPartialsOnRosterEventAndReconnect(t *testing.T) {
+	t.Parallel()
+	_, handler, _ := testLobby(t)
+
+	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil)
+	assertLivePage(t, board.Body.String(), "/lobby/partials/board-roster")
+
+	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil)
+	assertLivePage(t, phone.Body.String(), "/lobby/partials/phone")
+
+	joined := lobbyRequest(
+		t,
+		handler,
+		http.MethodPost,
+		"/lobby/join",
+		url.Values{"display_name": {"Alice"}},
+		nil,
+	)
+	inRoom := lobbyRequest(
+		t,
+		handler,
+		http.MethodGet,
+		"/",
+		nil,
+		cookieNamed(t, joined, lobby.PlayerCookieName),
+	)
+	assertLivePage(t, inRoom.Body.String(), "/lobby/partials/phone")
+
+	boardPartial := lobbyRequest(
+		t,
+		handler,
+		http.MethodGet,
+		"/lobby/partials/board-roster",
+		nil,
+		nil,
+	)
+	if strings.Contains(boardPartial.Body.String(), "<!doctype html>") ||
+		!strings.Contains(boardPartial.Body.String(), "Alice") {
+		t.Fatalf("board partial body = %q", boardPartial.Body.String())
+	}
+}
+
+func assertLivePage(t *testing.T, body, partialPath string) {
+	t.Helper()
+	for _, want := range []string{
+		`src="/static/htmx.min.js"`,
+		`src="/static/sse.min.js"`,
+		`hx-ext="sse"`,
+		`sse-connect="/lobby/events"`,
+		`hx-get="` + partialPath + `"`,
+		`hx-trigger="sse:roster, htmx:sseOpen from:body"`,
+		`hx-on::sse-error=`,
+		`hx-on::sse-open=`,
+		`id="connection-overlay"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body does not contain %q: %s", want, body)
+		}
+	}
+	if got := strings.Count(body, `sse-connect="/lobby/events"`); got != 1 {
+		t.Fatalf("EventSource count = %d, want 1", got)
+	}
+}
+
+func readSSEEvent(t *testing.T, reader *bufio.Reader, want string) {
+	t.Helper()
+	var event strings.Builder
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		event.WriteString(line)
+		if line == "\n" {
+			break
+		}
+	}
+	if !strings.Contains(event.String(), want) {
+		t.Fatalf("event = %q, want %q", event.String(), want)
 	}
 }
 
