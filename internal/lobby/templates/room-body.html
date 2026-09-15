@@ -11,6 +11,9 @@
     <div class="ui-phone-body">
       <div class="ui-you">{{.DisplayName}}</div>
       <div class="ui-avatar-lg">{{avatar .AvatarSeed}}</div>
+      <form method="post" action="/lobby/reroll">
+        <button class="ui-btn" type="submit">Reroll face</button>
+      </form>
       {{if .Seated}}
       <p class="ui-muted">You have a seat. Smash Ready.</p>
       <button class="ui-plunger" type="button">READY</button>

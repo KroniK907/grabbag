@@ -87,14 +87,26 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	}
 
 	seated := lobbyRequest(t, handler, http.MethodGet, "/", nil, cookieNamed(t, joined, lobby.PlayerCookieName)).Body.String()
-	if !strings.Contains(seated, `class="ui-plunger"`) || strings.Contains(seated, `action="/lobby/ready"`) {
+	if !strings.Contains(seated, `class="ui-plunger"`) ||
+		strings.Contains(seated, `action="/lobby/ready"`) ||
+		!strings.Contains(seated, "Reroll face") {
 		t.Fatalf("seated phone = %q", seated)
+	}
+	before := playerFromCookie(t, room, cookieNamed(t, joined, lobby.PlayerCookieName))
+	rerolledSeat := lobbyRequest(t, handler, http.MethodPost, "/lobby/reroll", nil, cookieNamed(t, joined, lobby.PlayerCookieName))
+	if rerolledSeat.Code != http.StatusSeeOther {
+		t.Fatalf("seated reroll status = %d; body = %q", rerolledSeat.Code, rerolledSeat.Body.String())
+	}
+	afterSeat := playerFromCookie(t, room, cookieNamed(t, rerolledSeat, lobby.PlayerCookieName))
+	if afterSeat.AvatarSeed == "" || afterSeat.AvatarSeed == before.AvatarSeed {
+		t.Fatalf("seated reroll seed = %q, old = %q", afterSeat.AvatarSeed, before.AvatarSeed)
 	}
 
 	guest := joinNamed(t, handler, "Theo", "")
 	waiting := lobbyRequest(t, handler, http.MethodGet, "/", nil, guest).Body.String()
-	if strings.Contains(waiting, "ui-plunger") || strings.Contains(waiting, "READY") {
-		t.Fatalf("waiting phone included Ready: %q", waiting)
+	if strings.Contains(waiting, "ui-plunger") || strings.Contains(waiting, "READY") ||
+		!strings.Contains(waiting, "Reroll face") {
+		t.Fatalf("waiting phone included Ready or missed reroll: %q", waiting)
 	}
 }
 
