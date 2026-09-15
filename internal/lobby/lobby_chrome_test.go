@@ -98,6 +98,34 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	}
 }
 
+func TestSettingsThemeToggle(t *testing.T) {
+	t.Parallel()
+	_, handler, _ := testLobby(t)
+
+	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Dark</button>") {
+		t.Fatalf("settings default theme = %q", settings)
+	}
+
+	denied := lobbyRequest(t, handler, http.MethodPost, "/settings/theme", nil, nil)
+	if denied.Code != http.StatusUnauthorized {
+		t.Fatalf("theme without admin status = %d, want %d", denied.Code, http.StatusUnauthorized)
+	}
+
+	toggled := lobbyRequest(t, handler, http.MethodPost, "/settings/theme", nil, operatorCookie())
+	if toggled.Code != http.StatusSeeOther {
+		t.Fatalf("theme toggle status = %d; body = %q", toggled.Code, toggled.Body.String())
+	}
+	darkSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	if !strings.Contains(darkSettings, `data-theme="neon-dark"`) || !strings.Contains(darkSettings, ">Light</button>") {
+		t.Fatalf("settings after toggle = %q", darkSettings)
+	}
+	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	if !strings.Contains(board, `data-theme="neon-dark"`) {
+		t.Fatalf("board did not pick up dark theme: %q", board)
+	}
+}
+
 func hiddenValue(t *testing.T, body, name string) string {
 	t.Helper()
 	re := regexp.MustCompile(`name="` + regexp.QuoteMeta(name) + `" value="([^"]*)"`)

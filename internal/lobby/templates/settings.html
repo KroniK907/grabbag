@@ -3,6 +3,13 @@
   <div class="ui-stack">
     <div class="ui-header">
       <div class="ui-brand ui-brand-sm">ROOM KNOBS</div>
+      <form method="post" action="/settings/theme">
+        {{if eq .Theme "neon-dark"}}
+        <button class="ui-btn ui-btn-inline" type="submit">Light</button>
+        {{else}}
+        <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
+        {{end}}
+      </form>
     </div>
     <p class="ui-muted">Room is {{if .Open}}open{{else}}closed{{end}}.</p>
     <form method="post" action="/settings/open">

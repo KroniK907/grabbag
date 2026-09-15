@@ -21,3 +21,11 @@ type Chrome struct {
 func Page(title string) Chrome {
 	return Chrome{Title: title, Theme: DefaultTheme}
 }
+
+// NormalizeTheme maps unknown values to the light default.
+func NormalizeTheme(value string) string {
+	if value == ThemeNeonDark {
+		return ThemeNeonDark
+	}
+	return ThemeNeonLight
+}

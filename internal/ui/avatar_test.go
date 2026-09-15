@@ -24,4 +24,10 @@ func TestAvatarSVGIsDeterministicAndSeeded(t *testing.T) {
 	if ui.SeedColor("seed-one") == ui.SeedColor("seed-two") {
 		t.Fatal("different seeds produced the same token color")
 	}
+	if ui.FaceColor("seed-one") == ui.TokenColor("seed-one") {
+		t.Fatal("face and token used the same fill")
+	}
+	if strings.Contains(a, "L54 12 Q32 0") {
+		t.Fatal("avatar still draws the old forehead plate")
+	}
 }

@@ -20,6 +20,7 @@
   hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
 >
 {{template "ui-overlay"}}
+{{template "theme-sync" .}}
 {{end}}
 
 {{define "ui-start-quiet"}}
@@ -50,4 +51,15 @@
     <p>Waiting to hear from the machine on the table.</p>
   </div>
 </div>
+{{end}}
+
+{{define "theme-sync"}}
+<div
+  id="theme-sync"
+  data-theme="{{.Theme}}"
+  hx-get="/lobby/partials/theme"
+  hx-trigger="sse:theme, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+  hx-on::after-swap="document.documentElement.setAttribute('data-theme', event.detail.elt.getAttribute('data-theme'))"
+></div>
 {{end}}

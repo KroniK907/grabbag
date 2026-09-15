@@ -106,6 +106,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
+	mux.HandleFunc("GET /lobby/partials/theme", l.themeSync)
 	mux.HandleFunc("POST /lobby/join", l.join)
 	mux.HandleFunc("POST /lobby/reroll", l.reroll)
 	mux.HandleFunc("POST /lobby/leave", l.leave)
@@ -114,6 +115,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings/open", l.openRoom)
 	mux.HandleFunc("POST /settings/close", l.closeRoom)
 	mux.HandleFunc("POST /settings/kick", l.kick)
+	mux.HandleFunc("POST /settings/theme", l.toggleTheme)
 }
 
 // Phone writes the current Lobby phone body. A live player cookie opens the
@@ -125,7 +127,12 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		l.render(w, "room.html", roomView{Chrome: ui.Page("Hackbox room"), Player: player}, http.StatusOK)
+		chrome, err := l.chrome(r.Context(), "Hackbox room")
+		if err != nil {
+			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "room.html", roomView{Chrome: chrome, Player: player}, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
@@ -209,8 +216,12 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err := l.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM roster WHERE seated = 0`).Scan(&audience); err != nil {
 		return boardData{}, fmt.Errorf("lobby: count audience: %w", err)
 	}
+	chrome, err := l.chrome(ctx, "Hackbox board")
+	if err != nil {
+		return boardData{}, err
+	}
 	return boardData{
-		Chrome:        ui.Page("Hackbox board"),
+		Chrome:        chrome,
 		Open:          open,
 		SeatCap:       SeatCap,
 		SeatedCount:   len(seated),
@@ -487,7 +498,12 @@ func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "settings.html", settingsData{Chrome: ui.Page("Hackbox settings"), Open: open, Players: players}, http.StatusOK)
+	chrome, err := l.chrome(r.Context(), "Hackbox settings")
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, "settings.html", settingsData{Chrome: chrome, Open: open, Players: players}, http.StatusOK)
 }
 
 func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
@@ -512,6 +528,61 @@ func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	l.events.Publish("roster")
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) toggleTheme(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	current, err := l.readTheme(r.Context())
+	if err != nil {
+		http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+		return
+	}
+	next := ui.ThemeNeonDark
+	if current == ui.ThemeNeonDark {
+		next = ui.ThemeNeonLight
+	}
+	if err := l.setTheme(r.Context(), next); err != nil {
+		http.Error(w, "Could not save the theme.", http.StatusInternalServerError)
+		return
+	}
+	l.events.Publish("theme")
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) themeSync(w http.ResponseWriter, r *http.Request) {
+	chrome, err := l.chrome(r.Context(), "")
+	if err != nil {
+		http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, "theme-sync", chrome, http.StatusOK)
+}
+
+func (l *Lobby) chrome(ctx context.Context, title string) (ui.Chrome, error) {
+	theme, err := l.readTheme(ctx)
+	if err != nil {
+		return ui.Chrome{}, err
+	}
+	return ui.Chrome{Title: title, Theme: theme}, nil
+}
+
+func (l *Lobby) readTheme(ctx context.Context) (string, error) {
+	var theme string
+	err := l.sql.QueryRowContext(ctx, `SELECT theme FROM room_state WHERE id = 1`).Scan(&theme)
+	if err != nil {
+		return "", fmt.Errorf("lobby: read theme: %w", err)
+	}
+	return ui.NormalizeTheme(theme), nil
+}
+
+func (l *Lobby) setTheme(ctx context.Context, theme string) error {
+	theme = ui.NormalizeTheme(theme)
+	if _, err := l.sql.ExecContext(ctx, `UPDATE room_state SET theme = ? WHERE id = 1`, theme); err != nil {
+		return fmt.Errorf("lobby: update theme: %w", err)
+	}
+	return nil
 }
 
 func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
@@ -859,8 +930,13 @@ func (l *Lobby) writeJoin(
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
+	chrome, err := l.chrome(r.Context(), "Join Hackbox")
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
 	l.render(w, templateName, joinView{
-		Chrome:       ui.Page("Join Hackbox"),
+		Chrome:       chrome,
 		DisplayName:  state.DisplayName,
 		AvatarSeed:   seed,
 		ShowPassword: hostExists == 0,
@@ -966,7 +1042,8 @@ CREATE TABLE IF NOT EXISTS host_phone_session (
 );
 CREATE TABLE IF NOT EXISTS room_state (
 	id INTEGER PRIMARY KEY CHECK (id = 1),
-	open INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1))
+	open INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1)),
+	theme TEXT NOT NULL DEFAULT 'neon-light'
 );
 INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 `)
@@ -977,6 +1054,7 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE roster ADD COLUMN seated INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN waiting INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN wait_seq INTEGER`,
+		`ALTER TABLE room_state ADD COLUMN theme TEXT NOT NULL DEFAULT 'neon-light'`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)
