@@ -51,8 +51,8 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	assertBoardLists(t, board, []string{"Host"}, []string{"Guest"})
-	if strings.Contains(board, "Audience") {
-		t.Fatal("board showed an audience list")
+	if strings.Contains(board, "<h2>Audience</h2>") {
+		t.Fatal("board showed an audience name list")
 	}
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()

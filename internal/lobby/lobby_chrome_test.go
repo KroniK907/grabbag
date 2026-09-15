@@ -79,6 +79,8 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 		!strings.Contains(board, `class="ui-cluster"`) ||
 		!strings.Contains(board, `class="ui-marquee"`) ||
 		!strings.Contains(board, "CLOSED") ||
+		!strings.Contains(board, "Audience Members") ||
+		strings.Contains(board, "IN THE ROOM") ||
 		strings.Contains(board, "empty chair") ||
 		strings.Contains(board, "<h2>Audience</h2>") {
 		t.Fatalf("board chrome = %q", board)
