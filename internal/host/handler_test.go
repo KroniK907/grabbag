@@ -133,6 +133,29 @@ func TestJoinUsesSetupPasswordAndHostCookiePolicy(t *testing.T) {
 	}
 }
 
+func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
+	t.Parallel()
+	_, handler := testHandler(t)
+
+	for _, asset := range []string{"/static/htmx.min.js", "/static/sse.min.js"} {
+		rec := request(t, handler, http.MethodGet, asset, nil, "")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("GET %s status = %d, want %d", asset, rec.Code, http.StatusOK)
+		}
+		if !strings.Contains(rec.Header().Get("Content-Type"), "javascript") {
+			t.Fatalf("GET %s Content-Type = %q", asset, rec.Header().Get("Content-Type"))
+		}
+	}
+
+	setup := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	request(t, handler, http.MethodPost, "/setup", setup, "")
+	settings := request(t, handler, http.MethodGet, "/settings", nil, "")
+	if strings.Contains(settings.Body.String(), "sse-connect") ||
+		strings.Contains(settings.Body.String(), "sse.min.js") {
+		t.Fatalf("settings subscribed to SSE: %q", settings.Body.String())
+	}
+}
+
 func TestAdminCookieIsSecureOnLocalhost(t *testing.T) {
 	t.Parallel()
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
