@@ -491,6 +491,10 @@ func (l *Lobby) waitToggle(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	if player.Seated {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 	if err := l.toggleWait(r.Context(), player); err != nil {
 		http.Error(w, "Could not update the wait list.", http.StatusInternalServerError)
 		return
@@ -863,6 +867,13 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)
 		}
+	}
+	if _, err := l.sql.Exec(`
+UPDATE roster
+SET seated = 1, waiting = 0, wait_seq = NULL
+WHERE claimed_host = 1 AND seated = 0 AND waiting = 0;
+`); err != nil {
+		return fmt.Errorf("lobby: schema: %w", err)
 	}
 	if _, err := l.sql.Exec(`
 CREATE UNIQUE INDEX IF NOT EXISTS wait_order
