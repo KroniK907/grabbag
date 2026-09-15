@@ -287,6 +287,52 @@ button {
   margin: 0 auto;
 }
 
+.ui-page-compact {
+  padding: 16px 20px 40px;
+}
+
+.ui-page-compact .ui-stack {
+  gap: 10px;
+}
+
+.ui-page-compact .ui-brand-sm {
+  font-size: 28px;
+}
+
+.ui-page-compact .ui-list,
+.ui-page-compact .ui-accordion {
+  gap: 6px;
+}
+
+.ui-page-compact .ui-row {
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.ui-page-compact .ui-row .ui-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-page-compact .ui-field {
+  gap: 4px;
+}
+
+.ui-page-compact .ui-field input,
+.ui-page-compact .ui-field select {
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.ui-page-compact .ui-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
 .ui-field {
   display: flex;
   flex-direction: column;

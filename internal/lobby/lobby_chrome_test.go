@@ -131,6 +131,9 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if !strings.Contains(settings, ">Closed</button>") || strings.Contains(settings, ">Open</button>") {
 		t.Fatalf("closed room toggle = %q", settings)
 	}
+	if !strings.Contains(settings, `class="ui-page ui-page-compact"`) {
+		t.Fatalf("settings is not compact: %q", settings)
+	}
 	if !strings.Contains(settings, "<summary") || !strings.Contains(settings, "Kick Players") {
 		t.Fatalf("kick accordion missing: %q", settings)
 	}
