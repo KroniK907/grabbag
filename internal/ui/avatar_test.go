@@ -34,6 +34,12 @@ func TestAvatarSVGIsDeterministicAndSeeded(t *testing.T) {
 	if strings.Contains(a, "L54 12 Q32 0") {
 		t.Fatal("avatar still draws the old forehead plate")
 	}
+	if !strings.Contains(a, `viewBox="8 6 48 52"`) {
+		t.Fatal("avatar viewBox still leaves empty padding around the face")
+	}
+	if strings.Contains(a, `r="18"`) {
+		t.Fatal("avatar face is still the small r=18 head")
+	}
 }
 
 func TestAvatarPaletteAndHairVary(t *testing.T) {

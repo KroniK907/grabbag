@@ -69,9 +69,9 @@ func AvatarSVG(seed string) template.HTML {
 	smile := 2 + int(sum[15]%5)
 	escaped := html.EscapeString(seed)
 	var b string
-	b += fmt.Sprintf(`<svg class="ui-avatar" viewBox="0 0 64 64" role="img" aria-label="Avatar"><title>%s</title>`, escaped)
+	b += fmt.Sprintf(`<svg class="ui-avatar" viewBox="8 6 48 52" role="img" aria-label="Avatar"><title>%s</title>`, escaped)
 	b += hairBehind(int(sum[5])%hairStyleCount, hair)
-	b += fmt.Sprintf(`<circle cx="32" cy="36" r="18" fill="%s"/>`, skin)
+	b += fmt.Sprintf(`<circle cx="32" cy="35" r="21" fill="%s"/>`, skin)
 	b += fmt.Sprintf(
 		`<circle cx="%d" cy="%d" r="%d" fill="%s"/>`+
 			`<circle cx="%d" cy="%d" r="%d" fill="%s"/>`+
