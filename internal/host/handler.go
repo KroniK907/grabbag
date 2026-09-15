@@ -20,15 +20,16 @@ var templateFiles embed.FS
 var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
 
 // NewHandler returns the host routes wrapped in Go's cross-origin protection.
-// joinURL is the LAN address shown on /board. It may be empty when no usable
-// LAN IPv4 exists.
-func NewHandler(db *store.DB, joinURL string) http.Handler {
+// lanJoinURL is the fallback join address shown on /board when the request
+// host is loopback. It may be empty when no usable LAN IPv4 exists. A public
+// hostname such as a Cloudflare tunnel replaces that fallback.
+func NewHandler(db *store.DB, lanJoinURL string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /setup", getSetup(db))
 	mux.HandleFunc("POST /setup", finishSetup(db))
-	mux.HandleFunc("GET /{$}", getStub(db, "Hackbox phone", ""))
-	mux.HandleFunc("GET /board", getStub(db, "Hackbox board", joinURL))
-	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings", ""))
+	mux.HandleFunc("GET /{$}", getStub(db, "Hackbox phone", "", false))
+	mux.HandleFunc("GET /board", getStub(db, "Hackbox board", lanJoinURL, true))
+	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings", "", false))
 	return http.NewCrossOriginProtection().Handler(mux)
 }
 
@@ -103,7 +104,7 @@ func finishSetup(db *store.DB) http.HandlerFunc {
 	}
 }
 
-func getStub(db *store.DB, title, joinURL string) http.HandlerFunc {
+func getStub(db *store.DB, title, lanJoinURL string, advertiseJoin bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hasHash, err := db.HasAdminHash(r.Context())
 		if err != nil {
@@ -113,6 +114,10 @@ func getStub(db *store.DB, title, joinURL string) http.HandlerFunc {
 		if !hasHash {
 			http.Redirect(w, r, "/setup", http.StatusSeeOther)
 			return
+		}
+		joinURL := ""
+		if advertiseJoin {
+			joinURL = joinURLForRequest(r, lanJoinURL)
 		}
 		renderPage(w, "stub.html", struct {
 			Title   string
@@ -137,13 +142,45 @@ func renderPage(w http.ResponseWriter, name string, data any, status int) {
 }
 
 func secureAdminCookie(r *http.Request) bool {
-	if r.TLS != nil {
+	if requestScheme(r) == "https" {
 		return true
 	}
+	return isLoopbackHostname(requestHostname(r))
+}
+
+func joinURLForRequest(r *http.Request, fallback string) string {
+	if isLoopbackHostname(requestHostname(r)) {
+		return fallback
+	}
+	if r.Host == "" {
+		return fallback
+	}
+	return requestScheme(r) + "://" + r.Host + "/"
+}
+
+func requestHostname(r *http.Request) string {
 	host := r.Host
 	if parsed, _, err := net.SplitHostPort(host); err == nil {
 		host = parsed
 	}
-	host = strings.Trim(host, "[]")
-	return strings.EqualFold(host, "localhost") || host == "127.0.0.1" || host == "::1"
+	return strings.Trim(host, "[]")
+}
+
+func isLoopbackHostname(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func requestScheme(r *http.Request) string {
+	if r.TLS != nil {
+		return "https"
+	}
+	proto := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0])
+	if strings.EqualFold(proto, "https") {
+		return "https"
+	}
+	return "http"
 }

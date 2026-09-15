@@ -14,8 +14,9 @@ import (
 const listenPort = "8654"
 
 // Main opens the default host store and listens on every local interface,
-// including loopback. The board page shows the first usable LAN IPv4 as the
-// join URL. That advertised URL does not change the listen address.
+// including loopback. The board page advertises the request hostname when
+// that host is public, and the first usable LAN IPv4 otherwise. That
+// advertised URL does not change the listen address.
 func Main() {
 	if err := run(); err != nil {
 		log.Fatal(err)

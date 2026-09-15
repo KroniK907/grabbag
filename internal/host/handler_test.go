@@ -83,11 +83,11 @@ func TestSetupLifecycle(t *testing.T) {
 		assertStatus(t, handler, http.MethodGet, path, nil, http.StatusOK)
 	}
 
-	board := request(t, handler, http.MethodGet, "/board", nil, "")
+	board := request(t, handler, http.MethodGet, "/board", nil, "192.168.10.24:8654")
 	if !strings.Contains(board.Body.String(), "http://192.168.10.24:8654/") {
 		t.Fatalf("board page missing LAN join URL: %q", board.Body.String())
 	}
-	phone := request(t, handler, http.MethodGet, "/", nil, "")
+	phone := request(t, handler, http.MethodGet, "/", nil, "192.168.10.24:8654")
 	if strings.Contains(phone.Body.String(), "http://192.168.10.24:8654/") {
 		t.Fatal("phone stub should not show the LAN join URL")
 	}
@@ -103,6 +103,66 @@ func TestAdminCookieIsSecureOnLocalhost(t *testing.T) {
 		if len(cookies) != 1 || !cookies[0].Secure {
 			t.Fatalf("%s admin cookie = %#v, want Secure", host, cookies)
 		}
+	}
+}
+
+func TestBoardJoinURLUsesPublicHostname(t *testing.T) {
+	t.Parallel()
+	_, handler := testHandler(t)
+	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	request(t, handler, http.MethodPost, "/setup", form, "hackbox.thekranichs.com")
+
+	req := httptest.NewRequest(http.MethodGet, "https://hackbox.thekranichs.com/board", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("board status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if !strings.Contains(rec.Body.String(), "https://hackbox.thekranichs.com/") {
+		t.Fatalf("board page missing public join URL: %q", rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "http://192.168.10.24:8654/") {
+		t.Fatal("public board page still showed the LAN join URL")
+	}
+
+	phone := httptest.NewRequest(http.MethodGet, "https://hackbox.thekranichs.com/", nil)
+	phone.Header.Set("X-Forwarded-Proto", "https")
+	phoneRec := httptest.NewRecorder()
+	handler.ServeHTTP(phoneRec, phone)
+	if strings.Contains(phoneRec.Body.String(), "https://hackbox.thekranichs.com/") {
+		t.Fatal("phone stub should not show the join URL")
+	}
+}
+
+func TestBoardJoinURLKeepsLANOnLocalhost(t *testing.T) {
+	t.Parallel()
+	_, handler := testHandler(t)
+	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	request(t, handler, http.MethodPost, "/setup", form, "localhost:8654")
+
+	board := request(t, handler, http.MethodGet, "/board", nil, "localhost:8654")
+	if !strings.Contains(board.Body.String(), "http://192.168.10.24:8654/") {
+		t.Fatalf("localhost board missing LAN join URL: %q", board.Body.String())
+	}
+	if strings.Contains(board.Body.String(), "localhost") {
+		t.Fatal("board advertised localhost")
+	}
+}
+
+func TestAdminCookieIsSecureBehindHTTPSProxy(t *testing.T) {
+	t.Parallel()
+	_, handler := testHandler(t)
+	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	req := httptest.NewRequest(http.MethodPost, "https://hackbox.thekranichs.com/setup", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-Forwarded-Proto", "https")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	cookies := rec.Result().Cookies()
+	if len(cookies) != 1 || !cookies[0].Secure {
+		t.Fatalf("proxied HTTPS admin cookie = %#v, want Secure", cookies)
 	}
 }
 
