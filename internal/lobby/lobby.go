@@ -139,7 +139,7 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 }
 
 // Board writes neon cabinet chrome: left rail (QR, join URL, open/closed,
-// seat and audience counts), seated tokens, and the wait marquee.
+// seat and audience counts), seated tokens with the claimed host first, and the wait marquee.
 func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 	data, err := l.boardData(r.Context())
 	if err != nil {
@@ -200,7 +200,7 @@ func (l *Lobby) advertisedURL(r *http.Request) string {
 }
 
 func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
-	seated, err := l.listPlayers(ctx, `seated = 1 ORDER BY rowid`)
+	seated, err := l.listPlayers(ctx, `seated = 1 ORDER BY claimed_host DESC, rowid`)
 	if err != nil {
 		return boardData{}, err
 	}

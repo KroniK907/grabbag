@@ -71,6 +71,39 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 	}
 }
 
+func TestBoardListsHostTokenFirst(t *testing.T) {
+	t.Parallel()
+	_, handler, room := testLobby(t)
+	open := lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
+	if open.Code != http.StatusSeeOther {
+		t.Fatalf("Open status = %d, want %d; body = %q", open.Code, http.StatusSeeOther, open.Body.String())
+	}
+
+	earlyCookie := joinNamed(t, handler, "Early", "")
+	hostCookie := joinNamed(t, handler, "Host", "correct horse")
+	early := playerFromCookie(t, room, earlyCookie)
+	host := playerFromCookie(t, room, hostCookie)
+	if !early.Seated || early.ClaimedHost {
+		t.Fatalf("early joiner = %#v, want seated guest", early)
+	}
+	if !host.Seated || !host.ClaimedHost {
+		t.Fatalf("late host = %#v, want seated claimed host", host)
+	}
+
+	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	clusterAt := strings.Index(board, `class="ui-cluster"`)
+	marqueeAt := strings.Index(board, `class="ui-marquee"`)
+	if clusterAt < 0 || marqueeAt < 0 || marqueeAt < clusterAt {
+		t.Fatalf("board missing token cluster: %q", board)
+	}
+	seatedBody := board[clusterAt:marqueeAt]
+	hostAt := strings.Index(seatedBody, `class="ui-token-name">Host</div>`)
+	earlyAt := strings.Index(seatedBody, `class="ui-token-name">Early</div>`)
+	if hostAt < 0 || earlyAt < 0 || hostAt > earlyAt {
+		t.Fatalf("host token was not first: %q", seatedBody)
+	}
+}
+
 func testOpenCloseFill(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	t.Helper()
 	joinNamed(t, handler, "Host", "correct horse")
