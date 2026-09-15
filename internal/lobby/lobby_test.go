@@ -424,13 +424,14 @@ func assertLivePage(t *testing.T, body, partialPath string) {
 	for _, want := range []string{
 		`src="/static/htmx.min.js"`,
 		`src="/static/sse.min.js"`,
+		`href="/static/live.css"`,
 		`hx-ext="sse"`,
 		`sse-connect="/lobby/events"`,
 		`hx-get="` + partialPath + `"`,
 		`hx-trigger="sse:roster, htmx:sseOpen from:body"`,
 		`hx-on::sse-error=`,
 		`hx-on::sse-open=`,
-		`id="connection-overlay"`,
+		`id="connection-overlay" class="connection-overlay"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body does not contain %q: %s", want, body)

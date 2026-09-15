@@ -137,13 +137,20 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 	t.Parallel()
 	_, handler := testHandler(t)
 
-	for _, asset := range []string{"/static/htmx.min.js", "/static/sse.min.js"} {
+	for asset, contentType := range map[string]string{
+		"/static/htmx.min.js": "javascript",
+		"/static/live.css":    "text/css",
+		"/static/sse.min.js":  "javascript",
+	} {
 		rec := request(t, handler, http.MethodGet, asset, nil, "")
 		if rec.Code != http.StatusOK {
 			t.Fatalf("GET %s status = %d, want %d", asset, rec.Code, http.StatusOK)
 		}
-		if !strings.Contains(rec.Header().Get("Content-Type"), "javascript") {
+		if !strings.Contains(rec.Header().Get("Content-Type"), contentType) {
 			t.Fatalf("GET %s Content-Type = %q", asset, rec.Header().Get("Content-Type"))
+		}
+		if asset == "/static/live.css" && !strings.Contains(rec.Body.String(), "position: fixed") {
+			t.Fatalf("GET %s did not contain fixed overlay styling", asset)
 		}
 	}
 
