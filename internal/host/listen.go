@@ -55,7 +55,11 @@ func run() error {
 	if joinURL != "" {
 		log.Printf("LAN join URL %s", joinURL)
 	}
-	if err := http.Serve(listener, NewHandler(db, joinURL)); err != nil {
+	handler, err := NewHandler(db, joinURL)
+	if err != nil {
+		return fmt.Errorf("host: build handler: %w", err)
+	}
+	if err := http.Serve(listener, handler); err != nil {
 		return fmt.Errorf("host: serve: %w", err)
 	}
 	return nil

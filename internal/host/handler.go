@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/KroniK907/hackbox/internal/lobby"
 	"github.com/KroniK907/hackbox/internal/store"
 )
 
@@ -23,14 +24,28 @@ var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.h
 // lanJoinURL is the fallback join address shown on /board when the request
 // host is loopback. It may be empty when no usable LAN IPv4 exists. A public
 // hostname such as a Cloudflare tunnel replaces that fallback.
-func NewHandler(db *store.DB, lanJoinURL string) http.Handler {
+func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
+	room, err := lobby.New(db, lobby.Config{
+		AdminCookieName: adminCookieName,
+		PasswordMatches: passwordMatches,
+		SecureCookie:    secureAdminCookie,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /setup", getSetup(db))
 	mux.HandleFunc("POST /setup", finishSetup(db))
-	mux.HandleFunc("GET /{$}", getStub(db, "Hackbox phone", "", false))
-	mux.HandleFunc("GET /board", getStub(db, "Hackbox board", lanJoinURL, true))
+	mux.Handle("GET /{$}", requireSetup(db, http.HandlerFunc(room.Phone)))
+	mux.Handle("GET /board", requireSetup(db, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		room.Board(w, r, joinURLForRequest(r, lanJoinURL))
+	})))
 	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings", "", false))
-	return http.NewCrossOriginProtection().Handler(mux)
+	lobbyWrites := http.NewServeMux()
+	room.Register(lobbyWrites)
+	mux.Handle("/lobby/", requireSetup(db, lobbyWrites))
+	return http.NewCrossOriginProtection().Handler(mux), nil
 }
 
 func getSetup(db *store.DB) http.HandlerFunc {
@@ -96,6 +111,7 @@ func finishSetup(db *store.DB) http.HandlerFunc {
 			Name:     adminCookieName,
 			Value:    sessionID,
 			Path:     "/",
+			MaxAge:   30 * 24 * 60 * 60,
 			HttpOnly: true,
 			Secure:   secureAdminCookie(r),
 			SameSite: http.SameSiteLaxMode,
@@ -124,6 +140,21 @@ func getStub(db *store.DB, title, lanJoinURL string, advertiseJoin bool) http.Ha
 			JoinURL string
 		}{Title: title, JoinURL: joinURL}, http.StatusOK)
 	}
+}
+
+func requireSetup(db *store.DB, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hasHash, err := db.HasAdminHash(r.Context())
+		if err != nil {
+			http.Error(w, "Could not read setup state.", http.StatusInternalServerError)
+			return
+		}
+		if !hasHash {
+			http.Redirect(w, r, "/setup", http.StatusSeeOther)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func writeSetupPage(w http.ResponseWriter, message string, status int) {
