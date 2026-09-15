@@ -65,7 +65,7 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 	}
 	hostPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, hostCookie).Body.String()
 	if !strings.Contains(hostPhone, "Host") ||
-		!strings.Contains(hostPhone, `class="ui-plunger"`) ||
+		strings.Contains(hostPhone, `class="ui-plunger"`) ||
 		strings.Contains(hostPhone, `action="/lobby/wait"`) {
 		t.Fatalf("seated host phone body = %q", hostPhone)
 	}
@@ -326,7 +326,12 @@ func joinNamed(t *testing.T, handler http.Handler, name, password string) *http.
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("Join %s status = %d, want %d; body = %q", name, rec.Code, http.StatusSeeOther, rec.Body.String())
 	}
-	return cookieNamed(t, rec, lobby.PlayerCookieName)
+	cookie := cookieNamed(t, rec, lobby.PlayerCookieName)
+	beat := lobbyRequest(t, handler, http.MethodPost, "/lobby/heartbeat", nil, cookie)
+	if beat.Code != http.StatusNoContent {
+		t.Fatalf("Join %s heartbeat status = %d, want %d", name, beat.Code, http.StatusNoContent)
+	}
+	return cookie
 }
 
 func operatorCookie() *http.Cookie {

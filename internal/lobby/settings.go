@@ -74,6 +74,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	if l.phoneExtras != nil {
 		extra := l.phoneExtras(r, player)
 		view.ShowStart = extra.ShowStart
+		view.ShowReady = extra.LoadedGameID != "" && !extra.Started && player.Seated
 		view.Started = extra.Started
 		view.AutoStart = extra.AutoStart
 		view.GameIDs = extra.GameIDs
@@ -391,7 +392,93 @@ func (l *Lobby) setAutoStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save auto-start.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
+}
+
+func (l *Lobby) setDisconnectAfter(w http.ResponseWriter, r *http.Request) {
+	l.setIntSetting(w, r, "disconnect_after", "disconnect_after", 0, 3600, "Disconnected after must be 0 to 3600.")
+}
+
+func (l *Lobby) setKickTimeout(w http.ResponseWriter, r *http.Request) {
+	l.setIntSetting(w, r, "kick_timeout", "kick_timeout", 0, 86400, "Kick timeout must be 0 to 86400.")
+}
+
+func (l *Lobby) setProtectHost(w http.ResponseWriter, r *http.Request) {
+	l.setBoolSetting(w, r, "protect_host", "Could not save protect-host.")
+}
+
+func (l *Lobby) setSeatDisconnectedWaiters(w http.ResponseWriter, r *http.Request) {
+	l.setBoolSetting(w, r, "seat_disconnected_waiters", "Could not save seat disconnected waiters.")
+}
+
+func (l *Lobby) setResetReady(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	mode := r.PostFormValue("reset_ready")
+	switch mode {
+	case ResetReadyEvery, ResetReadySwitch, ResetReadyNever:
+	default:
+		http.Error(w, "Unknown Reset Ready When value.", http.StatusBadRequest)
+		return
+	}
+	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET reset_ready = ? WHERE id = 1`, mode); err != nil {
+		http.Error(w, "Could not save Reset Ready When.", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) setIntSetting(w http.ResponseWriter, r *http.Request, field, column string, min, max int, bad string) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue(field)))
+	if err != nil || n < min || n > max {
+		data, viewErr := l.settingsView(r.Context(), bad)
+		if viewErr != nil {
+			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "settings.html", data, http.StatusBadRequest)
+		return
+	}
+	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET `+column+` = ? WHERE id = 1`, n); err != nil {
+		http.Error(w, "Could not save the setting.", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, fail string) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	on := r.PostFormValue("enabled") == "1" || r.PostFormValue("enabled") == "on"
+	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET `+column+` = ? WHERE id = 1`, boolToInt(on)); err != nil {
+		http.Error(w, fail, http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func settingsReturn(r *http.Request) string {
+	if r.PostFormValue("return") == "/settings" {
+		return "/settings"
+	}
+	return "/"
 }
 
 func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
@@ -532,12 +619,22 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 		FillEmpty:          row.fillEmpty,
 		LogStdout:          row.logStdout,
 		LogFile:            row.logFile,
+		ProtectHost:        row.protectHost,
+		SeatDisconnected:   row.seatDisconnected,
+		DisconnectAfter:    row.disconnectAfter,
+		KickTimeout:        row.kickTimeout,
+		ResetReadyWhen:     row.resetReady,
 		SeatCap:            row.seatCap,
 		AdvertisedHostname: row.hostname,
 		SeatCapError:       seatErr,
 		CanMakeHost:        canMake,
 		Players:            players,
 	}
+	autoStart, err := l.AutoStart(ctx)
+	if err != nil {
+		return settingsData{}, err
+	}
+	data.AutoStart = autoStart
 	if l.settingsExtras != nil {
 		extra := l.settingsExtras(ctx)
 		data.GameIDs = extra.GameIDs
@@ -630,7 +727,7 @@ func (l *Lobby) writeSeatCap(ctx context.Context, cap int) error {
 	if _, err := tx.ExecContext(ctx, `UPDATE room_state SET seat_cap = ? WHERE id = 1`, cap); err != nil {
 		return fmt.Errorf("lobby: update seat cap: %w", err)
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -690,7 +787,7 @@ func (l *Lobby) rotateSeated(ctx context.Context) error {
 			return fmt.Errorf("lobby: cycle seated player: %w", err)
 		}
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -729,12 +826,15 @@ func (l *Lobby) changeHostSeat(ctx context.Context, player Player, intent, bumpI
 		); err != nil {
 			return fmt.Errorf("lobby: host stand: %w", err)
 		}
-		if err := fillWait(ctx, tx); err != nil {
+		if err := l.fillWait(ctx, tx); err != nil {
 			return err
 		}
 	} else {
 		if err := sitHost(ctx, tx, player.ID, bumpID); err != nil {
 			return err
+		}
+		if !player.Seated {
+			l.forgetReady(player.ID)
 		}
 	}
 	if err := tx.Commit(); err != nil {
@@ -912,22 +1012,31 @@ func (l *Lobby) writeTakeHost(ctx context.Context, player Player, password strin
 }
 
 type roomSettings struct {
-	hostname   string
-	seatCap    int
-	cycleSeats bool
-	fillEmpty  bool
-	logStdout  bool
-	logFile    bool
+	hostname         string
+	seatCap          int
+	cycleSeats       bool
+	fillEmpty        bool
+	logStdout        bool
+	logFile          bool
+	protectHost      bool
+	seatDisconnected bool
+	disconnectAfter  int
+	kickTimeout      int
+	resetReady       string
 }
 
 func readRoomSettings(ctx context.Context, q queryer) (roomSettings, error) {
 	var row roomSettings
-	var cycle, fill, stdout, file int
+	var cycle, fill, stdout, file, protect, seatDisc int
 	err := q.QueryRowContext(
 		ctx,
-		`SELECT advertised_hostname, seat_cap, cycle_seats, fill_empty, log_stdout, log_file
+		`SELECT advertised_hostname, seat_cap, cycle_seats, fill_empty, log_stdout, log_file,
+		        protect_host, seat_disconnected_waiters, disconnect_after, kick_timeout, reset_ready
 		 FROM room_state WHERE id = 1`,
-	).Scan(&row.hostname, &row.seatCap, &cycle, &fill, &stdout, &file)
+	).Scan(
+		&row.hostname, &row.seatCap, &cycle, &fill, &stdout, &file,
+		&protect, &seatDisc, &row.disconnectAfter, &row.kickTimeout, &row.resetReady,
+	)
 	if err != nil {
 		return roomSettings{}, fmt.Errorf("lobby: read room settings: %w", err)
 	}
@@ -938,6 +1047,13 @@ func readRoomSettings(ctx context.Context, q queryer) (roomSettings, error) {
 	row.fillEmpty = fill != 0
 	row.logStdout = stdout != 0
 	row.logFile = file != 0
+	row.protectHost = protect != 0
+	row.seatDisconnected = seatDisc != 0
+	switch row.resetReady {
+	case ResetReadyEvery, ResetReadySwitch, ResetReadyNever:
+	default:
+		row.resetReady = ResetReadySwitch
+	}
 	return row, nil
 }
 

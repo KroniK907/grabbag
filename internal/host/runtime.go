@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/KroniK907/hackbox/internal/games"
 	"github.com/KroniK907/hackbox/internal/lobby"
@@ -36,7 +35,6 @@ type runtime struct {
 	game     games.Game
 	loadedID string
 	started  bool
-	rtt      map[string]time.Duration
 }
 
 func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime {
@@ -51,7 +49,6 @@ func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime
 		events:  events,
 		log:     applog.New(events, filepath.Join(db.Dir(), "host.log")),
 		catalog: index,
-		rtt:     map[string]time.Duration{},
 	}
 }
 
@@ -149,6 +146,9 @@ func (rt *runtime) load(ctx context.Context, id string) error {
 	if err := rt.room.SetSelectedGameID(ctx, id); err != nil {
 		return err
 	}
+	if prevID != "" && prevID != id {
+		_ = rt.room.ApplyReadyReset(ctx, lobby.ReadyResetSwitch)
+	}
 	rt.log.Write("Load " + id)
 	return nil
 }
@@ -205,6 +205,9 @@ func (rt *runtime) stop(ctx context.Context, graceful bool) error {
 	if err := rt.room.EndRound(ctx, cycle); err != nil {
 		return err
 	}
+	if err := rt.room.ApplyReadyReset(ctx, lobby.ReadyResetStop); err != nil {
+		return err
+	}
 	rt.log.Write("Stop " + rt.loadedID)
 	rt.events.Publish("roster")
 	return nil
@@ -227,6 +230,9 @@ func (rt *runtime) shutdown(ctx context.Context) error {
 		return err
 	}
 	if err := rt.room.SetGamePlayerMax(ctx, 0); err != nil {
+		return err
+	}
+	if err := rt.room.ApplyReadyReset(ctx, lobby.ReadyResetSwitch); err != nil {
 		return err
 	}
 	rt.log.Write("Shutdown")
@@ -258,6 +264,23 @@ func (rt *runtime) resume() error {
 		return errNotLoaded
 	}
 	return rt.game.Resume()
+}
+
+func (rt *runtime) afterDisconnect(ctx context.Context, player lobby.Player) {
+	if !player.Seated {
+		return
+	}
+	rt.mu.Lock()
+	started, game := rt.started, rt.game
+	rt.mu.Unlock()
+	if !started || game == nil {
+		return
+	}
+	auto, err := rt.room.AutoPause(ctx)
+	if err != nil || !auto {
+		return
+	}
+	_ = game.Pause()
 }
 
 func (rt *runtime) markDisconnected(ctx context.Context, playerID string) error {

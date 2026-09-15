@@ -93,7 +93,7 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	}
 
 	seated := lobbyRequest(t, handler, http.MethodGet, "/", nil, cookieNamed(t, joined, lobby.PlayerCookieName)).Body.String()
-	if !strings.Contains(seated, `class="ui-plunger"`) ||
+	if strings.Contains(seated, `class="ui-plunger"`) ||
 		strings.Contains(seated, `action="/lobby/ready"`) ||
 		!strings.Contains(seated, "Reroll face") ||
 		!strings.Contains(seated, `class="ui-token ui-token-self"`) {

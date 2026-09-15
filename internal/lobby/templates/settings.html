@@ -32,6 +32,61 @@
         <span>Cycle seated players</span>
         <button class="ui-btn ui-btn-inline" type="submit">Cycle</button>
       </form>
+      <form class="ui-row ui-row-field" method="post" action="/settings/disconnect-after">
+        <label class="ui-field">
+          <span>Disconnected after</span>
+          <input name="disconnect_after" type="number" min="0" max="3600" value="{{.DisconnectAfter}}" onchange="this.form.submit()">
+        </label>
+        <button class="ui-btn ui-btn-inline" type="submit">Save</button>
+      </form>
+      <form class="ui-row ui-row-field" method="post" action="/settings/kick-timeout">
+        <label class="ui-field">
+          <span>Kick timeout</span>
+          <input name="kick_timeout" type="number" min="0" max="86400" value="{{.KickTimeout}}" onchange="this.form.submit()">
+        </label>
+        <button class="ui-btn ui-btn-inline" type="submit">Save</button>
+      </form>
+      <form class="ui-row" method="post" action="/settings/protect-host">
+        <span>Protect host</span>
+        {{if .ProtectHost}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row" method="post" action="/settings/seat-disconnected-waiters">
+        <span>Seat disconnected waiters</span>
+        {{if .SeatDisconnected}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row" method="post" action="/settings/auto-start">
+        <span>Auto-start</span>
+        <input type="hidden" name="return" value="/settings">
+        {{if .AutoStart}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row ui-row-field" method="post" action="/settings/reset-ready">
+        <label class="ui-field">
+          <span>Reset Ready When</span>
+          <select name="reset_ready" onchange="this.form.submit()">
+            <option value="every" {{if eq .ResetReadyWhen "every"}}selected{{end}}>After every game</option>
+            <option value="switch" {{if eq .ResetReadyWhen "switch"}}selected{{end}}>Only on game switch</option>
+            <option value="never" {{if eq .ResetReadyWhen "never"}}selected{{end}}>Never</option>
+          </select>
+        </label>
+      </form>
       <form class="ui-row" method="post" action="/settings/auto-pause">
         <span>Auto-pause on seated disconnect</span>
         {{if .AutoPause}}

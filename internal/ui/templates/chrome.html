@@ -33,6 +33,11 @@
     var data = typeof d.data === "string" ? d.data.trim() : "";
     applyTheme(data);
   }, true);
+  function beat() {
+    fetch("/lobby/heartbeat", { method: "POST", credentials: "same-origin" });
+  }
+  beat();
+  setInterval(beat, 2000);
 })();
 </script>
 {{end}}

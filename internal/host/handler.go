@@ -50,11 +50,14 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 		LogSinksChanged: rt.log.SetSinks,
 		SettingsExtras:  rt.extras,
 		PhoneExtras:     rt.phoneExtras,
+		StartRound:      rt.start,
+		AfterDisconnect: rt.afterDisconnect,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	rt.room = room
+	room.StartLiveness()
 	row, err := readRoomSettingsFlags(context.Background(), db)
 	if err != nil {
 		return nil, nil, err

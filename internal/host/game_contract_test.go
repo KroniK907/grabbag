@@ -149,6 +149,24 @@ func TestStartRefusedBeforeLoadOrZeroSeatedOrBelowMin(t *testing.T) {
 	}
 }
 
+func TestAutoStartUsesExistingStartWrite(t *testing.T) {
+	t.Parallel()
+	_, handler, rt, fake := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	if beat := requestWithCookie(t, handler, http.MethodPost, "/lobby/heartbeat", nil, admin); beat.Code != http.StatusNoContent {
+		t.Fatalf("heartbeat = %d", beat.Code)
+	}
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/auto-start", url.Values{"enabled": {"1"}}, admin)
+	ready := requestWithCookie(t, handler, http.MethodPost, "/lobby/ready", nil, admin)
+	if ready.Code != http.StatusSeeOther {
+		t.Fatalf("ready = %d %q", ready.Code, ready.Body.String())
+	}
+	if !fake.started || !rt.started {
+		t.Fatalf("auto-start did not Start fake=%v runtime=%v", fake.started, rt.started)
+	}
+}
+
 func TestLoadRefusedAboveGameMax(t *testing.T) {
 	t.Parallel()
 	_, handler, _, _ := testGameHandler(t, 0, 1)
@@ -254,7 +272,11 @@ func finishAndJoinHost(t *testing.T, handler http.Handler) []*http.Cookie {
 		"display_name":   {"Ada"},
 		"admin_password": {"correct horse"},
 	}, "")
-	return join.Result().Cookies()
+	cookies := join.Result().Cookies()
+	if beat := requestWithCookie(t, handler, http.MethodPost, "/lobby/heartbeat", nil, cookies); beat.Code != http.StatusNoContent {
+		t.Fatalf("host heartbeat = %d", beat.Code)
+	}
+	return cookies
 }
 
 func cookieAfterSetup(t *testing.T, handler http.Handler) []*http.Cookie {

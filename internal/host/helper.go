@@ -105,6 +105,6 @@ func (h *helper) toGame(p lobby.Player) games.Player {
 		Audience:         !p.Seated,
 		ClaimedHost:      p.ClaimedHost,
 		Connected:        !p.Disconnected,
-		LastHeartbeatRTT: h.rt.rtt[p.ID],
+		LastHeartbeatRTT: h.rt.room.LastHeartbeatRTT(p.ID),
 	}
 }

@@ -13,7 +13,11 @@
   </form>
   {{if .Seated}}
   <p class="ui-muted">You have a seat. Smash Ready.</p>
-  <button class="ui-plunger" type="button">READY</button>
+  {{if .ShowReady}}
+  <form method="post" action="/lobby/ready">
+    <button class="ui-plunger" type="submit">{{if .Ready}}UNREADY{{else}}READY{{end}}</button>
+  </form>
+  {{end}}
   {{else if .Waiting}}
   <p class="ui-muted">You are in line.</p>
   <form method="post" action="/lobby/wait">

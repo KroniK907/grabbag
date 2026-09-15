@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"html/template"
 
@@ -75,6 +76,9 @@ type Config struct {
 	LogSinksChanged func(stdout, file bool)
 	SettingsExtras  func(context.Context) SettingsExtras
 	PhoneExtras     func(*http.Request, Player) PhoneExtras
+	Clock           func() time.Time
+	StartRound      func(context.Context) error
+	AfterDisconnect func(context.Context, Player)
 }
 
 // Player is a live roster row.
@@ -87,6 +91,7 @@ type Player struct {
 	Disconnected       bool
 	Seated             bool
 	Waiting            bool
+	Ready              bool
 }
 
 // Lobby owns the live roster and its phone writes.
@@ -101,6 +106,9 @@ type Lobby struct {
 	logSinksChanged func(stdout, file bool)
 	settingsExtras  func(context.Context) SettingsExtras
 	phoneExtras     func(*http.Request, Player) PhoneExtras
+	startRound      func(context.Context) error
+	afterDisconnect func(context.Context, Player)
+	live            *liveMem
 }
 
 // New creates Lobby and its SQLite tables.
@@ -131,9 +139,15 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		logSinksChanged: config.LogSinksChanged,
 		settingsExtras:  config.SettingsExtras,
 		phoneExtras:     config.PhoneExtras,
+		startRound:      config.StartRound,
+		afterDisconnect: config.AfterDisconnect,
+		live:            newLiveMem(config.Clock),
 	}
 	if err := room.ensureSchema(); err != nil {
 		return nil, err
+	}
+	if _, err := room.sql.Exec(`UPDATE roster SET disconnected = 1`); err != nil {
+		return nil, fmt.Errorf("lobby: mark roster disconnected: %w", err)
 	}
 	return room, nil
 }
@@ -145,6 +159,8 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("GET /lobby/partials/theme", l.themeSync)
 	mux.HandleFunc("POST /lobby/join", l.join)
+	mux.HandleFunc("POST /lobby/heartbeat", l.heartbeat)
+	mux.HandleFunc("POST /lobby/ready", l.readyToggle)
 	mux.HandleFunc("POST /lobby/reroll", l.reroll)
 	mux.HandleFunc("POST /lobby/leave", l.leave)
 	mux.HandleFunc("POST /lobby/wait", l.waitToggle)
@@ -164,6 +180,11 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings/fill-empty", l.setFillEmpty)
 	mux.HandleFunc("POST /settings/auto-pause", l.setAutoPause)
 	mux.HandleFunc("POST /settings/auto-start", l.setAutoStart)
+	mux.HandleFunc("POST /settings/disconnect-after", l.setDisconnectAfter)
+	mux.HandleFunc("POST /settings/kick-timeout", l.setKickTimeout)
+	mux.HandleFunc("POST /settings/protect-host", l.setProtectHost)
+	mux.HandleFunc("POST /settings/seat-disconnected-waiters", l.setSeatDisconnectedWaiters)
+	mux.HandleFunc("POST /settings/reset-ready", l.setResetReady)
 	mux.HandleFunc("POST /settings/log-stdout", l.setLogStdout)
 	mux.HandleFunc("POST /settings/log-file", l.setLogFile)
 	mux.HandleFunc("POST /settings/stand", l.hostStand)
@@ -228,6 +249,12 @@ type settingsData struct {
 	LogStdout          bool
 	LogFile            bool
 	AutoPause          bool
+	AutoStart          bool
+	ProtectHost        bool
+	SeatDisconnected   bool
+	DisconnectAfter    int
+	KickTimeout        int
+	ResetReadyWhen     string
 	SeatCap            int
 	AdvertisedHostname string
 	SeatCapError       string
@@ -254,6 +281,7 @@ type roomView struct {
 	TakeHost       bool
 	TableFull      bool
 	ShowStart      bool
+	ShowReady      bool
 	Started        bool
 	AutoStart      bool
 	GameIDs        []string
@@ -359,6 +387,7 @@ func (l *Lobby) PlayerFromRequest(r *http.Request) (Player, bool, error) {
 	if err != nil {
 		return Player{}, false, fmt.Errorf("lobby: find player: %w", err)
 	}
+	l.attachLive(&player)
 	return player, true, nil
 }
 
@@ -498,7 +527,7 @@ func (l *Lobby) addPlayer(ctx context.Context, name, avatarSeed, password string
 			return joinResult{}, fmt.Errorf("lobby: make avatar seed: %w", err)
 		}
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return joinResult{}, err
 	}
 	seated, waiting, waitSeq, err := seatOnJoin(ctx, tx, claimHost)
@@ -516,8 +545,8 @@ func (l *Lobby) addPlayer(ctx context.Context, name, avatarSeed, password string
 	if _, err := tx.ExecContext(
 		ctx,
 		`INSERT INTO roster
-			(player_id, display_name, avatar_seed, claimed_host, pending_designation, seated, waiting, wait_seq)
-		 VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+			(player_id, display_name, avatar_seed, claimed_host, pending_designation, seated, waiting, wait_seq, disconnected)
+		 VALUES (?, ?, ?, ?, 0, ?, ?, ?, 1)`,
 		player.ID,
 		player.DisplayName,
 		player.AvatarSeed,
@@ -576,12 +605,13 @@ func (l *Lobby) removePlayer(ctx context.Context, playerID string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM roster WHERE player_id = ?`, playerID); err != nil {
 		return fmt.Errorf("lobby: delete roster player: %w", err)
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("lobby: commit Leave: %w", err)
 	}
+	l.forgetLive(playerID)
 	return nil
 }
 
@@ -798,7 +828,7 @@ func (l *Lobby) setRoomOpen(ctx context.Context, open bool) error {
 		return fmt.Errorf("lobby: update room open: %w", err)
 	}
 	if open {
-		if err := fillWait(ctx, tx); err != nil {
+		if err := l.fillWait(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -838,7 +868,7 @@ func (l *Lobby) toggleWait(ctx context.Context, player Player) error {
 		); err != nil {
 			return fmt.Errorf("lobby: join wait: %w", err)
 		}
-		if err := fillWait(ctx, tx); err != nil {
+		if err := l.fillWait(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -869,6 +899,7 @@ func (l *Lobby) listPlayers(ctx context.Context, where string) ([]Player, error)
 		if err != nil {
 			return nil, fmt.Errorf("lobby: scan roster: %w", err)
 		}
+		l.attachLive(&player)
 		players = append(players, player)
 	}
 	if err := rows.Err(); err != nil {
@@ -936,7 +967,7 @@ func seatOnJoin(ctx context.Context, tx *sql.Tx, claimHost bool) (seated bool, w
 	return false, true, seq, nil
 }
 
-func fillWait(ctx context.Context, tx *sql.Tx) error {
+func (l *Lobby) fillWait(ctx context.Context, tx *sql.Tx) error {
 	open, err := roomOpenTx(ctx, tx)
 	if err != nil {
 		return err
@@ -966,7 +997,10 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 		var playerID string
 		err = tx.QueryRowContext(
 			ctx,
-			`SELECT player_id FROM roster WHERE waiting = 1 ORDER BY wait_seq LIMIT 1`,
+			`SELECT player_id FROM roster
+			 WHERE waiting = 1
+			   AND (disconnected = 0 OR (SELECT seat_disconnected_waiters FROM room_state WHERE id = 1) = 1)
+			 ORDER BY wait_seq LIMIT 1`,
 		).Scan(&playerID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
@@ -981,6 +1015,7 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 		); err != nil {
 			return fmt.Errorf("lobby: seat waiter: %w", err)
 		}
+		l.forgetReady(playerID)
 	}
 }
 
@@ -1189,6 +1224,11 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE room_state ADD COLUMN game_max_players INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN auto_pause INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN auto_start INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN disconnect_after INTEGER NOT NULL DEFAULT 5`,
+		`ALTER TABLE room_state ADD COLUMN kick_timeout INTEGER NOT NULL DEFAULT 60`,
+		`ALTER TABLE room_state ADD COLUMN protect_host INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE room_state ADD COLUMN seat_disconnected_waiters INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN reset_ready TEXT NOT NULL DEFAULT 'switch'`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

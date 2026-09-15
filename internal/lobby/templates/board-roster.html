@@ -24,9 +24,10 @@
     <div class="ui-cluster">
       {{range .Seated}}
       <div class="ui-seat">
-        <div class="ui-token" style="--c: {{color .AvatarSeed}}">
+        <div class="ui-token{{if .Disconnected}} ui-token-dim{{end}}" style="--c: {{color .AvatarSeed}}">
           {{avatar .AvatarSeed}}
           {{if .ClaimedHost}}<div class="ui-host-badge">HOST</div>{{end}}
+          {{if .Ready}}<div class="ui-check">✓</div>{{end}}
         </div>
         <div class="ui-token-name">{{.DisplayName}}</div>
       </div>

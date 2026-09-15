@@ -185,6 +185,10 @@ func TestMakeHostAndTakeHost(t *testing.T) {
 		"display_name":   {"Host"},
 		"admin_password": {"correct horse"},
 	}, nil)
+	hostCookie := cookieNamed(t, hostJoin, lobby.PlayerCookieName)
+	if beat := lobbyRequest(t, handler, http.MethodPost, "/lobby/heartbeat", nil, hostCookie); beat.Code != http.StatusNoContent {
+		t.Fatalf("host heartbeat = %d", beat.Code)
+	}
 	guestCookie := joinNamed(t, handler, "Maya", "")
 	maya := playerFromCookie(t, room, guestCookie)
 
