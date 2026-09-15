@@ -82,17 +82,27 @@ func TestSetupLifecycle(t *testing.T) {
 	for _, path := range []string{"/", "/board", "/settings"} {
 		assertStatus(t, handler, http.MethodGet, path, nil, http.StatusOK)
 	}
+
+	board := request(t, handler, http.MethodGet, "/board", nil, "")
+	if !strings.Contains(board.Body.String(), "http://192.168.10.24:8654/") {
+		t.Fatalf("board page missing LAN join URL: %q", board.Body.String())
+	}
+	phone := request(t, handler, http.MethodGet, "/", nil, "")
+	if strings.Contains(phone.Body.String(), "http://192.168.10.24:8654/") {
+		t.Fatal("phone stub should not show the LAN join URL")
+	}
 }
 
 func TestAdminCookieIsSecureOnLocalhost(t *testing.T) {
 	t.Parallel()
-	_, handler := testHandler(t)
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
-
-	rec := request(t, handler, http.MethodPost, "/setup", form, "localhost:8654")
-	cookies := rec.Result().Cookies()
-	if len(cookies) != 1 || !cookies[0].Secure {
-		t.Fatalf("localhost admin cookie = %#v, want Secure", cookies)
+	for _, host := range []string{"localhost:8654", "127.0.0.1:8654", "[::1]:8654"} {
+		_, handler := testHandler(t)
+		rec := request(t, handler, http.MethodPost, "/setup", form, host)
+		cookies := rec.Result().Cookies()
+		if len(cookies) != 1 || !cookies[0].Secure {
+			t.Fatalf("%s admin cookie = %#v, want Secure", host, cookies)
+		}
 	}
 }
 
@@ -126,7 +136,7 @@ func testHandler(t *testing.T) (*store.DB, http.Handler) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return db, NewHandler(db)
+	return db, NewHandler(db, "http://192.168.10.24:8654/")
 }
 
 func assertRedirect(t *testing.T, handler http.Handler, method, path string, form url.Values, location string) {

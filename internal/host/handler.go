@@ -20,13 +20,15 @@ var templateFiles embed.FS
 var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
 
 // NewHandler returns the host routes wrapped in Go's cross-origin protection.
-func NewHandler(db *store.DB) http.Handler {
+// joinURL is the LAN address shown on /board. It may be empty when no usable
+// LAN IPv4 exists.
+func NewHandler(db *store.DB, joinURL string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /setup", getSetup(db))
 	mux.HandleFunc("POST /setup", finishSetup(db))
-	mux.HandleFunc("GET /{$}", getStub(db, "Hackbox phone"))
-	mux.HandleFunc("GET /board", getStub(db, "Hackbox board"))
-	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings"))
+	mux.HandleFunc("GET /{$}", getStub(db, "Hackbox phone", ""))
+	mux.HandleFunc("GET /board", getStub(db, "Hackbox board", joinURL))
+	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings", ""))
 	return http.NewCrossOriginProtection().Handler(mux)
 }
 
@@ -101,7 +103,7 @@ func finishSetup(db *store.DB) http.HandlerFunc {
 	}
 }
 
-func getStub(db *store.DB, title string) http.HandlerFunc {
+func getStub(db *store.DB, title, joinURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hasHash, err := db.HasAdminHash(r.Context())
 		if err != nil {
@@ -112,7 +114,10 @@ func getStub(db *store.DB, title string) http.HandlerFunc {
 			http.Redirect(w, r, "/setup", http.StatusSeeOther)
 			return
 		}
-		renderPage(w, "stub.html", struct{ Title string }{Title: title}, http.StatusOK)
+		renderPage(w, "stub.html", struct {
+			Title   string
+			JoinURL string
+		}{Title: title, JoinURL: joinURL}, http.StatusOK)
 	}
 }
 
@@ -140,5 +145,5 @@ func secureAdminCookie(r *http.Request) bool {
 		host = parsed
 	}
 	host = strings.Trim(host, "[]")
-	return strings.EqualFold(host, "localhost") || host == "127.0.0.1"
+	return strings.EqualFold(host, "localhost") || host == "127.0.0.1" || host == "::1"
 }
