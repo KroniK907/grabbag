@@ -134,8 +134,8 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if !strings.Contains(settings, `class="ui-page ui-page-compact"`) {
 		t.Fatalf("settings is not compact: %q", settings)
 	}
-	if !strings.Contains(settings, "<summary") || !strings.Contains(settings, "Kick Players") {
-		t.Fatalf("kick accordion missing: %q", settings)
+	if !strings.Contains(settings, `class="ui-caret"`) || !strings.Contains(settings, `class="ui-accordion-body"`) {
+		t.Fatalf("kick accordion chrome missing: %q", settings)
 	}
 
 	login := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()

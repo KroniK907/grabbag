@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -880,17 +881,22 @@ func joinURLFromHostname(hostname, fallback string) string {
 		}
 		return hostname
 	}
-	port := "8654"
-	if fallback != "" {
-		if u, err := url.Parse(fallback); err == nil && u.Port() != "" {
-			port = u.Port()
-		}
-	}
 	scheme := "http"
 	if fallback != "" {
 		if u, err := url.Parse(fallback); err == nil && u.Scheme != "" {
 			scheme = u.Scheme
 		}
 	}
-	return scheme + "://" + hostname + ":" + port + "/"
+	return scheme + "://" + hostForJoinURL(hostname) + "/"
+}
+
+// hostForJoinURL keeps a typed port and omits the listen port otherwise.
+func hostForJoinURL(hostname string) string {
+	if _, _, err := net.SplitHostPort(hostname); err == nil {
+		return hostname
+	}
+	if ip := net.ParseIP(hostname); ip != nil && ip.To4() == nil {
+		return "[" + ip.String() + "]"
+	}
+	return hostname
 }

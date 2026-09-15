@@ -64,8 +64,16 @@ func TestGM077SeatCapRefuseLogoutAndLogin(t *testing.T) {
 		t.Fatalf("hostname save = %d", named.Code)
 	}
 	board = lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, "http://party.lan:8654/") {
+	if !strings.Contains(board, "http://party.lan/") || strings.Contains(board, "party.lan:8654") {
 		t.Fatalf("named hostname board = %q", board)
+	}
+	withPort := lobbyRequest(t, handler, http.MethodPost, "/settings/hostname", url.Values{"hostname": {"party.lan:8080"}}, operatorCookie())
+	if withPort.Code != http.StatusSeeOther {
+		t.Fatalf("hostname with port save = %d", withPort.Code)
+	}
+	board = lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	if !strings.Contains(board, "http://party.lan:8080/") {
+		t.Fatalf("typed-port hostname board = %q", board)
 	}
 
 	lobbyRequest(t, handler, http.MethodPost, "/settings/fill-empty", url.Values{"fill_empty": {"1"}}, operatorCookie())
