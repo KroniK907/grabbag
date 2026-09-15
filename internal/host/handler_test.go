@@ -154,8 +154,8 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 			if !strings.Contains(css, "position: fixed") {
 				t.Fatalf("GET %s did not contain fixed overlay styling", asset)
 			}
-			if !strings.Contains(css, ".ui-modal[hidden]") || !strings.Contains(css, ".ui-sheet[hidden]") {
-				t.Fatalf("GET %s missing hidden overlay rules", asset)
+			if !strings.Contains(css, "appearance: none") || !strings.Contains(css, `[data-theme="neon-dark"] .ui-field select`) {
+				t.Fatalf("GET %s missing themed select caret", asset)
 			}
 		}
 	}

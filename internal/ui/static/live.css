@@ -54,6 +54,7 @@
   --ui-danger-fg: #fff;
   --ui-overlay: rgba(0, 0, 0, 0.55);
   --ui-dim: grayscale(0.75) brightness(0.7);
+  color-scheme: light;
 }
 
 [data-theme="neon-dark"] {
@@ -107,6 +108,7 @@
   --ui-danger-fg: #fff;
   --ui-overlay: rgba(0, 0, 0, 0.55);
   --ui-dim: grayscale(0.8) brightness(0.55);
+  color-scheme: dark;
 }
 
 *,
@@ -377,6 +379,10 @@ button {
   flex: 1;
 }
 
+.ui-page-compact .ui-field select {
+  padding-right: 1.75rem;
+}
+
 .ui-page-compact .ui-btn {
   padding: 8px 12px;
   border-radius: 10px;
@@ -407,8 +413,21 @@ button {
   border-radius: 12px;
   padding: 12px;
   border: 3px solid var(--ui-accent);
-  background: var(--ui-field-bg);
+  background-color: var(--ui-field-bg);
   color: var(--ui-field-fg);
+}
+
+.ui-field select {
+  appearance: none;
+  padding-right: 2rem;
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 7px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%231a0730' d='M0 0h12L6 8z'/%3E%3C/svg%3E");
+}
+
+[data-theme="neon-dark"] .ui-field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M0 0h12L6 8z'/%3E%3C/svg%3E");
 }
 
 .ui-btn {
