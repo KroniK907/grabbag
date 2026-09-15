@@ -265,6 +265,46 @@ button {
   display: none;
 }
 
+.ui-drawer-handle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 5;
+  width: auto;
+  padding: 16px 8px;
+  border-radius: 10px 0 0 10px;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.08em;
+}
+
+.ui-phone:has(.ui-drawer.is-open) .ui-drawer-handle {
+  visibility: hidden;
+}
+
+.ui-drawer {
+  position: absolute;
+  top: 22px;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  width: min(100%, 320px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  background: var(--ui-sheet-bg);
+  border-left: 3px solid var(--ui-accent);
+  transform: translateX(100%);
+  transition: transform 0.18s ease;
+}
+
+.ui-drawer.is-open {
+  transform: translateX(0);
+}
+
 .ui-accordion {
   border: 3px solid var(--ui-accent);
   border-radius: 10px;

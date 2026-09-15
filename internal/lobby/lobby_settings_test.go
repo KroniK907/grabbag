@@ -111,8 +111,19 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 	hostAdmin := cookieNamed(t, hostJoin, "hackbox_admin")
 
 	phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, hostPlayer, hostAdmin).Body.String()
-	if !strings.Contains(phone, "Open host panel") || !strings.Contains(phone, `action="/settings/stand"`) {
-		t.Fatalf("host phone missing stand: %q", phone)
+	if !strings.Contains(phone, `id="host-drawer"`) ||
+		!strings.Contains(phone, `class="ui-drawer-handle"`) ||
+		!strings.Contains(phone, ">Back</button>") ||
+		!strings.Contains(phone, "Kick Players") ||
+		!strings.Contains(phone, `action="/settings/stand"`) {
+		t.Fatalf("host phone missing drawer: %q", phone)
+	}
+	inner := lobbyRequestAll(t, handler, http.MethodGet, "/lobby/partials/phone", nil, hostPlayer, hostAdmin).Body.String()
+	if strings.Contains(inner, `id="host-drawer"`) {
+		t.Fatalf("phone SSE swap included the host drawer: %q", inner)
+	}
+	if !strings.Contains(inner, `id="phone-inner"`) {
+		t.Fatalf("phone SSE swap missing room inner: %q", inner)
 	}
 
 	stand := lobbyRequestAll(t, handler, http.MethodPost, "/settings/stand", nil, hostPlayer, hostAdmin)
@@ -216,7 +227,7 @@ func TestMakeHostAndTakeHost(t *testing.T) {
 		t.Fatal("old host still claimed")
 	}
 	panel := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, guestCookie, admin).Body.String()
-	if !strings.Contains(panel, "Open host panel") {
+	if !strings.Contains(panel, `id="host-drawer"`) || !strings.Contains(panel, "Kick Players") {
 		t.Fatalf("new host phone = %q", panel)
 	}
 }

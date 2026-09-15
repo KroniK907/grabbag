@@ -232,9 +232,10 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	if strings.Contains(settings, "sse:roster") || strings.Contains(settings, "/lobby/partials/board-roster") {
 		t.Fatal("settings live-updated the player list")
 	}
-	if !strings.Contains(settings, `action="/settings/open"`) ||
+	openAt := strings.Index(settings, `action="/settings/open"`)
+	kickAt := strings.Index(settings, "Kick Players")
+	if openAt < 0 || kickAt < 0 || kickAt < openAt ||
 		!strings.Contains(settings, `action="/settings/kick"`) ||
-		!strings.Contains(settings, "Kick Players") ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}

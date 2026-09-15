@@ -215,6 +215,7 @@ type roomView struct {
 	TakeHost       bool
 	TableFull      bool
 	BumpCandidates []Player
+	Players        []Player
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -290,7 +291,7 @@ func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
 		}
-		l.render(w, "room-body", view, http.StatusOK)
+		l.render(w, "room-inner", view, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join-body", "", "", http.StatusOK)

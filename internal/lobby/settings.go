@@ -94,6 +94,11 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 			}
 		}
 	}
+	players, err := l.listPlayers(r.Context(), `1 = 1 ORDER BY rowid`)
+	if err != nil {
+		return roomView{}, err
+	}
+	view.Players = players
 	return view, nil
 }
 

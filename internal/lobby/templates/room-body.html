@@ -1,77 +1,31 @@
-{{define "room-body"}}
+{{define "room-inner"}}
 <div
-  id="phone-body"
-  class="ui-phone-wrap"
+  id="phone-inner"
   hx-get="/lobby/partials/phone"
   hx-trigger="sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
-  <div class="ui-phone">
-    <div class="ui-notch">hackbox</div>
-    <div class="ui-phone-body">
-      <div class="ui-you">{{.DisplayName}}</div>
-      <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
-      <form method="post" action="/lobby/reroll">
-        <button class="ui-btn" type="submit">Reroll face</button>
-      </form>
-      {{if .Seated}}
-      <p class="ui-muted">You have a seat. Smash Ready.</p>
-      <button class="ui-plunger" type="button">READY</button>
-      {{else if .Waiting}}
-      <p class="ui-muted">You are in line.</p>
-      <form method="post" action="/lobby/wait">
-        <button class="ui-btn" type="submit">Leave wait list</button>
-      </form>
-      {{else}}
-      <p class="ui-muted">You are watching. Join the wait line to take a seat.</p>
-      <form method="post" action="/lobby/wait">
-        <button class="ui-btn" type="submit">Join wait list</button>
-      </form>
-      {{end}}
-      {{if .HostPanel}}
-      <button class="ui-btn" type="button" onclick="document.getElementById('host-sheet').hidden = !document.getElementById('host-sheet').hidden">Open host panel</button>
-      {{end}}
-      <form method="post" action="/lobby/leave">
-        <button class="ui-btn ui-btn-danger" type="submit">Leave</button>
-      </form>
-    </div>
-    {{if .HostPanel}}
-    <div id="host-sheet" class="ui-sheet" hidden>
-      {{if .Seated}}
-      <form method="post" action="/settings/stand">
-        <button class="ui-btn" type="submit">Stand (watch)</button>
-      </form>
-      {{else if .TableFull}}
-      <p class="ui-muted">Pick who to bump.</p>
-      {{range .BumpCandidates}}
-      <form method="post" action="/settings/sit">
-        <input type="hidden" name="bump_player_id" value="{{.ID}}">
-        <button class="ui-btn" type="submit">Sit, bump {{.DisplayName}}</button>
-      </form>
-      {{end}}
-      {{else}}
-      <form method="post" action="/settings/sit">
-        <button class="ui-btn" type="submit">Sit</button>
-      </form>
-      {{end}}
-      <a class="ui-btn" href="/settings" target="_blank" rel="noopener">Room settings</a>
-    </div>
-    {{end}}
-    {{if .TakeHost}}
-    <div class="ui-modal">
-      <div class="ui-card">
-        <h2>Take host</h2>
-        <p>Type the host password to take the booth.</p>
-        <form class="ui-stack" method="post" action="/lobby/take-host">
-          <label class="ui-field">
-            <span>Password</span>
-            <input name="password" type="password" required>
-          </label>
-          <button class="ui-btn" type="submit">Take host</button>
-        </form>
-      </div>
-    </div>
-    {{end}}
-  </div>
+  <div class="ui-you">{{.DisplayName}}</div>
+  <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
+  <form method="post" action="/lobby/reroll">
+    <button class="ui-btn" type="submit">Reroll face</button>
+  </form>
+  {{if .Seated}}
+  <p class="ui-muted">You have a seat. Smash Ready.</p>
+  <button class="ui-plunger" type="button">READY</button>
+  {{else if .Waiting}}
+  <p class="ui-muted">You are in line.</p>
+  <form method="post" action="/lobby/wait">
+    <button class="ui-btn" type="submit">Leave wait list</button>
+  </form>
+  {{else}}
+  <p class="ui-muted">You are watching. Join the wait line to take a seat.</p>
+  <form method="post" action="/lobby/wait">
+    <button class="ui-btn" type="submit">Join wait list</button>
+  </form>
+  {{end}}
+  <form method="post" action="/lobby/leave">
+    <button class="ui-btn ui-btn-danger" type="submit">Leave</button>
+  </form>
 </div>
 {{end}}

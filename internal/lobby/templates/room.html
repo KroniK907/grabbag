@@ -1,3 +1,60 @@
 {{template "ui-start" .}}
-{{template "room-body" .}}
+<div class="ui-phone-wrap">
+  <div class="ui-phone">
+    <div class="ui-notch">hackbox</div>
+    <div class="ui-phone-body">
+      {{template "room-inner" .}}
+    </div>
+    {{if .HostPanel}}
+    {{/* Drawer sits outside #phone-inner so roster and later game swaps keep Host. */}}
+    <button
+      type="button"
+      class="ui-drawer-handle"
+      aria-controls="host-drawer"
+      onclick="document.getElementById('host-drawer').classList.add('is-open')"
+    >Host</button>
+    <aside id="host-drawer" class="ui-drawer" aria-label="Host panel">
+      <button
+        type="button"
+        class="ui-btn"
+        onclick="document.getElementById('host-drawer').classList.remove('is-open')"
+      >Back</button>
+      {{if .Seated}}
+      <form method="post" action="/settings/stand">
+        <button class="ui-btn" type="submit">Stand (watch)</button>
+      </form>
+      {{else if .TableFull}}
+      <p class="ui-muted">Pick who to bump.</p>
+      {{range .BumpCandidates}}
+      <form method="post" action="/settings/sit">
+        <input type="hidden" name="bump_player_id" value="{{.ID}}">
+        <button class="ui-btn" type="submit">Sit, bump {{.DisplayName}}</button>
+      </form>
+      {{end}}
+      {{else}}
+      <form method="post" action="/settings/sit">
+        <button class="ui-btn" type="submit">Sit</button>
+      </form>
+      {{end}}
+      {{template "kick-players" .}}
+      <a class="ui-btn" href="/settings" target="_blank" rel="noopener">Room settings</a>
+    </aside>
+    {{end}}
+    {{if .TakeHost}}
+    <div class="ui-modal">
+      <div class="ui-card">
+        <h2>Take host</h2>
+        <p>Type the host password to take the booth.</p>
+        <form class="ui-stack" method="post" action="/lobby/take-host">
+          <label class="ui-field">
+            <span>Password</span>
+            <input name="password" type="password" required>
+          </label>
+          <button class="ui-btn" type="submit">Take host</button>
+        </form>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
 {{template "ui-end"}}
