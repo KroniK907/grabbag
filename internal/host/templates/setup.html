@@ -5,9 +5,9 @@
       <div class="ui-brand ui-brand-sm">NEW GAME</div>
       <form method="post" action="/setup/theme">
         {{if eq .Theme "neon-dark"}}
-        <button class="ui-btn ui-btn-inline" type="submit">Light</button>
-        {{else}}
         <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
+        {{else}}
+        <button class="ui-btn ui-btn-inline" type="submit">Light</button>
         {{end}}
       </form>
     </div>

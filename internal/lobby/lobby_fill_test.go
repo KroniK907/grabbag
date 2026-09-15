@@ -234,6 +234,7 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	}
 	if !strings.Contains(settings, `action="/settings/open"`) ||
 		!strings.Contains(settings, `action="/settings/kick"`) ||
+		!strings.Contains(settings, "Kick Players") ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}

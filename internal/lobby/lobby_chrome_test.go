@@ -122,11 +122,17 @@ func TestSettingsThemeToggle(t *testing.T) {
 	_, handler, _ := testLobby(t)
 
 	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
-	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Dark</button>") {
+	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Light</button>") {
 		t.Fatalf("settings default theme = %q", settings)
 	}
 	if !strings.Contains(settings, `id="logout-modal" class="ui-modal" hidden`) {
 		t.Fatalf("logout modal is not hidden by default: %q", settings)
+	}
+	if !strings.Contains(settings, ">Closed</button>") || strings.Contains(settings, ">Open</button>") {
+		t.Fatalf("closed room toggle = %q", settings)
+	}
+	if !strings.Contains(settings, "<summary") || !strings.Contains(settings, "Kick Players") {
+		t.Fatalf("kick accordion missing: %q", settings)
 	}
 
 	login := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
@@ -144,7 +150,7 @@ func TestSettingsThemeToggle(t *testing.T) {
 		t.Fatalf("theme toggle status = %d; body = %q", toggled.Code, toggled.Body.String())
 	}
 	darkSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
-	if !strings.Contains(darkSettings, `data-theme="neon-dark"`) || !strings.Contains(darkSettings, ">Light</button>") {
+	if !strings.Contains(darkSettings, `data-theme="neon-dark"`) || !strings.Contains(darkSettings, ">Dark</button>") {
 		t.Fatalf("settings after toggle = %q", darkSettings)
 	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
@@ -159,7 +165,7 @@ func TestSettingsThemeToggle(t *testing.T) {
 	handler.ServeHTTP(liveRec, live)
 	if liveRec.Code != http.StatusOK ||
 		!strings.Contains(liveRec.Body.String(), `data-theme="neon-light"`) ||
-		!strings.Contains(liveRec.Body.String(), ">Dark</button>") {
+		!strings.Contains(liveRec.Body.String(), ">Light</button>") {
 		t.Fatalf("htmx theme toggle = %d %q", liveRec.Code, liveRec.Body.String())
 	}
 }
