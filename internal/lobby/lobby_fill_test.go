@@ -56,13 +56,16 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 	}
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(phone, "<h1>In the wait list</h1>") ||
+	if !strings.Contains(phone, "Guest") ||
 		!strings.Contains(phone, `action="/lobby/wait"`) ||
-		!strings.Contains(phone, "Leave wait list") {
+		!strings.Contains(phone, "Leave wait list") ||
+		strings.Contains(phone, "ui-plunger") ||
+		strings.Contains(phone, "READY") {
 		t.Fatalf("waiting phone body = %q", phone)
 	}
 	hostPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, hostCookie).Body.String()
-	if !strings.Contains(hostPhone, "<h1>In the room</h1>") ||
+	if !strings.Contains(hostPhone, "Host") ||
+		!strings.Contains(hostPhone, `class="ui-plunger"`) ||
 		strings.Contains(hostPhone, `action="/lobby/wait"`) {
 		t.Fatalf("seated host phone body = %q", hostPhone)
 	}
@@ -127,7 +130,8 @@ func testWaitOptOut(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatalf("opt-out guest = %#v, want audience-only", guest)
 	}
 	audiencePhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(audiencePhone, "<h1>In the audience</h1>") {
+	if !strings.Contains(audiencePhone, "You are watching") ||
+		!strings.Contains(audiencePhone, "Join wait list") {
 		t.Fatalf("audience phone body = %q", audiencePhone)
 	}
 
@@ -296,26 +300,29 @@ func operatorCookie() *http.Cookie {
 
 func assertBoardLists(t *testing.T, body string, seated, waiting []string) {
 	t.Helper()
-	seatedAt := strings.Index(body, "<h2>Seated</h2>")
-	waitingAt := strings.Index(body, "<h2>Waiting</h2>")
-	if seatedAt < 0 || waitingAt < 0 || waitingAt < seatedAt {
-		t.Fatalf("board missing seated-then-wait lists: %q", body)
+	clusterAt := strings.Index(body, `class="ui-cluster"`)
+	marqueeAt := strings.Index(body, `class="ui-marquee"`)
+	if clusterAt < 0 || marqueeAt < 0 || marqueeAt < clusterAt {
+		t.Fatalf("board missing token cluster then wait marquee: %q", body)
 	}
-	seatedBody := body[seatedAt:waitingAt]
-	waitingBody := body[waitingAt:]
+	seatedBody := body[clusterAt:marqueeAt]
+	waitingBody := body[marqueeAt:]
+	if strings.Contains(body, "<h2>Audience</h2>") {
+		t.Fatal("board showed an audience name list")
+	}
 	for _, name := range seated {
-		if !strings.Contains(seatedBody, "<li>"+name+"</li>") {
-			t.Fatalf("seated list missing %q in %q", name, seatedBody)
+		if !strings.Contains(seatedBody, `class="ui-token-name">`+name+`</div>`) {
+			t.Fatalf("seated cluster missing %q in %q", name, seatedBody)
 		}
-		if strings.Contains(waitingBody, "<li>"+name+"</li>") {
+		if strings.Contains(waitingBody, `</svg> `+name+`</span>`) {
 			t.Fatalf("%q listed as waiting: %q", name, waitingBody)
 		}
 	}
 	for _, name := range waiting {
-		if !strings.Contains(waitingBody, "<li>"+name+"</li>") {
-			t.Fatalf("wait list missing %q in %q", name, waitingBody)
+		if !strings.Contains(waitingBody, `</svg> `+name+`</span>`) {
+			t.Fatalf("wait marquee missing %q in %q", name, waitingBody)
 		}
-		if strings.Contains(seatedBody, "<li>"+name+"</li>") {
+		if strings.Contains(seatedBody, `class="ui-token-name">`+name+`</div>`) {
 			t.Fatalf("%q listed as seated: %q", name, seatedBody)
 		}
 	}
@@ -326,6 +333,9 @@ func lobbyHandler(t *testing.T, db *store.DB) (http.Handler, *lobby.Lobby) {
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: "hackbox_admin",
 		Events:          hub.New(),
+		JoinURL: func(*http.Request) string {
+			return "http://192.168.10.24:8654/"
+		},
 		PasswordMatches: func(hash, password string) bool {
 			return hash == "stored-hash" && password == "correct horse"
 		},

@@ -12,12 +12,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
 
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/hackbox/internal/ui"
 )
 
 const (
@@ -39,12 +39,13 @@ var (
 //go:embed templates/*.html
 var templateFiles embed.FS
 
-var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
+var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 
-// Config supplies the host-owned password and cookie policies used by Lobby.
+// Config supplies host-owned password, cookie, and advertised join-URL policies.
 type Config struct {
 	AdminCookieName string
 	Events          *hub.Hub
+	JoinURL         func(*http.Request) string
 	PasswordMatches func(encodedHash, password string) bool
 	SecureCookie    func(*http.Request) bool
 }
@@ -64,6 +65,7 @@ type Lobby struct {
 	sql             *sql.DB
 	adminCookieName string
 	events          *hub.Hub
+	joinURL         func(*http.Request) string
 	passwordMatches func(encodedHash, password string) bool
 	secureCookie    func(*http.Request) bool
 }
@@ -89,6 +91,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		sql:             db.SQL(),
 		adminCookieName: config.AdminCookieName,
 		events:          config.Events,
+		joinURL:         config.JoinURL,
 		passwordMatches: config.PasswordMatches,
 		secureCookie:    config.SecureCookie,
 	}
@@ -104,6 +107,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("POST /lobby/join", l.join)
+	mux.HandleFunc("POST /lobby/reroll", l.reroll)
 	mux.HandleFunc("POST /lobby/leave", l.leave)
 	mux.HandleFunc("POST /lobby/wait", l.waitToggle)
 	mux.HandleFunc("GET /settings", l.settings)
@@ -121,32 +125,54 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		l.render(w, "room.html", player, http.StatusOK)
+		l.render(w, "room.html", roomView{Chrome: ui.Page("Hackbox room"), Player: player}, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
 }
 
-// Board writes the current Lobby board with seated names, then the wait list.
+// Board writes neon cabinet chrome: left rail (QR, join URL, open/closed,
+// seat and audience counts), seated tokens, and the wait marquee.
 func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 	data, err := l.boardData(r.Context())
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	data.JoinURL = joinURL
+	if joinURL != "" {
+		data.JoinURL = joinURL
+	}
 	l.render(w, "board.html", data, http.StatusOK)
 }
 
 type boardData struct {
-	JoinURL string
-	Seated  []Player
-	Waiting []Player
+	ui.Chrome
+	JoinURL       string
+	Open          bool
+	SeatCap       int
+	SeatedCount   int
+	AudienceCount int
+	Seated        []Player
+	Waiting       []Player
 }
 
 type settingsData struct {
+	ui.Chrome
 	Open    bool
 	Players []Player
+}
+
+type joinView struct {
+	ui.Chrome
+	DisplayName  string
+	AvatarSeed   string
+	ShowPassword bool
+	Error        string
+}
+
+type roomView struct {
+	ui.Chrome
+	Player
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +181,15 @@ func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
+	data.JoinURL = l.advertisedURL(r)
 	l.render(w, "board-roster", data, http.StatusOK)
+}
+
+func (l *Lobby) advertisedURL(r *http.Request) string {
+	if l.joinURL == nil {
+		return ""
+	}
+	return l.joinURL(r)
 }
 
 func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
@@ -167,7 +201,23 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err != nil {
 		return boardData{}, err
 	}
-	return boardData{Seated: seated, Waiting: waiting}, nil
+	open, err := l.roomOpen(ctx)
+	if err != nil {
+		return boardData{}, err
+	}
+	var audience int
+	if err := l.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM roster WHERE seated = 0`).Scan(&audience); err != nil {
+		return boardData{}, fmt.Errorf("lobby: count audience: %w", err)
+	}
+	return boardData{
+		Chrome:        ui.Page("Hackbox board"),
+		Open:          open,
+		SeatCap:       SeatCap,
+		SeatedCount:   len(seated),
+		AudienceCount: audience,
+		Seated:        seated,
+		Waiting:       waiting,
+	}, nil
 }
 
 func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
@@ -222,10 +272,14 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	staleCookie, _ := playerCookieFromRequest(r)
+	avatarSeed := strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	if avatarSeed == "" {
+		avatarSeed = staleCookie.AvatarSeed
+	}
 	result, err := l.addPlayer(
 		r.Context(),
 		name,
-		staleCookie.AvatarSeed,
+		avatarSeed,
 		r.PostFormValue("admin_password"),
 	)
 	if err != nil {
@@ -433,7 +487,7 @@ func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "settings.html", settingsData{Open: open, Players: players}, http.StatusOK)
+	l.render(w, "settings.html", settingsData{Chrome: ui.Page("Hackbox settings"), Open: open, Players: players}, http.StatusOK)
 }
 
 func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
@@ -479,6 +533,55 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 	}
 	l.events.Publish("roster")
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) reroll(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	seed, err := newRandomValue(16)
+	if err != nil {
+		http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+		return
+	}
+	player, ok, err := l.PlayerFromRequest(r)
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	name := strings.TrimSpace(r.PostFormValue("display_name"))
+	if ok {
+		if err := l.setAvatarSeed(r.Context(), player.ID, seed); err != nil {
+			http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+			return
+		}
+		name = player.DisplayName
+		l.events.Publish("roster")
+	}
+	value, err := encodePlayerCookie(playerCookie{
+		ID:          player.ID,
+		DisplayName: name,
+		AvatarSeed:  seed,
+	})
+	if err != nil {
+		http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, l.cookie(r, PlayerCookieName, value))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (l *Lobby) setAvatarSeed(ctx context.Context, playerID, seed string) error {
+	if _, err := l.sql.ExecContext(
+		ctx,
+		`UPDATE roster SET avatar_seed = ? WHERE player_id = ?`,
+		seed,
+		playerID,
+	); err != nil {
+		return fmt.Errorf("lobby: reroll avatar: %w", err)
+	}
+	return nil
 }
 
 func (l *Lobby) waitToggle(w http.ResponseWriter, r *http.Request) {
@@ -735,6 +838,19 @@ func (l *Lobby) writeJoin(
 	if submittedName != "" {
 		state.DisplayName = submittedName
 	}
+	seed := strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	if seed == "" {
+		seed = state.AvatarSeed
+	}
+	if seed == "" {
+		var err error
+		seed, err = newRandomValue(16)
+		if err != nil {
+			http.Error(w, "Could not make an avatar.", http.StatusInternalServerError)
+			return
+		}
+	}
+	state.AvatarSeed = seed
 	var hostExists int
 	if err := l.sql.QueryRowContext(
 		r.Context(),
@@ -743,12 +859,10 @@ func (l *Lobby) writeJoin(
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, templateName, struct {
-		DisplayName  string
-		ShowPassword bool
-		Error        string
-	}{
+	l.render(w, templateName, joinView{
+		Chrome:       ui.Page("Join Hackbox"),
 		DisplayName:  state.DisplayName,
+		AvatarSeed:   seed,
 		ShowPassword: hostExists == 0,
 		Error:        message,
 	}, status)

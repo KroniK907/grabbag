@@ -1,27 +1,28 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Hackbox settings</title>
-</head>
-<body>
-  <h1>Hackbox settings</h1>
-  <p>Room is {{if .Open}}open{{else}}closed{{end}}.</p>
-  <form method="post" action="/settings/open">
-    <button type="submit">Open</button>
-  </form>
-  <form method="post" action="/settings/close">
-    <button type="submit">Close</button>
-  </form>
-  <h2>Players</h2>
-  {{range .Players}}
-  <form method="post" action="/settings/kick">
-    <input type="hidden" name="player_id" value="{{.ID}}">
-    <button type="submit">Kick {{.DisplayName}}</button>
-  </form>
-  {{else}}
-  <p>No players yet.</p>
-  {{end}}
-</body>
-</html>
+{{template "ui-start-quiet" .}}
+<div class="ui-page">
+  <div class="ui-stack">
+    <div class="ui-header">
+      <div class="ui-brand ui-brand-sm">ROOM KNOBS</div>
+    </div>
+    <p class="ui-muted">Room is {{if .Open}}open{{else}}closed{{end}}.</p>
+    <form method="post" action="/settings/open">
+      <button class="ui-btn" type="submit">Open</button>
+    </form>
+    <form method="post" action="/settings/close">
+      <button class="ui-btn" type="submit">Close</button>
+    </form>
+    <h2>Players</h2>
+    <div class="ui-list">
+      {{range .Players}}
+      <form class="ui-row" method="post" action="/settings/kick">
+        <span>{{.DisplayName}}</span>
+        <input type="hidden" name="player_id" value="{{.ID}}">
+        <button class="ui-btn ui-btn-danger ui-btn-inline" type="submit">Kick</button>
+      </form>
+      {{else}}
+      <p class="ui-muted">No players yet.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{template "ui-end"}}

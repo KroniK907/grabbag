@@ -473,6 +473,9 @@ func testLobby(t *testing.T) (*store.DB, http.Handler, *lobby.Lobby) {
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: "hackbox_admin",
 		Events:          hub.New(),
+		JoinURL: func(*http.Request) string {
+			return "http://192.168.10.24:8654/"
+		},
 		PasswordMatches: func(hash, password string) bool {
 			return hash == "stored-hash" && password == "correct horse"
 		},

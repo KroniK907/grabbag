@@ -35,8 +35,8 @@ hackbox/
     lobby/
       templates/
     ui/
-      static/                 # compiled host chrome CSS/JS
-      templates/              # shared board/phone chrome
+      static/                 # host chrome CSS/JS (theme tokens + widgets)
+      templates/              # shared chrome defines (ui-start, overlay)
     store/                    # host/Lobby persistence + path helpers
     platform/                 # host-wide packages
       hub/                    # in-process named SSE broadcaster
@@ -48,6 +48,8 @@ hackbox/
 ```
 
 `internal/ui` is one package in v1. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
+
+Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. v1 ships `neon-light` (default) and `neon-dark`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
 A later `cmd/hackbox-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/hackbox/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/hackbox/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/hackbox/issues/9).
 

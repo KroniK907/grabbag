@@ -31,6 +31,9 @@ func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: adminCookieName,
 		Events:          events,
+		JoinURL: func(r *http.Request) string {
+			return joinURLForRequest(r, lanJoinURL)
+		},
 		PasswordMatches: passwordMatches,
 		SecureCookie:    secureAdminCookie,
 	})
