@@ -1,6 +1,8 @@
 .cursor/
 node_modules/
 .turbo/
+hackbox.exe
+
 
 
 # >>> agent-config-wizard >>>

@@ -25,7 +25,7 @@ hackbox/
   AGENTS.md
   cmd/
     hackbox/
-      main.go                 # tray + listen; almost no logic
+      main.go                 # process entry; almost no logic
   docs/
     agent/
       CODEBASE.md             # this file
