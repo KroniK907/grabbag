@@ -301,6 +301,16 @@ button {
   transform: translateX(0);
 }
 
+.ui-drawer .ui-accordion-row {
+  padding: 4px 8px;
+}
+
+.ui-drawer .ui-accordion-row .ui-btn {
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
 .ui-accordion {
   border: 3px solid var(--ui-accent);
   border-radius: 10px;
