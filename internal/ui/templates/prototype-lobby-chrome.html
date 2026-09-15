@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE. Locked pixel source for Lobby chrome. Not production templates.
+
+  Question: What should Lobby board, phone, setup, and settings chrome
+  look like for a living-room party game?
+
+  Verdict (2026-09-14): neon cabinet is the base.
+  A is dark. B is the same layout in light (host default, CORE-HOST-GM-074).
+  Left rail (title, QR, URL, open/closed, seats, audience), token cluster,
+  wait marquee, circular Ready plunger. Same shapes on setup, settings,
+  phones, and overlays.
+
+  Switch with ?variant=A|B. Screen picker is prototype chrome.
+  Double-click this file. Arrow keys flip variants.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PROTOTYPE - Lobby chrome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Russo+One&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bar-bg: #111;
+      --bar-fg: #f5f5f5;
+      --bar-accent: #ffe14a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b0b0d; }
+    body { overflow: hidden; }
+
+    /* Prototype chrome. Intentionally ugly so it is not judged as design. */
+    #proto-bottom {
+      position: fixed; z-index: 9999;
+      left: 50%; bottom: 14px; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border: 2px solid var(--bar-accent);
+      font: 12px/1.2 ui-monospace, Consolas, monospace;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45);
+      padding: 8px 12px; border-radius: 999px;
+      max-width: calc(100vw - 16px);
+    }
+    #proto-bottom button, #proto-bottom select {
+      background: #222; color: #fff; border: 1px solid #555;
+      border-radius: 6px; padding: 4px 8px; cursor: pointer;
+      font: inherit;
+    }
+    #proto-bottom .name {
+      background: var(--bar-accent); color: #111; border-color: var(--bar-accent);
+      font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+    }
+    #stage { position: absolute; inset: 0; }
+
+    .phone-room { min-height: 100%; display: grid; place-items: center; padding: 24px 16px 88px; }
+    .phone {
+      width: min(390px, 92vw); min-height: 720px; border-radius: 36px;
+      overflow: hidden; position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,.45);
+    }
+    .phone .notch {
+      height: 22px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    }
+    .overlay-dim {
+      position: absolute; inset: 0; background: rgba(0,0,0,.55);
+      display: grid; place-items: center; padding: 24px; z-index: 5;
+      font-family: "Russo One", sans-serif;
+    }
+    button { font: inherit; cursor: pointer; }
+    input, select { font: inherit; }
+
+    /* Shared cabinet layout. A is dark neon. B is the same shapes on light. */
+    .cab-board {
+      height: 100%; display: grid;
+      grid-template-columns: 280px 1fr; grid-template-rows: 1fr 92px;
+      padding-bottom: 64px;
+      font-family: "Russo One", sans-serif;
+    }
+    .cab-rail {
+      grid-row: 1 / 2;
+      display: flex; flex-direction: column; gap: 16px; padding: 28px 20px 20px;
+    }
+    .cab-brand { font-family: Bangers, sans-serif; font-size: 54px; letter-spacing: 2px; line-height: .9; }
+    .cab-qr { width: 200px; height: 200px; background: #fff; padding: 10px; border-radius: 8px; }
+    .cab-url { font-size: 13px; word-break: break-all; }
+    .cab-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cab-pill { padding: 6px 10px; border-radius: 999px; font-size: 12px; color: #fff; }
+    .cab-main { padding: 28px 28px 16px; overflow: auto; }
+    .cab-cluster { display: flex; flex-wrap: wrap; gap: 22px; align-content: flex-start; }
+    .cab-token {
+      width: 150px; height: 150px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 6px solid #fff; position: relative; color: #fff;
+      background: radial-gradient(circle at 35% 30%, #fff6, transparent 40%), var(--c);
+    }
+    .cab-token.dim { filter: grayscale(.8) brightness(.55); }
+    .cab-token .av { font-size: 34px; }
+    .cab-token .nm { font-size: 13px; text-align: center; padding: 0 8px; }
+    .cab-check {
+      position: absolute; top: -8px; right: -8px; width: 42px; height: 42px;
+      border-radius: 50%; background: #7cff6b; color: #062; display: grid; place-items: center;
+      font-size: 24px; border: 3px solid #fff;
+    }
+    .cab-host { position: absolute; bottom: -6px; font-size: 10px; background: #ffe14a; color: #111;
+      padding: 2px 8px; border-radius: 999px; }
+    .cab-marquee {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 20px; padding: 0 20px;
+      font-family: Bangers, sans-serif; font-size: 28px; letter-spacing: 1px;
+    }
+    .cab-marquee .chip { display: inline-flex; align-items: center; gap: 8px;
+      border-radius: 999px; padding: 6px 14px; }
+    .cab-gear { position: absolute; top: 18px; right: 18px; width: 48px; height: 48px;
+      border-radius: 50%; font-size: 22px; }
+    .cab-phone { font-family: "Russo One", sans-serif; }
+    .cab-phone-body { padding: 20px 18px 28px; display: flex; flex-direction: column; gap: 16px; min-height: 698px; }
+    .cab-you { font-family: Bangers, sans-serif; font-size: 40px; }
+    .cab-plunger {
+      width: 220px; height: 220px; margin: 24px auto; border-radius: 50%;
+      border: 10px solid #fff; background: radial-gradient(circle at 35% 30%, #ff8ad8, #ff2ad4 55%, #9b0878);
+      color: #fff; font-family: Bangers, sans-serif; font-size: 52px;
+      box-shadow: 0 16px 0 #6d0854, 0 0 30px #ff2ad4; text-shadow: 0 2px 0 #6d0854;
+    }
+    .cab-plunger.unready { background: radial-gradient(circle at 35% 30%, #7ee9ff, #19e3ff 55%, #0a6); color: #042; box-shadow: 0 16px 0 #0a5560, 0 0 30px #19e3ff; }
+    .cab-wide { width: 100%; border: 0; border-radius: 16px; padding: 16px; background: #19e3ff; color: #042; font-size: 22px; }
+    .cab-danger { background: #ff3b5c; color: #fff; }
+    .cab-stack { display: flex; flex-direction: column; gap: 16px; }
+    .cab-field { display: flex; flex-direction: column; gap: 8px; }
+    .cab-field input, .cab-field select { border-radius: 12px; padding: 12px; border: 3px solid #ff2ad4; }
+    .cab-sheet {
+      position: absolute; inset: 40px 0 0; padding: 18px;
+      display: flex; flex-direction: column; gap: 12px; z-index: 4;
+    }
+    .cab-list { display: flex; flex-direction: column; gap: 10px; }
+    .cab-row { border-radius: 12px; padding: 12px 14px;
+      display: flex; justify-content: space-between; align-items: center; border: 3px solid #ff2ad4; }
+    .cab-log { font-family: ui-monospace, Consolas, monospace; padding: 12px; min-height: 420px; }
+
+    /* A dark */
+    .theme-a.cab-board {
+      background:
+        radial-gradient(circle at 20% 10%, #3a0a4a, transparent 40%),
+        radial-gradient(circle at 90% 80%, #062a4a, transparent 40%),
+        #090612;
+      color: #fff;
+    }
+    .theme-a .cab-rail {
+      border-right: 4px solid #ff2ad4;
+      background: linear-gradient(180deg, #1a0730, #0b0618);
+      box-shadow: inset -12px 0 30px rgba(255,42,212,.2);
+    }
+    .theme-a .cab-brand { color: #ffe14a; text-shadow: 0 0 18px #ff2ad4; }
+    .theme-a .cab-qr { box-shadow: 0 0 0 4px #19e3ff, 0 0 24px #19e3ff; }
+    .theme-a .cab-url { color: #19e3ff; }
+    .theme-a .cab-pill { background: #ff2ad4; box-shadow: 0 0 12px #ff2ad4; }
+    .theme-a .cab-pill.closed { background: #555; box-shadow: none; }
+    .theme-a .cab-token { box-shadow: 0 0 0 4px #111, 0 0 22px var(--c, #ff2ad4); }
+    .theme-a .cab-check { box-shadow: 0 0 16px #7cff6b; }
+    .theme-a .cab-marquee { background: #111; border-top: 4px solid #ffe14a; }
+    .theme-a .cab-marquee .chip { background: #19e3ff; color: #041820; }
+    .theme-a .cab-gear { border: 3px solid #ffe14a; background: #1a0730; color: #ffe14a; }
+    .theme-a.cab-phone { background: #12071f; color: #fff; }
+    .theme-a .notch { background: #000; color: #19e3ff; }
+    .theme-a .cab-you { color: #ffe14a; text-shadow: 0 0 12px #ff2ad4; }
+    .theme-a .cab-field input, .theme-a .cab-field select { background: #2a1048; color: #fff; }
+    .theme-a .cab-sheet { background: #1c0a30; border-top: 4px solid #19e3ff; }
+    .theme-a .cab-row { background: #2a1048; }
+    .theme-a .cab-log { background: #050208; color: #7cff6b; border: 3px solid #19e3ff; }
+    .theme-a.cab-page { background: #090612; color: #fff; }
+
+    /* B light */
+    .theme-b.cab-board {
+      background:
+        radial-gradient(circle at 20% 10%, #ffd6f4, transparent 42%),
+        radial-gradient(circle at 90% 80%, #c8f4ff, transparent 42%),
+        #fff7fb;
+      color: #1a0730;
+    }
+    .theme-b .cab-rail {
+      border-right: 4px solid #ff2ad4;
+      background: linear-gradient(180deg, #fff, #ffe6f7);
+      box-shadow: inset -12px 0 24px rgba(255,42,212,.12);
+    }
+    .theme-b .cab-brand { color: #c40a90; text-shadow: 2px 2px 0 #ffe14a; }
+    .theme-b .cab-qr { box-shadow: 0 0 0 4px #19e3ff, 0 8px 0 #0aa8bc; }
+    .theme-b .cab-url { color: #087a8a; }
+    .theme-b .cab-pill { background: #ff2ad4; box-shadow: 0 4px 0 #c40a90; }
+    .theme-b .cab-pill.closed { background: #888; box-shadow: none; }
+    .theme-b .cab-token { box-shadow: 0 0 0 4px #1a0730, 0 8px 0 var(--c, #ff2ad4); }
+    .theme-b .cab-token.dim { filter: grayscale(.75) brightness(.7); }
+    .theme-b .cab-check { box-shadow: 0 4px 0 #2a8a20; }
+    .theme-b .cab-marquee { background: #fff; border-top: 4px solid #ff2ad4; color: #c40a90; }
+    .theme-b .cab-marquee .chip { background: #19e3ff; color: #041820; box-shadow: 0 3px 0 #0aa8bc; }
+    .theme-b .cab-gear { border: 3px solid #c40a90; background: #fff; color: #c40a90; }
+    .theme-b.cab-phone { background: #fff7fb; color: #1a0730; }
+    .theme-b .notch { background: #ff2ad4; color: #fff; }
+    .theme-b .cab-you { color: #c40a90; }
+    .theme-b .cab-field input, .theme-b .cab-field select { background: #fff; color: #1a0730; }
+    .theme-b .cab-sheet { background: #fff; border-top: 4px solid #19e3ff; }
+    .theme-b .cab-row { background: #fff; }
+    .theme-b .cab-log { background: #1a0730; color: #7cff6b; border: 3px solid #19e3ff; }
+    .theme-b.cab-page { background: #fff7fb; color: #1a0730; }
+
+    .qr {
+      width: 100%; height: 100%; position: relative; background: #fff;
+      background-image:
+        linear-gradient(#111,#111), linear-gradient(#111,#111), linear-gradient(#111,#111),
+        repeating-linear-gradient(90deg, #111 0 8px, transparent 8px 16px),
+        repeating-linear-gradient(#111 0 8px, transparent 8px 16px);
+      background-size: 28% 28%, 28% 28%, 28% 28%, 100% 4px, 4px 100%;
+      background-position: 8% 8%, 64% 8%, 8% 64%, 0 50%, 50% 0;
+      background-repeat: no-repeat;
+    }
+    .card {
+      font-family: "Russo One", sans-serif;
+      display: flex; flex-direction: column; gap: 14px;
+      padding: 22px 22px; border-radius: 16px; max-width: 440px;
+      border: 3px solid #ff2ad4;
+    }
+    .card h1, .card h2 {
+      font-family: Bangers, sans-serif; font-weight: 400; letter-spacing: 1px;
+      margin: 0; font-size: 36px; line-height: .95;
+    }
+    .card p { margin: 0; }
+    .theme-a .card { background: #1c0a30; color: #fff; }
+    .theme-a .card h1, .theme-a .card h2 { color: #ffe14a; }
+    .theme-b .card { background: #fff; color: #1a0730; }
+    .theme-b .card h1, .theme-b .card h2 { color: #c40a90; }
+    .spin {
+      width: 64px; height: 64px; border: 8px solid #fff4; border-top-color: #ffe14a;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="proto-bottom"></div>
+  <script>
+    const VARIANTS = [
+      { id: "A", name: "Neon cabinet" },
+      { id: "B", name: "Neon cabinet light" }
+    ];
+    const SCREENS = [
+      ["board", "Board"],
+      ["board-keep", "Keep overlay"],
+      ["board-deny", "Host-only deny"],
+      ["join", "Join"],
+      ["join-host", "Join + password"],
+      ["phone-wait", "Waiting"],
+      ["phone-seated", "Seated Ready"],
+      ["phone-host", "Host drawer"],
+      ["phone-kicked", "Kicked"],
+      ["phone-drop", "Disconnected"],
+      ["phone-restore", "Restore banner"],
+      ["setup", "Setup"],
+      ["settings-login", "Settings login"],
+      ["settings", "Settings"],
+      ["settings-logout", "Logout modal"],
+      ["settings-clear", "Clear confirm"],
+      ["settings-log", "Game log"],
+      ["overlay-down", "Server down"],
+      ["overlay-takehost", "Take host"]
+    ];
+
+    const state = {
+      variant: "A",
+      screen: "board",
+      open: true,
+      hideLatency: false
+    };
+
+    const seated = [
+      { name: "Maya Chen", initials: "MC", color: "#ff2d95", ready: true, dim: false, host: true },
+      { name: "Theo Park", initials: "TP", color: "#19e3ff", ready: true, dim: false, host: false },
+      { name: "Priya Shah", initials: "PS", color: "#ffe14a", ready: false, dim: false, host: false },
+      { name: "Jules Ortiz", initials: "JO", color: "#7cff6b", ready: true, dim: true, host: false }
+    ];
+    const waiting = [
+      { name: "Sam Reed", initials: "SR", color: "#ff8a3d" },
+      { name: "Nico Bell", initials: "NB", color: "#c084fc" }
+    ];
+
+    function theme() { return state.variant === "B" ? "theme-b" : "theme-a"; }
+    function roomBg() { return state.variant === "B" ? "#ffd6f4" : "#2a1048"; }
+
+    function params() {
+      const q = new URLSearchParams(location.search);
+      state.variant = (q.get("variant") || "A").toUpperCase();
+      if (!VARIANTS.some(v => v.id === state.variant)) state.variant = "A";
+      state.screen = q.get("screen") || "board";
+      if (!SCREENS.some(s => s[0] === state.screen)) state.screen = "board";
+    }
+    function setParams() {
+      const q = new URLSearchParams();
+      q.set("variant", state.variant);
+      q.set("screen", state.screen);
+      history.replaceState(null, "", "?" + q.toString());
+    }
+
+    function qr() { return '<div class="qr" aria-hidden="true"></div>'; }
+    function field(label, type, value, extra) {
+      return `<label class="cab-field"><span>${label}</span><input type="${type}" value="${value || ""}" ${extra || ""}></label>`;
+    }
+    function sel(label, options) {
+      return `<label class="cab-field"><span>${label}</span><select>${options}</select></label>`;
+    }
+    function settingsRows() {
+      const row = (l, r) => `<div class="cab-row"><span>${l}</span><b>${r}</b></div>`;
+      return [
+        row("Keep this room", "Keep / Clear"),
+        row("Room", state.open ? "OPEN" : "CLOSED"),
+        row("Seat cap", "8"),
+        row("After a game", "Keep seats"),
+        row("Cycle seated players", "Rotate now"),
+        row("Fill empty seats", "Off"),
+        row("Disconnected after", "5 s"),
+        row("Kick timeout", "60 s"),
+        row("Protect host", "On"),
+        row("Seat disconnected waiters", "Off"),
+        row("Auto-start", "Off"),
+        row("Reset Ready When", "Only on game switch"),
+        row("Advertised hostname", "192.168.1.42"),
+        row("Theme", state.variant === "B" ? "Light" : "Dark"),
+        row("Log to stdout", "Off"),
+        row("Log to host.log", "Off"),
+        row("Game log", "Open"),
+        row("Maya Chen", "Make host"),
+        row("Jules Ortiz", "disconnected  Make host"),
+        row("Log out", "This browser")
+      ].join("");
+    }
+    function gameSettings() {
+      return `<h2>Game Settings</h2><label><input type="checkbox" ${state.hideLatency ? "checked" : ""}> Hide latency</label>`;
+    }
+    function setupForm() {
+      return `
+        ${field("Password", "password", "")}
+        ${field("Confirm password", "password", "")}
+        ${field("Advertised hostname", "text", "192.168.1.42")}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${field("Seat cap", "number", "8")}
+          ${sel("After a game", "<option>Keep seats</option><option>Cycle seats</option>")}
+        </div>
+        <label><input type="checkbox"> Log to stdout</label>
+        <label><input type="checkbox"> Log to host.log</label>
+        <button class="cab-wide">Finish</button>`;
+    }
+    function logTail() {
+      return `GET /board 200
+host Finish
+host Load testing
+GET /settings 200
+testing Hide latency off
+host Start
+POST /play/tap 204
+host kick Jules Ortiz`;
+    }
+
+    function phoneShell(inner, sheet) {
+      return `<div class="phone-room" style="background:${roomBg()}">
+        <div class="phone cab-phone ${theme()}">
+          <div class="notch">hackbox</div>
+          <div class="cab-phone-body">${inner}</div>
+          ${sheet || ""}
+        </div>
+      </div>`;
+    }
+    function pageShell(inner) {
+      return `<div class="cab-page ${theme()}" style="min-height:100%;font-family:'Russo One',sans-serif;padding:28px 24px 96px">
+        <div class="cab-stack" style="max-width:720px;margin:0 auto">${inner}</div>
+      </div>`;
+    }
+
+    function boardHTML() {
+      const tokens = seated.map(p => `
+        <div class="cab-token${p.dim ? " dim" : ""}" style="--c:${p.color}">
+          ${p.ready ? '<div class="cab-check">✓</div>' : ""}
+          <div class="av">${p.initials}</div>
+          <div class="nm">${p.name}</div>
+          ${p.host ? '<div class="cab-host">HOST</div>' : ""}
+        </div>`).join("");
+      const wait = waiting.map(p => `<span class="chip" style="background:${p.color}">${p.initials} ${p.name}</span>`).join("");
+      return `
+        <div class="cab-board ${theme()}">
+          <aside class="cab-rail">
+            <div class="cab-brand">HACK<br>BOX</div>
+            <div class="cab-qr">${qr()}</div>
+            <div class="cab-url">http://192.168.1.42:8080</div>
+            <div class="cab-pills">
+              <span class="cab-pill${state.open ? "" : " closed"}">${state.open ? "OPEN" : "CLOSED"}</span>
+              <span class="cab-pill">4 / 8 SEATS</span>
+              <span class="cab-pill">2 IN THE ROOM</span>
+            </div>
+          </aside>
+          <main class="cab-main"><div class="cab-cluster">${tokens}</div></main>
+          <div class="cab-marquee"><span>NOW SERVING THE WAIT LINE</span>${wait}</div>
+          <button class="cab-gear" title="Settings">⚙</button>
+        </div>`;
+    }
+
+    function render(screen) {
+      const board = boardHTML();
+      if (screen === "board") return board;
+      if (screen === "board-keep") return board + keepCard();
+      if (screen === "board-deny") return deny();
+      if (screen === "join") return phoneShell(`<div class="cab-you">Who are you?</div>
+        <div style="width:88px;height:88px;border-radius:50%;background:#ff2ad4;color:#fff;display:grid;place-items:center;font-size:28px">MC</div>
+        <button class="cab-wide">Reroll face</button>
+        ${field("Name", "text", "Maya")}
+        <button class="cab-wide">Join</button>`);
+      if (screen === "join-host") return phoneShell(`<div class="cab-you">Claim the booth</div>
+        ${field("Name", "text", "Maya")}
+        ${field("Host password", "password", "")}
+        <p>Leave the password blank to join as a player.</p>
+        <button class="cab-wide">Join</button>`);
+      if (screen === "phone-wait") return phoneShell(`<div class="cab-you">Maya</div>
+        <p>You are in line. 2 ahead if someone stands.</p>
+        <button class="cab-wide">Stay in line</button>
+        <button class="cab-wide">Just watch</button>
+        <button class="cab-wide cab-danger">Leave</button>`);
+      if (screen === "phone-seated") return phoneShell(`<div class="cab-you">Priya</div>
+        <p>You have a seat. Smash Ready.</p>
+        <button class="cab-plunger">READY</button>
+        <button class="cab-wide cab-danger">Leave</button>`);
+      if (screen === "phone-host") return phoneShell(`<div class="cab-you">Maya</div>
+        <button class="cab-plunger unready">UNREADY</button>
+        <button class="cab-wide">Open host panel</button>`,
+        `<div class="cab-sheet">
+          <button class="cab-wide">START</button>
+          <label><input type="checkbox"> Auto-start when all ready</label>
+          <button class="cab-wide">Stand (watch)</button>
+          <button class="cab-wide">Sit</button>
+          <button class="cab-wide">Room settings</button>
+          <button class="cab-wide">Keep this room</button>
+          <button class="cab-wide cab-danger">Clear room</button>
+        </div>`);
+      if (screen === "phone-kicked") return phoneShell(`<div class="cab-you">Out.</div><p>The host kicked you. Join again if they want you back.</p><button class="cab-wide">Join</button>`);
+      if (screen === "phone-drop") return phoneShell(`<div class="cab-you">Jules</div><p>Phone went quiet. This body stays. The board tile is dim.</p><button class="cab-plunger">READY</button>`);
+      if (screen === "phone-restore") return phoneShell(`<div class="cab-row">Host is deciding whether to keep this room.</div><div class="cab-you">Maya</div><p>Ready is gone until they Keep.</p><button class="cab-wide cab-danger">Leave</button>`);
+      if (screen === "setup") return pageShell(`<div style="display:flex;justify-content:space-between;align-items:center"><div class="cab-brand" style="font-size:42px">NEW GAME</div><button class="cab-wide" style="width:auto">${state.variant === "B" ? "Light" : "Dark"}</button></div>${setupForm()}`);
+      if (screen === "settings-login") return pageShell(`<div class="cab-brand" style="font-size:42px">SETTINGS</div>${field("Password", "password", "")}<button class="cab-wide">Log in</button>`);
+      if (screen === "settings") return pageShell(`<div class="cab-brand" style="font-size:36px">ROOM KNOBS</div><div class="cab-list">${settingsRows()}</div>${gameSettings()}`);
+      if (screen === "settings-logout") return pageShell(`<div class="cab-list">${settingsRows()}</div>`) + modal("Log out of this browser?", "Log out");
+      if (screen === "settings-clear") return pageShell(`<div class="cab-list">${settingsRows()}</div>`) + modal("Clear the room? Everyone rejoins.", "Clear room");
+      if (screen === "settings-log") return pageShell(`<div style="display:flex;justify-content:space-between"><button class="cab-wide" style="width:auto">Back</button><b>GAME LOG</b></div><pre class="cab-log">${logTail()}</pre>`);
+      if (screen === "overlay-down") return board + downCard();
+      if (screen === "overlay-takehost") return phoneShell(`<div class="cab-you">Take host</div>`) + modal("Type the host password to take the booth.", "Take host", true);
+      return board;
+    }
+
+    function keepCard() {
+      return `<div class="overlay-dim ${theme()}"><div class="card">
+        <h2>This room came back</h2>
+        <p>Maya, Theo, Priya, Jules are still on the roster. Keep and Clear live on Settings and the host phone. Not here.</p>
+        <p><b>Still here:</b> Maya Chen, Theo Park, Priya Shah, Jules Ortiz</p>
+      </div></div>`;
+    }
+    function deny() {
+      return `<div class="cab-page ${theme()}" style="min-height:100%;display:grid;place-items:center;padding:24px;text-align:center">
+        <div class="card">
+          <h1>Host screen only</h1>
+          <p>The operator turned on admin-only board. Open Settings from a signed-in tab.</p>
+        </div>
+      </div>`;
+    }
+    function downCard() {
+      return `<div class="overlay-dim ${theme()}"><div class="card" style="text-align:center"><div class="spin"></div><h2>Lost the host</h2><p>Waiting to hear from the machine on the table.</p></div></div>`;
+    }
+    function modal(copy, action, withPw) {
+      return `<div class="overlay-dim ${theme()}"><div class="card">
+        <h2>${action}</h2>
+        <p>${copy}</p>
+        ${withPw ? field("Password", "password", "") : ""}
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="cab-wide" style="width:auto">Cancel</button>
+          <button class="cab-wide cab-danger" style="width:auto">${action}</button>
+        </div>
+      </div></div>`;
+    }
+
+    function paint() {
+      document.getElementById("stage").innerHTML = render(state.screen);
+      const v = VARIANTS.find(x => x.id === state.variant);
+      const opts = SCREENS.map(([id, label]) =>
+        `<option value="${id}"${id === state.screen ? " selected" : ""}>${label}</option>`).join("");
+      document.getElementById("proto-bottom").innerHTML =
+        `<button data-dir="-1" aria-label="Previous variant">←</button>
+         <span class="name">${v.id} - ${v.name}</span>
+         <button data-dir="1" aria-label="Next variant">→</button>
+         <select id="proto-screen" aria-label="Screen">${opts}</select>
+         <span>OPEN 4/8 - 2 wait</span>`;
+    }
+
+    function goScreen(id) { state.screen = id; setParams(); paint(); }
+    function cycle(dir) {
+      const i = VARIANTS.findIndex(v => v.id === state.variant);
+      state.variant = VARIANTS[(i + dir + VARIANTS.length) % VARIANTS.length].id;
+      setParams(); paint();
+    }
+
+    document.getElementById("proto-bottom").addEventListener("click", e => {
+      const b = e.target.closest("[data-dir]");
+      if (b) cycle(Number(b.dataset.dir));
+    });
+    document.getElementById("proto-bottom").addEventListener("change", e => {
+      if (e.target.id === "proto-screen") goScreen(e.target.value);
+    });
+    document.addEventListener("keydown", e => {
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.key === "ArrowLeft") cycle(-1);
+      if (e.key === "ArrowRight") cycle(1);
+    });
+
+    params();
+    setParams();
+    paint();
+  </script>
+</body>
+</html>
