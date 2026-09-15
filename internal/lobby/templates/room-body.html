@@ -7,6 +7,15 @@
 >
   <h1>In the room</h1>
   <p>{{.DisplayName}}</p>
+  {{if not .Seated}}
+  <form method="post" action="/lobby/wait">
+    {{if .Waiting}}
+    <button type="submit">Leave wait list</button>
+    {{else}}
+    <button type="submit">Join wait list</button>
+    {{end}}
+  </form>
+  {{end}}
   <form method="post" action="/lobby/leave">
     <button type="submit">Leave</button>
   </form>

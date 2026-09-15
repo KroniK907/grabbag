@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Hackbox settings</title>
+</head>
+<body>
+  <h1>Hackbox settings</h1>
+  <p>Room is {{if .Open}}open{{else}}closed{{end}}.</p>
+  <form method="post" action="/settings/open">
+    <button type="submit">Open</button>
+  </form>
+  <form method="post" action="/settings/close">
+    <button type="submit">Close</button>
+  </form>
+  <h2>Players</h2>
+  {{range .Players}}
+  <form method="post" action="/settings/kick">
+    <input type="hidden" name="player_id" value="{{.ID}}">
+    <button type="submit">Kick {{.DisplayName}}</button>
+  </form>
+  {{else}}
+  <p>No players yet.</p>
+  {{end}}
+</body>
+</html>

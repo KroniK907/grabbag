@@ -42,14 +42,13 @@ func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
 	mux.HandleFunc("GET /setup", getSetup(db))
 	mux.HandleFunc("POST /setup", finishSetup(db))
-	mux.Handle("GET /{$}", requireSetup(db, http.HandlerFunc(room.Phone)))
-	mux.Handle("GET /board", requireSetup(db, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	protected := http.NewServeMux()
+	protected.HandleFunc("GET /{$}", room.Phone)
+	protected.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
 		room.Board(w, r, joinURLForRequest(r, lanJoinURL))
-	})))
-	mux.HandleFunc("GET /settings", getStub(db, "Hackbox settings", "", false))
-	lobbyWrites := http.NewServeMux()
-	room.Register(lobbyWrites)
-	mux.Handle("/lobby/", requireSetup(db, lobbyWrites))
+	})
+	room.Register(protected)
+	mux.Handle("/", requireSetup(db, protected))
 	return http.NewCrossOriginProtection().Handler(mux), nil
 }
 
@@ -122,28 +121,6 @@ func finishSetup(db *store.DB) http.HandlerFunc {
 			SameSite: http.SameSiteLaxMode,
 		})
 		http.Redirect(w, r, "/board", http.StatusSeeOther)
-	}
-}
-
-func getStub(db *store.DB, title, lanJoinURL string, advertiseJoin bool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		hasHash, err := db.HasAdminHash(r.Context())
-		if err != nil {
-			http.Error(w, "Could not read setup state.", http.StatusInternalServerError)
-			return
-		}
-		if !hasHash {
-			http.Redirect(w, r, "/setup", http.StatusSeeOther)
-			return
-		}
-		joinURL := ""
-		if advertiseJoin {
-			joinURL = joinURLForRequest(r, lanJoinURL)
-		}
-		renderPage(w, "stub.html", struct {
-			Title   string
-			JoinURL string
-		}{Title: title, JoinURL: joinURL}, http.StatusOK)
 	}
 }
 
