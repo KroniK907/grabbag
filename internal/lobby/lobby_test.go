@@ -146,6 +146,12 @@ func TestJoinValidationCreatesNoIdentity(t *testing.T) {
 			if !strings.Contains(rec.Body.String(), tt.wantError) {
 				t.Fatalf("body = %q, want %q", rec.Body.String(), tt.wantError)
 			}
+			if !strings.Contains(rec.Body.String(), `role="alert"`) {
+				t.Fatalf("join error missing alert: %q", rec.Body.String())
+			}
+			if strings.Contains(rec.Body.String(), `hx-get="/lobby/partials/phone"`) {
+				t.Fatal("join error page still live-swaps and would clear the alert")
+			}
 			if cookies := rec.Result().Cookies(); len(cookies) != 0 {
 				t.Fatalf("cookies = %#v, want none", cookies)
 			}

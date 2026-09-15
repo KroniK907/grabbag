@@ -1,6 +1,7 @@
 {{define "room-inner"}}
 <div
   id="phone-inner"
+  class="ui-phone-stack"
   hx-get="/lobby/partials/phone"
   hx-trigger="sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"

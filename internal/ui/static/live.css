@@ -270,9 +270,6 @@ button {
   top: 50%;
   right: 0;
   z-index: 5;
-  width: auto;
-  padding: 16px 8px;
-  border-radius: 10px 0 0 10px;
   transform: translateY(-50%);
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -480,8 +477,14 @@ button {
   font-size: 22px;
 }
 
-.ui-btn-inline {
+.ui-btn-inline,
+.ui-btn.ui-drawer-handle {
   width: auto;
+}
+
+.ui-btn.ui-drawer-handle {
+  padding: 16px 8px;
+  border-radius: 10px 0 0 10px;
 }
 
 .ui-btn-danger {
@@ -749,6 +752,20 @@ button {
   flex-direction: column;
   gap: 16px;
   min-height: 698px;
+}
+
+.ui-phone-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.ui-phone-body form,
+.ui-phone-stack form {
+  margin: 0;
 }
 
 .ui-you {

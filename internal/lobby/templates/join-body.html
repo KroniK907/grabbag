@@ -2,9 +2,11 @@
 <div
   id="phone-body"
   class="ui-phone-wrap"
+  {{if not .Error}}
   hx-get="/lobby/partials/phone"
   hx-trigger="sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
+  {{end}}
 >
   <div class="ui-phone">
     <div class="ui-notch">hackbox</div>
