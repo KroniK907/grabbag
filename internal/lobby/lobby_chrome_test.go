@@ -125,6 +125,9 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Dark</button>") {
 		t.Fatalf("settings default theme = %q", settings)
 	}
+	if !strings.Contains(settings, `id="logout-modal" class="ui-modal" hidden`) {
+		t.Fatalf("logout modal is not hidden by default: %q", settings)
+	}
 
 	login := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
 	if !strings.Contains(login, ">Log in</button>") || strings.Contains(login, `action="/settings/open"`) {

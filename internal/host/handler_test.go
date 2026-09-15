@@ -154,8 +154,8 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 			if !strings.Contains(css, "position: fixed") {
 				t.Fatalf("GET %s did not contain fixed overlay styling", asset)
 			}
-			if !strings.Contains(css, "aspect-ratio: 1") || !strings.Contains(css, "max-width: 800px") {
-				t.Fatalf("GET %s missing mobile token layout: %s", asset, css)
+			if !strings.Contains(css, ".ui-modal[hidden]") || !strings.Contains(css, ".ui-sheet[hidden]") {
+				t.Fatalf("GET %s missing hidden overlay rules", asset)
 			}
 		}
 	}

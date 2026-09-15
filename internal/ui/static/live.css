@@ -258,6 +258,11 @@ button {
   z-index: 20;
 }
 
+.ui-modal[hidden],
+.ui-sheet[hidden] {
+  display: none;
+}
+
 .ui-page > .ui-stack {
   max-width: 720px;
   margin: 0 auto;
