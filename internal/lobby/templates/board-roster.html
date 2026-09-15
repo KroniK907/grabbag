@@ -23,10 +23,12 @@
   <main class="ui-main">
     <div class="ui-cluster">
       {{range .Seated}}
-      <div class="ui-token" style="--c: {{color .AvatarSeed}}">
-        {{avatar .AvatarSeed}}
+      <div class="ui-seat">
+        <div class="ui-token" style="--c: {{color .AvatarSeed}}">
+          {{avatar .AvatarSeed}}
+          {{if .ClaimedHost}}<div class="ui-host-badge">HOST</div>{{end}}
+        </div>
         <div class="ui-token-name">{{.DisplayName}}</div>
-        {{if .ClaimedHost}}<div class="ui-host-badge">HOST</div>{{end}}
       </div>
       {{end}}
     </div>

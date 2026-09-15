@@ -34,11 +34,11 @@ func TestAvatarSVGIsDeterministicAndSeeded(t *testing.T) {
 	if strings.Contains(a, "L54 12 Q32 0") {
 		t.Fatal("avatar still draws the old forehead plate")
 	}
-	if !strings.Contains(a, `viewBox="4 3 56 58"`) {
-		t.Fatal("avatar viewBox is not the mid-size crop")
+	if !strings.Contains(a, `viewBox="2 2 60 60"`) {
+		t.Fatal("avatar viewBox is not the slightly padded crop")
 	}
-	if !strings.Contains(a, `r="20"`) {
-		t.Fatal("avatar face is not the mid-size head")
+	if !strings.Contains(a, `r="19"`) {
+		t.Fatal("avatar face is not the slightly smaller head")
 	}
 }
 

@@ -364,6 +364,16 @@ button {
   justify-content: flex-start;
 }
 
+.ui-seat {
+  --token-size: 150px;
+  flex: 0 0 var(--token-size);
+  width: var(--token-size);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
 .ui-token {
   --token-size: 150px;
   flex: 0 0 var(--token-size);
@@ -387,8 +397,8 @@ button {
 }
 
 .ui-token .ui-avatar {
-  width: 85%;
-  height: 85%;
+  width: 80%;
+  height: 80%;
 }
 
 .ui-token-self {
@@ -397,14 +407,12 @@ button {
 }
 
 .ui-token-name {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 12px;
+  width: 100%;
   font-size: 13px;
   text-align: center;
-  padding: 0;
-  text-shadow: 0 1px 2px #0009;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  color: var(--ui-fg);
 }
 
 .ui-check {
@@ -599,6 +607,7 @@ button {
     justify-content: center;
   }
 
+  .ui-seat,
   .ui-token {
     --token-size: clamp(84px, 28vw, 130px);
   }
@@ -639,6 +648,7 @@ button {
     min-height: calc(100dvh - 22px);
   }
 
+  .ui-seat,
   .ui-token {
     --token-size: clamp(76px, 30vw, 110px);
   }
