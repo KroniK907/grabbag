@@ -518,6 +518,33 @@ func lobbyRequest(
 	return rec
 }
 
+func lobbyRequestAll(
+	t *testing.T,
+	handler http.Handler,
+	method string,
+	path string,
+	form url.Values,
+	cookies ...*http.Cookie,
+) *httptest.ResponseRecorder {
+	t.Helper()
+	body := strings.NewReader("")
+	if form != nil {
+		body = strings.NewReader(form.Encode())
+	}
+	req := httptest.NewRequest(method, "http://hackbox.test"+path, body)
+	if form != nil {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	for _, cookie := range cookies {
+		if cookie != nil {
+			req.AddCookie(cookie)
+		}
+	}
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	return rec
+}
+
 func cookieNamed(t *testing.T, rec *httptest.ResponseRecorder, name string) *http.Cookie {
 	t.Helper()
 	if cookie := cookieByName(rec, name); cookie != nil {

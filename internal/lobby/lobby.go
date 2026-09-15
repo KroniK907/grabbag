@@ -1,4 +1,5 @@
-// Package lobby owns player identity, Join, Leave, seats, wait, and the live roster.
+// Package lobby owns player identity, Join, Leave, seats, wait, live roster,
+// and operator /settings writes.
 package lobby
 
 import (
@@ -24,10 +25,12 @@ const (
 	// PlayerCookieName is the host-only cookie that identifies a roster player.
 	PlayerCookieName = "hackbox_player"
 
-	// SeatCap is the v1 host seat limit. The settings field is later.
-	SeatCap = 8
+	// DefaultSeatCap is the host seat limit until /settings or /setup changes it.
+	DefaultSeatCap = 8
 
 	cookieMaxAge = 30 * 24 * 60 * 60
+	minSeatCap   = 1
+	maxSeatCap   = 64
 )
 
 var (
@@ -52,12 +55,14 @@ type Config struct {
 
 // Player is a live roster row.
 type Player struct {
-	ID          string
-	DisplayName string
-	AvatarSeed  string
-	ClaimedHost bool
-	Seated      bool
-	Waiting     bool
+	ID                 string
+	DisplayName        string
+	AvatarSeed         string
+	ClaimedHost        bool
+	PendingDesignation bool
+	Disconnected       bool
+	Seated             bool
+	Waiting            bool
 }
 
 // Lobby owns the live roster and its phone writes.
@@ -112,10 +117,24 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /lobby/leave", l.leave)
 	mux.HandleFunc("POST /lobby/wait", l.waitToggle)
 	mux.HandleFunc("GET /settings", l.settings)
+	mux.HandleFunc("GET /settings/log", l.settingsLog)
+	mux.HandleFunc("POST /settings/login", l.login)
+	mux.HandleFunc("POST /settings/logout", l.logout)
 	mux.HandleFunc("POST /settings/open", l.openRoom)
 	mux.HandleFunc("POST /settings/close", l.closeRoom)
 	mux.HandleFunc("POST /settings/kick", l.kick)
 	mux.HandleFunc("POST /settings/theme", l.toggleTheme)
+	mux.HandleFunc("POST /settings/seat-cap", l.setSeatCap)
+	mux.HandleFunc("POST /settings/hostname", l.setHostname)
+	mux.HandleFunc("POST /settings/cycle-mode", l.setCycleMode)
+	mux.HandleFunc("POST /settings/cycle", l.cycleSeated)
+	mux.HandleFunc("POST /settings/fill-empty", l.setFillEmpty)
+	mux.HandleFunc("POST /settings/log-stdout", l.setLogStdout)
+	mux.HandleFunc("POST /settings/log-file", l.setLogFile)
+	mux.HandleFunc("POST /settings/stand", l.hostStand)
+	mux.HandleFunc("POST /settings/sit", l.hostSit)
+	mux.HandleFunc("POST /settings/make-host", l.makeHost)
+	mux.HandleFunc("POST /lobby/take-host", l.takeHost)
 }
 
 // Phone writes the current Lobby phone body. A live player cookie opens the
@@ -127,12 +146,12 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		chrome, err := l.chrome(r.Context(), "Hackbox room")
+		view, err := l.phoneView(r, player)
 		if err != nil {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
 		}
-		l.render(w, "room.html", roomView{Chrome: chrome, Player: player}, http.StatusOK)
+		l.render(w, "room.html", view, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
@@ -148,6 +167,9 @@ func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 	}
 	if joinURL != "" {
 		data.JoinURL = joinURL
+	}
+	if advertised := l.advertisedURL(r); advertised != "" {
+		data.JoinURL = advertised
 	}
 	l.render(w, "board.html", data, http.StatusOK)
 }
@@ -165,8 +187,17 @@ type boardData struct {
 
 type settingsData struct {
 	ui.Chrome
-	Open    bool
-	Players []Player
+	Open               bool
+	CycleSeats         bool
+	FillEmpty          bool
+	LogStdout          bool
+	LogFile            bool
+	SeatCap            int
+	AdvertisedHostname string
+	SeatCapError       string
+	LoginError         string
+	CanMakeHost        bool
+	Players            []Player
 }
 
 type joinView struct {
@@ -180,6 +211,10 @@ type joinView struct {
 type roomView struct {
 	ui.Chrome
 	Player
+	HostPanel      bool
+	TakeHost       bool
+	TableFull      bool
+	BumpCandidates []Player
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -193,6 +228,14 @@ func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) advertisedURL(r *http.Request) string {
+	stored, err := readAdvertisedHostname(r.Context(), l.sql)
+	if err == nil && stored != "" {
+		return joinURLFromHostname(stored, l.fallbackJoinURL(r))
+	}
+	return l.fallbackJoinURL(r)
+}
+
+func (l *Lobby) fallbackJoinURL(r *http.Request) string {
 	if l.joinURL == nil {
 		return ""
 	}
@@ -220,10 +263,14 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err != nil {
 		return boardData{}, err
 	}
+	cap, err := readSeatCap(ctx, l.sql)
+	if err != nil {
+		return boardData{}, err
+	}
 	return boardData{
 		Chrome:        chrome,
 		Open:          open,
-		SeatCap:       SeatCap,
+		SeatCap:       cap,
 		SeatedCount:   len(seated),
 		AudienceCount: audience,
 		Seated:        seated,
@@ -238,7 +285,12 @@ func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		l.render(w, "room-body", player, http.StatusOK)
+		view, err := l.phoneView(r, player)
+		if err != nil {
+			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "room-body", view, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join-body", "", "", http.StatusOK)
@@ -485,25 +537,6 @@ func (l *Lobby) removePlayer(ctx context.Context, playerID string) error {
 		return fmt.Errorf("lobby: commit Leave: %w", err)
 	}
 	return nil
-}
-
-func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
-	open, err := l.roomOpen(r.Context())
-	if err != nil {
-		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-		return
-	}
-	players, err := l.listPlayers(r.Context(), `1 = 1 ORDER BY rowid`)
-	if err != nil {
-		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
-		return
-	}
-	chrome, err := l.chrome(r.Context(), "Hackbox settings")
-	if err != nil {
-		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-		return
-	}
-	l.render(w, "settings.html", settingsData{Chrome: chrome, Open: open, Players: players}, http.StatusOK)
 }
 
 func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
@@ -797,15 +830,26 @@ func (l *Lobby) listPlayers(ctx context.Context, where string) ([]Player, error)
 	return players, nil
 }
 
-const playerSelect = `SELECT player_id, display_name, avatar_seed, claimed_host, seated, waiting FROM roster`
+const playerSelect = `SELECT player_id, display_name, avatar_seed, claimed_host, pending_designation, disconnected, seated, waiting FROM roster`
 
 func scanPlayer(scan func(dest ...any) error) (Player, error) {
 	var player Player
-	var claimed, seated, waiting int
-	if err := scan(&player.ID, &player.DisplayName, &player.AvatarSeed, &claimed, &seated, &waiting); err != nil {
+	var claimed, pending, disconnected, seated, waiting int
+	if err := scan(
+		&player.ID,
+		&player.DisplayName,
+		&player.AvatarSeed,
+		&claimed,
+		&pending,
+		&disconnected,
+		&seated,
+		&waiting,
+	); err != nil {
 		return Player{}, err
 	}
 	player.ClaimedHost = claimed != 0
+	player.PendingDesignation = pending != 0
+	player.Disconnected = disconnected != 0
 	player.Seated = seated != 0
 	player.Waiting = waiting != 0
 	return player, nil
@@ -824,7 +868,11 @@ func seatOnJoin(ctx context.Context, tx *sql.Tx, claimHost bool) (seated bool, w
 		if err != nil {
 			return false, false, nil, err
 		}
-		if count < SeatCap {
+		cap, err := seatCapTx(ctx, tx)
+		if err != nil {
+			return false, false, nil, err
+		}
+		if count < cap {
 			return true, false, nil, nil
 		}
 	}
@@ -848,7 +896,11 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 		if err != nil {
 			return err
 		}
-		if count >= SeatCap {
+		cap, err := seatCapTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if count >= cap {
 			return nil
 		}
 		var playerID string
@@ -1063,7 +1115,16 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE roster ADD COLUMN seated INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN waiting INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN wait_seq INTEGER`,
+		`ALTER TABLE roster ADD COLUMN disconnected INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN theme TEXT NOT NULL DEFAULT 'neon-light'`,
+		`ALTER TABLE room_state ADD COLUMN advertised_hostname TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN seat_cap INTEGER NOT NULL DEFAULT 8`,
+		`ALTER TABLE room_state ADD COLUMN cycle_seats INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN fill_empty INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN log_stdout INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN log_file INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN host_queue TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN round_active INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

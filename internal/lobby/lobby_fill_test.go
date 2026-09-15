@@ -228,7 +228,7 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatal("Leave removed someone else")
 	}
 
-	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
 	if strings.Contains(settings, "sse:roster") || strings.Contains(settings, "/lobby/partials/board-roster") {
 		t.Fatal("settings live-updated the player list")
 	}

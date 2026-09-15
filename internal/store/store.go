@@ -100,6 +100,12 @@ func (db *DB) AdminHash(ctx context.Context) (string, error) {
 // FinishSetup stores the first admin hash and its initial server-side session
 // in one transaction. A later call fails with ErrAdminHashExists.
 func (db *DB) FinishSetup(ctx context.Context, hash, sessionID string) error {
+	return db.FinishSetupWith(ctx, hash, sessionID, nil)
+}
+
+// FinishSetupWith is FinishSetup plus extra work in the same transaction,
+// used to persist setup form knobs next to the password hash.
+func (db *DB) FinishSetupWith(ctx context.Context, hash, sessionID string, extra func(*sql.Tx) error) error {
 	if hash == "" {
 		return errors.New("store: empty admin hash")
 	}
@@ -124,6 +130,11 @@ func (db *DB) FinishSetup(ctx context.Context, hash, sessionID string) error {
 	}
 	if _, err := tx.ExecContext(ctx, `INSERT INTO admin_session (id, kind) VALUES (?, 'operator')`, sessionID); err != nil {
 		return fmt.Errorf("store: insert admin session: %w", err)
+	}
+	if extra != nil {
+		if err := extra(tx); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: commit finish setup: %w", err)

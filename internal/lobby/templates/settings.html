@@ -5,25 +5,102 @@
       <div class="ui-brand ui-brand-sm">ROOM KNOBS</div>
       {{template "theme-toggle" .}}
     </div>
-    <p class="ui-muted">Room is {{if .Open}}open{{else}}closed{{end}}.</p>
-    <form method="post" action="/settings/open">
-      <button class="ui-btn" type="submit">Open</button>
-    </form>
-    <form method="post" action="/settings/close">
-      <button class="ui-btn" type="submit">Close</button>
-    </form>
-    <h2>Players</h2>
     <div class="ui-list">
+      <form class="ui-row" method="post" action="{{if .Open}}/settings/close{{else}}/settings/open{{end}}">
+        <span>Room</span>
+        <button class="ui-btn ui-btn-inline" type="submit">{{if .Open}}Close{{else}}Open{{end}}</button>
+      </form>
+      <form class="ui-row" method="post" action="/settings/seat-cap">
+        <label class="ui-field">
+          <span>Seat cap</span>
+          <input name="seat_cap" type="number" min="1" max="64" value="{{.SeatCap}}" onchange="this.form.submit()">
+        </label>
+        <button class="ui-btn ui-btn-inline" type="submit">Save</button>
+      </form>
+      {{with .SeatCapError}}<p class="ui-alert" role="alert">{{.}}</p>{{end}}
+      <form class="ui-row" method="post" action="/settings/cycle-mode">
+        <label class="ui-field">
+          <span>After a game</span>
+          <select name="cycle_mode" onchange="this.form.submit()">
+            <option value="keep" {{if not .CycleSeats}}selected{{end}}>Keep seats</option>
+            <option value="cycle" {{if .CycleSeats}}selected{{end}}>Cycle seats</option>
+          </select>
+        </label>
+      </form>
+      <form class="ui-row" method="post" action="/settings/cycle">
+        <span>Cycle seated players</span>
+        <button class="ui-btn ui-btn-inline" type="submit">Rotate now</button>
+      </form>
+      <form class="ui-row" method="post" action="/settings/fill-empty">
+        <span>Fill empty seats</span>
+        {{if .FillEmpty}}
+        <input type="hidden" name="fill_empty" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="fill_empty" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row" method="post" action="/settings/hostname">
+        <label class="ui-field">
+          <span>Advertised hostname</span>
+          <input name="hostname" type="text" value="{{.AdvertisedHostname}}" onchange="this.form.submit()">
+        </label>
+        <button class="ui-btn ui-btn-inline" type="submit">Save</button>
+      </form>
+      <form class="ui-row" method="post" action="/settings/log-stdout">
+        <span>Log to stdout</span>
+        {{if .LogStdout}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row" method="post" action="/settings/log-file">
+        <span>Log to host.log</span>
+        {{if .LogFile}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <div class="ui-row">
+        <span>Game log</span>
+        <a class="ui-btn ui-btn-inline" href="/settings/log">Open</a>
+      </div>
       {{range .Players}}
       <form class="ui-row" method="post" action="/settings/kick">
-        <span>{{.DisplayName}}</span>
-        <input type="hidden" name="player_id" value="{{.ID}}">
-        <button class="ui-btn ui-btn-danger ui-btn-inline" type="submit">Kick</button>
+        <span>{{.DisplayName}}{{if .ClaimedHost}} (host){{end}}{{if .Disconnected}} disconnected{{end}}</span>
+        <span class="ui-row-actions">
+          {{if $.CanMakeHost}}
+          <button class="ui-btn ui-btn-inline" type="submit" formaction="/settings/make-host" name="player_id" value="{{.ID}}">Make host</button>
+          {{end}}
+          <input type="hidden" name="player_id" value="{{.ID}}">
+          <button class="ui-btn ui-btn-danger ui-btn-inline" type="submit">Kick</button>
+        </span>
       </form>
       {{else}}
       <p class="ui-muted">No players yet.</p>
       {{end}}
+      <div class="ui-row">
+        <span>Log out</span>
+        <button class="ui-btn ui-btn-inline" type="button" onclick="document.getElementById('logout-modal').hidden = false">This browser</button>
+      </div>
     </div>
+  </div>
+</div>
+<div id="logout-modal" class="ui-modal" hidden>
+  <div class="ui-card">
+    <h2>Log out of this browser?</h2>
+    <p>Host-phone cookies on other devices stay signed in.</p>
+    <button class="ui-btn" type="button" onclick="document.getElementById('logout-modal').hidden = true">Cancel</button>
+    <form method="post" action="/settings/logout">
+      <button class="ui-btn ui-btn-danger" type="submit">Log out</button>
+    </form>
   </div>
 </div>
 {{template "ui-end"}}

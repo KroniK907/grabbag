@@ -121,9 +121,14 @@ func TestSettingsThemeToggle(t *testing.T) {
 	t.Parallel()
 	_, handler, _ := testLobby(t)
 
-	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
 	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Dark</button>") {
 		t.Fatalf("settings default theme = %q", settings)
+	}
+
+	login := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	if !strings.Contains(login, ">Log in</button>") || strings.Contains(login, `action="/settings/open"`) {
+		t.Fatalf("logged-out settings = %q", login)
 	}
 
 	denied := lobbyRequest(t, handler, http.MethodPost, "/settings/theme", nil, nil)
@@ -135,7 +140,7 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if toggled.Code != http.StatusSeeOther {
 		t.Fatalf("theme toggle status = %d; body = %q", toggled.Code, toggled.Body.String())
 	}
-	darkSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
+	darkSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
 	if !strings.Contains(darkSettings, `data-theme="neon-dark"`) || !strings.Contains(darkSettings, ">Light</button>") {
 		t.Fatalf("settings after toggle = %q", darkSettings)
 	}
