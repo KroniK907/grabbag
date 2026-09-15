@@ -5,9 +5,13 @@
   hx-trigger="sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
-  <h2>Players</h2>
+  <h2>Seated</h2>
   <ul>
-    {{range .Players}}<li>{{.DisplayName}}</li>{{else}}<li>No players yet.</li>{{end}}
+    {{range .Seated}}<li>{{.DisplayName}}</li>{{else}}<li>No seated players.</li>{{end}}
+  </ul>
+  <h2>Waiting</h2>
+  <ul>
+    {{range .Waiting}}<li>{{.DisplayName}}</li>{{else}}<li>No one waiting.</li>{{end}}
   </ul>
 </section>
 {{end}}
