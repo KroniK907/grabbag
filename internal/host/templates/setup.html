@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Set up Hackbox</title>
+</head>
+<body>
+  <main>
+    <h1>Set up Hackbox</h1>
+    <form method="post" action="/setup">
+      <label>Password <input name="password" type="password" minlength="8" required></label>
+      <label>Confirm password <input name="confirm" type="password" minlength="8" required></label>
+      {{with .Error}}<p role="alert">{{.}}</p>{{end}}
+      <button type="submit">Finish</button>
+    </form>
+  </main>
+</body>
+</html>
