@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KroniK907/hackbox/internal/games"
 	"github.com/KroniK907/hackbox/internal/lobby"
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
@@ -30,7 +31,13 @@ var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 // host is loopback. It may be empty when no usable LAN IPv4 exists. A public
 // hostname such as a Cloudflare tunnel replaces that fallback.
 func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
+	handler, _, err := newHandler(db, lanJoinURL, games.Catalog())
+	return handler, err
+}
+
+func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.Handler, *runtime, error) {
 	events := hub.New()
+	rt := newRuntime(db, events, catalog)
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: adminCookieName,
 		Events:          events,
@@ -39,24 +46,45 @@ func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
 		},
 		PasswordMatches: passwordMatches,
 		SecureCookie:    secureAdminCookie,
+		Notice:          rt.log.Write,
+		LogSinksChanged: rt.log.SetSinks,
+		SettingsExtras:  rt.extras,
+		PhoneExtras:     rt.phoneExtras,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	rt.room = room
+	row, err := readRoomSettingsFlags(context.Background(), db)
+	if err != nil {
+		return nil, nil, err
+	}
+	rt.log.SetSinks(row.stdout, row.file)
+	rt.restore(context.Background())
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
 	mux.HandleFunc("GET /setup", getSetup(db, lanJoinURL))
-	mux.HandleFunc("POST /setup", finishSetup(db, lanJoinURL))
+	mux.HandleFunc("POST /setup", finishSetup(db, lanJoinURL, rt))
 	mux.HandleFunc("POST /setup/theme", setupTheme(db, lanJoinURL))
 	protected := http.NewServeMux()
-	protected.HandleFunc("GET /{$}", room.Phone)
+	protected.HandleFunc("GET /{$}", rt.phone)
 	protected.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
-		room.Board(w, r, joinURLForRequest(r, lanJoinURL))
+		rt.board(w, r, joinURLForRequest(r, lanJoinURL))
 	})
 	room.Register(protected)
+	rt.registerGameRoutes(protected)
 	mux.Handle("/", requireSetup(db, protected))
-	return http.NewCrossOriginProtection().Handler(mux), nil
+	return http.NewCrossOriginProtection().Handler(accessLog(mux, rt.log.Write)), rt, nil
+}
+
+func readRoomSettingsFlags(ctx context.Context, db *store.DB) (struct{ stdout, file bool }, error) {
+	var stdout, file int
+	err := db.SQL().QueryRowContext(ctx, `SELECT log_stdout, log_file FROM room_state WHERE id = 1`).Scan(&stdout, &file)
+	if err != nil {
+		return struct{ stdout, file bool }{}, err
+	}
+	return struct{ stdout, file bool }{stdout: stdout != 0, file: file != 0}, nil
 }
 
 func getSetup(db *store.DB, lanJoinURL string) http.HandlerFunc {
@@ -74,7 +102,7 @@ func getSetup(db *store.DB, lanJoinURL string) http.HandlerFunc {
 	}
 }
 
-func finishSetup(db *store.DB, lanJoinURL string) http.HandlerFunc {
+func finishSetup(db *store.DB, lanJoinURL string, rt *runtime) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		hasHash, err := db.HasAdminHash(r.Context())
 		if err != nil {
@@ -140,6 +168,10 @@ func finishSetup(db *store.DB, lanJoinURL string) http.HandlerFunc {
 			Secure:   secureAdminCookie(r),
 			SameSite: http.SameSiteLaxMode,
 		})
+		if rt != nil {
+			rt.log.Write("Finish")
+			rt.log.SetSinks(settings.LogStdout, settings.LogFile)
+		}
 		http.Redirect(w, r, "/board", http.StatusSeeOther)
 	}
 }

@@ -37,10 +37,12 @@ hackbox/
     ui/
       static/                 # host chrome CSS/JS (theme tokens + widgets)
       templates/              # shared chrome defines (ui-start, overlay)
-    store/                    # host/Lobby persistence + path helpers
+    store/                    # host/Lobby persistence, game_kv, path helpers
     platform/                 # host-wide packages
       hub/                    # in-process named SSE broadcaster
-    games/                    # compile-time loader
+      applog/                 # in-memory log ring + optional host.log
+    games/                    # compile-time loader + Game/Helper contract
+      game.go
       testing/                # Testing diagnostics; package testinggame
         templates/
         static/
@@ -67,7 +69,7 @@ A later `cmd/hackbox-dev` would also import only `internal/host`. Tray details a
 | `internal/store` | (stdlib / SQLite only) | host, lobby, games, ui |
 | `internal/platform/<name>` | other platform packages if needed | host, lobby, games, ui |
 
-Games never open host/Lobby storage. Player and Lobby details reach a game through host. Host injects a namespaced data dir or handle. Each game may keep its own persistence code under `internal/games/<name>`.
+Games never open host/Lobby storage. Player and Lobby details reach a game through host. Host injects a namespaced data dir or handle. Opaque game KV is the `game_kv` table in `host.sqlite`, namespaced by game id. Host does not parse values. Each game may keep its own persistence code under `internal/games/<name>`.
 
 `internal/games` owns compile-time loading. It imports child packages such as `internal/games/testing` and exposes the list plus start/stop to host. No runtime folder scan in v1. External or binary games are a later expansion.
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"html/template"
 	"net"
 	"net/http"
 	"net/url"
@@ -70,6 +71,14 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		return roomView{}, err
 	}
 	view := roomView{Chrome: chrome, Player: player, TakeHost: player.PendingDesignation && !player.ClaimedHost}
+	if l.phoneExtras != nil {
+		extra := l.phoneExtras(r, player)
+		view.ShowStart = extra.ShowStart
+		view.Started = extra.Started
+		view.AutoStart = extra.AutoStart
+		view.GameIDs = extra.GameIDs
+		view.LoadedGameID = extra.LoadedGameID
+	}
 	if !player.ClaimedHost || !l.hasAdminCookie(r) {
 		return view, nil
 	}
@@ -78,7 +87,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	if err != nil {
 		return roomView{}, err
 	}
-	cap, err := readSeatCap(r.Context(), l.sql)
+	cap, err := effectiveSeatCap(r.Context(), l.sql)
 	if err != nil {
 		return roomView{}, err
 	}
@@ -100,6 +109,22 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	}
 	view.Players = players
 	return view, nil
+}
+
+// WritePlayPhone wraps a running game body with Lobby gear and the host drawer.
+func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body template.HTML) {
+	player, ok, err := l.PlayerFromRequest(r)
+	if err != nil || !ok {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	view, err := l.phoneView(r, player)
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	view.GameBody = body
+	l.render(w, "play-phone.html", view, http.StatusOK)
 }
 
 func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +154,27 @@ func (l *Lobby) settingsLog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "settings-log.html", chrome, http.StatusOK)
+	page := logPage{Chrome: chrome}
+	if l.settingsExtras != nil {
+		page.Lines = l.settingsExtras(r.Context()).LogLines
+	}
+	l.render(w, "settings-log.html", page, http.StatusOK)
+}
+
+func (l *Lobby) settingsLogTail(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	var lines []string
+	if l.settingsExtras != nil {
+		lines = l.settingsExtras(r.Context()).LogLines
+	}
+	l.render(w, "log-lines", logPage{Lines: lines}, http.StatusOK)
+}
+
+type logPage struct {
+	ui.Chrome
+	Lines []string
 }
 
 func (l *Lobby) login(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +189,7 @@ func (l *Lobby) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !l.passwordMatches(hash, password) {
+		l.emit("failed admin login")
 		l.writeLogin(w, r, "Admin password is incorrect.", http.StatusUnauthorized)
 		return
 	}
@@ -307,7 +353,45 @@ func (l *Lobby) setLogFlag(w http.ResponseWriter, r *http.Request, column string
 		http.Error(w, "Could not save the log flag.", http.StatusInternalServerError)
 		return
 	}
+	if l.logSinksChanged != nil {
+		row, err := readRoomSettings(r.Context(), l.sql)
+		if err == nil {
+			l.logSinksChanged(row.logStdout, row.logFile)
+		}
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) setAutoPause(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	on := r.PostFormValue("enabled") == "1" || r.PostFormValue("enabled") == "on"
+	if err := l.SetAutoPause(r.Context(), on); err != nil {
+		http.Error(w, "Could not save auto-pause.", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) setAutoStart(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	on := r.PostFormValue("enabled") == "1" || r.PostFormValue("enabled") == "on"
+	if err := l.SetAutoStart(r.Context(), on); err != nil {
+		http.Error(w, "Could not save auto-start.", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
@@ -441,7 +525,7 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 			break
 		}
 	}
-	return settingsData{
+	data := settingsData{
 		Chrome:             chrome,
 		Open:               open,
 		CycleSeats:         row.cycleSeats,
@@ -453,7 +537,21 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 		SeatCapError:       seatErr,
 		CanMakeHost:        canMake,
 		Players:            players,
-	}, nil
+	}
+	if l.settingsExtras != nil {
+		extra := l.settingsExtras(ctx)
+		data.GameIDs = extra.GameIDs
+		data.LoadedGameID = extra.LoadedGameID
+		data.GameSettings = extra.GameSettings
+		data.AutoPause = extra.AutoPause
+	} else {
+		on, err := l.AutoPause(ctx)
+		if err != nil {
+			return settingsData{}, err
+		}
+		data.AutoPause = on
+	}
+	return data, nil
 }
 
 func (l *Lobby) writeLogin(w http.ResponseWriter, r *http.Request, message string, status int) {
@@ -855,8 +953,23 @@ func readSeatCap(ctx context.Context, q queryer) (int, error) {
 	return row.seatCap, nil
 }
 
+func effectiveSeatCap(ctx context.Context, q queryer) (int, error) {
+	hostCap, err := readSeatCap(ctx, q)
+	if err != nil {
+		return 0, err
+	}
+	var gameMax int
+	if err := q.QueryRowContext(ctx, `SELECT game_max_players FROM room_state WHERE id = 1`).Scan(&gameMax); err != nil {
+		return 0, fmt.Errorf("lobby: read game max: %w", err)
+	}
+	if gameMax > 0 && gameMax < hostCap {
+		return gameMax, nil
+	}
+	return hostCap, nil
+}
+
 func seatCapTx(ctx context.Context, tx *sql.Tx) (int, error) {
-	return readSeatCap(ctx, tx)
+	return effectiveSeatCap(ctx, tx)
 }
 
 func seatedCountDB(ctx context.Context, q queryer) (int, error) {

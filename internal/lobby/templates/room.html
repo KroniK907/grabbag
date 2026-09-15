@@ -13,32 +13,7 @@
       aria-controls="host-drawer"
       onclick="document.getElementById('host-drawer').classList.add('is-open')"
     >Host</button>
-    <aside id="host-drawer" class="ui-drawer" aria-label="Host panel">
-      <button
-        type="button"
-        class="ui-btn"
-        onclick="document.getElementById('host-drawer').classList.remove('is-open')"
-      >Back</button>
-      {{if .Seated}}
-      <form method="post" action="/settings/stand">
-        <button class="ui-btn" type="submit">Stand (watch)</button>
-      </form>
-      {{else if .TableFull}}
-      <p class="ui-muted">Pick who to bump.</p>
-      {{range .BumpCandidates}}
-      <form method="post" action="/settings/sit">
-        <input type="hidden" name="bump_player_id" value="{{.ID}}">
-        <button class="ui-btn" type="submit">Sit, bump {{.DisplayName}}</button>
-      </form>
-      {{end}}
-      {{else}}
-      <form method="post" action="/settings/sit">
-        <button class="ui-btn" type="submit">Sit</button>
-      </form>
-      {{end}}
-      {{template "kick-players" .}}
-      <a class="ui-btn" href="/settings" target="_blank" rel="noopener">Room settings</a>
-    </aside>
+    {{template "host-drawer" .}}
     {{end}}
     {{if .TakeHost}}
     <div class="ui-modal">

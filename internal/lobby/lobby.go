@@ -16,6 +16,8 @@ import (
 	"net/http"
 	"strings"
 
+	"html/template"
+
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
 	"github.com/KroniK907/hackbox/internal/ui"
@@ -44,6 +46,24 @@ var templateFiles embed.FS
 
 var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 
+// SettingsExtras is host-owned /settings state Lobby cannot import from games.
+type SettingsExtras struct {
+	GameIDs      []string
+	LoadedGameID string
+	GameSettings template.HTML
+	AutoPause    bool
+	LogLines     []string
+}
+
+// PhoneExtras is host-owned Start and game-picker chrome for the claim-host drawer.
+type PhoneExtras struct {
+	ShowStart    bool
+	Started      bool
+	AutoStart    bool
+	GameIDs      []string
+	LoadedGameID string
+}
+
 // Config supplies host-owned password, cookie, and advertised join-URL policies.
 type Config struct {
 	AdminCookieName string
@@ -51,6 +71,10 @@ type Config struct {
 	JoinURL         func(*http.Request) string
 	PasswordMatches func(encodedHash, password string) bool
 	SecureCookie    func(*http.Request) bool
+	Notice          func(string)
+	LogSinksChanged func(stdout, file bool)
+	SettingsExtras  func(context.Context) SettingsExtras
+	PhoneExtras     func(*http.Request, Player) PhoneExtras
 }
 
 // Player is a live roster row.
@@ -73,6 +97,10 @@ type Lobby struct {
 	joinURL         func(*http.Request) string
 	passwordMatches func(encodedHash, password string) bool
 	secureCookie    func(*http.Request) bool
+	notice          func(string)
+	logSinksChanged func(stdout, file bool)
+	settingsExtras  func(context.Context) SettingsExtras
+	phoneExtras     func(*http.Request, Player) PhoneExtras
 }
 
 // New creates Lobby and its SQLite tables.
@@ -99,6 +127,10 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		joinURL:         config.JoinURL,
 		passwordMatches: config.PasswordMatches,
 		secureCookie:    config.SecureCookie,
+		notice:          config.Notice,
+		logSinksChanged: config.LogSinksChanged,
+		settingsExtras:  config.SettingsExtras,
+		phoneExtras:     config.PhoneExtras,
 	}
 	if err := room.ensureSchema(); err != nil {
 		return nil, err
@@ -118,6 +150,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /lobby/wait", l.waitToggle)
 	mux.HandleFunc("GET /settings", l.settings)
 	mux.HandleFunc("GET /settings/log", l.settingsLog)
+	mux.HandleFunc("GET /settings/log/tail", l.settingsLogTail)
 	mux.HandleFunc("POST /settings/login", l.login)
 	mux.HandleFunc("POST /settings/logout", l.logout)
 	mux.HandleFunc("POST /settings/open", l.openRoom)
@@ -129,6 +162,8 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings/cycle-mode", l.setCycleMode)
 	mux.HandleFunc("POST /settings/cycle", l.cycleSeated)
 	mux.HandleFunc("POST /settings/fill-empty", l.setFillEmpty)
+	mux.HandleFunc("POST /settings/auto-pause", l.setAutoPause)
+	mux.HandleFunc("POST /settings/auto-start", l.setAutoStart)
 	mux.HandleFunc("POST /settings/log-stdout", l.setLogStdout)
 	mux.HandleFunc("POST /settings/log-file", l.setLogFile)
 	mux.HandleFunc("POST /settings/stand", l.hostStand)
@@ -192,12 +227,16 @@ type settingsData struct {
 	FillEmpty          bool
 	LogStdout          bool
 	LogFile            bool
+	AutoPause          bool
 	SeatCap            int
 	AdvertisedHostname string
 	SeatCapError       string
 	LoginError         string
 	CanMakeHost        bool
 	Players            []Player
+	GameIDs            []string
+	LoadedGameID       string
+	GameSettings       template.HTML
 }
 
 type joinView struct {
@@ -214,8 +253,14 @@ type roomView struct {
 	HostPanel      bool
 	TakeHost       bool
 	TableFull      bool
+	ShowStart      bool
+	Started        bool
+	AutoStart      bool
+	GameIDs        []string
+	LoadedGameID   string
 	BumpCandidates []Player
 	Players        []Player
+	GameBody       template.HTML
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -645,6 +690,7 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not kick the player.", http.StatusInternalServerError)
 		return
 	}
+	l.emit("kick")
 	l.events.Publish("roster")
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
@@ -865,16 +911,22 @@ func seatOnJoin(ctx context.Context, tx *sql.Tx, claimHost bool) (seated bool, w
 		return false, false, nil, err
 	}
 	if open {
-		count, err := seatedCount(ctx, tx)
-		if err != nil {
-			return false, false, nil, err
+		var roundActive, fillEmpty int
+		if err := tx.QueryRowContext(ctx, `SELECT round_active, fill_empty FROM room_state WHERE id = 1`).Scan(&roundActive, &fillEmpty); err != nil {
+			return false, false, nil, fmt.Errorf("lobby: read fill policy: %w", err)
 		}
-		cap, err := seatCapTx(ctx, tx)
-		if err != nil {
-			return false, false, nil, err
-		}
-		if count < cap {
-			return true, false, nil, nil
+		if roundActive == 0 || fillEmpty != 0 {
+			count, err := seatedCount(ctx, tx)
+			if err != nil {
+				return false, false, nil, err
+			}
+			cap, err := seatCapTx(ctx, tx)
+			if err != nil {
+				return false, false, nil, err
+			}
+			if count < cap {
+				return true, false, nil, nil
+			}
 		}
 	}
 	seq, err := nextWaitSeq(ctx, tx)
@@ -890,6 +942,13 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 		return err
 	}
 	if !open {
+		return nil
+	}
+	var roundActive, fillEmpty int
+	if err := tx.QueryRowContext(ctx, `SELECT round_active, fill_empty FROM room_state WHERE id = 1`).Scan(&roundActive, &fillEmpty); err != nil {
+		return fmt.Errorf("lobby: read fill policy: %w", err)
+	}
+	if roundActive != 0 && fillEmpty == 0 {
 		return nil
 	}
 	for {
@@ -1126,6 +1185,10 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE room_state ADD COLUMN log_file INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN host_queue TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE room_state ADD COLUMN round_active INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN selected_game_id TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN game_max_players INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN auto_pause INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN auto_start INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

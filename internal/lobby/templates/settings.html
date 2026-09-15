@@ -32,6 +32,16 @@
         <span>Cycle seated players</span>
         <button class="ui-btn ui-btn-inline" type="submit">Cycle</button>
       </form>
+      <form class="ui-row" method="post" action="/settings/auto-pause">
+        <span>Auto-pause on seated disconnect</span>
+        {{if .AutoPause}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
       <form class="ui-row" method="post" action="/settings/fill-empty">
         <span>Fill empty seats</span>
         {{if .FillEmpty}}
@@ -87,6 +97,28 @@
         <button class="ui-btn ui-btn-inline" type="button" onclick="document.getElementById('logout-modal').hidden = false">This browser</button>
       </div>
     </div>
+    {{if .LoadedGameID}}
+    <div class="ui-stack">
+      <h2>Game Settings</h2>
+      <div class="ui-list">
+        {{.GameSettings}}
+        <div class="ui-row">
+          <span>Clear game data</span>
+          <button class="ui-btn ui-btn-inline" type="button" onclick="document.getElementById('clear-kv-modal').hidden = false">Clear</button>
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+<div id="clear-kv-modal" class="ui-modal" hidden>
+  <div class="ui-card">
+    <h2>Clear data for {{.LoadedGameID}}?</h2>
+    <p>Lobby seats and host.log stay. This game's KV rows are deleted.</p>
+    <button class="ui-btn" type="button" onclick="document.getElementById('clear-kv-modal').hidden = true">Cancel</button>
+    <form method="post" action="/settings/clear-game-data">
+      <button class="ui-btn ui-btn-danger" type="submit">Clear game data</button>
+    </form>
   </div>
 </div>
 <div id="logout-modal" class="ui-modal" hidden>
