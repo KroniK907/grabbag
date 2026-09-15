@@ -56,12 +56,15 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 	}
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(phone, `action="/lobby/wait"`) || !strings.Contains(phone, "Leave wait list") {
+	if !strings.Contains(phone, "<h1>In the wait list</h1>") ||
+		!strings.Contains(phone, `action="/lobby/wait"`) ||
+		!strings.Contains(phone, "Leave wait list") {
 		t.Fatalf("waiting phone body = %q", phone)
 	}
 	hostPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, hostCookie).Body.String()
-	if strings.Contains(hostPhone, `action="/lobby/wait"`) {
-		t.Fatal("seated host phone offered wait-toggle")
+	if !strings.Contains(hostPhone, "<h1>In the room</h1>") ||
+		strings.Contains(hostPhone, `action="/lobby/wait"`) {
+		t.Fatalf("seated host phone body = %q", hostPhone)
 	}
 }
 
@@ -122,6 +125,10 @@ func testWaitOptOut(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	guest := playerFromCookie(t, room, guestCookie)
 	if guest.Seated || guest.Waiting {
 		t.Fatalf("opt-out guest = %#v, want audience-only", guest)
+	}
+	audiencePhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
+	if !strings.Contains(audiencePhone, "<h1>In the audience</h1>") {
+		t.Fatalf("audience phone body = %q", audiencePhone)
 	}
 
 	lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
