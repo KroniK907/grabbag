@@ -133,6 +133,36 @@ func TestJoinUsesSetupPasswordAndHostCookiePolicy(t *testing.T) {
 	}
 }
 
+func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
+	t.Parallel()
+	_, handler := testHandler(t)
+
+	for asset, contentType := range map[string]string{
+		"/static/htmx.min.js": "javascript",
+		"/static/live.css":    "text/css",
+		"/static/sse.min.js":  "javascript",
+	} {
+		rec := request(t, handler, http.MethodGet, asset, nil, "")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("GET %s status = %d, want %d", asset, rec.Code, http.StatusOK)
+		}
+		if !strings.Contains(rec.Header().Get("Content-Type"), contentType) {
+			t.Fatalf("GET %s Content-Type = %q", asset, rec.Header().Get("Content-Type"))
+		}
+		if asset == "/static/live.css" && !strings.Contains(rec.Body.String(), "position: fixed") {
+			t.Fatalf("GET %s did not contain fixed overlay styling", asset)
+		}
+	}
+
+	setup := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	request(t, handler, http.MethodPost, "/setup", setup, "")
+	settings := request(t, handler, http.MethodGet, "/settings", nil, "")
+	if strings.Contains(settings.Body.String(), "sse-connect") ||
+		strings.Contains(settings.Body.String(), "sse.min.js") {
+		t.Fatalf("settings subscribed to SSE: %q", settings.Body.String())
+	}
+}
+
 func TestAdminCookieIsSecureOnLocalhost(t *testing.T) {
 	t.Parallel()
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}

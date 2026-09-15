@@ -4,14 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Hackbox room</title>
+  <link rel="stylesheet" href="/static/live.css">
+  <script defer src="/static/htmx.min.js"></script>
+  <script defer src="/static/sse.min.js"></script>
 </head>
-<body>
-  <main>
-    <h1>In the room</h1>
-    <p>{{.DisplayName}}</p>
-    <form method="post" action="/lobby/leave">
-      <button type="submit">Leave</button>
-    </form>
-  </main>
+<body
+  hx-ext="sse"
+  sse-connect="/lobby/events"
+  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false"
+  hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
+>
+  <div id="connection-overlay" class="connection-overlay" role="status" hidden>Connection lost. Reconnecting...</div>
+  {{template "room-body" .}}
 </body>
 </html>

@@ -38,7 +38,8 @@ hackbox/
       static/                 # compiled host chrome CSS/JS
       templates/              # shared board/phone chrome
     store/                    # host/Lobby persistence + path helpers
-    platform/                 # host-wide packages; add <name> when imported
+    platform/                 # host-wide packages
+      hub/                    # in-process named SSE broadcaster
     games/                    # compile-time loader
       testing/                # Testing diagnostics; package testinggame
         templates/

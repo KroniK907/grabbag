@@ -1,0 +1,14 @@
+{{define "room-body"}}
+<main
+  id="phone-body"
+  hx-get="/lobby/partials/phone"
+  hx-trigger="sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  <h1>In the room</h1>
+  <p>{{.DisplayName}}</p>
+  <form method="post" action="/lobby/leave">
+    <button type="submit">Leave</button>
+  </form>
+</main>
+{{end}}

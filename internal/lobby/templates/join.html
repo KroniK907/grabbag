@@ -4,18 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Join Hackbox</title>
+  <link rel="stylesheet" href="/static/live.css">
+  <script defer src="/static/htmx.min.js"></script>
+  <script defer src="/static/sse.min.js"></script>
 </head>
-<body>
-  <main>
-    <h1>Join Hackbox</h1>
-    <form method="post" action="/lobby/join">
-      <label>Name <input name="display_name" value="{{.DisplayName}}" required autofocus></label>
-      {{if .ShowPassword}}
-      <label>Admin password <input name="admin_password" type="password"></label>
-      {{end}}
-      {{with .Error}}<p role="alert">{{.}}</p>{{end}}
-      <button type="submit">Join</button>
-    </form>
-  </main>
+<body
+  hx-ext="sse"
+  sse-connect="/lobby/events"
+  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false"
+  hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
+>
+  <div id="connection-overlay" class="connection-overlay" role="status" hidden>Connection lost. Reconnecting...</div>
+  {{template "join-body" .}}
 </body>
 </html>

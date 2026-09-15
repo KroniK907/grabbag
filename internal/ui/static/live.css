@@ -1,0 +1,16 @@
+.connection-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: rgb(0 0 0 / 78%);
+  color: white;
+  font: 600 1.25rem/1.4 system-ui, sans-serif;
+  text-align: center;
+}
+
+.connection-overlay[hidden] {
+  display: none;
+}

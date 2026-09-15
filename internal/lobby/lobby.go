@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
 )
 
@@ -40,6 +41,7 @@ var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.h
 // Config supplies the host-owned password and cookie policies used by Lobby.
 type Config struct {
 	AdminCookieName string
+	Events          *hub.Hub
 	PasswordMatches func(encodedHash, password string) bool
 	SecureCookie    func(*http.Request) bool
 }
@@ -56,6 +58,7 @@ type Player struct {
 type Lobby struct {
 	sql             *sql.DB
 	adminCookieName string
+	events          *hub.Hub
 	passwordMatches func(encodedHash, password string) bool
 	secureCookie    func(*http.Request) bool
 }
@@ -68,6 +71,9 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 	if config.AdminCookieName == "" {
 		return nil, errors.New("lobby: empty admin cookie name")
 	}
+	if config.Events == nil {
+		return nil, errors.New("lobby: nil event hub")
+	}
 	if config.PasswordMatches == nil {
 		return nil, errors.New("lobby: nil password matcher")
 	}
@@ -77,6 +83,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 	room := &Lobby{
 		sql:             db.SQL(),
 		adminCookieName: config.AdminCookieName,
+		events:          config.Events,
 		passwordMatches: config.PasswordMatches,
 		secureCookie:    config.SecureCookie,
 	}
@@ -86,8 +93,11 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 	return room, nil
 }
 
-// Register adds Lobby-owned phone write routes to mux.
+// Register adds Lobby-owned stream, partial, and phone write routes to mux.
 func (l *Lobby) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
+	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
+	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("POST /lobby/join", l.join)
 	mux.HandleFunc("POST /lobby/leave", l.leave)
 }
@@ -104,7 +114,7 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 		l.render(w, "room.html", player, http.StatusOK)
 		return
 	}
-	l.writeJoin(w, r, "", "", http.StatusOK)
+	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
 }
 
 // Board writes the current Lobby board with the live roster names.
@@ -114,10 +124,37 @@ func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "board.html", struct {
-		JoinURL string
-		Players []Player
-	}{JoinURL: joinURL, Players: players}, http.StatusOK)
+	l.render(w, "board.html", boardData{
+		JoinURL: joinURL,
+		Players: players,
+	}, http.StatusOK)
+}
+
+type boardData struct {
+	JoinURL string
+	Players []Player
+}
+
+func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
+	players, err := l.players(r.Context())
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, "board-roster", boardData{Players: players}, http.StatusOK)
+}
+
+func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
+	player, ok, err := l.PlayerFromRequest(r)
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	if ok {
+		l.render(w, "room-body", player, http.StatusOK)
+		return
+	}
+	l.writeJoin(w, r, "join-body", "", "", http.StatusOK)
 }
 
 // PlayerFromRequest resolves player identity only from the player cookie.
@@ -154,12 +191,12 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		l.writeJoin(w, r, "", "Could not read the form.", http.StatusBadRequest)
+		l.writeJoin(w, r, "join.html", "", "Could not read the form.", http.StatusBadRequest)
 		return
 	}
 	name := strings.TrimSpace(r.PostFormValue("display_name"))
 	if name == "" {
-		l.writeJoin(w, r, name, "Name is required.", http.StatusBadRequest)
+		l.writeJoin(w, r, "join.html", name, "Name is required.", http.StatusBadRequest)
 		return
 	}
 
@@ -173,11 +210,11 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, errNameRequired):
-			l.writeJoin(w, r, name, "Name is required.", http.StatusBadRequest)
+			l.writeJoin(w, r, "join.html", name, "Name is required.", http.StatusBadRequest)
 		case errors.Is(err, errNameTaken):
-			l.writeJoin(w, r, name, "That name is already in use.", http.StatusConflict)
+			l.writeJoin(w, r, "join.html", name, "That name is already in use.", http.StatusConflict)
 		case errors.Is(err, errPasswordMismatch):
-			l.writeJoin(w, r, name, "Admin password is incorrect.", http.StatusUnauthorized)
+			l.writeJoin(w, r, "join.html", name, "Admin password is incorrect.", http.StatusUnauthorized)
 		default:
 			http.Error(w, "Could not join the room.", http.StatusInternalServerError)
 		}
@@ -198,6 +235,7 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 	if result.adminSessionID != "" {
 		http.SetCookie(w, l.cookie(r, l.adminCookieName, result.adminSessionID))
 	}
+	l.events.Publish("roster")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -215,6 +253,7 @@ func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not leave the room.", http.StatusInternalServerError)
 		return
 	}
+	l.events.Publish("roster")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -375,7 +414,14 @@ func (l *Lobby) players(ctx context.Context) ([]Player, error) {
 	return players, nil
 }
 
-func (l *Lobby) writeJoin(w http.ResponseWriter, r *http.Request, submittedName, message string, status int) {
+func (l *Lobby) writeJoin(
+	w http.ResponseWriter,
+	r *http.Request,
+	templateName string,
+	submittedName string,
+	message string,
+	status int,
+) {
 	state, _ := playerCookieFromRequest(r)
 	if submittedName != "" {
 		state.DisplayName = submittedName
@@ -388,7 +434,7 @@ func (l *Lobby) writeJoin(w http.ResponseWriter, r *http.Request, submittedName,
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "join.html", struct {
+	l.render(w, templateName, struct {
 		DisplayName  string
 		ShowPassword bool
 		Error        string

@@ -4,17 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>Hackbox board</title>
+  <link rel="stylesheet" href="/static/live.css">
+  <script defer src="/static/htmx.min.js"></script>
+  <script defer src="/static/sse.min.js"></script>
 </head>
-<body>
+<body
+  hx-ext="sse"
+  sse-connect="/lobby/events"
+  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false"
+  hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
+>
+  <div id="connection-overlay" class="connection-overlay" role="status" hidden>Connection lost. Reconnecting...</div>
   <main>
     <h1>Hackbox board</h1>
     {{with .JoinURL}}
     <p>Join from another device: <a href="{{.}}">{{.}}</a></p>
     {{end}}
-    <h2>Players</h2>
-    <ul>
-      {{range .Players}}<li>{{.DisplayName}}</li>{{else}}<li>No players yet.</li>{{end}}
-    </ul>
+    {{template "board-roster" .}}
   </main>
 </body>
 </html>
