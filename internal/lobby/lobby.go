@@ -547,7 +547,16 @@ func (l *Lobby) toggleTheme(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save the theme.", http.StatusInternalServerError)
 		return
 	}
-	l.events.Publish("theme")
+	l.events.PublishData("theme", next)
+	if r.Header.Get("HX-Request") == "true" {
+		chrome, err := l.chrome(r.Context(), "Hackbox settings")
+		if err != nil {
+			http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "theme-toggle", chrome, http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
@@ -557,7 +566,7 @@ func (l *Lobby) themeSync(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "theme-sync", chrome, http.StatusOK)
+	l.render(w, "theme-sync-node", chrome, http.StatusOK)
 }
 
 func (l *Lobby) chrome(ctx context.Context, title string) (ui.Chrome, error) {

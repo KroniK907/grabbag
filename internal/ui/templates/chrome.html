@@ -21,6 +21,20 @@
 >
 {{template "ui-overlay"}}
 {{template "theme-sync" .}}
+<script>
+(function () {
+  function applyTheme(value) {
+    if (value === "neon-light" || value === "neon-dark") {
+      document.documentElement.setAttribute("data-theme", value);
+    }
+  }
+  document.addEventListener("htmx:sseMessage", function (ev) {
+    var d = ev.detail || {};
+    var data = typeof d.data === "string" ? d.data.trim() : "";
+    applyTheme(data);
+  }, true);
+})();
+</script>
 {{end}}
 
 {{define "ui-start-quiet"}}
@@ -55,11 +69,19 @@
 
 {{define "theme-sync"}}
 <div
+  id="theme-sync-host"
+  hx-on::after-swap="var n = event.detail.elt; if (n && n.getAttribute('data-theme')) document.documentElement.setAttribute('data-theme', n.getAttribute('data-theme'))"
+>
+{{template "theme-sync-node" .}}
+</div>
+{{end}}
+
+{{define "theme-sync-node"}}
+<div
   id="theme-sync"
   data-theme="{{.Theme}}"
   hx-get="/lobby/partials/theme"
   hx-trigger="sse:theme, htmx:sseOpen from:body"
   hx-swap="outerHTML"
-  hx-on::after-swap="document.documentElement.setAttribute('data-theme', event.detail.elt.getAttribute('data-theme'))"
 ></div>
 {{end}}

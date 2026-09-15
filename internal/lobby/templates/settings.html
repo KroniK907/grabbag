@@ -1,15 +1,9 @@
-{{template "ui-start-quiet" .}}
+{{template "ui-start" .}}
 <div class="ui-page">
   <div class="ui-stack">
     <div class="ui-header">
       <div class="ui-brand ui-brand-sm">ROOM KNOBS</div>
-      <form method="post" action="/settings/theme">
-        {{if eq .Theme "neon-dark"}}
-        <button class="ui-btn ui-btn-inline" type="submit">Light</button>
-        {{else}}
-        <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
-        {{end}}
-      </form>
+      {{template "theme-toggle" .}}
     </div>
     <p class="ui-muted">Room is {{if .Open}}open{{else}}closed{{end}}.</p>
     <form method="post" action="/settings/open">
@@ -33,3 +27,22 @@
   </div>
 </div>
 {{template "ui-end"}}
+
+{{define "theme-toggle"}}
+<form
+  id="theme-toggle"
+  method="post"
+  action="/settings/theme"
+  data-theme="{{.Theme}}"
+  hx-post="/settings/theme"
+  hx-target="#theme-toggle"
+  hx-swap="outerHTML"
+  hx-on::after-swap="document.documentElement.setAttribute('data-theme', event.detail.elt.getAttribute('data-theme'))"
+>
+  {{if eq .Theme "neon-dark"}}
+  <button class="ui-btn ui-btn-inline" type="submit">Light</button>
+  {{else}}
+  <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
+  {{end}}
+</form>
+{{end}}

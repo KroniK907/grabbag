@@ -43,7 +43,7 @@
   --ui-pill-shadow: 0 4px 0 #c40a90;
   --ui-pill-closed-bg: #888;
   --ui-token-ring: #1a0730;
-  --ui-token-lift: 8px;
+  --ui-token-lift: 0px;
   --ui-gear-bg: #fff;
   --ui-gear-fg: #c40a90;
   --ui-gear-border: #c40a90;

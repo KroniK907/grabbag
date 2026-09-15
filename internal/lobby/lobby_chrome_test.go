@@ -2,6 +2,7 @@ package lobby_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"regexp"
 	"strings"
@@ -139,6 +140,17 @@ func TestSettingsThemeToggle(t *testing.T) {
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	if !strings.Contains(board, `data-theme="neon-dark"`) {
 		t.Fatalf("board did not pick up dark theme: %q", board)
+	}
+
+	live := httptest.NewRequest(http.MethodPost, "http://hackbox.test/settings/theme", nil)
+	live.Header.Set("HX-Request", "true")
+	live.AddCookie(operatorCookie())
+	liveRec := httptest.NewRecorder()
+	handler.ServeHTTP(liveRec, live)
+	if liveRec.Code != http.StatusOK ||
+		!strings.Contains(liveRec.Body.String(), `data-theme="neon-light"`) ||
+		!strings.Contains(liveRec.Body.String(), ">Dark</button>") {
+		t.Fatalf("htmx theme toggle = %d %q", liveRec.Code, liveRec.Body.String())
 	}
 }
 

@@ -163,9 +163,9 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 	setup := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
 	request(t, handler, http.MethodPost, "/setup", setup, "")
 	settings := request(t, handler, http.MethodGet, "/settings", nil, "")
-	if strings.Contains(settings.Body.String(), "sse-connect") ||
-		strings.Contains(settings.Body.String(), "sse.min.js") {
-		t.Fatalf("settings subscribed to SSE: %q", settings.Body.String())
+	if strings.Contains(settings.Body.String(), "sse:roster") ||
+		strings.Contains(settings.Body.String(), "/lobby/partials/board-roster") {
+		t.Fatalf("settings live-updated the player list: %q", settings.Body.String())
 	}
 }
 

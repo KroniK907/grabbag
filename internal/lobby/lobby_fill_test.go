@@ -229,8 +229,8 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	}
 
 	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
-	if strings.Contains(settings, "sse-connect") {
-		t.Fatal("settings subscribed to SSE")
+	if strings.Contains(settings, "sse:roster") || strings.Contains(settings, "/lobby/partials/board-roster") {
+		t.Fatal("settings live-updated the player list")
 	}
 	if !strings.Contains(settings, `action="/settings/open"`) ||
 		!strings.Contains(settings, `action="/settings/kick"`) ||
