@@ -149,8 +149,14 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 		if !strings.Contains(rec.Header().Get("Content-Type"), contentType) {
 			t.Fatalf("GET %s Content-Type = %q", asset, rec.Header().Get("Content-Type"))
 		}
-		if asset == "/static/live.css" && !strings.Contains(rec.Body.String(), "position: fixed") {
-			t.Fatalf("GET %s did not contain fixed overlay styling", asset)
+		if asset == "/static/live.css" {
+			css := rec.Body.String()
+			if !strings.Contains(css, "position: fixed") {
+				t.Fatalf("GET %s did not contain fixed overlay styling", asset)
+			}
+			if !strings.Contains(css, "aspect-ratio: 1") || !strings.Contains(css, "max-width: 800px") {
+				t.Fatalf("GET %s missing mobile token layout: %s", asset, css)
+			}
 		}
 	}
 

@@ -10,7 +10,7 @@
     <div class="ui-notch">hackbox</div>
     <div class="ui-phone-body">
       <div class="ui-you">Who are you?</div>
-      <div class="ui-avatar-lg">{{avatar .AvatarSeed}}</div>
+      <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
       <form method="post" action="/lobby/reroll">
         <input type="hidden" name="display_name" value="{{.DisplayName}}">
         <input type="hidden" name="avatar_seed" value="{{.AvatarSeed}}">

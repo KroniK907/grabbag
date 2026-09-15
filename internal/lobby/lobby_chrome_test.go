@@ -26,6 +26,9 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	if !strings.Contains(body, "Reroll face") || !strings.Contains(body, `name="avatar_seed"`) {
 		t.Fatalf("join missing avatar reroll: %q", body)
 	}
+	if !strings.Contains(body, `class="ui-token ui-token-self"`) {
+		t.Fatalf("join missing avatar frame: %q", body)
+	}
 	seed := hiddenValue(t, body, "avatar_seed")
 	if seed == "" {
 		t.Fatal("join did not mint an avatar seed")
@@ -89,7 +92,8 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	seated := lobbyRequest(t, handler, http.MethodGet, "/", nil, cookieNamed(t, joined, lobby.PlayerCookieName)).Body.String()
 	if !strings.Contains(seated, `class="ui-plunger"`) ||
 		strings.Contains(seated, `action="/lobby/ready"`) ||
-		!strings.Contains(seated, "Reroll face") {
+		!strings.Contains(seated, "Reroll face") ||
+		!strings.Contains(seated, `class="ui-token ui-token-self"`) {
 		t.Fatalf("seated phone = %q", seated)
 	}
 	before := playerFromCookie(t, room, cookieNamed(t, joined, lobby.PlayerCookieName))
