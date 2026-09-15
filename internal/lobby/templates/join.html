@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Join Hackbox</title>
+</head>
+<body>
+  <main>
+    <h1>Join Hackbox</h1>
+    <form method="post" action="/lobby/join">
+      <label>Name <input name="display_name" value="{{.DisplayName}}" required autofocus></label>
+      {{if .ShowPassword}}
+      <label>Admin password <input name="admin_password" type="password"></label>
+      {{end}}
+      {{with .Error}}<p role="alert">{{.}}</p>{{end}}
+      <button type="submit">Join</button>
+    </form>
+  </main>
+</body>
+</html>

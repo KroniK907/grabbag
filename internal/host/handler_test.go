@@ -93,6 +93,46 @@ func TestSetupLifecycle(t *testing.T) {
 	}
 }
 
+func TestJoinUsesSetupPasswordAndHostCookiePolicy(t *testing.T) {
+	t.Parallel()
+	db, handler := testHandler(t)
+	setup := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
+	request(t, handler, http.MethodPost, "/setup", setup, "localhost:8654")
+
+	wrong := url.Values{"display_name": {"Alice"}, "admin_password": {"wrong"}}
+	rec := request(t, handler, http.MethodPost, "/lobby/join", wrong, "localhost:8654")
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong-password Join status = %d, want %d; body = %q", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+	if cookies := rec.Result().Cookies(); len(cookies) != 0 {
+		t.Fatalf("wrong-password Join cookies = %#v, want none", cookies)
+	}
+
+	correct := url.Values{"display_name": {"Alice"}, "admin_password": {"correct horse"}}
+	rec = request(t, handler, http.MethodPost, "/lobby/join", correct, "localhost:8654")
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("correct-password Join status = %d, want %d; body = %q", rec.Code, http.StatusSeeOther, rec.Body.String())
+	}
+	if len(rec.Result().Cookies()) != 2 {
+		t.Fatalf("correct-password Join cookies = %#v, want player and admin", rec.Result().Cookies())
+	}
+	for _, cookie := range rec.Result().Cookies() {
+		if !cookie.Secure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode ||
+			cookie.Path != "/" || cookie.Domain != "" || cookie.MaxAge != 30*24*60*60 {
+			t.Fatalf("Join cookie flags = %#v", cookie)
+		}
+		if cookie.Name == adminCookieName {
+			hasSession, err := db.HasAdminSession(context.Background(), cookie.Value)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !hasSession {
+				t.Fatal("host-phone admin cookie has no server-side session")
+			}
+		}
+	}
+}
+
 func TestAdminCookieIsSecureOnLocalhost(t *testing.T) {
 	t.Parallel()
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
@@ -196,7 +236,11 @@ func testHandler(t *testing.T) (*store.DB, http.Handler) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return db, NewHandler(db, "http://192.168.10.24:8654/")
+	handler, err := NewHandler(db, "http://192.168.10.24:8654/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return db, handler
 }
 
 func assertRedirect(t *testing.T, handler http.Handler, method, path string, form url.Values, location string) {

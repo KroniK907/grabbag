@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Hackbox board</title>
+</head>
+<body>
+  <main>
+    <h1>Hackbox board</h1>
+    {{with .JoinURL}}
+    <p>Join from another device: <a href="{{.}}">{{.}}</a></p>
+    {{end}}
+    <h2>Players</h2>
+    <ul>
+      {{range .Players}}<li>{{.DisplayName}}</li>{{else}}<li>No players yet.</li>{{end}}
+    </ul>
+  </main>
+</body>
+</html>

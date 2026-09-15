@@ -68,6 +68,12 @@ func (db *DB) Close() error {
 	return db.sql.Close()
 }
 
+// SQL returns the shared host database handle for host-owned persistence
+// packages. Callers must not close it.
+func (db *DB) SQL() *sql.DB {
+	return db.sql
+}
+
 // HasAdminHash reports whether Finish has already stored a password hash.
 func (db *DB) HasAdminHash(ctx context.Context) (bool, error) {
 	var n int

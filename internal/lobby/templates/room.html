@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Hackbox room</title>
+</head>
+<body>
+  <main>
+    <h1>In the room</h1>
+    <p>{{.DisplayName}}</p>
+    <form method="post" action="/lobby/leave">
+      <button type="submit">Leave</button>
+    </form>
+  </main>
+</body>
+</html>
