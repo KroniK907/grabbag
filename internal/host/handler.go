@@ -12,6 +12,7 @@ import (
 	"github.com/KroniK907/hackbox/internal/lobby"
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/hackbox/internal/ui"
 )
 
 const adminCookieName = "hackbox_admin"
@@ -38,6 +39,7 @@ func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
 	mux.HandleFunc("GET /setup", getSetup(db))
 	mux.HandleFunc("POST /setup", finishSetup(db))
 	mux.Handle("GET /{$}", requireSetup(db, http.HandlerFunc(room.Phone)))
