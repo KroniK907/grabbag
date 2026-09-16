@@ -3,6 +3,7 @@ package games
 
 import (
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -35,6 +36,9 @@ type Helper interface {
 	Resume()
 	Publish(name string)
 	Log(line string)
+	// HasAdmin reports a valid admin session on r. Games use this for board
+	// End game. They do not read the admin cookie themselves.
+	HasAdmin(r *http.Request) bool
 }
 
 // Game is a compiled-in package host can Load, Start, Stop, and Shutdown.
@@ -61,8 +65,28 @@ type Factory struct {
 	New func() Game
 }
 
-// Catalog is the compile-time list of game packages. Empty until a child
-// package such as Testing is imported from this package.
+var (
+	catalogMu sync.Mutex
+	catalog   []Factory
+)
+
+// Register adds a compile-time game. Child packages call it from init.
+// Host blank-imports those packages so Catalog is populated. games cannot
+// import the children itself; they already import this package for Helper.
+func Register(f Factory) {
+	if f.ID == "" || f.New == nil {
+		return
+	}
+	catalogMu.Lock()
+	defer catalogMu.Unlock()
+	catalog = append(catalog, f)
+}
+
+// Catalog is the compile-time list of registered game packages.
 func Catalog() []Factory {
-	return nil
+	catalogMu.Lock()
+	defer catalogMu.Unlock()
+	out := make([]Factory, len(catalog))
+	copy(out, catalog)
+	return out
 }

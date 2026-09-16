@@ -1,0 +1,23 @@
+{{define "board-list"}}
+<div
+  id="testing-list"
+  class="testing-list"
+  hx-get="/play/partials/board-list"
+  hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{range .Players}}
+  <div class="testing-row{{if .Flash}} testing-row-flash{{end}}" data-player="{{.ID}}">
+    <div class="ui-token" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
+    <div>
+      <div>{{.DisplayName}}</div>
+      <div class="testing-meta">
+        <span>{{if .Connected}}connected{{else}}disconnected{{end}}</span>
+        {{if not $.HideLatency}}<span data-latency>{{.Latency}}</span>{{end}}
+        <span data-taps>{{.Taps}}</span>
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

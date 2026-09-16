@@ -26,6 +26,11 @@ func (rt *runtime) phone(w http.ResponseWriter, r *http.Request) {
 		rt.room.Phone(w, r)
 		return
 	}
+	player, ok, err := rt.room.PlayerFromRequest(r)
+	if err != nil || !ok || !player.Seated {
+		rt.room.Phone(w, r)
+		return
+	}
 	var buf bytes.Buffer
 	rec := &capture{buf: &buf, header: make(http.Header)}
 	game.Phone(rec, r)
@@ -165,14 +170,17 @@ func (rt *runtime) play(w http.ResponseWriter, r *http.Request) {
 	http.StripPrefix("/play", game.Play()).ServeHTTP(w, r)
 }
 
-func (rt *runtime) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+func (rt *runtime) hasAdmin(r *http.Request) bool {
 	cookie, err := r.Cookie(adminCookieName)
 	if err != nil || cookie.Value == "" {
-		http.Error(w, "Admin session required.", http.StatusUnauthorized)
 		return false
 	}
 	ok, err := rt.db.HasAdminSession(r.Context(), cookie.Value)
-	if err != nil || !ok {
+	return err == nil && ok
+}
+
+func (rt *runtime) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	if !rt.hasAdmin(r) {
 		http.Error(w, "Admin session required.", http.StatusUnauthorized)
 		return false
 	}

@@ -1,0 +1,7 @@
+<form class="ui-row" method="post" action="/settings/game/hide-latency">
+  <label>
+    <input type="hidden" name="hide" value="0">
+    <input type="checkbox" name="hide" value="1" {{if .HideLatency}}checked{{end}} onchange="this.form.submit()">
+    Hide latency
+  </label>
+</form>

@@ -124,6 +124,25 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	}
 }
 
+func TestStartedWaitPhoneStaysOnLobby(t *testing.T) {
+	t.Parallel()
+	_, handler, _, _ := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
+
+	waitJoin := request(t, handler, http.MethodPost, "/lobby/join", url.Values{"display_name": {"Bea"}}, "")
+	waitCookies := waitJoin.Result().Cookies()
+	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, waitCookies)
+	body := phone.Body.String()
+	if strings.Contains(body, "FAKE-PHONE") {
+		t.Fatalf("wait phone used the game body: %q", body)
+	}
+	if !strings.Contains(body, "You are in line.") {
+		t.Fatalf("wait phone left Lobby: %q", body)
+	}
+}
+
 func TestStartRefusedBeforeLoadOrZeroSeatedOrBelowMin(t *testing.T) {
 	t.Parallel()
 	_, handler, _, _ := testGameHandler(t, 2, 8)

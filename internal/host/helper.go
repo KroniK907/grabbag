@@ -81,6 +81,10 @@ func (h *helper) Log(line string) {
 	h.rt.log.Write(h.rt.loadedID + ": " + line)
 }
 
+func (h *helper) HasAdmin(r *http.Request) bool {
+	return h.rt.hasAdmin(r)
+}
+
 func (h *helper) list(keep func(lobby.Player) bool) []games.Player {
 	players, err := h.rt.room.Players(context.Background())
 	if err != nil {

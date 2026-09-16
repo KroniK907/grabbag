@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/KroniK907/hackbox/internal/games"
+	_ "github.com/KroniK907/hackbox/internal/games/testing"
 	"github.com/KroniK907/hackbox/internal/lobby"
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"

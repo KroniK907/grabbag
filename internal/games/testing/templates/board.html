@@ -1,0 +1,12 @@
+{{template "ui-start" .}}
+<link rel="stylesheet" href="/play/static/game.css">
+<div class="testing-board">
+  <h1>Testing</h1>
+  {{template "board-list" .}}
+  {{if .ShowEnd}}
+  <form method="post" action="/play/end">
+    <button class="ui-btn ui-btn-danger testing-end" type="submit">End game</button>
+  </form>
+  {{end}}
+</div>
+{{template "ui-end"}}
