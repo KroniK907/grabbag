@@ -1,7 +1,7 @@
-// Package main starts the Hackbox host process.
+// Package main starts the Grab Bag host process.
 package main
 
-import "github.com/KroniK907/hackbox/internal/host"
+import "github.com/KroniK907/grabbag/internal/host"
 
 // Windows PE resource object with requestedExecutionLevel asInvoker.
 // Without it, unsigned Go binaries can trip installer detection and UAC.

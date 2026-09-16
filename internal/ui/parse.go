@@ -23,7 +23,7 @@ func Funcs() template.FuncMap {
 
 // MustParse loads shared chrome defines, then page templates from pages.
 func MustParse(pages fs.FS, glob string) *template.Template {
-	root := template.New("hackbox").Funcs(Funcs())
+	root := template.New("grabbag").Funcs(Funcs())
 	root = template.Must(root.ParseFS(chromeTemplates, "templates/chrome.html"))
 	return template.Must(root.ParseFS(pages, glob))
 }

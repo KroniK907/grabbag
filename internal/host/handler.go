@@ -12,16 +12,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/KroniK907/hackbox/docs"
-	"github.com/KroniK907/hackbox/internal/games"
-	_ "github.com/KroniK907/hackbox/internal/games/testing"
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/docs"
+	"github.com/KroniK907/grabbag/internal/games"
+	_ "github.com/KroniK907/grabbag/internal/games/testing"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
-const adminCookieName = "hackbox_admin"
+const adminCookieName = "grabbag_admin"
 
 //go:embed templates/*.html
 var templateFiles embed.FS
@@ -290,7 +290,7 @@ func loadSetupPage(ctx context.Context, db *store.DB, lanJoinURL, message string
 		seatCap = lobby.DefaultSeatCap
 	}
 	return setupPage{
-		Chrome:             ui.Chrome{Title: "Set up Hackbox", Theme: ui.NormalizeTheme(theme)},
+		Chrome:             ui.Chrome{Title: "Set up Grab Bag", Theme: ui.NormalizeTheme(theme)},
 		Error:              message,
 		AdvertisedHostname: hostname,
 		HostnameHint:       strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(lanJoinURL, "http://"), "https://"), "/"),

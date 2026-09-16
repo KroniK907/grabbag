@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 func TestNeonCabinetBoardAndPhones(t *testing.T) {
@@ -170,7 +170,7 @@ func TestSettingsThemeToggle(t *testing.T) {
 		t.Fatalf("board did not pick up dark theme: %q", board)
 	}
 
-	live := httptest.NewRequest(http.MethodPost, "http://hackbox.test/settings/theme", nil)
+	live := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/theme", nil)
 	live.Header.Set("HX-Request", "true")
 	live.AddCookie(operatorCookie())
 	liveRec := httptest.NewRecorder()

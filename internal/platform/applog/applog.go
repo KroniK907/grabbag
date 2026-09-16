@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KroniK907/hackbox/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
 )
 
 const ringSize = 500

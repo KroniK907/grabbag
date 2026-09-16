@@ -27,13 +27,13 @@ type DB struct {
 	dir string
 }
 
-// DefaultDataDir is os.UserCacheDir() plus hackbox.
+// DefaultDataDir is os.UserCacheDir() plus grabbag.
 func DefaultDataDir() (string, error) {
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		return "", fmt.Errorf("store: user cache dir: %w", err)
 	}
-	return filepath.Join(cache, "hackbox"), nil
+	return filepath.Join(cache, "grabbag"), nil
 }
 
 // Open opens host.sqlite in dir with WAL, a busy timeout, foreign keys,

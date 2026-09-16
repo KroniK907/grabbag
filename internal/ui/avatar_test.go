@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 func TestAvatarSVGIsDeterministicAndSeeded(t *testing.T) {

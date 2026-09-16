@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 func TestCatalogMinAndMax(t *testing.T) {

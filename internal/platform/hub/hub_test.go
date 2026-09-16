@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
 )
 
 func TestPublishSendsNamedEvent(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 const (

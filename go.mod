@@ -1,4 +1,4 @@
-module github.com/KroniK907/hackbox
+module github.com/KroniK907/grabbag
 
 go 1.26.0
 

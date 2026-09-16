@@ -20,14 +20,14 @@ import (
 
 	"html/template"
 
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 const (
 	// PlayerCookieName is the host-only cookie that identifies a roster player.
-	PlayerCookieName = "hackbox_player"
+	PlayerCookieName = "grabbag_player"
 
 	// DefaultSeatCap is the host seat limit until /settings or /setup changes it.
 	DefaultSeatCap = 8
@@ -408,7 +408,7 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err := l.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM roster WHERE seated = 0`).Scan(&audience); err != nil {
 		return boardData{}, fmt.Errorf("lobby: count audience: %w", err)
 	}
-	chrome, err := l.chrome(ctx, "Hackbox board")
+	chrome, err := l.chrome(ctx, "Grab Bag board")
 	if err != nil {
 		return boardData{}, err
 	}
@@ -768,7 +768,7 @@ func (l *Lobby) toggleTheme(w http.ResponseWriter, r *http.Request) {
 	}
 	l.events.PublishData("theme", next)
 	if r.Header.Get("HX-Request") == "true" {
-		chrome, err := l.chrome(r.Context(), "Hackbox settings")
+		chrome, err := l.chrome(r.Context(), "Grab Bag settings")
 		if err != nil {
 			http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
 			return
@@ -1218,7 +1218,7 @@ func (l *Lobby) writeJoin(
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	chrome, err := l.chrome(r.Context(), "Join Hackbox")
+	chrome, err := l.chrome(r.Context(), "Join Grab Bag")
 	if err != nil {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return

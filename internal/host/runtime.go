@@ -12,11 +12,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/platform/applog"
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/platform/applog"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 var (

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/KroniK907/hackbox/internal/ui"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 var (
@@ -66,7 +66,7 @@ func WriteSetupSettings(ctx context.Context, tx *sql.Tx, settings SetupSettings)
 }
 
 func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
-	chrome, err := l.chrome(r.Context(), "Hackbox room")
+	chrome, err := l.chrome(r.Context(), "Grab Bag room")
 	if err != nil {
 		return roomView{}, err
 	}
@@ -137,7 +137,7 @@ func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body temp
 
 func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
 	if !l.hasAdminCookie(r) {
-		chrome, err := l.chrome(r.Context(), "Hackbox settings")
+		chrome, err := l.chrome(r.Context(), "Grab Bag settings")
 		if err != nil {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
@@ -623,7 +623,7 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 	if err != nil {
 		return settingsData{}, err
 	}
-	chrome, err := l.chrome(ctx, "Hackbox settings")
+	chrome, err := l.chrome(ctx, "Grab Bag settings")
 	if err != nil {
 		return settingsData{}, err
 	}
@@ -681,7 +681,7 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 }
 
 func (l *Lobby) writeLogin(w http.ResponseWriter, r *http.Request, message string, status int) {
-	chrome, err := l.chrome(r.Context(), "Hackbox settings")
+	chrome, err := l.chrome(r.Context(), "Grab Bag settings")
 	if err != nil {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return

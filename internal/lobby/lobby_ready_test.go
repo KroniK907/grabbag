@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestReadyIgnoredBeforeLoadFromWaitersAndAfterStart(t *testing.T) {
@@ -389,7 +389,7 @@ func openTestLobby(t *testing.T, dir string, wrap func(*lobby.Config)) (*store.D
 		}
 	}
 	cfg := lobby.Config{
-		AdminCookieName: "hackbox_admin",
+		AdminCookieName: "grabbag_admin",
 		Events:          hub.New(),
 		JoinURL: func(*http.Request) string {
 			return "http://192.168.10.24:8654/"

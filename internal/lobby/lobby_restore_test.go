@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/lobby"
 )
 
 func TestRestartRestore(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestSetupLifecycle(t *testing.T) {
@@ -24,7 +24,7 @@ func TestSetupLifecycle(t *testing.T) {
 	if docs.Header().Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Fatalf("GET /docs Content-Type = %q", docs.Header().Get("Content-Type"))
 	}
-	if !strings.Contains(docs.Body.String(), "downloaded Hackbox binary") ||
+	if !strings.Contains(docs.Body.String(), "downloaded Grab Bag binary") ||
 		!strings.Contains(docs.Body.String(), "<style>") ||
 		!strings.Contains(docs.Body.String(), "http://127.0.0.1:8654") {
 		t.Fatalf("docs before setup = %q", docs.Body.String())
@@ -215,27 +215,27 @@ func TestBoardJoinURLUsesPublicHostname(t *testing.T) {
 	t.Parallel()
 	_, handler := testHandler(t)
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
-	request(t, handler, http.MethodPost, "/setup", form, "hackbox.thekranichs.com")
+	request(t, handler, http.MethodPost, "/setup", form, "grabbag.thekranichs.com")
 
-	req := httptest.NewRequest(http.MethodGet, "https://hackbox.thekranichs.com/board", nil)
+	req := httptest.NewRequest(http.MethodGet, "https://grabbag.thekranichs.com/board", nil)
 	req.Header.Set("X-Forwarded-Proto", "https")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("board status = %d, want %d", rec.Code, http.StatusOK)
 	}
-	if !strings.Contains(rec.Body.String(), "https://hackbox.thekranichs.com/") {
+	if !strings.Contains(rec.Body.String(), "https://grabbag.thekranichs.com/") {
 		t.Fatalf("board page missing public join URL: %q", rec.Body.String())
 	}
 	if strings.Contains(rec.Body.String(), "http://192.168.10.24:8654/") {
 		t.Fatal("public board page still showed the LAN join URL")
 	}
 
-	phone := httptest.NewRequest(http.MethodGet, "https://hackbox.thekranichs.com/", nil)
+	phone := httptest.NewRequest(http.MethodGet, "https://grabbag.thekranichs.com/", nil)
 	phone.Header.Set("X-Forwarded-Proto", "https")
 	phoneRec := httptest.NewRecorder()
 	handler.ServeHTTP(phoneRec, phone)
-	if strings.Contains(phoneRec.Body.String(), "https://hackbox.thekranichs.com/") {
+	if strings.Contains(phoneRec.Body.String(), "https://grabbag.thekranichs.com/") {
 		t.Fatal("phone stub should not show the join URL")
 	}
 }
@@ -259,7 +259,7 @@ func TestAdminCookieIsSecureBehindHTTPSProxy(t *testing.T) {
 	t.Parallel()
 	_, handler := testHandler(t)
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
-	req := httptest.NewRequest(http.MethodPost, "https://hackbox.thekranichs.com/setup", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "https://grabbag.thekranichs.com/setup", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-Forwarded-Proto", "https")
 	rec := httptest.NewRecorder()
@@ -275,7 +275,7 @@ func TestCrossOriginFinishIsForbidden(t *testing.T) {
 	t.Parallel()
 	db, handler := testHandler(t)
 	form := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
-	req := httptest.NewRequest(http.MethodPost, "http://hackbox.test/setup", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest(http.MethodPost, "http://grabbag.test/setup", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Origin", "https://evil.example")
 	rec := httptest.NewRecorder()
@@ -335,7 +335,7 @@ func request(t *testing.T, handler http.Handler, method, path string, form url.V
 	} else {
 		body = strings.NewReader(form.Encode())
 	}
-	req := httptest.NewRequest(method, "http://hackbox.test"+path, body)
+	req := httptest.NewRequest(method, "http://grabbag.test"+path, body)
 	if host != "" {
 		req.Host = host
 	}

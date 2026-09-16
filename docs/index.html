@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>How to run Hackbox</title>
+  <title>How to run Grab Bag</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&amp;family=Russo+One&amp;family=Source+Sans+3:wght@400;600;700&amp;family=Source+Code+Pro:wght@500;600&amp;display=swap" rel="stylesheet">
@@ -223,18 +223,18 @@
         <li><a href="#settings">Settings</a></li>
         <li><a href="#restart">If you quit and come back</a></li>
         <li><a href="#phones-stuck">Phones cannot join</a></li>
-        <li><a href="#stop">Stop Hackbox</a></li>
+        <li><a href="#stop">Stop Grab Bag</a></li>
         <li><a href="#write-a-game">Write a game</a></li>
       </ul>
     </nav>
     <main id="content">
-      <h1>How to run Hackbox</h1>
-      <p class="lede">Get a living-room game on a TV, with phones as controllers. This page is for a downloaded Hackbox binary. You do not compile anything to host a room.</p>
+      <h1>How to run Grab Bag</h1>
+      <p class="lede">Get a living-room game on a TV, with phones as controllers. This page is for a downloaded Grab Bag binary. You do not compile anything to host a room.</p>
       <p>You are the person with the PC. Everyone else only needs a phone browser. Follow the sections in order the first time. Use the table of contents later when you only need one answer. You can open this file from disk, or from the running host at <code>http://127.0.0.1:8654/docs</code>.</p>
 
       <h2 id="what-you-need">What you need</h2>
       <ul>
-        <li>A Windows computer that stays on for the whole party. That machine runs Hackbox. Closing the window ends the room.</li>
+        <li>A Windows computer that stays on for the whole party. That machine runs Grab Bag. Closing the window ends the room.</li>
         <li>A TV, projector, or a second window for the board. That is the screen the room watches.</li>
         <li>Phones or tablets on the <strong>same Wi-Fi</strong> as the computer. Guest Wi-Fi often blocks this. Use the house network.</li>
         <li>An admin password you are about to pick. You will type it on setup, and once more on the first phone that should run the room.</li>
@@ -242,14 +242,14 @@
 
       <h2 id="start">Start the program</h2>
       <ol>
-        <li>Double-click the Hackbox program. On Windows that is usually <code>hackbox.exe</code>.</li>
+        <li>Double-click the Grab Bag program. On Windows that is usually <code>grabbag.exe</code>.</li>
         <li>Leave the black console window open. That window <em>is</em> the server.</li>
-        <li>If Windows Firewall asks, allow Hackbox on a private network.</li>
+        <li>If Windows Firewall asks, allow Grab Bag on a private network.</li>
         <li>In a browser <strong>on this computer</strong>, open the address the console printed. It looks like <code>http://127.0.0.1:8654</code>.</li>
       </ol>
       <div class="result"><strong>You should see</strong> either first-time setup, or the board if you already finished setup on this PC.</div>
-      <div class="note">Hackbox always uses port 8654. If another copy is already running, this one prints an error and exits. Close the other window, then start again.</div>
-      <p><code>127.0.0.1</code> only works on the machine running Hackbox. Phones use a different URL. You will see it on the board, next to the QR code.</p>
+      <div class="note">Grab Bag always uses port 8654. If another copy is already running, this one prints an error and exits. Close the other window, then start again.</div>
+      <p><code>127.0.0.1</code> only works on the machine running Grab Bag. Phones use a different URL. You will see it on the board, next to the QR code.</p>
 
       <h2 id="setup">First-time setup</h2>
       <p>The first visit on this computer opens <code>/setup</code>.</p>
@@ -345,11 +345,11 @@
           </tr>
           <tr>
             <td>Disconnected after</td>
-            <td>Seconds of silence before Hackbox treats a phone as gone. They still own the seat for a while. The face dims.</td>
+            <td>Seconds of silence before Grab Bag treats a phone as gone. They still own the seat for a while. The face dims.</td>
           </tr>
           <tr>
             <td>Kick timeout</td>
-            <td>While a round is running, a dropped seated phone keeps the chair. After the round, if they still have not come back, Hackbox removes them once this many extra seconds have passed. Set 0 to never auto-drop.</td>
+            <td>While a round is running, a dropped seated phone keeps the chair. After the round, if they still have not come back, Grab Bag removes them once this many extra seconds have passed. Set 0 to never auto-drop.</td>
           </tr>
           <tr>
             <td>Seat disconnected waiters</td>
@@ -369,7 +369,7 @@
           </tr>
           <tr>
             <td>Advertised hostname</td>
-            <td>Leave blank for a LAN party. The board then shows the IPv4 Hackbox found at start. Fill this in only when you publish the room through a tunnel. A Cloudflare hostname is the usual case. Phones must be able to reach that name on port 8654.</td>
+            <td>Leave blank for a LAN party. The board then shows the IPv4 Grab Bag found at start. Fill this in only when you publish the room through a tunnel. A Cloudflare hostname is the usual case. Phones must be able to reach that name on port 8654.</td>
           </tr>
           <tr>
             <td>Log to stdout / host.log</td>
@@ -395,26 +395,26 @@
       </table>
 
       <h2 id="restart">If you quit and come back</h2>
-      <p>Closing Hackbox does not forget the room. The next start reloads names and seats from disk.</p>
+      <p>Closing Grab Bag does not forget the room. The next start reloads names and seats from disk.</p>
       <ol>
         <li>Start the program again.</li>
         <li>Open the board.</li>
         <li>Tap <strong>Keep this room</strong> to restore last night's table, or <strong>Clear room</strong> for a fresh house.</li>
       </ol>
       <div class="result"><strong>Until someone taps one of those</strong> you cannot Load or Start. That pause is on purpose so a crash does not dump eight people on the floor.</div>
-      <p>Files live in the user cache, in a folder named <code>hackbox</code>. On Windows that is <code>%LOCALAPPDATA%\hackbox</code>. You will see <code>host.sqlite</code>, maybe <code>host.log</code>, and a <code>games</code> folder per game id.</p>
+      <p>Files live in the user cache, in a folder named <code>grabbag</code>. On Windows that is <code>%LOCALAPPDATA%\grabbag</code>. You will see <code>host.sqlite</code>, maybe <code>host.log</code>, and a <code>games</code> folder per game id. An older Hackbox install kept the same files under <code>%LOCALAPPDATA%\hackbox</code>. This build does not read that folder.</p>
 
       <h2 id="phones-stuck">Phones cannot join</h2>
       <p>Work down the list. Most nights it is Wi-Fi or the wrong URL.</p>
       <ol>
         <li>Confirm the phone and PC are on the same Wi-Fi. Not a guest network. Not cellular.</li>
-        <li>Confirm Windows Firewall allowed Hackbox on that private network.</li>
-        <li>On the phone, use the URL or QR on the board. Do not type <code>127.0.0.1</code>. That address means "this device," so the phone would look for Hackbox inside itself.</li>
+        <li>Confirm Windows Firewall allowed Grab Bag on that private network.</li>
+        <li>On the phone, use the URL or QR on the board. Do not type <code>127.0.0.1</code>. That address means "this device," so the phone would look for Grab Bag inside itself.</li>
         <li>Confirm the board says Open.</li>
         <li>If you set advertised hostname, that name has to reach this PC on port 8654 from the phone.</li>
       </ol>
 
-      <h2 id="stop">Stop Hackbox</h2>
+      <h2 id="stop">Stop Grab Bag</h2>
       <p>Close the console window, or press Ctrl+C in it. There is no tray icon in this build.</p>
       <p>Starting the program again brings the last room back until you Keep or Clear it.</p>
 

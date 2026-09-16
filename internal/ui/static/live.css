@@ -1,4 +1,4 @@
-/* Hackbox chrome. Widget classes are theme-agnostic. Palettes live on html[data-theme]. */
+/* Grab Bag chrome. Widget classes are theme-agnostic. Palettes live on html[data-theme]. */
 
 :root,
 [data-theme="neon-light"] {

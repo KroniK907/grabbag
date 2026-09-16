@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestJoinMintsPlayerAndReconnects(t *testing.T) {
@@ -45,7 +45,7 @@ func TestJoinMintsPlayerAndReconnects(t *testing.T) {
 		t.Fatalf("player cookie flags = %#v", playerCookie)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "http://hackbox.test/", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://grabbag.test/", nil)
 	req.AddCookie(playerCookie)
 	player, ok, err := room.PlayerFromRequest(req)
 	if err != nil {
@@ -178,7 +178,7 @@ func TestClaimHostAndLeave(t *testing.T) {
 		t.Fatalf("host Join status = %d, want %d; body = %q", hostJoin.Code, http.StatusSeeOther, hostJoin.Body.String())
 	}
 	hostPlayerCookie := cookieNamed(t, hostJoin, lobby.PlayerCookieName)
-	hostAdminCookie := cookieNamed(t, hostJoin, "hackbox_admin")
+	hostAdminCookie := cookieNamed(t, hostJoin, "grabbag_admin")
 	if hostAdminCookie.MaxAge != 30*24*60*60 || !hostAdminCookie.HttpOnly {
 		t.Fatalf("host-phone admin cookie flags = %#v", hostAdminCookie)
 	}
@@ -213,7 +213,7 @@ func TestClaimHostAndLeave(t *testing.T) {
 	if guestJoin.Code != http.StatusSeeOther {
 		t.Fatalf("guest Join status = %d, want %d; body = %q", guestJoin.Code, http.StatusSeeOther, guestJoin.Body.String())
 	}
-	if cookieByName(guestJoin, "hackbox_admin") != nil {
+	if cookieByName(guestJoin, "grabbag_admin") != nil {
 		t.Fatal("later joiner received an admin cookie")
 	}
 	guestPlayerCookie := cookieNamed(t, guestJoin, lobby.PlayerCookieName)
@@ -269,7 +269,7 @@ func TestClaimHostAndLeave(t *testing.T) {
 		t.Fatalf("avatar seed = %q, want leftover %q", rejoined.AvatarSeed, host.AvatarSeed)
 	}
 
-	postedIdentity := httptest.NewRequest(http.MethodPost, "http://hackbox.test/lobby/leave", strings.NewReader(url.Values{
+	postedIdentity := httptest.NewRequest(http.MethodPost, "http://grabbag.test/lobby/leave", strings.NewReader(url.Values{
 		"player_id": {guest.ID},
 	}.Encode()))
 	postedIdentity.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -300,7 +300,7 @@ func TestClaimHostRaceHasOneWinner(t *testing.T) {
 			}
 			req := httptest.NewRequest(
 				http.MethodPost,
-				"http://hackbox.test/lobby/join",
+				"http://grabbag.test/lobby/join",
 				strings.NewReader(form.Encode()),
 			)
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -319,7 +319,7 @@ func TestClaimHostRaceHasOneWinner(t *testing.T) {
 		if result.rec.Code != http.StatusSeeOther {
 			t.Fatalf("%s status = %d, want %d; body = %q", result.name, result.rec.Code, http.StatusSeeOther, result.rec.Body.String())
 		}
-		if cookieByName(result.rec, "hackbox_admin") != nil {
+		if cookieByName(result.rec, "grabbag_admin") != nil {
 			adminCookies++
 		}
 		playerCookie := cookieByName(result.rec, lobby.PlayerCookieName)
@@ -477,7 +477,7 @@ func testLobby(t *testing.T) (*store.DB, http.Handler, *lobby.Lobby) {
 		t.Fatal(err)
 	}
 	room, err := lobby.New(db, lobby.Config{
-		AdminCookieName: "hackbox_admin",
+		AdminCookieName: "grabbag_admin",
 		Events:          hub.New(),
 		JoinURL: func(*http.Request) string {
 			return "http://192.168.10.24:8654/"
@@ -512,7 +512,7 @@ func lobbyRequest(
 	if form != nil {
 		body = strings.NewReader(form.Encode())
 	}
-	req := httptest.NewRequest(method, "http://hackbox.test"+path, body)
+	req := httptest.NewRequest(method, "http://grabbag.test"+path, body)
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
@@ -537,7 +537,7 @@ func lobbyRequestAll(
 	if form != nil {
 		body = strings.NewReader(form.Encode())
 	}
-	req := httptest.NewRequest(method, "http://hackbox.test"+path, body)
+	req := httptest.NewRequest(method, "http://grabbag.test"+path, body)
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
@@ -580,7 +580,7 @@ func playerFromCookie(t *testing.T, room *lobby.Lobby, cookie *http.Cookie) lobb
 
 func findPlayer(t *testing.T, room *lobby.Lobby, cookie *http.Cookie) (lobby.Player, bool) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "http://hackbox.test/", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://grabbag.test/", nil)
 	req.AddCookie(cookie)
 	player, ok, err := room.PlayerFromRequest(req)
 	if err != nil {

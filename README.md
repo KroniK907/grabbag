@@ -1,6 +1,6 @@
-# Hackbox
+# Grab Bag
 
-A room, a TV, and a pile of phones. Hackbox is a Go host that puts the game on the big screen and the buttons in everyone's pocket.
+A room, a TV, and a pile of phones. Grab Bag is a Go host that puts the game on the big screen and the buttons in everyone's pocket. The public name is [grabbag.gg](https://grabbag.gg).
 
 One process. Same Wi-Fi. Browser only. No app store, no cloud account, no room code on someone else's website.
 
@@ -51,27 +51,27 @@ Games are compile-time. A package under `internal/games/<name>` calls `games.Reg
 You need Go 1.26 or newer, a Windows computer, a TV or second window, and phones on the **same Wi-Fi** as the PC. Guest Wi-Fi often blocks this.
 
 ```text
-git clone https://github.com/KroniK907/hackbox.git
-cd hackbox
-go run ./cmd/hackbox
+git clone https://github.com/KroniK907/grabbag.git
+cd grabbag
+go run ./cmd/grabbag
 ```
 
 Or build a binary and double-click it:
 
 ```text
-go build -o hackbox.exe ./cmd/hackbox
-.\hackbox.exe
+go build -o grabbag.exe ./cmd/grabbag
+.\grabbag.exe
 ```
 
-Leave the console window open. Hackbox always binds port **8654**. If another copy is already running, this one prints an error and exits.
+Leave the console window open. Grab Bag always binds port **8654**. If another copy is already running, this one prints an error and exits.
 
 On the host machine, open `http://127.0.0.1:8654`. First visit is setup. Pick an admin password (at least 8 characters), tap Finish, fullscreen `/board` on the TV.
 
-Phones use the URL or QR on the board. They must not use `127.0.0.1`. That address is this device, so a phone would look for Hackbox inside itself.
+Phones use the URL or QR on the board. They must not use `127.0.0.1`. That address is this device, so a phone would look for Grab Bag inside itself.
 
-The step-by-step operator guide is [How to run Hackbox](docs/index.html). After the process starts it is also `http://127.0.0.1:8654/docs`.
+The step-by-step operator guide is [How to run Grab Bag](docs/index.html). After the process starts it is also `http://127.0.0.1:8654/docs`.
 
-Room files live under `%LOCALAPPDATA%\hackbox` (`host.sqlite`, optional `host.log`, a `games` folder per game id).
+Room files live under `%LOCALAPPDATA%\grabbag` (`host.sqlite`, optional `host.log`, a `games` folder per game id).
 
 ## Write a game
 
@@ -82,7 +82,7 @@ The shipped reference is [Testing](internal/games/testing). Copy that shape. Reg
 ```text
 # after you add the package and the blank import
 go test ./internal/games/... ./internal/host/...
-go run ./cmd/hackbox
+go run ./cmd/grabbag
 ```
 
 Load the game from the Host drawer. Start needs at least one seated player.

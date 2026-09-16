@@ -3,7 +3,7 @@ package host
 import (
 	"net/http"
 
-	"github.com/KroniK907/hackbox/internal/games"
+	"github.com/KroniK907/grabbag/internal/games"
 )
 
 type fakeGame struct {

@@ -1,6 +1,6 @@
-# Hackbox codebase
+# Grab Bag codebase
 
-Layout and coding standards. Binding. Source: [CORE-HOST-GM-001 through GM-005](https://github.com/KroniK907/hackbox/issues/1) from [Grill: code layout and standards](https://github.com/KroniK907/hackbox/issues/4).
+Layout and coding standards. Binding. Source: [CORE-HOST-GM-001 through GM-005](https://github.com/KroniK907/grabbag/issues/1) from [Grill: code layout and standards](https://github.com/KroniK907/grabbag/issues/4).
 
 Read this before adding Go packages, templates, or static files. Operator HTML belongs in `docs/*.html`, not here. The Game/Helper contract is [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
@@ -21,12 +21,12 @@ Read this before adding Go packages, templates, or static files. Operator HTML b
 One Go module. No `pkg/`. No second module for shared code. Directories exist in git only when they contain a real file. Do not add `.gitkeep` placeholders.
 
 ```text
-hackbox/
+grabbag/
   go.mod
   AGENTS.md
   README.md
   cmd/
-    hackbox/
+    grabbag/
       main.go                 # process entry; almost no logic
   docs/
     embed.go                  # package docs; embeds *.html
@@ -58,15 +58,15 @@ hackbox/
 
 Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-light` (default) and `neon-dark`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
-A later `cmd/hackbox-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/hackbox/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/hackbox/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/hackbox/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
+A later `cmd/grabbag-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
 ## Import rules
 
-`cmd/hackbox` imports only `internal/host`. Host is the composition root. It may import lobby, games, ui, store, platform, and `docs`.
+`cmd/grabbag` imports only `internal/host`. Host is the composition root. It may import lobby, games, ui, store, platform, and `docs`.
 
 | From | May import | Must not import |
 |------|------------|-----------------|
-| `cmd/hackbox` | `internal/host` | everything else |
+| `cmd/grabbag` | `internal/host` | everything else |
 | `internal/host` | lobby, games, ui, store, platform, docs | - |
 | `docs` | stdlib only | host, lobby, games, ui, store, platform |
 | `internal/lobby` | ui, platform, store | host, games |

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/lobby"
 )
 
 type helper struct {

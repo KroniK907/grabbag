@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/lobby"
 )
 
 func TestGM077SeatCapRefuseLogoutAndLogin(t *testing.T) {
@@ -27,13 +27,13 @@ func TestGM077SeatCapRefuseLogoutAndLogin(t *testing.T) {
 	if loggedIn.Code != http.StatusSeeOther {
 		t.Fatalf("login status = %d; body = %q", loggedIn.Code, loggedIn.Body.String())
 	}
-	tab := cookieNamed(t, loggedIn, "hackbox_admin")
+	tab := cookieNamed(t, loggedIn, "grabbag_admin")
 	list := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, tab).Body.String()
 	if !strings.Contains(list, "Seat cap") ||
 		!strings.Contains(list, "Cycle seated players") ||
 		!strings.Contains(list, "Fill empty seats") ||
 		!strings.Contains(list, "Advertised hostname") ||
-		!strings.Contains(list, "How to run Hackbox") ||
+		!strings.Contains(list, "How to run Grab Bag") ||
 		!strings.Contains(list, "Log out") ||
 		!strings.Contains(list, `href="/">Player</a>`) {
 		t.Fatalf("settings list = %q", list)
@@ -86,7 +86,7 @@ func TestGM077SeatCapRefuseLogoutAndLogin(t *testing.T) {
 	}
 
 	other := lobbyRequest(t, handler, http.MethodPost, "/settings/login", url.Values{"password": {"correct horse"}}, nil)
-	otherTab := cookieNamed(t, other, "hackbox_admin")
+	otherTab := cookieNamed(t, other, "grabbag_admin")
 	out := lobbyRequest(t, handler, http.MethodPost, "/settings/logout", nil, tab)
 	if out.Code != http.StatusSeeOther {
 		t.Fatalf("logout status = %d", out.Code)
@@ -110,7 +110,7 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 		"admin_password": {"correct horse"},
 	}, nil)
 	hostPlayer := cookieNamed(t, hostJoin, lobby.PlayerCookieName)
-	hostAdmin := cookieNamed(t, hostJoin, "hackbox_admin")
+	hostAdmin := cookieNamed(t, hostJoin, "grabbag_admin")
 
 	phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, hostPlayer, hostAdmin).Body.String()
 	if !strings.Contains(phone, `id="host-drawer"`) ||
@@ -226,7 +226,7 @@ func TestMakeHostAndTakeHost(t *testing.T) {
 	if ok.Code != http.StatusSeeOther {
 		t.Fatalf("take host = %d %q", ok.Code, ok.Body.String())
 	}
-	admin := cookieNamed(t, ok, "hackbox_admin")
+	admin := cookieNamed(t, ok, "grabbag_admin")
 	maya = playerFromCookie(t, room, guestCookie)
 	if !maya.ClaimedHost || maya.PendingDesignation {
 		t.Fatalf("after take host = %#v", maya)

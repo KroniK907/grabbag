@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestKeepReloadsSelectedGameAndClearLeavesKV(t *testing.T) {

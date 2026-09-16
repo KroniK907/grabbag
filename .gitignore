@@ -1,6 +1,7 @@
 .cursor/
 node_modules/
 .turbo/
+grabbag.exe
 hackbox.exe
 
 

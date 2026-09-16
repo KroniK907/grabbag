@@ -427,7 +427,7 @@
         <h5>Register Testing</h5>
         <pre class="ex">package testinggame
 
-import "github.com/KroniK907/hackbox/internal/games"
+import "github.com/KroniK907/grabbag/internal/games"
 
 func init() {
     games.Register(games.Factory{
@@ -438,7 +438,7 @@ func init() {
         <h5>Blank-import so Catalog is not empty</h5>
         <p>Without this line in <code>internal/host/handler.go</code>, Load returns conflict for that id.</p>
         <pre class="ex">import (
-    _ "github.com/KroniK907/hackbox/internal/games/testing"
+    _ "github.com/KroniK907/grabbag/internal/games/testing"
 )</pre>
       </article>
 
@@ -954,7 +954,7 @@ g.taps[player.ID]++</pre>
         <h4>Parameters</h4>
         <p>None.</p>
         <h4>Return value</h4>
-        <p>While loaded, <code>&lt;storeDir&gt;/games/&lt;ID&gt;</code>. If nothing is loaded, <code>&lt;storeDir&gt;/games</code>. On Windows the store dir is under <code>%LOCALAPPDATA%\hackbox</code>.</p>
+        <p>While loaded, <code>&lt;storeDir&gt;/games/&lt;ID&gt;</code>. If nothing is loaded, <code>&lt;storeDir&gt;/games</code>. On Windows the store dir is under <code>%LOCALAPPDATA%\grabbag</code>.</p>
         <h4>Description</h4>
         <p>Host created the id folder during Load. Write your own files here if KV blobs are a poor fit. Host does not parse them. Stop and Shutdown do not delete the folder.</p>
         <h4>Examples</h4>
@@ -1372,7 +1372,7 @@ graceful=1</div>
       </article>
 
       <h2 id="sse">Live SSE</h2>
-      <p>Hackbox does not push HTML down the wire. It pokes open pages with a name, and those pages pull the current document or partial. That is the whole live system.</p>
+      <p>Grab Bag does not push HTML down the wire. It pokes open pages with a name, and those pages pull the current document or partial. That is the whole live system.</p>
 
       <article class="method" id="sse-how">
         <h3>How it works</h3>

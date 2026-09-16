@@ -1,7 +1,7 @@
 ---
 id: game-host-contract
 status: binding
-go_package: github.com/KroniK907/hackbox/internal/games
+go_package: github.com/KroniK907/grabbag/internal/games
 game_type: games.Game
 helper_type: games.Helper
 host_helper: internal/host/helper.go
@@ -260,7 +260,7 @@ Games may read these fields. They never write them.
 ```go
 package wordbox
 
-import "github.com/KroniK907/hackbox/internal/games"
+import "github.com/KroniK907/grabbag/internal/games"
 
 const id = "wordbox"
 
@@ -272,7 +272,7 @@ func init() {
 In `internal/host/handler.go`:
 
 ```go
-_ "github.com/KroniK907/hackbox/internal/games/wordbox"
+_ "github.com/KroniK907/grabbag/internal/games/wordbox"
 ```
 
 Without that import, Catalog is empty for this id and Load returns conflict.

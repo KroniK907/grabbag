@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/lobby"
-	"github.com/KroniK907/hackbox/internal/platform/hub"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/lobby"
+	"github.com/KroniK907/grabbag/internal/platform/hub"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestRoomFillBehaviors(t *testing.T) {
@@ -214,7 +214,7 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	liveCookie := joinNamed(t, handler, "Live", "")
 	live := playerFromCookie(t, room, liveCookie)
 	hxForm := url.Values{"player_id": {live.ID}}
-	hxReq := httptest.NewRequest(http.MethodPost, "http://hackbox.test/settings/kick", strings.NewReader(hxForm.Encode()))
+	hxReq := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/kick", strings.NewReader(hxForm.Encode()))
 	hxReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	hxReq.Header.Set("HX-Request", "true")
 	hxReq.AddCookie(operatorCookie())
@@ -377,7 +377,7 @@ func joinNamed(t *testing.T, handler http.Handler, name, password string) *http.
 }
 
 func operatorCookie() *http.Cookie {
-	return &http.Cookie{Name: "hackbox_admin", Value: "operator-session"}
+	return &http.Cookie{Name: "grabbag_admin", Value: "operator-session"}
 }
 
 func assertBoardLists(t *testing.T, body string, seated, waiting []string) {
@@ -413,7 +413,7 @@ func assertBoardLists(t *testing.T, body string, seated, waiting []string) {
 func lobbyHandler(t *testing.T, db *store.DB) (http.Handler, *lobby.Lobby) {
 	t.Helper()
 	room, err := lobby.New(db, lobby.Config{
-		AdminCookieName: "hackbox_admin",
+		AdminCookieName: "grabbag_admin",
 		Events:          hub.New(),
 		JoinURL: func(*http.Request) string {
 			return "http://192.168.10.24:8654/"

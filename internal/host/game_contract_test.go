@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KroniK907/hackbox/internal/games"
-	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
@@ -389,7 +389,7 @@ func requestWithCookie(t *testing.T, handler http.Handler, method, path string, 
 	if form != nil {
 		body = strings.NewReader(form.Encode())
 	}
-	req := httptest.NewRequest(method, "http://hackbox.test"+path, body)
+	req := httptest.NewRequest(method, "http://grabbag.test"+path, body)
 	if form != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
@@ -491,7 +491,7 @@ func readHostSSE(t *testing.T, reader *bufio.Reader, want string) {
 }
 
 func requestFromCookies(cookies []*http.Cookie) *http.Request {
-	req := httptest.NewRequest(http.MethodGet, "http://hackbox.test/", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://grabbag.test/", nil)
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
