@@ -25,8 +25,8 @@ func TestCatalogMinAndMax(t *testing.T) {
 		t.Fatal("testing is not in the catalog")
 	}
 	g := got.New()
-	if g.ID() != "testing" || g.MinPlayers() != 1 || g.MaxPlayers() != 0 {
-		t.Fatalf("id=%s min=%d max=%d", g.ID(), g.MinPlayers(), g.MaxPlayers())
+	if g.ID() != "testing" || g.Name() != "Testing" || g.MinPlayers() != 1 || g.MaxPlayers() != 0 {
+		t.Fatalf("id=%s name=%s min=%d max=%d", g.ID(), g.Name(), g.MinPlayers(), g.MaxPlayers())
 	}
 }
 
@@ -203,6 +203,33 @@ func TestHideLatencyKVSurvivesClearAndStop(t *testing.T) {
 	}
 }
 
+func TestInfoPageAndBoardButton(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
+	g := New()
+	if err := g.Load(h); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = g.Shutdown() })
+
+	buttons := g.BoardButtons()
+	if len(buttons) != 1 || buttons[0].Label != "About Testing" || buttons[0].Path != "/play/info" || buttons[0].HostOnly {
+		t.Fatalf("BoardButtons = %#v", buttons)
+	}
+
+	rec := httptest.NewRecorder()
+	g.Play().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/info", nil))
+	page := rec.Body.String()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("info status = %d", rec.Code)
+	}
+	if !strings.Contains(page, "prove the host game contract") ||
+		!strings.Contains(page, `href="/board"`) ||
+		!strings.Contains(page, "Back to board") {
+		t.Fatalf("info page = %s", page)
+	}
+}
+
 func TestBoardAndPhoneChrome(t *testing.T) {
 	t.Parallel()
 	host := games.Player{
@@ -221,7 +248,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=paused-5", `sse:round`, `hx-get="/board"`, `data-theme="neon-light"`} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=info-2", `sse:round`, `hx-get="/board"`, `data-theme="neon-light"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}
@@ -242,7 +269,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	req.Header.Set("X-Player", "p1")
 	g.Phone(phone, req)
 	html = phone.Body.String()
-	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap", "/play/partials/phone", "sse:pause", "/play/static/game.css?v=paused-5"} {
+	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap", "/play/partials/phone", "sse:pause", "/play/static/game.css?v=info-2"} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("phone missing %q in %s", want, html)
 		}

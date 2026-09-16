@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/KroniK907/hackbox/internal/games"
@@ -105,6 +106,40 @@ func (rt *runtime) phoneExtras(_ *http.Request, _ lobby.Player) lobby.PhoneExtra
 	}
 }
 
+func (rt *runtime) boardExtras(r *http.Request) lobby.BoardExtras {
+	rt.mu.Lock()
+	game := rt.game
+	rt.mu.Unlock()
+	if game == nil {
+		return lobby.BoardExtras{}
+	}
+	name := strings.TrimSpace(game.Name())
+	if name == "" {
+		name = game.ID()
+	}
+	admin := rt.hasAdmin(r)
+	var defined []games.BoardButton
+	for _, button := range game.BoardButtons() {
+		label := strings.TrimSpace(button.Label)
+		path := strings.TrimSpace(button.Path)
+		if label == "" || path == "" {
+			continue
+		}
+		defined = append(defined, games.BoardButton{Label: label, Path: path, HostOnly: button.HostOnly})
+		if len(defined) == 3 {
+			break
+		}
+	}
+	var out []lobby.BoardButton
+	for _, button := range defined {
+		if button.HostOnly && !admin {
+			continue
+		}
+		out = append(out, lobby.BoardButton{Label: button.Label, Path: button.Path})
+	}
+	return lobby.BoardExtras{LoadedGame: name, Buttons: out}
+}
+
 func (rt *runtime) load(ctx context.Context, id string) error {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
@@ -152,6 +187,7 @@ func (rt *runtime) load(ctx context.Context, id string) error {
 		_ = rt.room.ApplyReadyReset(ctx, lobby.ReadyResetSwitch)
 	}
 	rt.log.Write("Load " + id)
+	rt.events.Publish("roster")
 	return nil
 }
 

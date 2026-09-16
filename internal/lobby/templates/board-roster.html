@@ -8,7 +8,13 @@
 >
   <div class="ui-board">
     <aside class="ui-rail">
-      <div class="ui-brand">HACK<br>BOX</div>
+      <div class="ui-brand">HACK BOX</div>
+      {{if .LoadedGame}}
+      <div class="ui-now-playing">
+        <span>Now playing:</span>
+        <span class="ui-now-playing-name">{{.LoadedGame}}</span>
+      </div>
+      {{end}}
       <div class="ui-qr">{{qr .JoinURL}}</div>
       {{with .JoinURL}}<div class="ui-url">{{.}}</div>{{end}}
       <div class="ui-pills">
@@ -20,6 +26,13 @@
         <span class="ui-pill">{{.SeatedCount}} / {{.SeatCap}} SEATS</span>
         <span class="ui-pill">{{.AudienceCount}} Audience Members</span>
       </div>
+      {{if .Buttons}}
+      <div class="ui-rail-actions">
+        {{range .Buttons}}
+        <a class="ui-btn" href="{{.Path}}">{{.Label}}</a>
+        {{end}}
+      </div>
+      {{end}}
     </aside>
     <main class="ui-main">
       <div class="ui-cluster">
@@ -36,7 +49,7 @@
       </div>
     </main>
     <div class="ui-marquee">
-      <span>NOW SERVING THE WAIT LINE</span>
+      <span>Wait List:</span>
       {{range .Waiting}}
       <span class="ui-chip" style="background: {{color .AvatarSeed}}">{{avatar .AvatarSeed}} {{.DisplayName}}</span>
       {{end}}

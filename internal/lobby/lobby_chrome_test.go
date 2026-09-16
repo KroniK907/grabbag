@@ -80,6 +80,10 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 		!strings.Contains(board, `class="ui-marquee"`) ||
 		!strings.Contains(board, "CLOSED") ||
 		!strings.Contains(board, "Audience Members") ||
+		!strings.Contains(board, "Wait List:") ||
+		strings.Contains(board, `class="ui-rail-actions"`) ||
+		strings.Contains(board, "Now playing:") ||
+		strings.Contains(board, "NOW SERVING THE WAIT LINE") ||
 		strings.Contains(board, "IN THE ROOM") ||
 		strings.Contains(board, "empty chair") ||
 		strings.Contains(board, "<h2>Audience</h2>") {

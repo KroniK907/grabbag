@@ -193,7 +193,11 @@ func (rt *runtime) play(w http.ResponseWriter, r *http.Request) {
 	rt.mu.Lock()
 	started, game := rt.started, rt.game
 	rt.mu.Unlock()
-	if !started || game == nil || game.Play() == nil {
+	if game == nil || game.Play() == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if !started && r.Method != http.MethodGet {
 		http.NotFound(w, r)
 		return
 	}

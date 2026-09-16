@@ -48,6 +48,8 @@ type Helper interface {
 // MinPlayers and MaxPlayers are 0 when the game does not declare a pair.
 type Game interface {
 	ID() string
+	// Name is the player-facing label on the Lobby rail. ID stays the catalog key.
+	Name() string
 	MinPlayers() int
 	MaxPlayers() int
 	Load(h Helper) error
@@ -60,6 +62,18 @@ type Game interface {
 	Resume() error
 	Stop() error
 	Shutdown() error
+	// BoardButtons is up to three Lobby /board rail links under the audience
+	// count. Empty Path or Label is skipped. HostOnly omits the control from
+	// HTML unless the request has an admin session. After Start the game owns
+	// /board, so these only paint while Lobby still renders the TV.
+	BoardButtons() []BoardButton
+}
+
+// BoardButton is one Lobby rail control a loaded game may publish.
+type BoardButton struct {
+	Label    string
+	Path     string
+	HostOnly bool
 }
 
 // Factory constructs one Game value. Catalog is compile-time only.

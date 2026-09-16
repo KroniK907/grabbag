@@ -67,6 +67,18 @@ type PhoneExtras struct {
 	LoadedGameID string
 }
 
+// BoardButton is a loaded-game link on the Lobby /board rail.
+type BoardButton struct {
+	Label string
+	Path  string
+}
+
+// BoardExtras is host-owned Lobby /board rail state Lobby cannot import from games.
+type BoardExtras struct {
+	LoadedGame string
+	Buttons    []BoardButton
+}
+
 // Config supplies host-owned password, cookie, and advertised join-URL policies.
 type Config struct {
 	AdminCookieName string
@@ -78,6 +90,7 @@ type Config struct {
 	LogSinksChanged func(stdout, file bool)
 	SettingsExtras  func(context.Context) SettingsExtras
 	PhoneExtras     func(*http.Request, Player) PhoneExtras
+	BoardExtras     func(*http.Request) BoardExtras
 	Clock           func() time.Time
 	StartRound      func(context.Context) error
 	AfterDisconnect func(context.Context, Player)
@@ -109,6 +122,7 @@ type Lobby struct {
 	logSinksChanged func(stdout, file bool)
 	settingsExtras  func(context.Context) SettingsExtras
 	phoneExtras     func(*http.Request, Player) PhoneExtras
+	boardExtras     func(*http.Request) BoardExtras
 	startRound      func(context.Context) error
 	afterDisconnect func(context.Context, Player)
 	afterRestore    func(context.Context, bool)
@@ -145,6 +159,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		logSinksChanged: config.LogSinksChanged,
 		settingsExtras:  config.SettingsExtras,
 		phoneExtras:     config.PhoneExtras,
+		boardExtras:     config.BoardExtras,
 		startRound:      config.StartRound,
 		afterDisconnect: config.AfterDisconnect,
 		afterRestore:    config.AfterRestore,
@@ -253,6 +268,8 @@ type boardData struct {
 	AudienceCount  int
 	Seated         []Player
 	Waiting        []Player
+	LoadedGame     string
+	Buttons        []BoardButton
 	RestorePending bool
 	RestoreNames   []string
 	AdminLocked    bool
@@ -350,6 +367,11 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 	adminOnly, err := l.adminOnlyBoard(r.Context())
 	if err != nil {
 		return boardData{}, err
+	}
+	if l.boardExtras != nil {
+		extra := l.boardExtras(r)
+		data.LoadedGame = extra.LoadedGame
+		data.Buttons = extra.Buttons
 	}
 	if adminOnly && !l.hasAdminCookie(r) {
 		data.AdminLocked = true

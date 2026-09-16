@@ -128,6 +128,16 @@ body.ui-app {
   background: var(--ui-bg);
   color: var(--ui-fg);
   font-family: var(--ui-font-ui);
+  touch-action: manipulation;
+}
+
+button,
+input,
+select,
+textarea,
+a,
+label {
+  touch-action: manipulation;
 }
 
 button,
@@ -601,14 +611,15 @@ button {
 
 .ui-board-host {
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .ui-board {
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: 280px 1fr;
-  grid-template-rows: 1fr 92px;
+  grid-template-rows: minmax(0, 1fr) 92px;
   background: var(--ui-board-bg);
   color: var(--ui-fg);
   position: relative;
@@ -616,6 +627,8 @@ button {
 
 .ui-rail {
   grid-row: 1 / 2;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -625,11 +638,35 @@ button {
   box-shadow: inset -12px 0 30px var(--ui-glow);
 }
 
+.ui-rail .ui-brand {
+  font-size: 40px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ui-now-playing {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.ui-now-playing-name {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--ui-font-display);
+  font-size: 22px;
+  letter-spacing: 1px;
+  line-height: 1.1;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+  overflow-wrap: anywhere;
+}
+
 .ui-qr {
-  width: 200px;
-  height: 200px;
+  width: 140px;
+  height: 140px;
+  flex: 0 0 140px;
   background: #fff;
-  padding: 10px;
+  padding: 2px;
   border-radius: 8px;
   box-shadow: 0 0 0 4px var(--ui-accent-2), 0 8px 0 var(--ui-accent-2-shadow);
 }
@@ -666,7 +703,31 @@ button {
   box-shadow: none;
 }
 
+.ui-rail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.ui-rail-actions .ui-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  min-height: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .ui-main {
+  min-height: 0;
   padding: 28px 28px 16px;
   overflow: auto;
 }
@@ -946,7 +1007,12 @@ button {
   .ui-qr {
     width: 88px;
     height: 88px;
-    padding: 6px;
+    padding: 2px;
+  }
+
+  .ui-rail-actions {
+    flex: 1 1 100%;
+    min-height: 0;
   }
 
   .ui-url {

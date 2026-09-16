@@ -1,3 +1,27 @@
+.testing-info {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.testing-info h1 {
+  font-family: var(--ui-font-display);
+  font-size: 56px;
+  margin: 0 0 16px;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.testing-info p {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.testing-info .ui-btn {
+  margin-top: 12px;
+}
+
 .testing-board {
   min-height: 100dvh;
   padding: 24px 20px 96px;

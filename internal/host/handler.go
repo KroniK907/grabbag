@@ -51,6 +51,7 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 		LogSinksChanged: rt.log.SetSinks,
 		SettingsExtras:  rt.extras,
 		PhoneExtras:     rt.phoneExtras,
+		BoardExtras:     rt.boardExtras,
 		StartRound:      rt.start,
 		AfterDisconnect: rt.afterDisconnect,
 		AfterRestore: func(ctx context.Context, _ bool) {

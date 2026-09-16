@@ -12,9 +12,11 @@ type fakeGame struct {
 	stopped, shutdown       bool
 	helper                  games.Helper
 	settingsHits, playHits  int
+	buttons                 []games.BoardButton
 }
 
 func (f *fakeGame) ID() string      { return "fake" }
+func (f *fakeGame) Name() string    { return "fake" }
 func (f *fakeGame) MinPlayers() int { return f.min }
 func (f *fakeGame) MaxPlayers() int { return f.max }
 
@@ -42,6 +44,10 @@ func (f *fakeGame) Start(h games.Helper) error {
 	f.started = true
 	f.paused = false
 	return nil
+}
+
+func (f *fakeGame) BoardButtons() []games.BoardButton {
+	return f.buttons
 }
 
 func (f *fakeGame) Board(w http.ResponseWriter, r *http.Request) {

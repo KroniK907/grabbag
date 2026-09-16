@@ -20,7 +20,7 @@ const (
 	eventTick     = "testing"
 	eventTap      = "tap"
 	flashFor      = 700 * time.Millisecond
-	cssVersion    = "paused-5"
+	cssVersion    = "info-2"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
@@ -54,6 +54,9 @@ func New() *Game {
 
 // ID is the catalog id testing.
 func (g *Game) ID() string { return id }
+
+// Name is the player-facing label Testing.
+func (g *Game) Name() string { return "Testing" }
 
 // MinPlayers is 1. Start waits for at least one seated player.
 func (g *Game) MinPlayers() int { return 1 }
@@ -92,6 +95,14 @@ func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "board.html", g.boardData(r), http.StatusOK)
 }
 
+// BoardButtons publishes About Testing on the Lobby rail after Load.
+func (g *Game) BoardButtons() []games.BoardButton {
+	return []games.BoardButton{{
+		Label: "About Testing",
+		Path:  "/play/info",
+	}}
+}
+
 // Phone is the seated-phone body. Host wraps Lobby gear around it.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
@@ -100,6 +111,7 @@ func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 // Play mounts tap, end, and live partials after Start.
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /info", g.getInfo)
 	mux.HandleFunc("POST /tap", g.postTap)
 	mux.HandleFunc("POST /end", g.postEnd)
 	mux.HandleFunc("GET /partials/board", g.getBoardFrame)
@@ -264,6 +276,17 @@ func (g *Game) mayEnd(h games.Helper, r *http.Request) bool {
 	}
 	player, ok, err := h.PlayerFromRequest(r)
 	return err == nil && ok && player.ClaimedHost
+}
+
+func (g *Game) getInfo(w http.ResponseWriter, r *http.Request) {
+	view := boardView{
+		Chrome:  ui.Chrome{Title: "About Testing", Theme: ui.DefaultTheme},
+		GameCSS: "/play/static/game.css?v=" + cssVersion,
+	}
+	if h := g.helperNow(); h != nil {
+		view.Chrome.Theme = ui.NormalizeTheme(h.Theme())
+	}
+	g.render(w, "info.html", view, http.StatusOK)
 }
 
 func (g *Game) getBoardFrame(w http.ResponseWriter, r *http.Request) {

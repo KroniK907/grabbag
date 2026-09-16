@@ -1,12 +1,14 @@
 package host
 
 import (
+	"bufio"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/KroniK907/hackbox/internal/games"
 	"github.com/KroniK907/hackbox/internal/store"
@@ -101,8 +103,12 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 		t.Fatalf("KV after Stop = %q ok=%v err=%v", got, ok, err)
 	}
 	play = requestWithCookie(t, handler, http.MethodGet, "/play/ping", nil, admin)
-	if play.Code != http.StatusNotFound {
-		t.Fatalf("play after Stop = %d", play.Code)
+	if play.Code != http.StatusOK || play.Body.String() != "play-ok" {
+		t.Fatalf("play GET after Stop = %d %q", play.Code, play.Body.String())
+	}
+	playPost := requestWithCookie(t, handler, http.MethodPost, "/play/ping", nil, admin)
+	if playPost.Code != http.StatusNotFound {
+		t.Fatalf("play POST after Stop = %d", playPost.Code)
 	}
 	phone = requestWithCookie(t, handler, http.MethodGet, "/", nil, admin)
 	if !strings.Contains(phone.Body.String(), ">Start<") {
@@ -133,6 +139,52 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	logPage := requestWithCookie(t, handler, http.MethodGet, "/settings/log", nil, admin).Body.String()
 	if !strings.Contains(logPage, "Load fake") || !strings.Contains(logPage, "Start fake") || !strings.Contains(logPage, "Finish") {
 		t.Fatalf("log page = %q", logPage)
+	}
+}
+
+func TestLobbyBoardShowsGameRailButtons(t *testing.T) {
+	t.Parallel()
+	_, handler, _, fake := testGameHandler(t, 0, 0)
+	fake.buttons = []games.BoardButton{
+		{Label: "Public scores", Path: "/play/scores"},
+		{Label: "Host only deck", Path: "/play/deck", HostOnly: true},
+		{Label: "Long wrapped rail action", Path: "/play/long"},
+		{Label: "Dropped fourth", Path: "/play/four"},
+	}
+	admin := finishAndJoinHost(t, handler)
+
+	before := requestWithCookie(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	if strings.Contains(before, "Public scores") || strings.Contains(before, `class="ui-rail-actions"`) ||
+		strings.Contains(before, "Now playing:") {
+		t.Fatalf("board before Load = %q", before)
+	}
+
+	load := requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	if load.Code != http.StatusSeeOther {
+		t.Fatalf("Load status = %d %q", load.Code, load.Body.String())
+	}
+
+	tv := requestWithCookie(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	if !strings.Contains(tv, `href="/play/scores"`) || !strings.Contains(tv, "Public scores") {
+		t.Fatalf("TV board missing public rail button: %q", tv)
+	}
+	if !strings.Contains(tv, "Now playing:") || !strings.Contains(tv, `class="ui-now-playing-name"`) ||
+		!strings.Contains(tv, ">fake<") {
+		t.Fatalf("TV board missing loaded game name: %q", tv)
+	}
+	if strings.Contains(tv, "Host only deck") || strings.Contains(tv, "/play/deck") {
+		t.Fatalf("TV board showed a host-only rail button: %q", tv)
+	}
+	if !strings.Contains(tv, "Long wrapped rail action") || strings.Contains(tv, "Dropped fourth") {
+		t.Fatalf("TV board rail cap = %q", tv)
+	}
+
+	hostBoard := requestWithCookie(t, handler, http.MethodGet, "/board", nil, admin).Body.String()
+	if !strings.Contains(hostBoard, `href="/play/deck"`) || !strings.Contains(hostBoard, "Host only deck") {
+		t.Fatalf("host board missing host-only rail button: %q", hostBoard)
+	}
+	if strings.Contains(hostBoard, "Dropped fourth") {
+		t.Fatalf("host board showed a fourth rail button: %q", hostBoard)
 	}
 }
 
@@ -347,6 +399,95 @@ func requestWithCookie(t *testing.T, handler http.Handler, method, path string, 
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 	return rec
+}
+
+func TestTestingInfoFromLobbyBoard(t *testing.T) {
+	t.Parallel()
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	handler, _, err := newHandler(db, "http://192.168.10.24:8654/", games.Catalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin := finishAndJoinHost(t, handler)
+	load := requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"testing"}}, admin)
+	if load.Code != http.StatusSeeOther {
+		t.Fatalf("Load testing = %d %q", load.Code, load.Body.String())
+	}
+	board := requestWithCookie(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	if !strings.Contains(board, "About Testing") || !strings.Contains(board, `href="/play/info"`) ||
+		!strings.Contains(board, "Now playing:") || !strings.Contains(board, `class="ui-now-playing-name"`) ||
+		!strings.Contains(board, ">Testing<") {
+		t.Fatalf("lobby board missing About Testing: %q", board)
+	}
+	info := requestWithCookie(t, handler, http.MethodGet, "/play/info", nil, nil)
+	body := info.Body.String()
+	if info.Code != http.StatusOK ||
+		!strings.Contains(body, "prove the host game contract") ||
+		!strings.Contains(body, "Back to board") {
+		t.Fatalf("info = %d %s", info.Code, body)
+	}
+}
+
+func TestLoadPublishesRosterForBoardButtons(t *testing.T) {
+	t.Parallel()
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	handler, _, err := newHandler(db, "http://192.168.10.24:8654/", games.Catalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin := finishAndJoinHost(t, handler)
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	t.Cleanup(cancel)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL+"/lobby/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream, err := server.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = stream.Body.Close() })
+	events := bufio.NewReader(stream.Body)
+	readHostSSE(t, events, ": connected")
+
+	load := requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"testing"}}, admin)
+	if load.Code != http.StatusSeeOther {
+		t.Fatalf("Load testing = %d %q", load.Code, load.Body.String())
+	}
+	readHostSSE(t, events, "event: roster")
+}
+
+func readHostSSE(t *testing.T, reader *bufio.Reader, want string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		var event strings.Builder
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil {
+				t.Fatalf("waiting for %q: %v; got %q", want, err, event.String())
+			}
+			event.WriteString(line)
+			if line == "\n" {
+				break
+			}
+		}
+		if strings.Contains(event.String(), want) {
+			return
+		}
+	}
+	t.Fatalf("timed out waiting for %q", want)
 }
 
 func requestFromCookies(cookies []*http.Cookie) *http.Request {
