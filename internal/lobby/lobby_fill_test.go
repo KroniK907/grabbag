@@ -211,9 +211,46 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatal("Kick left the guest on the roster")
 	}
 
+	liveCookie := joinNamed(t, handler, "Live", "")
+	live := playerFromCookie(t, room, liveCookie)
+	hxForm := url.Values{"player_id": {live.ID}}
+	hxReq := httptest.NewRequest(http.MethodPost, "http://hackbox.test/settings/kick", strings.NewReader(hxForm.Encode()))
+	hxReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	hxReq.Header.Set("HX-Request", "true")
+	hxReq.AddCookie(operatorCookie())
+	hxRec := httptest.NewRecorder()
+	handler.ServeHTTP(hxRec, hxReq)
+	if hxRec.Code != http.StatusNoContent {
+		t.Fatalf("HTMX Kick status = %d, want %d; body = %q", hxRec.Code, http.StatusNoContent, hxRec.Body.String())
+	}
+	if loc := hxRec.Header().Get("Location"); loc != "" {
+		t.Fatalf("HTMX Kick redirected to %q", loc)
+	}
+	if _, ok := findPlayer(t, room, liveCookie); ok {
+		t.Fatal("HTMX Kick left the player on the roster")
+	}
+
 	kickedJoin := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie)
-	if !strings.Contains(kickedJoin.Body.String(), `action="/lobby/join"`) {
-		t.Fatalf("post-Kick phone = %q, want Join", kickedJoin.Body.String())
+	kickedBody := kickedJoin.Body.String()
+	if !strings.Contains(kickedBody, `action="/lobby/join"`) {
+		t.Fatalf("post-Kick phone = %q, want Join", kickedBody)
+	}
+	if strings.Count(kickedBody, `class="ui-notch"`) != 1 {
+		t.Fatalf("post-Kick notches = %d in %q", strings.Count(kickedBody, `class="ui-notch"`), kickedBody)
+	}
+	if !strings.Contains(kickedBody, "The host kicked you") || !strings.Contains(kickedBody, ">Out.<") {
+		t.Fatalf("post-Kick missing kick copy: %q", kickedBody)
+	}
+	kickedPartial := lobbyRequest(t, handler, http.MethodGet, "/lobby/partials/phone", nil, guestCookie).Body.String()
+	if strings.Contains(kickedPartial, `class="ui-notch"`) || strings.Contains(kickedPartial, `class="ui-phone-wrap"`) {
+		t.Fatalf("kicked SSE fragment nested the phone chrome: %q", kickedPartial)
+	}
+	if !strings.Contains(kickedPartial, "The host kicked you") {
+		t.Fatalf("kicked SSE fragment missing kick copy: %q", kickedPartial)
+	}
+	freshJoin := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil).Body.String()
+	if strings.Contains(freshJoin, "The host kicked you") {
+		t.Fatal("anonymous Join showed a kick message")
 	}
 
 	otherCookie := joinNamed(t, handler, "Other", "")
@@ -236,6 +273,7 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	kickAt := strings.Index(settings, "Kick Players")
 	if openAt < 0 || kickAt < 0 || kickAt < openAt ||
 		!strings.Contains(settings, `action="/settings/kick"`) ||
+		strings.Contains(settings, `hx-post="/settings/kick"`) ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}

@@ -85,6 +85,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		return view, nil
 	}
 	view.HostPanel = true
+	view.LiveKick = true
 	count, err := seatedCountDB(r.Context(), l.sql)
 	if err != nil {
 		return roomView{}, err

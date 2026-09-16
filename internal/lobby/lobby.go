@@ -158,6 +158,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
+	mux.HandleFunc("GET /lobby/presence", l.presence)
 	mux.HandleFunc("GET /lobby/partials/theme", l.themeSync)
 	mux.HandleFunc("POST /lobby/join", l.join)
 	mux.HandleFunc("POST /lobby/heartbeat", l.heartbeat)
@@ -265,6 +266,7 @@ type settingsData struct {
 	GameIDs            []string
 	LoadedGameID       string
 	GameSettings       template.HTML
+	LiveKick           bool
 }
 
 type joinView struct {
@@ -273,6 +275,7 @@ type joinView struct {
 	AvatarSeed   string
 	ShowPassword bool
 	Error        string
+	Kicked       bool
 }
 
 type roomView struct {
@@ -291,6 +294,7 @@ type roomView struct {
 	BumpCandidates []Player
 	Players        []Player
 	GameBody       template.HTML
+	LiveKick       bool
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -369,7 +373,24 @@ func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
 		l.render(w, "room-inner", view, http.StatusOK)
 		return
 	}
-	l.writeJoin(w, r, "join-body", "", "", http.StatusOK)
+	l.writeJoin(w, r, "join-inner", "", "", http.StatusOK)
+}
+
+func (l *Lobby) presence(w http.ResponseWriter, r *http.Request) {
+	_, ok, err := l.PlayerFromRequest(r)
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	if ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if _, hasCookie := playerCookieFromRequest(r); hasCookie {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // PlayerFromRequest resolves player identity only from the player cookie.
@@ -469,6 +490,7 @@ func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
+	http.SetCookie(w, l.clearCookie(r, PlayerCookieName))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -688,6 +710,15 @@ func (l *Lobby) chrome(ctx context.Context, title string) (ui.Chrome, error) {
 	return ui.Chrome{Title: title, Theme: theme}, nil
 }
 
+// Theme is the stored neon palette id.
+func (l *Lobby) Theme(ctx context.Context) string {
+	theme, err := l.readTheme(ctx)
+	if err != nil {
+		return ui.DefaultTheme
+	}
+	return theme
+}
+
 func (l *Lobby) readTheme(ctx context.Context) (string, error) {
 	var theme string
 	err := l.sql.QueryRowContext(ctx, `SELECT theme FROM room_state WHERE id = 1`).Scan(&theme)
@@ -724,6 +755,10 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 	}
 	l.emit("kick")
 	l.events.Publish("roster")
+	if r.Header.Get("HX-Request") == "true" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
@@ -1099,6 +1134,7 @@ func (l *Lobby) writeJoin(
 		AvatarSeed:   seed,
 		ShowPassword: hostExists == 0,
 		Error:        message,
+		Kicked:       state.ID != "",
 	}, status)
 }
 
@@ -1112,6 +1148,12 @@ func (l *Lobby) cookie(r *http.Request, name, value string) *http.Cookie {
 		Secure:   l.secureCookie(r),
 		SameSite: http.SameSiteLaxMode,
 	}
+}
+
+func (l *Lobby) clearCookie(r *http.Request, name string) *http.Cookie {
+	c := l.cookie(r, name, "")
+	c.MaxAge = -1
+	return c
 }
 
 func (l *Lobby) render(w http.ResponseWriter, name string, data any, status int) {

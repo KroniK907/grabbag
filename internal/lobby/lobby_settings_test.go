@@ -116,6 +116,8 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 		!strings.Contains(phone, `ui-drawer-scrim`) ||
 		!strings.Contains(phone, ">Back</button>") ||
 		!strings.Contains(phone, "Kick Players") ||
+		!strings.Contains(phone, `hx-post="/settings/kick"`) ||
+		!strings.Contains(phone, `id="kick-players-list"`) ||
 		!strings.Contains(phone, `action="/settings/stand"`) {
 		t.Fatalf("host phone missing drawer: %q", phone)
 	}

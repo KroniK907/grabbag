@@ -112,7 +112,7 @@ func (rt *runtime) postPause(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not pause.", http.StatusConflict)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *runtime) postResume(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +123,7 @@ func (rt *runtime) postResume(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not resume.", http.StatusConflict)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rt *runtime) postClearKV(w http.ResponseWriter, r *http.Request) {

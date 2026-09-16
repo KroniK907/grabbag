@@ -323,6 +323,12 @@ button {
   transform: translateX(0);
 }
 
+.ui-drawer-live {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .ui-drawer .ui-accordion-row {
   padding: 4px 8px;
 }
@@ -695,7 +701,7 @@ button {
 
 .ui-token-self {
   --token-size: 150px;
-  margin: 0;
+  margin: 0 auto;
 }
 
 .ui-token-name {
@@ -768,6 +774,7 @@ button {
   position: absolute;
   top: 18px;
   right: 18px;
+  z-index: 5;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -814,29 +821,54 @@ button {
   padding: 20px 18px 28px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 16px;
   min-height: 698px;
+  text-align: center;
 }
 
 .ui-phone-stack {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 16px;
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  text-align: center;
 }
 
 .ui-phone-body form,
 .ui-phone-stack form {
   margin: 0;
+  width: 100%;
 }
 
 .ui-you {
   font-family: var(--ui-font-display);
   font-size: 40px;
+  width: 100%;
+  text-align: center;
   color: var(--ui-you);
   text-shadow: var(--ui-you-shadow);
+}
+
+.ui-phone-body .ui-muted,
+.ui-phone-stack .ui-muted,
+.ui-phone-body .ui-alert,
+.ui-phone-stack .ui-alert {
+  width: 100%;
+  text-align: center;
+}
+
+.ui-phone-body .ui-field,
+.ui-phone-stack .ui-field {
+  text-align: center;
+}
+
+.ui-phone-body .ui-field input,
+.ui-phone-stack .ui-field input {
+  text-align: center;
 }
 
 .ui-avatar {

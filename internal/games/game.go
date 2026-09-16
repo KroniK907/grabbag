@@ -36,6 +36,9 @@ type Helper interface {
 	Resume()
 	Publish(name string)
 	Log(line string)
+	// Theme is the room palette id, neon-light or neon-dark. Games stamp it
+	// on full documents so the first paint matches /settings.
+	Theme() string
 	// HasAdmin reports a valid admin session on r. Games use this for board
 	// End game. They do not read the admin cookie themselves.
 	HasAdmin(r *http.Request) bool

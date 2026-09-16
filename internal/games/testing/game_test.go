@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/hackbox/internal/games"
+	"github.com/KroniK907/hackbox/internal/ui"
 )
 
 func TestCatalogMinAndMax(t *testing.T) {
@@ -220,7 +221,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "/play/static/game.css?v=paused-1", `sse:round`, `hx-get="/board"`} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=paused-5", `sse:round`, `hx-get="/board"`, `data-theme="neon-light"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}
@@ -241,7 +242,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	req.Header.Set("X-Player", "p1")
 	g.Phone(phone, req)
 	html = phone.Body.String()
-	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap"} {
+	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap", "/play/partials/phone", "sse:pause", "/play/static/game.css?v=paused-5"} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("phone missing %q in %s", want, html)
 		}
@@ -258,6 +259,22 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	g.Phone(phone, req)
 	if strings.Contains(phone.Body.String(), "End game") {
 		t.Fatal("non-host phone shows End game")
+	}
+}
+
+func TestBoardStampsHelperTheme(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
+	h.theme = ui.ThemeNeonDark
+	g := startedGame(t, h)
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	html := board.Body.String()
+	if !strings.Contains(html, `data-theme="neon-dark"`) {
+		t.Fatalf("board missing dark theme: %s", html)
+	}
+	if strings.Contains(html, `data-theme="neon-light"`) {
+		t.Fatal("board still stamped light")
 	}
 }
 
@@ -409,6 +426,7 @@ type fakeHelper struct {
 	reqID     string
 	kv        map[string][]byte
 	admin     bool
+	theme     string
 	finish    int
 	published []string
 }
@@ -494,6 +512,13 @@ func (h *fakeHelper) Publish(name string) {
 }
 
 func (h *fakeHelper) Log(string) {}
+
+func (h *fakeHelper) Theme() string {
+	if h.theme == "" {
+		return ui.DefaultTheme
+	}
+	return h.theme
+}
 
 func (h *fakeHelper) HasAdmin(*http.Request) bool { return h.admin }
 

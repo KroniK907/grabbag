@@ -267,7 +267,7 @@ func (rt *runtime) pause() error {
 	}
 	rt.paused = true
 	rt.log.Write("Pause " + rt.loadedID)
-	rt.events.Publish("round")
+	rt.events.Publish("pause")
 	return nil
 }
 
@@ -282,7 +282,7 @@ func (rt *runtime) resume() error {
 	}
 	rt.paused = false
 	rt.log.Write("Resume " + rt.loadedID)
-	rt.events.Publish("round")
+	rt.events.Publish("pause")
 	return nil
 }
 

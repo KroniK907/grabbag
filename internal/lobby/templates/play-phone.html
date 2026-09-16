@@ -1,5 +1,12 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/"}}
+<div
+  hidden
+  hx-get="/lobby/presence"
+  hx-trigger="sse:roster"
+  hx-swap="none"
+  hx-on::response-error="if (event.detail.xhr.status === 410) location.reload()"
+></div>
 <div class="ui-phone-wrap">
   <div class="ui-phone">
     <div class="ui-notch">hackbox</div>

@@ -52,18 +52,30 @@
   right: 20px;
   bottom: 20px;
   width: auto;
+  margin: 0;
 }
 
 .testing-phone {
   position: relative;
+  isolation: isolate;
+  align-self: stretch;
   flex: 1 1 auto;
+  box-sizing: border-box;
+  width: auto;
+  min-height: 100%;
+  margin: -42px -18px -28px;
+  padding: 42px 18px 28px;
+  align-items: center;
+  text-align: center;
 }
 
-.testing-board.is-paused > :not(.testing-paused),
-.testing-phone.is-paused > :not(.testing-paused) {
-  filter: grayscale(1);
-  opacity: 0.4;
-  pointer-events: none;
+#testing-phone-status {
+  width: 100%;
+  text-align: center;
+}
+
+.testing-phone form {
+  width: 100%;
 }
 
 .testing-paused {
@@ -78,6 +90,15 @@
   line-height: 0.9;
   color: var(--ui-brand);
   text-shadow: var(--ui-brand-shadow);
+  background: var(--ui-overlay);
+  backdrop-filter: grayscale(1);
+}
+
+@media (max-width: 520px) {
+  .testing-phone .testing-paused {
+    position: fixed;
+    z-index: 4;
+  }
 }
 
 @keyframes testing-flash {

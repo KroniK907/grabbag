@@ -20,7 +20,7 @@ const (
 	eventTick     = "testing"
 	eventTap      = "tap"
 	flashFor      = 700 * time.Millisecond
-	cssVersion    = "paused-1"
+	cssVersion    = "paused-5"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
@@ -102,7 +102,9 @@ func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /tap", g.postTap)
 	mux.HandleFunc("POST /end", g.postEnd)
+	mux.HandleFunc("GET /partials/board", g.getBoardFrame)
 	mux.HandleFunc("GET /partials/board-list", g.getBoardList)
+	mux.HandleFunc("GET /partials/phone", g.getPhoneFrame)
 	mux.HandleFunc("GET /partials/phone-status", g.getPhoneStatus)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
@@ -264,8 +266,16 @@ func (g *Game) mayEnd(h games.Helper, r *http.Request) bool {
 	return err == nil && ok && player.ClaimedHost
 }
 
+func (g *Game) getBoardFrame(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "board-frame", g.boardData(r), http.StatusOK)
+}
+
 func (g *Game) getBoardList(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "board-list", g.boardData(r), http.StatusOK)
+}
+
+func (g *Game) getPhoneFrame(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "phone-frame", g.phoneData(r), http.StatusOK)
 }
 
 func (g *Game) getPhoneStatus(w http.ResponseWriter, r *http.Request) {
@@ -275,12 +285,13 @@ func (g *Game) getPhoneStatus(w http.ResponseWriter, r *http.Request) {
 func (g *Game) boardData(r *http.Request) boardView {
 	h := g.helperNow()
 	view := boardView{
-		Chrome:      ui.Page("Testing"),
+		Chrome:      ui.Chrome{Title: "Testing", Theme: ui.DefaultTheme},
 		HideLatency: g.hideLatency(),
 		GameCSS:     "/play/static/game.css?v=" + cssVersion,
 		Paused:      g.isPaused(),
 	}
 	if h != nil {
+		view.Chrome.Theme = ui.NormalizeTheme(h.Theme())
 		view.ShowEnd = h.HasAdmin(r)
 		now := time.Now()
 		g.mu.Lock()
@@ -309,7 +320,7 @@ func (g *Game) boardData(r *http.Request) boardView {
 
 func (g *Game) phoneData(r *http.Request) phoneView {
 	h := g.helperNow()
-	view := phoneView{}
+	view := phoneView{GameCSS: "/play/static/game.css?v=" + cssVersion}
 	if h == nil {
 		return view
 	}
@@ -380,6 +391,7 @@ type phoneView struct {
 	Latency     string
 	ShowEnd     bool
 	Paused      bool
+	GameCSS     string
 }
 
 type playerRow struct {

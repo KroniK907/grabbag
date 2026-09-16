@@ -4,9 +4,21 @@
     <span class="ui-caret" aria-hidden="true"></span>
     Kick Players
   </summary>
-  <div class="ui-accordion-body">
+  <div
+    class="ui-accordion-body"
+    {{if .LiveKick}}
+    id="kick-players-list"
+    hx-get="/"
+    hx-select="#kick-players-list"
+    hx-swap="outerHTML"
+    hx-trigger="sse:roster"
+    {{end}}
+  >
     {{range .Players}}
-    <form class="ui-accordion-row" method="post" action="/settings/kick">
+    <form
+      class="ui-accordion-row"
+      {{if $.LiveKick}}hx-post="/settings/kick" hx-swap="none"{{else}}method="post" action="/settings/kick"{{end}}
+    >
       <span>{{.DisplayName}}{{if .ClaimedHost}} (host){{end}}</span>
       <input type="hidden" name="player_id" value="{{.ID}}">
       <button class="ui-btn ui-btn-danger ui-btn-inline" type="submit">Kick</button>

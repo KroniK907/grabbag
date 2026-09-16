@@ -30,18 +30,27 @@
   </form>
   {{end}}
   {{if .Started}}
+  <div
+    id="host-pause-controls"
+    class="ui-drawer-live"
+    hx-get="/"
+    hx-select="#host-pause-controls"
+    hx-swap="outerHTML"
+    hx-trigger="sse:pause"
+  >
   {{if .Paused}}
-  <form method="post" action="/settings/resume">
+  <form hx-post="/settings/resume" hx-swap="none">
     <button class="ui-btn" type="submit">Resume</button>
   </form>
   {{else}}
-  <form method="post" action="/settings/pause">
+  <form hx-post="/settings/pause" hx-swap="none">
     <button class="ui-btn" type="submit">Pause</button>
   </form>
   {{end}}
   <form method="post" action="/settings/stop">
     <button class="ui-btn" type="submit">Stop</button>
   </form>
+  </div>
   {{else}}
   {{template "host-game-pick" .}}
   {{end}}

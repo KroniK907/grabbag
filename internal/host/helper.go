@@ -81,6 +81,10 @@ func (h *helper) Log(line string) {
 	h.rt.log.Write(h.rt.loadedID + ": " + line)
 }
 
+func (h *helper) Theme() string {
+	return h.rt.room.Theme(context.Background())
+}
+
 func (h *helper) HasAdmin(r *http.Request) bool {
 	return h.rt.hasAdmin(r)
 }
