@@ -1,50 +1,51 @@
 {{define "board-roster"}}
 <div
   id="board-roster"
-  class="ui-board"
+  class="ui-board-host"
   hx-get="/lobby/partials/board-roster"
   hx-trigger="sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
-  <aside class="ui-rail">
-    <div class="ui-brand">HACK<br>BOX</div>
-    <div class="ui-qr">{{qr .JoinURL}}</div>
-    {{with .JoinURL}}<div class="ui-url">{{.}}</div>{{end}}
-    <div class="ui-pills">
-      {{if .Open}}
-      <span class="ui-pill">OPEN</span>
-      {{else}}
-      <span class="ui-pill ui-pill-closed">CLOSED</span>
-      {{end}}
-      <span class="ui-pill">{{.SeatedCount}} / {{.SeatCap}} SEATS</span>
-      <span class="ui-pill">{{.AudienceCount}} Audience Members</span>
-    </div>
-  </aside>
-  <main class="ui-main">
-    <div class="ui-cluster">
-      {{range .Seated}}
-      <div class="ui-seat">
-        <div class="ui-token{{if .Disconnected}} ui-token-dim{{end}}" style="--c: {{color .AvatarSeed}}">
-          {{avatar .AvatarSeed}}
-          {{if .ClaimedHost}}<div class="ui-host-badge">HOST</div>{{end}}
-          {{if .Ready}}<div class="ui-check">✓</div>{{end}}
-        </div>
-        <div class="ui-token-name">{{.DisplayName}}</div>
+  <div class="ui-board">
+    <aside class="ui-rail">
+      <div class="ui-brand">HACK<br>BOX</div>
+      <div class="ui-qr">{{qr .JoinURL}}</div>
+      {{with .JoinURL}}<div class="ui-url">{{.}}</div>{{end}}
+      <div class="ui-pills">
+        {{if .Open}}
+        <span class="ui-pill">OPEN</span>
+        {{else}}
+        <span class="ui-pill ui-pill-closed">CLOSED</span>
+        {{end}}
+        <span class="ui-pill">{{.SeatedCount}} / {{.SeatCap}} SEATS</span>
+        <span class="ui-pill">{{.AudienceCount}} Audience Members</span>
       </div>
+    </aside>
+    <main class="ui-main">
+      <div class="ui-cluster">
+        {{range .Seated}}
+        <div class="ui-seat">
+          <div class="ui-token{{if .Disconnected}} ui-token-dim{{end}}" style="--c: {{color .AvatarSeed}}">
+            {{avatar .AvatarSeed}}
+            {{if .ClaimedHost}}<div class="ui-host-badge">HOST</div>{{end}}
+            {{if .Ready}}<div class="ui-check">✓</div>{{end}}
+          </div>
+          <div class="ui-token-name">{{.DisplayName}}</div>
+        </div>
+        {{end}}
+      </div>
+    </main>
+    <div class="ui-marquee">
+      <span>NOW SERVING THE WAIT LINE</span>
+      {{range .Waiting}}
+      <span class="ui-chip" style="background: {{color .AvatarSeed}}">{{avatar .AvatarSeed}} {{.DisplayName}}</span>
       {{end}}
     </div>
-  </main>
-  <div class="ui-marquee">
-    <span>NOW SERVING THE WAIT LINE</span>
-    {{range .Waiting}}
-    <span class="ui-chip" style="background: {{color .AvatarSeed}}">{{avatar .AvatarSeed}} {{.DisplayName}}</span>
-    {{end}}
   </div>
   {{if .RestorePending}}
   <div class="keep-overlay" role="status">
     <div class="ui-card">
-      <h2>This room came back</h2>
-      <p>Keep and Clear live on Settings and the host phone. Not here.</p>
+      <p>Waiting for the host to decide to keep or clear this room.</p>
       {{if .RestoreNames}}
       <p><b>Still here:</b> {{range $i, $name := .RestoreNames}}{{if $i}}, {{end}}{{$name}}{{end}}</p>
       {{end}}

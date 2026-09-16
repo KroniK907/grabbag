@@ -33,7 +33,8 @@ func TestGM077SeatCapRefuseLogoutAndLogin(t *testing.T) {
 		!strings.Contains(list, "Cycle seated players") ||
 		!strings.Contains(list, "Fill empty seats") ||
 		!strings.Contains(list, "Advertised hostname") ||
-		!strings.Contains(list, "Log out") {
+		!strings.Contains(list, "Log out") ||
+		!strings.Contains(list, `href="/">Player</a>`) {
 		t.Fatalf("settings list = %q", list)
 	}
 

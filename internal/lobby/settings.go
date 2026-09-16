@@ -657,6 +657,7 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 		Players:            players,
 		RestorePending:     l.RestorePending(),
 		AdminOnlyBoard:     row.adminOnlyBoard,
+		StayOnSettings:     true,
 	}
 	autoStart, err := l.AutoStart(ctx)
 	if err != nil {

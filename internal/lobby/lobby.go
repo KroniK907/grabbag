@@ -284,6 +284,7 @@ type settingsData struct {
 	LiveKick           bool
 	RestorePending     bool
 	AdminOnlyBoard     bool
+	StayOnSettings     bool
 }
 
 type joinView struct {
@@ -313,6 +314,7 @@ type roomView struct {
 	GameBody       template.HTML
 	LiveKick       bool
 	RestorePending bool
+	StayOnSettings bool
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {

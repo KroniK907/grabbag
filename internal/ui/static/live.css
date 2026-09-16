@@ -157,7 +157,7 @@ button {
 }
 
 .keep-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 40;
   display: grid;
@@ -597,6 +597,11 @@ button {
   background: var(--ui-log-bg);
   color: var(--ui-log-fg);
   border: 3px solid var(--ui-accent-2);
+}
+
+.ui-board-host {
+  position: relative;
+  min-height: 100dvh;
 }
 
 .ui-board {

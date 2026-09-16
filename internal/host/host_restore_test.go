@@ -114,7 +114,7 @@ func TestKeepReloadsSelectedGameAndClearLeavesKV(t *testing.T) {
 		t.Fatal("Clear restored a running Start")
 	}
 	board := requestWithCookie(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if strings.Contains(board, "Ada") || strings.Contains(board, "This room came back") {
+	if strings.Contains(board, "Ada") || strings.Contains(board, "Waiting for the host to decide to keep or clear this room") {
 		t.Fatalf("cleared board = %q", board)
 	}
 }

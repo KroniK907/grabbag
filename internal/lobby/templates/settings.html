@@ -2,12 +2,14 @@
 <div class="ui-page ui-page-compact">
   <div class="ui-stack">
     <div class="ui-header">
+      <a class="ui-btn ui-btn-inline" href="/">Player</a>
       <div class="ui-brand ui-brand-sm">ROOM KNOBS</div>
       {{template "theme-toggle" .}}
     </div>
     <div class="ui-list">
       {{if .RestorePending}}
       <form class="ui-row" method="post" action="/settings/keep">
+        <input type="hidden" name="return" value="/settings">
         <span>This room came back</span>
         <button class="ui-btn ui-btn-inline" type="submit">Keep this room</button>
       </form>

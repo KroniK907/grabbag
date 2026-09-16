@@ -38,7 +38,7 @@ func (l *Lobby) keepRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.finishRestore(r.Context(), true)
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
 }
 
 func (l *Lobby) clearRoom(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (l *Lobby) clearRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not clear the room.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
 }
 
 func (l *Lobby) finishRestore(ctx context.Context, keep bool) error {

@@ -5,6 +5,7 @@
     <p>Clear the room? Everyone rejoins. Settings and game data stay.</p>
     <button class="ui-btn" type="button" onclick="document.getElementById('clear-room-modal').hidden = true">Cancel</button>
     <form method="post" action="/settings/clear-room">
+      {{if .StayOnSettings}}<input type="hidden" name="return" value="/settings">{{end}}
       <button class="ui-btn ui-btn-danger" type="submit">Clear room</button>
     </form>
   </div>

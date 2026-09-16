@@ -38,7 +38,7 @@ func testEmptyRosterSkipsKeepOrClear(t *testing.T) {
 		t.Fatal("empty sqlite asked keep-or-clear")
 	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if strings.Contains(board, "This room came back") {
+	if strings.Contains(board, "Waiting for the host to decide to keep or clear this room") {
 		t.Fatalf("empty board overlay = %q", board)
 	}
 	join := lobbyRequest(t, handler, http.MethodPost, "/lobby/join", url.Values{"display_name": {"Ada"}}, nil)
@@ -61,7 +61,7 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	}
 
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, "This room came back") ||
+	if !strings.Contains(board, "Waiting for the host to decide to keep or clear this room") ||
 		!strings.Contains(board, "Ada") ||
 		!strings.Contains(board, "Bea") ||
 		strings.Contains(board, `action="/settings/keep"`) {
@@ -117,8 +117,14 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	if keep.Code != http.StatusSeeOther {
 		t.Fatalf("Keep = %d %q", keep.Code, keep.Body.String())
 	}
+	if keep.Header().Get("Location") != "/" {
+		t.Fatalf("drawer Keep Location = %q, want /", keep.Header().Get("Location"))
+	}
 	if room.RestorePending() {
 		t.Fatal("Keep left pending")
+	}
+	if !strings.Contains(settings, `name="return" value="/settings"`) {
+		t.Fatalf("settings Keep missing return: %q", settings)
 	}
 	again := lobbyRequest(t, handler, http.MethodPost, "/settings/keep", nil, operatorCookie())
 	if again.Code != http.StatusSeeOther {
@@ -155,7 +161,7 @@ func testNightClearLeavesSettingsAndClosesRoom(t *testing.T) {
 		t.Fatal("Clear left pending")
 	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if strings.Contains(board, "This room came back") || strings.Contains(board, "Ada") {
+	if strings.Contains(board, "Waiting for the host to decide to keep or clear this room") || strings.Contains(board, "Ada") {
 		t.Fatalf("cleared board = %q", board)
 	}
 	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
