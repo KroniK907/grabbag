@@ -3,13 +3,16 @@
   <div class="ui-stack">
     <div class="ui-header">
       <div class="ui-brand ui-brand-sm">NEW GAME</div>
-      <form method="post" action="/setup/theme">
-        {{if eq .Theme "neon-dark"}}
-        <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
-        {{else}}
-        <button class="ui-btn ui-btn-inline" type="submit">Light</button>
-        {{end}}
-      </form>
+      <div class="ui-row-actions">
+        <a class="ui-btn ui-btn-inline" href="/docs">How to run</a>
+        <form method="post" action="/setup/theme">
+          {{if eq .Theme "neon-dark"}}
+          <button class="ui-btn ui-btn-inline" type="submit">Dark</button>
+          {{else}}
+          <button class="ui-btn ui-btn-inline" type="submit">Light</button>
+          {{end}}
+        </form>
+      </div>
     </div>
     <form class="ui-stack" method="post" action="/setup">
       <label class="ui-field">

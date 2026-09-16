@@ -36,6 +36,7 @@ func testGM077SetupRedirects(t *testing.T) {
 	}
 	body := page.Body.String()
 	if !strings.Contains(body, "NEW GAME") ||
+		!strings.Contains(body, "How to run") ||
 		!strings.Contains(body, "Advertised hostname") ||
 		!strings.Contains(body, "Seat cap") ||
 		!strings.Contains(body, "After a game") ||

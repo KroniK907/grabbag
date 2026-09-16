@@ -37,7 +37,7 @@ func DefaultDataDir() (string, error) {
 }
 
 // Open opens host.sqlite in dir with WAL, a busy timeout, foreign keys,
-// and MaxOpenConns=1. It creates the file and v1 tables if they are missing.
+// and MaxOpenConns=1. It creates the file and tables if they are missing.
 func Open(dir string) (*DB, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("store: mkdir %s: %w", dir, err)

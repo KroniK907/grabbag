@@ -17,7 +17,7 @@ type Chrome struct {
 	Theme string
 }
 
-// Page returns light neon chrome, the v1 default.
+// Page returns light neon chrome, the default.
 func Page(title string) Chrome {
 	return Chrome{Title: title, Theme: DefaultTheme}
 }

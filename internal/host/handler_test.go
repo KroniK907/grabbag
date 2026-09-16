@@ -17,6 +17,32 @@ func TestSetupLifecycle(t *testing.T) {
 
 	assertRedirect(t, handler, http.MethodGet, "/", nil, "/setup")
 	assertStatus(t, handler, http.MethodGet, "/setup", nil, http.StatusOK)
+	docs := request(t, handler, http.MethodGet, "/docs", nil, "")
+	if docs.Code != http.StatusOK {
+		t.Fatalf("GET /docs before setup = %d", docs.Code)
+	}
+	if docs.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatalf("GET /docs Content-Type = %q", docs.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(docs.Body.String(), "downloaded Hackbox binary") ||
+		!strings.Contains(docs.Body.String(), "<style>") ||
+		!strings.Contains(docs.Body.String(), "http://127.0.0.1:8654") {
+		t.Fatalf("docs before setup = %q", docs.Body.String())
+	}
+	contract := request(t, handler, http.MethodGet, "/docs/game-contract.html", nil, "")
+	if contract.Code != http.StatusOK {
+		t.Fatalf("GET /docs/game-contract.html before setup = %d", contract.Code)
+	}
+	if contract.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatalf("GET /docs/game-contract.html Content-Type = %q", contract.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(contract.Body.String(), "On this page") ||
+		!strings.Contains(contract.Body.String(), "PlayerFromRequest") ||
+		!strings.Contains(contract.Body.String(), "func Register(f Factory)") ||
+		!strings.Contains(contract.Body.String(), `sse-connect="/lobby/events"`) ||
+		!strings.Contains(contract.Body.String(), "data: update") {
+		t.Fatalf("game contract docs = %q", contract.Body.String())
+	}
 
 	bad := url.Values{"password": {"abcdefgh"}, "confirm": {"different"}}
 	assertStatus(t, handler, http.MethodPost, "/setup", bad, http.StatusBadRequest)
@@ -82,7 +108,7 @@ func TestSetupLifecycle(t *testing.T) {
 
 	assertStatus(t, handler, http.MethodPost, "/setup", form, http.StatusConflict)
 	assertRedirect(t, handler, http.MethodGet, "/setup", nil, "/board")
-	for _, path := range []string{"/", "/board", "/settings"} {
+	for _, path := range []string{"/", "/board", "/settings", "/docs", "/docs/index.html", "/docs/game-contract.html"} {
 		assertStatus(t, handler, http.MethodGet, path, nil, http.StatusOK)
 	}
 

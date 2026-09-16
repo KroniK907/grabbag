@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/KroniK907/hackbox/docs"
 	"github.com/KroniK907/hackbox/internal/games"
 	_ "github.com/KroniK907/hackbox/internal/games/testing"
 	"github.com/KroniK907/hackbox/internal/lobby"
@@ -77,6 +78,8 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 	mux.HandleFunc("GET /setup", getSetup(db, lanJoinURL))
 	mux.HandleFunc("POST /setup", finishSetup(db, lanJoinURL, rt))
 	mux.HandleFunc("POST /setup/theme", setupTheme(db, lanJoinURL))
+	mux.HandleFunc("GET /docs", serveDocsIndex)
+	mux.HandleFunc("GET /docs/{name}", serveDocsFile)
 	protected := http.NewServeMux()
 	protected.HandleFunc("GET /{$}", rt.phone)
 	protected.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +98,29 @@ func readRoomSettingsFlags(ctx context.Context, db *store.DB) (struct{ stdout, f
 		return struct{ stdout, file bool }{}, err
 	}
 	return struct{ stdout, file bool }{stdout: stdout != 0, file: file != 0}, nil
+}
+
+func serveDocsIndex(w http.ResponseWriter, r *http.Request) {
+	writeDocsFile(w, "index.html")
+}
+
+func serveDocsFile(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" || strings.Contains(name, "/") || strings.Contains(name, "\\") || !strings.HasSuffix(name, ".html") {
+		http.NotFound(w, r)
+		return
+	}
+	writeDocsFile(w, name)
+}
+
+func writeDocsFile(w http.ResponseWriter, name string) {
+	page, err := docs.Files.ReadFile(name)
+	if err != nil {
+		http.Error(w, "Not found.", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(page)
 }
 
 func getSetup(db *store.DB, lanJoinURL string) http.HandlerFunc {

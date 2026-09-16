@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game API reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&amp;family=Source+Sans+3:wght@400;600;700&amp;family=Source+Code+Pro:wght@500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fff7fb;
+      --bg-2: #ffe6f7;
+      --fg: #1a0730;
+      --muted: #5c3a6e;
+      --brand: #c40a90;
+      --brand-shadow: 2px 2px 0 #ffe14a;
+      --accent: #ff2ad4;
+      --btn-bg: #19e3ff;
+      --btn-fg: #042;
+      --btn-border: #0aa8bc;
+      --code-bg: #1a0730;
+      --code-fg: #7cff6b;
+      --inline-bg: #fff3f9;
+      --border: #d9a0c8;
+      --card: #fff;
+      --toc-w: 17rem;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    a { color: #087a8a; }
+    a.btn {
+      display: inline-block;
+      padding: 8px 14px;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      text-decoration: none;
+      border: 3px solid var(--btn-border);
+      border-radius: 8px;
+      font-family: "Russo One", "Arial Black", sans-serif;
+      font-size: 0.85rem;
+    }
+    .skip {
+      position: absolute;
+      left: -999px;
+    }
+    .skip:focus {
+      left: 8px;
+      top: 8px;
+      z-index: 20;
+      background: var(--btn-bg);
+      padding: 8px 12px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 18px 24px;
+      border-bottom: 3px solid var(--accent);
+      background: var(--card);
+    }
+    .brand {
+      font-family: Bangers, Impact, sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      line-height: 0.9;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+    }
+    nav.links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    .toc {
+      background: var(--bg-2);
+      border-bottom: 3px solid var(--accent);
+      padding: 16px 20px 24px;
+    }
+    .toc h2 {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 8px;
+      color: var(--brand);
+    }
+    .toc input {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      background: var(--card);
+      color: var(--fg);
+    }
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .toc > ul > li { margin: 10px 0 0; }
+    .toc .group {
+      font-weight: 700;
+      color: var(--brand);
+      text-decoration: none;
+    }
+    .toc .sub {
+      padding-left: 10px;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .toc .sub a {
+      text-decoration: none;
+      color: var(--fg);
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 0.82rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .toc .sub a:hover,
+    .toc .sub a.is-active {
+      background: var(--card);
+      color: var(--brand);
+    }
+    main {
+      padding: 24px 20px 96px;
+      max-width: 52rem;
+    }
+    h1 {
+      font-family: Bangers, Impact, sans-serif;
+      font-weight: 400;
+      font-size: 42px;
+      letter-spacing: 1px;
+      line-height: 0.95;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+      margin: 0 0 12px;
+    }
+    h2 {
+      font-family: Bangers, Impact, sans-serif;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+      margin: 40px 0 12px;
+      padding-top: 8px;
+      border-top: 3px solid var(--accent);
+    }
+    h2:first-child { border-top: 0; margin-top: 0; }
+    h3 {
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 1.15rem;
+      margin: 0 0 8px;
+      color: var(--fg);
+    }
+    h4 {
+      margin: 16px 0 6px;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--brand);
+    }
+    h5 {
+      margin: 12px 0 6px;
+      font-size: 1rem;
+    }
+    p, li { margin: 0 0 10px; }
+    ul, ol { padding-left: 1.3rem; }
+    .lede { font-size: 1.15rem; }
+    .note {
+      background: var(--inline-bg);
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      margin: 12px 0;
+    }
+    .method {
+      background: var(--card);
+      border: 3px solid var(--accent);
+      border-radius: 12px;
+      padding: 18px 18px 8px;
+      margin: 20px 0 28px;
+      scroll-margin-top: 12px;
+    }
+    .sig {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 0.9rem;
+      padding: 12px 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 8px 0 12px;
+    }
+    pre.ex {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 0.85rem;
+      padding: 12px 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 8px 0 16px;
+    }
+    code {
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--inline-bg);
+      border: 1px solid var(--border);
+      padding: 0 0.25em;
+      border-radius: 3px;
+    }
+    .sig code, pre.ex code, .sig { background: transparent; border: 0; padding: 0; color: inherit; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 16px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 8px 8px 0;
+      vertical-align: top;
+    }
+    th { color: var(--brand); }
+    dl { margin: 0 0 12px; }
+    dt {
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    dd { margin: 2px 0 0 1rem; color: var(--muted); }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+    .tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--bg-2);
+      border: 1px solid var(--accent);
+      color: var(--brand);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    @media (min-width: 980px) {
+      .layout { grid-template-columns: var(--toc-w) 1fr; align-items: start; }
+      .toc {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        border-bottom: 0;
+        border-right: 3px solid var(--accent);
+      }
+      main { padding: 28px 36px 96px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="top">
+    <div class="brand">GAME API</div>
+    <nav class="links">
+      <a class="btn" href="/docs">How to run</a>
+      <a class="btn" href="/board">Board</a>
+    </nav>
+  </div>
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <h2>On this page</h2>
+      <input id="filter" type="search" placeholder="Filter methods" aria-label="Filter methods">
+      <ul>
+        <li><a class="group" href="#overview">Overview</a></li>
+        <li><a class="group" href="#load-a-game">Load a game</a></li>
+        <li><a class="group" href="#lifecycle">Lifecycle</a></li>
+        <li>
+          <a class="group" href="#loader">Loader</a>
+          <div class="sub">
+            <a href="#register">Register</a>
+            <a href="#catalog">Catalog</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#game">Game</a>
+          <div class="sub">
+            <a href="#game-id">ID</a>
+            <a href="#game-name">Name</a>
+            <a href="#game-minplayers">MinPlayers</a>
+            <a href="#game-maxplayers">MaxPlayers</a>
+            <a href="#game-load">Load</a>
+            <a href="#game-settings">Settings</a>
+            <a href="#game-start">Start</a>
+            <a href="#game-board">Board</a>
+            <a href="#game-boardbuttons">BoardButtons</a>
+            <a href="#game-phone">Phone</a>
+            <a href="#game-play">Play</a>
+            <a href="#game-pause">Pause</a>
+            <a href="#game-resume">Resume</a>
+            <a href="#game-stop">Stop</a>
+            <a href="#game-shutdown">Shutdown</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#helper">Helper</a>
+          <div class="sub">
+            <a href="#helper-seated">Seated</a>
+            <a href="#helper-waiting">Waiting</a>
+            <a href="#helper-audience">Audience</a>
+            <a href="#helper-player">Player</a>
+            <a href="#helper-playerfromrequest">PlayerFromRequest</a>
+            <a href="#helper-datadir">DataDir</a>
+            <a href="#helper-kvget">KVGet</a>
+            <a href="#helper-kvset">KVSet</a>
+            <a href="#helper-finish">Finish</a>
+            <a href="#helper-pause">Pause</a>
+            <a href="#helper-resume">Resume</a>
+            <a href="#helper-publish">Publish</a>
+            <a href="#helper-log">Log</a>
+            <a href="#helper-theme">Theme</a>
+            <a href="#helper-hasadmin">HasAdmin</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#types">Types</a>
+          <div class="sub">
+            <a href="#type-player">Player</a>
+            <a href="#type-boardbutton">BoardButton</a>
+            <a href="#type-factory">Factory</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#host-http">Host HTTP</a>
+          <div class="sub">
+            <a href="#http-load">POST /settings/load</a>
+            <a href="#http-start">POST /settings/start</a>
+            <a href="#http-stop">POST /settings/stop</a>
+            <a href="#http-shutdown">POST /settings/shutdown</a>
+            <a href="#http-pause">POST /settings/pause</a>
+            <a href="#http-resume">POST /settings/resume</a>
+            <a href="#http-clear">POST /settings/clear-game-data</a>
+            <a href="#http-mounts">Mounts</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#sse">Live SSE</a>
+          <div class="sub">
+            <a href="#sse-how">How it works</a>
+            <a href="#sse-reserved">Reserved names</a>
+            <a href="#sse-own">Your own names</a>
+            <a href="#sse-listen">Listen in HTML</a>
+            <a href="#sse-drops">Missed events</a>
+          </div>
+        </li>
+        <li><a class="group" href="#must-not">Must not</a></li>
+      </ul>
+    </nav>
+    <main id="content">
+      <h1>Game API reference</h1>
+      <p class="lede">This is the human page for the Game and Helper contract. Each method has a signature, parameters, return value, a longer explanation, and at least one named example. Agents should still start from <code>docs/agent/GAME_CONTRACT.md</code>. The Go types in <code>internal/games/game.go</code> win if any of this disagrees with the code.</p>
+      <p>The pattern follows MDN method pages and Go-style godoc. Lead with what the call does. Then show the exact signature. Then parameters, return value, when it runs, and copyable Go from the Testing package where that package already does the job.</p>
+
+      <h2 id="overview">Overview</h2>
+      <p>Lobby owns roster, join, wait list, audience, seats, identity, operator knobs, and the start gate. A game reads those facts through <a href="#helper"><code>games.Helper</code></a>. It never writes them.</p>
+      <p>A game owns run logic, per-player run state keyed by Lobby player id, optional extra pages, the full <code>/board</code> document after Start, and the inner phone body on <code>/</code> after Start.</p>
+      <p>Host drives Load, Start, Stop, and Shutdown. Load constructs the selected package in-process. There is no folder scan and no child process.</p>
+      <div class="note">Package <code>games</code> cannot import a child game. The child imports <code>games</code> for Helper and Register. Host blank-imports each child so Catalog fills in.</div>
+
+      <h2 id="load-a-game">Load a game</h2>
+      <p>Compile-time, in this order:</p>
+      <ol>
+        <li>Add <code>internal/games/&lt;name&gt;</code>. Do not name the package <code>testing</code>. Product Testing uses package <code>testinggame</code>.</li>
+        <li>Implement <a href="#game"><code>games.Game</code></a>.</li>
+        <li>Call <a href="#register"><code>games.Register</code></a> from <code>init</code>.</li>
+        <li>Blank-import the package from <code>internal/host/handler.go</code>.</li>
+      </ol>
+      <p>Runtime Load is <a href="#http-load"><code>POST /settings/load</code></a>. Admin session. Restore prompt is not pending. No round is started. Catalog contains the id. If <a href="#game-maxplayers">MaxPlayers</a> is greater than 0, seated count must be at or under that max. Host creates <code>&lt;dataDir&gt;/games/&lt;ID&gt;</code>, then calls <a href="#game-load">Load</a>.</p>
+      <p>Start still needs at least one seated player. If <a href="#game-minplayers">MinPlayers</a> is greater than 0, seated count must also meet that floor.</p>
+
+      <h2 id="lifecycle">Lifecycle</h2>
+      <table>
+        <thead>
+          <tr><th>Host action</th><th>Game method</th><th><code>/</code> and <code>/board</code></th><th><code>/play/</code> POST</th><th>KV</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Load</td><td><a href="#game-load">Load</a></td><td>Lobby</td><td>404</td><td>kept</td></tr>
+          <tr><td>Start</td><td><a href="#game-start">Start</a></td><td>game</td><td>mounted</td><td>kept</td></tr>
+          <tr><td>Pause</td><td><a href="#game-pause">Pause</a></td><td>game</td><td>mounted</td><td>kept</td></tr>
+          <tr><td>Resume</td><td><a href="#game-resume">Resume</a></td><td>game</td><td>mounted</td><td>kept</td></tr>
+          <tr><td>Stop</td><td><a href="#game-stop">Stop</a></td><td>Lobby</td><td>404</td><td>kept</td></tr>
+          <tr><td>Shutdown</td><td>Stop if started, then <a href="#game-shutdown">Shutdown</a></td><td>Lobby</td><td>404</td><td>kept</td></tr>
+        </tbody>
+      </table>
+      <p><a href="#helper-finish">Finish</a> on Helper is graceful Stop. Operator abort is also Stop. Unload or picking another game is Shutdown. Stop does not unload the package. Start can run again. A process restart re-Loads the selected id with Lobby still on <code>/board</code>. It does not restore an in-progress Start.</p>
+
+      <h2 id="loader">Loader</h2>
+      <p><code>Register</code> and <code>Catalog</code> live on package <code>games</code>. Games call Register. Host reads Catalog.</p>
+
+      <article class="method" id="register">
+        <div class="tags"><span class="tag">games</span><span class="tag">init</span></div>
+        <h3>Register</h3>
+        <p>Adds a compile-time game factory to the in-process catalog.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func Register(f Factory)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>f</dt>
+          <dd><a href="#type-factory">Factory</a> with a non-empty <code>ID</code> and a non-nil <code>New</code>. Empty ID or nil <code>New</code> is dropped with no error and no log line.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>Call this from <code>init</code> in the game package. Host never calls Register itself. Duplicate IDs are not rejected here. The last factory host indexes by ID wins in the runtime map. Keep IDs unique.</p>
+        <h4>Examples</h4>
+        <h5>Register Testing</h5>
+        <pre class="ex">package testinggame
+
+import "github.com/KroniK907/hackbox/internal/games"
+
+func init() {
+    games.Register(games.Factory{
+        ID:  "testing",
+        New: func() games.Game { return New() },
+    })
+}</pre>
+        <h5>Blank-import so Catalog is not empty</h5>
+        <p>Without this line in <code>internal/host/handler.go</code>, Load returns conflict for that id.</p>
+        <pre class="ex">import (
+    _ "github.com/KroniK907/hackbox/internal/games/testing"
+)</pre>
+      </article>
+
+      <article class="method" id="catalog">
+        <div class="tags"><span class="tag">games</span><span class="tag">host</span></div>
+        <h3>Catalog</h3>
+        <p>Returns a copy of every registered factory.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func Catalog() []Factory</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>A new slice. Mutating it does not change the catalog. Host copies it into a map keyed by ID when the handler starts.</p>
+        <h4>Description</h4>
+        <p>Games do not call this. Host does, once, in <code>NewHandler</code>. There is no runtime rescan.</p>
+        <h4>Examples</h4>
+        <h5>Host builds the runtime index</h5>
+        <pre class="ex">handler, err := NewHandler(db, lanJoinURL)
+// NewHandler calls games.Catalog() and indexes Factory.ID.</pre>
+      </article>
+
+      <h2 id="game">Game</h2>
+      <p>Host calls these methods on your value. Implement the whole interface. <code>Settings</code> and <code>Play</code> may return nil.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Host calls it</th></tr></thead>
+        <tbody>
+          <tr><td><a href="#game-id"><code>ID</code></a></td><td>catalog key, logs, KV, data dir</td></tr>
+          <tr><td><a href="#game-name"><code>Name</code></a></td><td>Lobby rail label after Load</td></tr>
+          <tr><td><a href="#game-minplayers"><code>MinPlayers</code></a></td><td>Start gate</td></tr>
+          <tr><td><a href="#game-maxplayers"><code>MaxPlayers</code></a></td><td>Load gate and Lobby max</td></tr>
+          <tr><td><a href="#game-load"><code>Load</code></a></td><td>after <code>Factory.New()</code></td></tr>
+          <tr><td><a href="#game-settings"><code>Settings</code></a></td><td>after Load, inlined on <code>/settings</code></td></tr>
+          <tr><td><a href="#game-start"><code>Start</code></a></td><td>operator Start or auto-start</td></tr>
+          <tr><td><a href="#game-board"><code>Board</code></a></td><td>GET <code>/board</code> after Start</td></tr>
+          <tr><td><a href="#game-boardbuttons"><code>BoardButtons</code></a></td><td>Lobby TV rail after Load, before Start</td></tr>
+          <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>GET <code>/</code> after Start, seated only</td></tr>
+          <tr><td><a href="#game-play"><code>Play</code></a></td><td><code>/play/</code> mux</td></tr>
+          <tr><td><a href="#game-pause"><code>Pause</code></a></td><td>operator or auto-pause</td></tr>
+          <tr><td><a href="#game-resume"><code>Resume</code></a></td><td>operator Resume</td></tr>
+          <tr><td><a href="#game-stop"><code>Stop</code></a></td><td>round end</td></tr>
+          <tr><td><a href="#game-shutdown"><code>Shutdown</code></a></td><td>unload</td></tr>
+        </tbody>
+      </table>
+
+      <article class="method" id="game-id">
+        <div class="tags"><span class="tag">Game</span></div>
+        <h3>ID</h3>
+        <p>Returns the catalog key for this package.</p>
+        <h4>Syntax</h4>
+        <div class="sig">ID() string</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>A stable lowercase id. Testing uses <code>testing</code>. Host uses it for KV namespace, the data dir name, log lines, and <code>POST /settings/load</code>.</p>
+        <h4>Description</h4>
+        <p>This is not the player-facing label. Keep it short and unique. Changing it orphans old KV rows.</p>
+        <h4>Examples</h4>
+        <h5>Return a constant</h5>
+        <pre class="ex">const id = "testing"
+
+func (g *Game) ID() string { return id }</pre>
+      </article>
+
+      <article class="method" id="game-name">
+        <div class="tags"><span class="tag">Game</span></div>
+        <h3>Name</h3>
+        <p>Returns the player-facing label on the Lobby rail after Load.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Name() string</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>A display string. Empty Name falls back to <a href="#game-id">ID</a> on the board extras.</p>
+        <h4>Description</h4>
+        <p>Use this for humans. Spaces and capitals are fine. ID stays the machine key.</p>
+        <h4>Examples</h4>
+        <h5>Show Testing on the rail</h5>
+        <pre class="ex">func (g *Game) Name() string { return "Testing" }</pre>
+      </article>
+
+      <article class="method" id="game-minplayers">
+        <div class="tags"><span class="tag">Game</span><span class="tag">Start gate</span></div>
+        <h3>MinPlayers</h3>
+        <p>Returns the extra seated-count floor required before Start.</p>
+        <h4>Syntax</h4>
+        <div class="sig">MinPlayers() int</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>0</code> means the game does not declare a floor. Host still requires at least one seated player. A positive value refuses Start when seated count is below it.</p>
+        <h4>Description</h4>
+        <p>This is not the Lobby seat cap. Lobby already has its own cap. Use MinPlayers when the rules need a table of a certain size, such as two teams.</p>
+        <h4>Examples</h4>
+        <h5>Testing waits for one seated player</h5>
+        <pre class="ex">func (g *Game) MinPlayers() int { return 1 }</pre>
+      </article>
+
+      <article class="method" id="game-maxplayers">
+        <div class="tags"><span class="tag">Game</span><span class="tag">Load gate</span></div>
+        <h3>MaxPlayers</h3>
+        <p>Returns the extra seated-count ceiling applied at Load and stored on Lobby.</p>
+        <h4>Syntax</h4>
+        <div class="sig">MaxPlayers() int</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>0</code> means the game does not declare a ceiling. The Lobby seat cap still applies. A positive value refuses Load when seated count is already above it, then host calls <code>SetGamePlayerMax</code> with that value.</p>
+        <h4>Description</h4>
+        <p>Load checks this before <code>Load(helper)</code>. Start does not re-check MaxPlayers. If you need a hard table size, declare it here so Lobby stops filling extra seats.</p>
+        <h4>Examples</h4>
+        <h5>No extra ceiling</h5>
+        <pre class="ex">func (g *Game) MaxPlayers() int { return 0 }</pre>
+      </article>
+
+      <article class="method" id="game-load">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Load</h3>
+        <p>Stores the host Helper and prepares settings after the operator picks this game.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Load(h Helper) error</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>h</dt>
+          <dd>Host-owned <a href="#helper">Helper</a>. Keep this pointer. You will need it on later requests. Host may pass the same helper again on Start.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success. Any other error rolls the previous loaded id back. The operator sees a generic load failure.</p>
+        <h4>Description</h4>
+        <p>Host has already created <code>&lt;dataDir&gt;/games/&lt;ID&gt;</code>. KV from earlier sessions is already there. Read knobs in Load or on each settings render. Do not start the round here. <code>/board</code> stays Lobby until Start. <a href="#game-boardbuttons">BoardButtons</a> and <a href="#game-settings">Settings</a> become live after a successful Load.</p>
+        <p>If another game was loaded, host already called Shutdown on it.</p>
+        <h4>Examples</h4>
+        <h5>Keep the helper on the Game value</h5>
+        <pre class="ex">func (g *Game) Load(h games.Helper) error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.helper = h
+    return nil
+}</pre>
+      </article>
+
+      <article class="method" id="game-settings">
+        <div class="tags"><span class="tag">Game</span><span class="tag">after Load</span></div>
+        <h3>Settings</h3>
+        <p>Returns the mux host inlines under Game Settings on <code>/settings</code>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Settings() http.Handler</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>An <code>http.Handler</code>, or nil if the game has no knobs. Nil is fine. Host then omits the Game Settings block.</p>
+        <h4>Description</h4>
+        <p>Host strips <code>/settings/game</code>. A GET of <code>/</code> on this mux is what gets captured into the settings page. Forms must post under <code>/settings/game/...</code>. After a POST, redirect to <code>/settings</code> so the operator stays on the host page.</p>
+        <p>This mux is live after Load and dies after Shutdown. It stays up across Stop.</p>
+        <h4>Examples</h4>
+        <h5>Hide latency checkbox</h5>
+        <pre class="ex">func (g *Game) Settings() http.Handler {
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /{$}", g.getSettings)
+    mux.HandleFunc("POST /hide-latency", g.postHideLatency)
+    return mux
+}</pre>
+        <p>The form action in Testing is <code>/settings/game/hide-latency</code>. The handler writes KV and publishes <code>roster</code>, then redirects to <code>/settings</code>.</p>
+      </article>
+
+      <article class="method" id="game-start">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Start</h3>
+        <p>Begins the round. After this returns nil, host hands <code>/</code> and <code>/board</code> to the game.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Start(h Helper) error</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>h</dt>
+          <dd>The same Helper family as Load. Store it again. Do not assume the Load pointer is the only one you will ever see.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p><code>nil</code> to proceed. A non-nil error keeps Lobby on <code>/</code> and <code>/board</code>. Host logs a generic start failure unless the gate refused first (no seated players, or below MinPlayers).</p>
+        <h4>Description</h4>
+        <p>Host already checked seated count. Start the ticker, deal cards, or seed scores here. Host then marks the round active, publishes <code>roster</code> then <code>round</code>, and reloads open pages. A second Start while already started is a no-op on the host side.</p>
+        <h4>Examples</h4>
+        <h5>Start the Testing tick</h5>
+        <pre class="ex">func (g *Game) Start(h games.Helper) error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.helper = h
+    g.paused = false
+    g.startTickerLocked()
+    return nil
+}</pre>
+      </article>
+
+      <article class="method" id="game-board">
+        <div class="tags"><span class="tag">Game</span><span class="tag">after Start</span></div>
+        <h3>Board</h3>
+        <p>Writes the TV document for GET <code>/board</code> after Start.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Board(w http.ResponseWriter, r *http.Request)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>w</dt>
+          <dd>Response writer. Send a full HTML document, not a fragment.</dd>
+          <dt>r</dt>
+          <dd>The board request. Use <a href="#helper-hasadmin">HasAdmin</a> if End game should only show for a signed-in operator tab.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None. Write the body yourself.</p>
+        <h4>Description</h4>
+        <p>Before Start, host never calls this. Lobby still owns the TV. After Start, this is the whole page. Stamp <a href="#helper-theme">Theme</a> on <code>html[data-theme]</code> so the first paint matches <code>/settings</code>. Include host chrome if you use <code>ui-start</code>, including the round-swap node so <code>sse:round</code> reloads when Stop returns the room to Lobby.</p>
+        <p>Listen for your own SSE names with HTMX. Do not open a second EventSource. Host chrome already connected one. Details are under <a href="#sse">Live SSE</a>.</p>
+        <h4>Examples</h4>
+        <h5>Render board.html with seated rows</h5>
+        <pre class="ex">func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
+    g.render(w, "board.html", g.boardData(r), http.StatusOK)
+}</pre>
+        <p>Testing lists <code>h.Seated()</code>, flashes a row on tap, and shows End game when <code>h.HasAdmin(r)</code> is true.</p>
+      </article>
+
+      <article class="method" id="game-boardbuttons">
+        <div class="tags"><span class="tag">Game</span><span class="tag">Lobby rail</span></div>
+        <h3>BoardButtons</h3>
+        <p>Returns up to three Lobby TV rail links under the audience count, after Load and before Start.</p>
+        <h4>Syntax</h4>
+        <div class="sig">BoardButtons() []BoardButton</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>Zero or more <a href="#type-boardbutton">BoardButton</a> values. Host skips empty Label or Path. Host keeps the first three. <code>HostOnly</code> buttons are omitted unless the board request has an admin session.</p>
+        <h4>Description</h4>
+        <p>After Start the game owns <code>/board</code>, so these controls go away. Point Path at a GET under <code>/play</code> if the page should work after Load. POST <code>/play</code> is still 404 until Start.</p>
+        <h4>Examples</h4>
+        <h5>About Testing on the rail</h5>
+        <pre class="ex">func (g *Game) BoardButtons() []games.BoardButton {
+    return []games.BoardButton{{
+        Label: "About Testing",
+        Path:  "/play/info",
+    }}
+}</pre>
+      </article>
+
+      <article class="method" id="game-phone">
+        <div class="tags"><span class="tag">Game</span><span class="tag">after Start</span></div>
+        <h3>Phone</h3>
+        <p>Writes the inner phone column for a seated player after Start.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Phone(w http.ResponseWriter, r *http.Request)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>w</dt>
+          <dd>Host captures these bytes, then wraps Lobby gear and the claimed-host drawer around them.</dd>
+          <dt>r</dt>
+          <dd>The phone request. Read the player with <a href="#helper-playerfromrequest">PlayerFromRequest</a>.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, the gear, and maybe the Host drawer. Audience phones and unknown cookies never reach this method. Lobby still renders those.</p>
+        <p>A claimed-host phone gets the drawer from host, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
+        <h4>Examples</h4>
+        <h5>Tap button plus optional End game</h5>
+        <pre class="ex">func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
+    g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
+}</pre>
+        <p>The template is a <code>&lt;div&gt;</code> with <code>hx-post="/play/tap"</code>. Host wraps it in <code>play-phone.html</code>.</p>
+      </article>
+
+      <article class="method" id="game-play">
+        <div class="tags"><span class="tag">Game</span></div>
+        <h3>Play</h3>
+        <p>Returns the mux mounted at <code>/play/</code> for POSTs, partials, and game static files.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Play() http.Handler</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>An <code>http.Handler</code>, or nil. Nil makes every <code>/play</code> request 404.</p>
+        <h4>Description</h4>
+        <p>Host strips <code>/play</code>. Register <code>POST /tap</code>, not <code>/play/tap</code>. GET is allowed after Load so info pages and CSS can load from a Lobby rail button. POST is 404 until Start, and 404 again after Stop. After Stop the Game value is still loaded, so GET handlers should tolerate a paused or stopped round.</p>
+        <h4>Examples</h4>
+        <h5>Tap, end, partials, and CSS</h5>
+        <pre class="ex">func (g *Game) Play() http.Handler {
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /info", g.getInfo)
+    mux.HandleFunc("POST /tap", g.postTap)
+    mux.HandleFunc("POST /end", g.postEnd)
+    mux.HandleFunc("GET /partials/board", g.getBoardFrame)
+    mux.HandleFunc("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(files))))
+    return mux
+}</pre>
+      </article>
+
+      <article class="method" id="game-pause">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Pause</h3>
+        <p>Stops accepting play for a moment without ending the round.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Pause() error</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success. Host then sets paused, writes a log line, and publishes <code>pause</code>.</p>
+        <h4>Description</h4>
+        <p>Operator Pause and auto-pause on seated disconnect both land here. Audience disconnects do not. A game may no-op and still return nil. Testing stops its 1s tick and ignores taps. Host may Resume while the disconnected player is still gone.</p>
+        <p>This is not <a href="#helper-pause">Helper.Pause</a>. Helper.Pause asks host to pause the room. Game.Pause is host telling you the room is pausing.</p>
+        <h4>Examples</h4>
+        <h5>Stop the tick, keep tap counts</h5>
+        <pre class="ex">func (g *Game) Pause() error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.paused = true
+    g.stopTickerLocked()
+    return nil
+}</pre>
+      </article>
+
+      <article class="method" id="game-resume">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Resume</h3>
+        <p>Starts accepting play again after Pause.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Resume() error</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success. Host clears paused and publishes <code>pause</code> again so pages swap Pause/Resume chrome.</p>
+        <h4>Description</h4>
+        <p>If Load never ran, Testing returns nil and does not start a tick. You can no-op. Do not call Helper.Resume from here. Host already owns that transition.</p>
+        <h4>Examples</h4>
+        <h5>Restart the Testing tick</h5>
+        <pre class="ex">func (g *Game) Resume() error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.paused = false
+    if g.helper == nil {
+        return nil
+    }
+    g.startTickerLocked()
+    return nil
+}</pre>
+      </article>
+
+      <article class="method" id="game-stop">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Stop</h3>
+        <p>Ends the round, wipes in-memory run state, and keeps the package loaded.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Stop() error</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success. Host returns <code>/</code> and <code>/board</code> to Lobby, may cycle seats if the stop is graceful, resets ready, and publishes <code>roster</code> then <code>round</code>.</p>
+        <h4>Description</h4>
+        <p>Finish, operator Stop, and Shutdown-while-started all call this. Keep Helper. Keep KV. Drop scores, ticks, and flash marks. Start can run again without another Load. Do not delete files in DataDir unless that is your own save format and you mean to.</p>
+        <h4>Examples</h4>
+        <h5>Clear taps, keep hide-latency KV</h5>
+        <pre class="ex">func (g *Game) Stop() error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.taps = make(map[string]int)
+    g.flashed = make(map[string]time.Time)
+    g.paused = false
+    g.stopTickerLocked()
+    return nil
+}</pre>
+      </article>
+
+      <article class="method" id="game-shutdown">
+        <div class="tags"><span class="tag">Game</span><span class="tag">lifecycle</span></div>
+        <h3>Shutdown</h3>
+        <p>Unloads the package. Drop the helper and stop leftover goroutines.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Shutdown() error</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success. Host clears the selected game id and Game Settings disappears.</p>
+        <h4>Description</h4>
+        <p>Called on unselect, on picking another game, and during process teardown of the previous game inside Load. If a round was active, host calls Stop first. KV stays until the operator hits Clear game data.</p>
+        <h4>Examples</h4>
+        <h5>Nil the helper</h5>
+        <pre class="ex">func (g *Game) Shutdown() error {
+    g.mu.Lock()
+    defer g.mu.Unlock()
+    g.stopTickerLocked()
+    g.helper = nil
+    g.taps = make(map[string]int)
+    return nil
+}</pre>
+      </article>
+
+      <h2 id="helper">Helper</h2>
+      <p>Host implements this. You receive it in Load and Start. Do not parse cookies, open <code>host.sqlite</code>, or write <code>host.log</code> yourself.</p>
+
+      <article class="method" id="helper-seated">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Seated</h3>
+        <p>Returns every player who currently occupies a seat.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Seated() []Player</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>A snapshot of <a href="#type-player">Player</a> values with <code>Seated</code> true. Empty if the roster read fails. Order follows Lobby's player list, not a scoreboard you control.</p>
+        <h4>Description</h4>
+        <p>This is the running table. Key in-memory maps by <code>Player.ID</code>. Disconnected seated people stay here until Kick or end-of-round cleanup. Do not use this to decide who may Join. Lobby already did that.</p>
+        <h4>Examples</h4>
+        <h5>Paint the Testing board list</h5>
+        <pre class="ex">for _, p := range h.Seated() {
+    row := playerRow{
+        ID:          p.ID,
+        DisplayName: p.DisplayName,
+        AvatarSeed:  p.AvatarSeed,
+        Connected:   p.Connected,
+        Taps:        g.taps[p.ID],
+    }
+    view.Players = append(view.Players, row)
+}</pre>
+      </article>
+
+      <article class="method" id="helper-waiting">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Waiting</h3>
+        <p>Returns players on the wait list.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Waiting() []Player</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>Players with <code>Waiting</code> true. Join during a round can put someone here and also in audience.</p>
+        <h4>Description</h4>
+        <p>Wait list is Lobby-owned. Fill-empty-seats consumes waiters, not audience-only people. You may show this list as "up next". You must not move people on or off it.</p>
+        <h4>Examples</h4>
+        <h5>Count the line</h5>
+        <pre class="ex">n := len(h.Waiting())
+h.Log("waiters " + strconv.Itoa(n))</pre>
+      </article>
+
+      <article class="method" id="helper-audience">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Audience</h3>
+        <p>Returns everyone who is not seated.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Audience() []Player</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>Players with <code>Audience</code> true. Host sets that as <code>!Seated</code>, so waiters are included.</p>
+        <h4>Description</h4>
+        <p>Use this for watch or vote UI. Audience-only people are never consumed by fill. A wait toggle drops wait and keeps audience. If you need waiters excluded, filter on <code>!p.Waiting</code> yourself.</p>
+        <h4>Examples</h4>
+        <h5>Audience minus the wait line</h5>
+        <pre class="ex">var watchers []games.Player
+for _, p := range h.Audience() {
+    if !p.Waiting {
+        watchers = append(watchers, p)
+    }
+}</pre>
+      </article>
+
+      <article class="method" id="helper-player">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Player</h3>
+        <p>Looks up one roster row by Lobby player id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Player(id string) (Player, bool)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>id</dt>
+          <dd>Lobby player id. Same string you stored from Seated or PlayerFromRequest.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>The row and <code>true</code> if it exists. Zero Player and <code>false</code> if not. There is no error channel. A store read failure looks like a miss (empty list).</p>
+        <h4>Description</h4>
+        <p>Use this when you already have an id from run state and need a fresh name or connected flag. Do not cache DisplayName across a whole night if the operator unlocked names. Re-read when you render.</p>
+        <h4>Examples</h4>
+        <h5>Skip a tap if the id left</h5>
+        <pre class="ex">p, ok := h.Player(id)
+if !ok || !p.Seated {
+    return
+}</pre>
+      </article>
+
+      <article class="method" id="helper-playerfromrequest">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>PlayerFromRequest</h3>
+        <p>Resolves the player cookie on an incoming request.</p>
+        <h4>Syntax</h4>
+        <div class="sig">PlayerFromRequest(r *http.Request) (Player, bool, error)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>r</dt>
+          <dd>The HTTP request. Helper reads the player cookie. It does not read the admin cookie.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>The player, whether a row was found, and a cookie/store error. Treat <code>err != nil</code> as a failed lookup. <code>ok == false</code> with <code>err == nil</code> means no player cookie or no matching row.</p>
+        <h4>Description</h4>
+        <p>This is how play POSTs know who tapped. Host already blocked unseated phones from <a href="#game-phone">Phone</a>. Play routes do not get that filter. Check <code>player.Seated</code> on <code>/play</code> POSTs yourself, as Testing does on tap.</p>
+        <h4>Examples</h4>
+        <h5>Count a seated tap</h5>
+        <pre class="ex">player, ok, err := h.PlayerFromRequest(r)
+if err != nil || !ok || !player.Seated {
+    w.WriteHeader(http.StatusNoContent)
+    return
+}
+g.taps[player.ID]++</pre>
+      </article>
+
+      <article class="method" id="helper-datadir">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>DataDir</h3>
+        <p>Returns the on-disk folder reserved for this game id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">DataDir() string</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>While loaded, <code>&lt;storeDir&gt;/games/&lt;ID&gt;</code>. If nothing is loaded, <code>&lt;storeDir&gt;/games</code>. On Windows the store dir is under <code>%LOCALAPPDATA%\hackbox</code>.</p>
+        <h4>Description</h4>
+        <p>Host created the id folder during Load. Write your own files here if KV blobs are a poor fit. Host does not parse them. Stop and Shutdown do not delete the folder.</p>
+        <h4>Examples</h4>
+        <h5>Write a round dump</h5>
+        <pre class="ex">path := filepath.Join(h.DataDir(), "last-round.json")
+_ = os.WriteFile(path, payload, 0o600)</pre>
+      </article>
+
+      <article class="method" id="helper-kvget">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>KVGet</h3>
+        <p>Reads an opaque byte value namespaced by this game id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">KVGet(key string) ([]byte, bool, error)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>key</dt>
+          <dd>Your key. Host does not parse it. Empty key fails on write. Reads of a missing key return <code>ok == false</code>.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>Stored bytes, whether a row existed, and a store error. Missing key is not an error.</p>
+        <h4>Description</h4>
+        <p>This is the <code>game_kv</code> table in <code>host.sqlite</code>. Survives Stop, Shutdown, and process restart. Operator Clear game data deletes every key for this id. Do not store Lobby identity here. That already lives on the player row.</p>
+        <h4>Examples</h4>
+        <h5>Hide latency flag</h5>
+        <pre class="ex">raw, ok, err := h.KVGet("hide-latency")
+hide := err == nil && ok && string(raw) == "1"</pre>
+      </article>
+
+      <article class="method" id="helper-kvset">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>KVSet</h3>
+        <p>Writes an opaque byte value namespaced by this game id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">KVSet(key string, value []byte) error</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>key</dt>
+          <dd>Non-empty. Empty game id or key returns an error from store.</dd>
+          <dt>value</dt>
+          <dd>Any bytes. Nil is stored as empty. Host does not parse the payload.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p><code>nil</code> on success.</p>
+        <h4>Description</h4>
+        <p>Upsert. Use it for knobs that should outlive a round. After a successful write, publish something if open pages should refresh. Testing publishes <code>roster</code> after Hide latency so the board drops the latency column.</p>
+        <h4>Examples</h4>
+        <h5>Save a checkbox</h5>
+        <pre class="ex">value := []byte("0")
+if r.FormValue("hide") == "1" {
+    value = []byte("1")
+}
+if err := h.KVSet("hide-latency", value); err != nil {
+    http.Error(w, "Could not save Hide latency.", http.StatusInternalServerError)
+    return
+}</pre>
+      </article>
+
+      <article class="method" id="helper-finish">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Finish</h3>
+        <p>Asks host to end the round as a graceful Stop.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Finish()</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>None. Host swallows Stop errors.</p>
+        <h4>Description</h4>
+        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a> with graceful true, so CycleSeats may run. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
+        <h4>Examples</h4>
+        <h5>End from the phone or the board</h5>
+        <pre class="ex">if !g.mayEnd(h, r) {
+    w.WriteHeader(http.StatusNoContent)
+    return
+}
+h.Finish()
+next := "/"
+if r.FormValue("return") == "/board" {
+    next = "/board"
+}
+http.Redirect(w, r, next, http.StatusSeeOther)</pre>
+      </article>
+
+      <article class="method" id="helper-pause">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Pause</h3>
+        <p>Asks host to pause the running round.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Pause()</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>None. Host swallows errors. If nothing is started, the call is refused inside host and ignored here.</p>
+        <h4>Description</h4>
+        <p>Prefer operator Pause on the Host drawer unless your rules need an in-game pause control. Host will call <a href="#game-pause">Game.Pause</a> and publish <code>pause</code>. Do not recurse. Game.Pause should not call Helper.Pause.</p>
+        <h4>Examples</h4>
+        <h5>A game-owned pause button</h5>
+        <pre class="ex">func (g *Game) postPause(w http.ResponseWriter, r *http.Request) {
+    if h := g.helperNow(); h != nil {
+        h.Pause()
+    }
+    w.WriteHeader(http.StatusNoContent)
+}</pre>
+      </article>
+
+      <article class="method" id="helper-resume">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Resume</h3>
+        <p>Asks host to resume a paused round.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Resume()</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>Same split as Pause. Host calls <a href="#game-resume">Game.Resume</a> and publishes <code>pause</code>. The operator may Resume while a seated player is still disconnected.</p>
+        <h4>Examples</h4>
+        <h5>Resume from play</h5>
+        <pre class="ex">if h := g.helperNow(); h != nil {
+    h.Resume()
+}</pre>
+      </article>
+
+      <article class="method" id="helper-publish">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Publish</h3>
+        <p>Sends a named server-sent event on the room hub.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Publish(name string)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>name</dt>
+          <dd>Event name. Pages listen with HTMX <code>sse:name</code>. A slow page may miss an event. Every event means "fetch current state", not "here is a delta".</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>One EventSource per page, already opened by host chrome. Do not open another. The name is the only signal games get. The data line is always <code>update</code>. Put the new score in a GET partial. See <a href="#sse">Live SSE</a>.</p>
+        <p>Do not publish <code>round</code> for a score tick. Host uses <code>round</code> to swap Lobby vs game documents. <code>pause</code>, <code>roster</code>, <code>theme</code>, and <code>log</code> are also host names. Publishing <code>roster</code> is reasonable when a knob changes a board that also shows Lobby facts.</p>
+        <h4>Examples</h4>
+        <h5>Tick and tap</h5>
+        <pre class="ex">h.Publish("testing")
+h.Publish("tap")</pre>
+        <p>The Testing list listens with <code>hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"</code>.</p>
+      </article>
+
+      <article class="method" id="helper-log">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Log</h3>
+        <p>Writes a line into the host log ring, prefixed with the game id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Log(line string)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>line</dt>
+          <dd>Plain text. Host stores <code>&lt;ID&gt;: </code> plus this string. If nothing is loaded, the call is a no-op.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>Operators read this on the settings log page. Do not log secrets. Do not write <code>host.log</code> yourself.</p>
+        <h4>Examples</h4>
+        <h5>Trace a finish</h5>
+        <pre class="ex">h.Log("player ended the round")</pre>
+      </article>
+
+      <article class="method" id="helper-theme">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Theme</h3>
+        <p>Returns the room palette id so full documents match <code>/settings</code> on first paint.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Theme() string</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p><code>neon-light</code> or <code>neon-dark</code>. Stamp it on <code>html[data-theme]</code>. Host also publishes <code>theme</code> when the operator flips palettes. <code>ui.NormalizeTheme</code> maps unknown values to the default.</p>
+        <h4>Description</h4>
+        <p>Phone inner bodies inherit the host document theme. Board and extra full pages you serve from Play (such as <code>/play/info</code>) must set this themselves.</p>
+        <h4>Examples</h4>
+        <h5>Chrome on About Testing</h5>
+        <pre class="ex">view := boardView{
+    Chrome: ui.Chrome{Title: "About Testing", Theme: ui.DefaultTheme},
+}
+if h := g.helperNow(); h != nil {
+    view.Chrome.Theme = ui.NormalizeTheme(h.Theme())
+}</pre>
+      </article>
+
+      <article class="method" id="helper-hasadmin">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>HasAdmin</h3>
+        <p>Reports whether this request carries a valid admin session.</p>
+        <h4>Syntax</h4>
+        <div class="sig">HasAdmin(r *http.Request) bool</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>r</dt>
+          <dd>The request. Helper reads the admin cookie and checks the session table. Games never see the cookie value.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p><code>true</code> when the session is valid.</p>
+        <h4>Description</h4>
+        <p>Use this for board End game, or any control that should match Room settings. Claimed-host on a phone is a different bit, <code>Player.ClaimedHost</code>. Testing allows End game from HasAdmin on the TV and from ClaimedHost on the phone. Settings POSTs are already gated by host with <code>requireAdmin</code>. You do not need HasAdmin there.</p>
+        <h4>Examples</h4>
+        <h5>Who may end</h5>
+        <pre class="ex">func (g *Game) mayEnd(h games.Helper, r *http.Request) bool {
+    if h.HasAdmin(r) {
+        return true
+    }
+    player, ok, err := h.PlayerFromRequest(r)
+    return err == nil && ok && player.ClaimedHost
+}</pre>
+      </article>
+
+      <h2 id="types">Types</h2>
+
+      <article class="method" id="type-player">
+        <h3>Player</h3>
+        <p>A Lobby row as a game may read it. Games never write these fields.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Player struct {
+    ID               string
+    DisplayName      string
+    AvatarSeed       string
+    Seated           bool
+    Waiting          bool
+    Audience         bool
+    ClaimedHost      bool
+    Connected        bool
+    LastHeartbeatRTT time.Duration
+}</div>
+        <h4>Fields</h4>
+        <dl>
+          <dt>ID</dt>
+          <dd>Stable Lobby player id. Key run state by this. Reconnect keeps the same id in the same seat.</dd>
+          <dt>DisplayName</dt>
+          <dd>Nickname. May lock while a game runs, depending on host settings.</dd>
+          <dt>AvatarSeed</dt>
+          <dd>Procedural SVG seed. Render with <code>ui.AvatarSVG</code>. Do not store image blobs.</dd>
+          <dt>Seated</dt>
+          <dd>Occupies a seat.</dd>
+          <dt>Waiting</dt>
+          <dd>On the wait list.</dd>
+          <dt>Audience</dt>
+          <dd>Not seated. Host sets this to <code>!Seated</code>.</dd>
+          <dt>ClaimedHost</dt>
+          <dd>This player claimed host. Phone End game in Testing keys off this.</dd>
+          <dt>Connected</dt>
+          <dd>Heartbeat currently live. Host maps this from <code>!Disconnected</code>.</dd>
+          <dt>LastHeartbeatRTT</dt>
+          <dd>Last RTT. Zero means none yet. Testing hides this when KV says so.</dd>
+        </dl>
+        <h4>Examples</h4>
+        <h5>Format latency</h5>
+        <pre class="ex">if p.LastHeartbeatRTT > 0 {
+    row.Latency = strconv.FormatInt(p.LastHeartbeatRTT.Milliseconds(), 10) + " ms"
+}</pre>
+      </article>
+
+      <article class="method" id="type-boardbutton">
+        <h3>BoardButton</h3>
+        <p>One Lobby rail control a loaded game may publish before Start.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type BoardButton struct {
+    Label    string
+    Path     string
+    HostOnly bool
+}</div>
+        <h4>Fields</h4>
+        <dl>
+          <dt>Label</dt>
+          <dd>Button text. Empty is skipped.</dd>
+          <dt>Path</dt>
+          <dd>href. Empty is skipped. Usually a GET under <code>/play</code>.</dd>
+          <dt>HostOnly</dt>
+          <dd>When true, host omits the control unless the board request has an admin session.</dd>
+        </dl>
+        <h4>Examples</h4>
+        <h5>Public scores plus a host deck</h5>
+        <pre class="ex">[]games.BoardButton{
+    {Label: "Public scores", Path: "/play/scores"},
+    {Label: "Host only deck", Path: "/play/deck", HostOnly: true},
+}</pre>
+      </article>
+
+      <article class="method" id="type-factory">
+        <h3>Factory</h3>
+        <p>How a game package announces itself to Catalog.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Factory struct {
+    ID  string
+    New func() Game
+}</div>
+        <h4>Fields</h4>
+        <dl>
+          <dt>ID</dt>
+          <dd>Must match <code>Game.ID()</code> in practice. Host indexes the runtime map by this, then constructs with <code>New</code>.</dd>
+          <dt>New</dt>
+          <dd>Must return a fresh unloaded Game. Called on every Load.</dd>
+        </dl>
+        <h4>See also</h4>
+        <p><a href="#register">Register</a></p>
+      </article>
+
+      <h2 id="host-http">Host HTTP</h2>
+      <p>These routes are host-owned. Games do not register them. Admin session required except where noted. Restore-pending rooms return 409.</p>
+
+      <article class="method" id="http-load">
+        <h3>POST /settings/load</h3>
+        <p>Constructs the selected catalog id and calls <a href="#game-load">Load</a>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/load
+Content-Type: application/x-www-form-urlencoded
+
+game_id=testing</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>game_id</dt>
+          <dd>Catalog id. Unknown id or a started round returns 409.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>303 to <code>/</code> on success.</p>
+        <h4>Description</h4>
+        <p>The Host drawer posts this. You do not. After success, Settings and BoardButtons are live. Board is still Lobby.</p>
+      </article>
+
+      <article class="method" id="http-start">
+        <h3>POST /settings/start</h3>
+        <p>Calls <a href="#game-start">Start</a> when a game is loaded and at least one player is seated.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/start</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>303 to <code>/</code>. 409 if not loaded or seated count fails the gate.</p>
+        <h4>Description</h4>
+        <p>Auto-start on Lobby can call the same runtime method without this POST. Second Start while running succeeds as a no-op redirect.</p>
+      </article>
+
+      <article class="method" id="http-stop">
+        <h3>POST /settings/stop</h3>
+        <p>Calls <a href="#game-stop">Stop</a>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/stop
+graceful=1</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>graceful</dt>
+          <dd><code>1</code> lets Lobby cycle seats. Finish uses this path inside host. A bare Stop from the drawer may omit it.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>303 to <code>/</code>.</p>
+      </article>
+
+      <article class="method" id="http-shutdown">
+        <h3>POST /settings/shutdown</h3>
+        <p>Unloads the package. Stop first if a round is active, then <a href="#game-shutdown">Shutdown</a>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/shutdown</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>303 to <code>/</code>.</p>
+      </article>
+
+      <article class="method" id="http-pause">
+        <h3>POST /settings/pause</h3>
+        <p>Calls <a href="#game-pause">Game.Pause</a>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/pause</div>
+        <h4>Return value</h4>
+        <p>204 on success. 409 if no started game.</p>
+        <h4>Description</h4>
+        <p>The Host drawer uses HTMX. Pages listen for <code>sse:pause</code>.</p>
+      </article>
+
+      <article class="method" id="http-resume">
+        <h3>POST /settings/resume</h3>
+        <p>Calls <a href="#game-resume">Game.Resume</a>.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/resume</div>
+        <h4>Return value</h4>
+        <p>204 on success. 409 if no started game.</p>
+      </article>
+
+      <article class="method" id="http-clear">
+        <h3>POST /settings/clear-game-data</h3>
+        <p>Deletes every <code>game_kv</code> row for the loaded id.</p>
+        <h4>Syntax</h4>
+        <div class="sig">POST /settings/clear-game-data</div>
+        <h4>Return value</h4>
+        <p>303 to <code>/settings</code>. 409 if nothing is loaded.</p>
+        <h4>Description</h4>
+        <p>Lobby seats and <code>host.log</code> stay. Stop and Shutdown do not do this. Games must not impersonate this route.</p>
+      </article>
+
+      <article class="method" id="http-mounts">
+        <h3>Mounts</h3>
+        <p>Public paths stay host-owned. Lobby vs game is a state swap on <code>/</code> and <code>/board</code>.</p>
+        <table>
+          <thead>
+            <tr><th>Path</th><th>After Load</th><th>After Start</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/</code></td><td>Lobby phone</td><td>Game Phone body inside host chrome, seated only</td></tr>
+            <tr><td><code>/board</code></td><td>Lobby TV plus BoardButtons</td><td>Game Board document</td></tr>
+            <tr><td><code>/settings</code></td><td>Host operator</td><td>same, Game Settings inlined</td></tr>
+            <tr><td><code>/settings/game/*</code></td><td>Settings() mux</td><td>same</td></tr>
+            <tr><td><code>/play/*</code></td><td>Play() GET</td><td>Play() GET and POST</td></tr>
+          </tbody>
+        </table>
+        <p>Games must not register <code>/</code>, <code>/board</code>, or <code>/settings</code> as mux roots.</p>
+      </article>
+
+      <h2 id="sse">Live SSE</h2>
+      <p>Hackbox does not push HTML down the wire. It pokes open pages with a name, and those pages pull the current document or partial. That is the whole live system.</p>
+
+      <article class="method" id="sse-how">
+        <h3>How it works</h3>
+        <p>Host chrome template <code>ui-start</code> puts HTMX's SSE extension on <code>body</code>.</p>
+        <pre class="ex">&lt;body
+  class="ui-app"
+  hx-ext="sse"
+  sse-connect="/lobby/events"
+&gt;</pre>
+        <p><code>GET /lobby/events</code> is one in-process hub for the room. Every phone, the TV, and <code>/settings</code> share it. <code>ui-start-quiet</code> (setup and these docs pages) does not connect. Phone inner HTML from <a href="#game-phone">Phone</a> sits inside host <code>play-phone.html</code>, which already used <code>ui-start</code>. Full board documents should use <code>ui-start</code> too, plus <code>{{template "round-swap" "/board"}}</code> so Stop reloads Lobby.</p>
+        <p><a href="#helper-publish">Helper.Publish</a> sends an SSE frame like this.</p>
+        <pre class="ex">event: tap
+data: update</pre>
+        <p>Games cannot change the data line. It is always <code>update</code>. Host itself uses a different helper, <code>PublishData</code>, only for <code>theme</code> (the palette id) and <code>log</code> (the log line). Your scores, names, and tap counts belong in the GET you run after the poke, not in the event body.</p>
+        <p>The hub writes a comment ping every 15 seconds so proxies keep the stream. Those pings are not named events. Nothing in your templates should listen for them.</p>
+      </article>
+
+      <article class="method" id="sse-reserved">
+        <h3>Reserved names</h3>
+        <p>Host and Lobby already publish these. Listening is fine. Publishing them from a game is almost always wrong, except <code>roster</code> after a knob that other pages should reread.</p>
+        <table>
+          <thead><tr><th>Name</th><th>Who publishes</th><th>What pages do</th></tr></thead>
+          <tbody>
+            <tr><td><code>roster</code></td><td>join, leave, ready, seats, disconnect, Load, and similar</td><td>Swap roster partials</td></tr>
+            <tr><td><code>round</code></td><td>host on Start, Stop, Shutdown</td><td>Reload <code>/</code> or <code>/board</code> (Lobby vs game swap)</td></tr>
+            <tr><td><code>pause</code></td><td>host on Pause and Resume</td><td>Swap pause chrome and paused game frames</td></tr>
+            <tr><td><code>theme</code></td><td>host when the palette flips</td><td>Set <code>html[data-theme]</code></td></tr>
+            <tr><td><code>log</code></td><td>host log ring</td><td>Refresh the settings log tail</td></tr>
+          </tbody>
+        </table>
+        <p>If you publish <code>round</code> because a prompt advanced, every open TV and phone reloads as if the round ended. Use your own name.</p>
+      </article>
+
+      <article class="method" id="sse-own">
+        <h3>Your own names</h3>
+        <p>Pick a short lowercase token. Prefix with the game id when the word is generic. Testing uses <code>testing</code> for a 1s room tick and <code>tap</code> when someone hits the plunger. Only one game is loaded at a time, so <code>tap</code> will not collide with another package. It can still collide with a reserved host name. Do not call your event <code>round</code>.</p>
+        <p>Publish after the run state you care about is already stored. Listeners will GET immediately. If you publish first and then write the map, a fast TV can fetch the old count.</p>
+        <h4>Examples</h4>
+        <h5>Publish after a tap is counted</h5>
+        <pre class="ex">g.taps[player.ID]++
+g.mu.Unlock()
+h.Publish("tap")</pre>
+        <h5>Publish a clock tick</h5>
+        <pre class="ex">if h != nil {
+    h.Publish("testing")
+}</pre>
+        <p>A settings POST that only changes KV can publish <code>roster</code> if the board list already listens for it. Testing does that for Hide latency. You can also publish your own name and list it on the same <code>hx-trigger</code>.</p>
+      </article>
+
+      <article class="method" id="sse-listen">
+        <h3>Listen in HTML</h3>
+        <p>HTMX turns a named event into <code>sse:that-name</code> on the same EventSource. Point <code>hx-get</code> at a <a href="#game-play">Play</a> partial. Swap the node that holds the live bits, not the whole document, unless you really want a reload.</p>
+        <h4>Examples</h4>
+        <h5>Refresh a list on tick, tap, roster, and reconnect</h5>
+        <pre class="ex">&lt;div
+  id="testing-list"
+  class="testing-list"
+  hx-get="/play/partials/board-list"
+  hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+&gt;</pre>
+        <p><code>htmx:sseOpen from:body</code> runs when the EventSource connects, including after a drop. Use it so a phone that slept still catches up. The first HTML response already has the list, so the extra GET on first open is cheap insurance, not the first paint.</p>
+        <h5>Swap the outer frame only on pause</h5>
+        <pre class="ex">&lt;div
+  id="testing-board"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:pause"
+  hx-swap="outerHTML"
+&gt;</pre>
+        <p>Testing keeps pause on the outer frame and ticks on the inner list so a 1s tick does not rebuild End game and the heading.</p>
+        <p>Register those GET paths on your Play mux (<code>GET /partials/board-list</code>, not <code>/play/partials/board-list</code>). Do not add another <code>sse-connect</code>. Do not construct <code>new EventSource("/lobby/events")</code> in a script. A second connection still shares the hub, but the lost-host overlay and theme-sync are wired to the body one.</p>
+      </article>
+
+      <article class="method" id="sse-drops">
+        <h3>Missed events</h3>
+        <p>Each page gets a buffer of 16 named events. If the tab is slow, the hub skips that subscriber and moves on. There is no replay. The next event, or <code>htmx:sseOpen</code>, should GET a partial that represents now, not "plus one since last time".</p>
+        <p>That is why Testing stores tap counts on the server and re-renders the list. A missed <code>tap</code> only delays the flash. The next <code>testing</code> tick still shows the true total.</p>
+        <p>If you animate from the event itself and ignore the GET, a dropped poke is a dropped animation with no recovery. Prefer server state plus refetch.</p>
+      </article>
+
+      <h2 id="must-not">Must not</h2>
+      <ul>
+        <li>Import <code>internal/host</code>, <code>internal/lobby</code>, or <code>internal/store</code> from a game package.</li>
+        <li>Write seats, name, wait, audience, or claimed-host.</li>
+        <li>Parse the player cookie or the admin cookie.</li>
+        <li>Register <code>/</code>, <code>/board</code>, or <code>/settings</code> as mux roots.</li>
+        <li>Clear KV on Stop or Shutdown.</li>
+        <li>Scan a games folder at runtime.</li>
+        <li>Treat <code>/docs</code> as this contract. That URL is how to run the binary.</li>
+        <li>Open a second EventSource on a page host already wired.</li>
+      </ul>
+      <p>The live package that exercises almost every hook is Testing in <code>internal/games/testing</code>.</p>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var input = document.getElementById("filter");
+      var links = document.querySelectorAll(".toc .sub a");
+      input.addEventListener("input", function () {
+        var q = input.value.toLowerCase().trim();
+        links.forEach(function (a) {
+          a.hidden = q !== "" && a.textContent.toLowerCase().indexOf(q) === -1;
+        });
+      });
+      var sections = document.querySelectorAll(".method, main h2");
+      if (!("IntersectionObserver" in window)) {
+        return;
+      }
+      var byId = {};
+      document.querySelectorAll(".toc a[href^='#']").forEach(function (a) {
+        byId[a.getAttribute("href").slice(1)] = a;
+      });
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          var id = entry.target.id;
+          if (!id) {
+            return;
+          }
+          document.querySelectorAll(".toc a.is-active").forEach(function (a) {
+            a.classList.remove("is-active");
+          });
+          if (byId[id]) {
+            byId[id].classList.add("is-active");
+          }
+        });
+      }, { rootMargin: "0px 0px -70% 0px", threshold: 0.1 });
+      sections.forEach(function (el) {
+        if (el.id) {
+          observer.observe(el);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
