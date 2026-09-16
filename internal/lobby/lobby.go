@@ -60,6 +60,7 @@ type SettingsExtras struct {
 type PhoneExtras struct {
 	ShowStart    bool
 	Started      bool
+	Paused       bool
 	AutoStart    bool
 	GameIDs      []string
 	LoadedGameID string
@@ -283,6 +284,7 @@ type roomView struct {
 	ShowStart      bool
 	ShowReady      bool
 	Started        bool
+	Paused         bool
 	AutoStart      bool
 	GameIDs        []string
 	LoadedGameID   string

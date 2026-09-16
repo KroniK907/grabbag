@@ -50,6 +50,9 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	if strings.Contains(board, "FAKE-BOARD") {
 		t.Fatal("board handed to the game before Start")
 	}
+	if !strings.Contains(board, `sse:round`) || !strings.Contains(board, `hx-get="/board"`) {
+		t.Fatalf("lobby board missing round swap: %q", board)
+	}
 
 	start := requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
 	if start.Code != http.StatusSeeOther {
@@ -67,6 +70,9 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	body = phone.Body.String()
 	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, "ui-gear") || !strings.Contains(body, ">Stop<") {
 		t.Fatalf("in-game phone = %q", body)
+	}
+	if !strings.Contains(body, ">Pause<") || strings.Contains(body, ">Resume<") {
+		t.Fatalf("in-game drawer pause = %q", body)
 	}
 	play := requestWithCookie(t, handler, http.MethodGet, "/play/ping", nil, admin)
 	if play.Code != http.StatusOK || play.Body.String() != "play-ok" {
@@ -209,9 +215,17 @@ func TestPauseResumeAndAutoPause(t *testing.T) {
 	if !fake.paused {
 		t.Fatal("Pause did not reach the game")
 	}
+	pausedPhone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
+	if !strings.Contains(pausedPhone, ">Resume<") || strings.Contains(pausedPhone, ">Pause<") {
+		t.Fatalf("paused drawer = %q", pausedPhone)
+	}
 	requestWithCookie(t, handler, http.MethodPost, "/settings/resume", nil, admin)
 	if fake.paused {
 		t.Fatal("Resume left the game paused")
+	}
+	running := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
+	if !strings.Contains(running, ">Pause<") || strings.Contains(running, ">Resume<") {
+		t.Fatalf("resumed drawer = %q", running)
 	}
 
 	auto := requestWithCookie(t, handler, http.MethodPost, "/settings/auto-pause", url.Values{"enabled": {"1"}}, admin)

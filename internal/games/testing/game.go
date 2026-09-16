@@ -19,7 +19,8 @@ const (
 	kvHideLatency = "hide-latency"
 	eventTick     = "testing"
 	eventTap      = "tap"
-	flashFor      = 400 * time.Millisecond
+	flashFor      = 700 * time.Millisecond
+	cssVersion    = "tap-fill-1"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
@@ -39,6 +40,7 @@ type Game struct {
 	helper   games.Helper
 	taps     map[string]int
 	flashed  map[string]time.Time
+	paused   bool
 	stopTick chan struct{}
 }
 
@@ -80,10 +82,8 @@ func (g *Game) Start(h games.Helper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.helper = h
-	g.stopTickerLocked()
-	stop := make(chan struct{})
-	g.stopTick = stop
-	go g.runTick(stop)
+	g.paused = false
+	g.startTickerLocked()
 	return nil
 }
 
@@ -112,11 +112,26 @@ func (g *Game) Play() http.Handler {
 	return mux
 }
 
-// Pause is a no-op.
-func (g *Game) Pause() error { return nil }
+// Pause stops the 1s tick. Taps stay HTTP success with no count.
+func (g *Game) Pause() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.paused = true
+	g.stopTickerLocked()
+	return nil
+}
 
-// Resume is a no-op.
-func (g *Game) Resume() error { return nil }
+// Resume starts the 1s tick again if the package is still loaded.
+func (g *Game) Resume() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.paused = false
+	if g.helper == nil {
+		return nil
+	}
+	g.startTickerLocked()
+	return nil
+}
 
 // Stop wipes tap counts and flash marks and ends the tick. KV stays.
 func (g *Game) Stop() error {
@@ -124,6 +139,7 @@ func (g *Game) Stop() error {
 	defer g.mu.Unlock()
 	g.taps = make(map[string]int)
 	g.flashed = make(map[string]time.Time)
+	g.paused = false
 	g.stopTickerLocked()
 	return nil
 }
@@ -136,7 +152,15 @@ func (g *Game) Shutdown() error {
 	g.helper = nil
 	g.taps = make(map[string]int)
 	g.flashed = make(map[string]time.Time)
+	g.paused = false
 	return nil
+}
+
+func (g *Game) startTickerLocked() {
+	g.stopTickerLocked()
+	stop := make(chan struct{})
+	g.stopTick = stop
+	go g.runTick(stop)
 }
 
 func (g *Game) stopTickerLocked() {
@@ -202,6 +226,11 @@ func (g *Game) postTap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.mu.Lock()
+	if g.paused {
+		g.mu.Unlock()
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	g.taps[player.ID]++
 	g.flashed[player.ID] = time.Now().Add(flashFor)
 	g.mu.Unlock()
@@ -220,7 +249,11 @@ func (g *Game) postEnd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Finish()
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	next := "/"
+	if r.FormValue("return") == "/board" {
+		next = "/board"
+	}
+	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 
 func (g *Game) mayEnd(h games.Helper, r *http.Request) bool {
@@ -244,19 +277,25 @@ func (g *Game) boardData(r *http.Request) boardView {
 	view := boardView{
 		Chrome:      ui.Page("Testing"),
 		HideLatency: g.hideLatency(),
+		GameCSS:     "/play/static/game.css?v=" + cssVersion,
+		Paused:      g.isPaused(),
 	}
 	if h != nil {
 		view.ShowEnd = h.HasAdmin(r)
 		now := time.Now()
 		g.mu.Lock()
 		for _, p := range h.Seated() {
+			flash := now.Before(g.flashed[p.ID])
+			if flash {
+				delete(g.flashed, p.ID)
+			}
 			row := playerRow{
 				ID:          p.ID,
 				DisplayName: p.DisplayName,
 				AvatarSeed:  p.AvatarSeed,
 				Connected:   p.Connected,
 				Taps:        g.taps[p.ID],
-				Flash:       now.Before(g.flashed[p.ID]),
+				Flash:       flash,
 			}
 			if p.LastHeartbeatRTT > 0 {
 				row.Latency = formatLatency(p.LastHeartbeatRTT)
@@ -283,7 +322,14 @@ func (g *Game) phoneData(r *http.Request) phoneView {
 		view.Latency = formatLatency(player.LastHeartbeatRTT)
 	}
 	view.ShowEnd = player.ClaimedHost
+	view.Paused = g.isPaused()
 	return view
+}
+
+func (g *Game) isPaused() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.paused
 }
 
 func (g *Game) hideLatency() bool {
@@ -325,12 +371,15 @@ type boardView struct {
 	Players     []playerRow
 	HideLatency bool
 	ShowEnd     bool
+	Paused      bool
+	GameCSS     string
 }
 
 type phoneView struct {
 	DisplayName string
 	Latency     string
 	ShowEnd     bool
+	Paused      bool
 }
 
 type playerRow struct {

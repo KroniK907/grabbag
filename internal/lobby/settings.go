@@ -76,6 +76,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		view.ShowStart = extra.ShowStart
 		view.ShowReady = extra.LoadedGameID != "" && !extra.Started && player.Seated
 		view.Started = extra.Started
+		view.Paused = extra.Paused
 		view.AutoStart = extra.AutoStart
 		view.GameIDs = extra.GameIDs
 		view.LoadedGameID = extra.LoadedGameID

@@ -85,6 +85,9 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 		strings.Contains(board, "<h2>Audience</h2>") {
 		t.Fatalf("board chrome = %q", board)
 	}
+	if !strings.Contains(board, `sse:round`) || !strings.Contains(board, `hx-get="/board"`) {
+		t.Fatalf("board missing round swap: %q", board)
+	}
 	if !strings.Contains(board, string(ui.AvatarSVG(newSeed))) {
 		t.Fatal("board token did not render the stored avatar seed")
 	}
@@ -96,7 +99,9 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	if strings.Contains(seated, `class="ui-plunger"`) ||
 		strings.Contains(seated, `action="/lobby/ready"`) ||
 		!strings.Contains(seated, "Reroll face") ||
-		!strings.Contains(seated, `class="ui-token ui-token-self"`) {
+		!strings.Contains(seated, `class="ui-token ui-token-self"`) ||
+		!strings.Contains(seated, `sse:round`) ||
+		!strings.Contains(seated, `hx-get="/"`) {
 		t.Fatalf("seated phone = %q", seated)
 	}
 	before := playerFromCookie(t, room, cookieNamed(t, joined, lobby.PlayerCookieName))

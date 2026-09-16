@@ -1,10 +1,13 @@
 {{template "ui-start" .}}
-<link rel="stylesheet" href="/play/static/game.css">
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
 <div class="testing-board">
   <h1>Testing</h1>
+  {{if .Paused}}<p class="ui-muted">Paused</p>{{end}}
   {{template "board-list" .}}
   {{if .ShowEnd}}
   <form method="post" action="/play/end">
+    <input type="hidden" name="return" value="/board">
     <button class="ui-btn ui-btn-danger testing-end" type="submit">End game</button>
   </form>
   {{end}}

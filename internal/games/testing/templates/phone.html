@@ -1,8 +1,12 @@
 <div class="testing-phone ui-stack">
   {{template "phone-status" .}}
+  {{if .Paused}}
+  <p class="ui-muted">Paused</p>
+  {{else}}
   <form>
     <button class="ui-plunger" type="button" hx-post="/play/tap" hx-swap="none">Tap</button>
   </form>
+  {{end}}
   {{if .ShowEnd}}
   <form method="post" action="/play/end">
     <button class="ui-btn ui-btn-danger" type="submit">End game</button>

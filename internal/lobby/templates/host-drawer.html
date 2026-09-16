@@ -30,12 +30,15 @@
   </form>
   {{end}}
   {{if .Started}}
-  <form method="post" action="/settings/pause">
-    <button class="ui-btn" type="submit">Pause</button>
-  </form>
+  {{if .Paused}}
   <form method="post" action="/settings/resume">
     <button class="ui-btn" type="submit">Resume</button>
   </form>
+  {{else}}
+  <form method="post" action="/settings/pause">
+    <button class="ui-btn" type="submit">Pause</button>
+  </form>
+  {{end}}
   <form method="post" action="/settings/stop">
     <button class="ui-btn" type="submit">Stop</button>
   </form>

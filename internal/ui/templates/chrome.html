@@ -81,6 +81,16 @@
 </div>
 {{end}}
 
+{{define "round-swap"}}
+<div
+  id="round-swap"
+  hx-get="{{.}}"
+  hx-trigger="sse:round"
+  hx-swap="none"
+  hx-on:sse:round="location.reload()"
+></div>
+{{end}}
+
 {{define "theme-sync-node"}}
 <div
   id="theme-sync"

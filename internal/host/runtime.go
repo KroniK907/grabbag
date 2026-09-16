@@ -35,6 +35,7 @@ type runtime struct {
 	game     games.Game
 	loadedID string
 	started  bool
+	paused   bool
 }
 
 func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime {
@@ -97,6 +98,7 @@ func (rt *runtime) phoneExtras(_ *http.Request, _ lobby.Player) lobby.PhoneExtra
 	return lobby.PhoneExtras{
 		ShowStart:    showStart,
 		Started:      rt.started,
+		Paused:       rt.paused,
 		AutoStart:    auto,
 		GameIDs:      rt.gameIDs(),
 		LoadedGameID: rt.loadedID,
@@ -179,8 +181,10 @@ func (rt *runtime) start(ctx context.Context) error {
 		return err
 	}
 	rt.started = true
+	rt.paused = false
 	rt.log.Write("Start " + rt.loadedID)
 	rt.events.Publish("roster")
+	rt.events.Publish("round")
 	return nil
 }
 
@@ -194,6 +198,7 @@ func (rt *runtime) stop(ctx context.Context, graceful bool) error {
 		return err
 	}
 	rt.started = false
+	rt.paused = false
 	cycle := false
 	if graceful {
 		var err error
@@ -210,6 +215,7 @@ func (rt *runtime) stop(ctx context.Context, graceful bool) error {
 	}
 	rt.log.Write("Stop " + rt.loadedID)
 	rt.events.Publish("roster")
+	rt.events.Publish("round")
 	return nil
 }
 
@@ -219,6 +225,7 @@ func (rt *runtime) shutdown(ctx context.Context) error {
 	if rt.started && rt.game != nil {
 		_ = rt.game.Stop()
 		rt.started = false
+		rt.paused = false
 		_ = rt.room.EndRound(ctx, false)
 	}
 	if rt.game != nil {
@@ -237,6 +244,7 @@ func (rt *runtime) shutdown(ctx context.Context) error {
 	}
 	rt.log.Write("Shutdown")
 	rt.events.Publish("roster")
+	rt.events.Publish("round")
 	return nil
 }
 
@@ -254,7 +262,13 @@ func (rt *runtime) pause() error {
 	if rt.game == nil || !rt.started {
 		return errNotLoaded
 	}
-	return rt.game.Pause()
+	if err := rt.game.Pause(); err != nil {
+		return err
+	}
+	rt.paused = true
+	rt.log.Write("Pause " + rt.loadedID)
+	rt.events.Publish("round")
+	return nil
 }
 
 func (rt *runtime) resume() error {
@@ -263,7 +277,13 @@ func (rt *runtime) resume() error {
 	if rt.game == nil || !rt.started {
 		return errNotLoaded
 	}
-	return rt.game.Resume()
+	if err := rt.game.Resume(); err != nil {
+		return err
+	}
+	rt.paused = false
+	rt.log.Write("Resume " + rt.loadedID)
+	rt.events.Publish("round")
+	return nil
 }
 
 func (rt *runtime) afterDisconnect(ctx context.Context, player lobby.Player) {
@@ -280,7 +300,7 @@ func (rt *runtime) afterDisconnect(ctx context.Context, player lobby.Player) {
 	if err != nil || !auto {
 		return
 	}
-	_ = game.Pause()
+	_ = rt.pause()
 }
 
 func (rt *runtime) markDisconnected(ctx context.Context, playerID string) error {
@@ -311,7 +331,7 @@ func (rt *runtime) markDisconnected(ctx context.Context, playerID string) error 
 		return err
 	}
 	if seated && auto {
-		_ = game.Pause()
+		_ = rt.pause()
 	}
 	rt.events.Publish("roster")
 	return nil

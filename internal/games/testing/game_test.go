@@ -73,6 +73,24 @@ func TestTapSeatedOnly(t *testing.T) {
 	}
 }
 
+func TestFlashOnlyOnFirstBoardPaint(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
+	g := startedGame(t, h)
+	play(g, http.MethodPost, "/tap", "p1")
+
+	first := httptest.NewRecorder()
+	g.Board(first, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if !strings.Contains(first.Body.String(), "testing-row-flash") {
+		t.Fatal("first paint after tap missing flash")
+	}
+	second := httptest.NewRecorder()
+	g.Board(second, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if strings.Contains(second.Body.String(), "testing-row-flash") {
+		t.Fatal("second paint still flashed")
+	}
+}
+
 func TestEndGameAuth(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -112,10 +130,27 @@ func TestEndGameAuth(t *testing.T) {
 			if rec.Code != tt.wantCode {
 				t.Fatalf("status = %d, want %d", rec.Code, tt.wantCode)
 			}
+			if tt.wantFinish == 1 && rec.Header().Get("Location") != "/" {
+				t.Fatalf("end Location = %q", rec.Header().Get("Location"))
+			}
 			if h.finish != tt.wantFinish {
 				t.Fatalf("finish = %d, want %d", h.finish, tt.wantFinish)
 			}
 		})
+	}
+}
+
+func TestEndGameFromBoardReturnsToBoard(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true, ClaimedHost: true})
+	h.admin = true
+	g := startedGame(t, h)
+	req := httptest.NewRequest(http.MethodPost, "/end", strings.NewReader(url.Values{"return": {"/board"}}.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	g.Play().ServeHTTP(rec, req)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/board" {
+		t.Fatalf("board end = %d %q", rec.Code, rec.Header().Get("Location"))
 	}
 }
 
@@ -185,7 +220,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "/play/static/game.css"} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "/play/static/game.css?v=tap-fill-1", `sse:round`, `hx-get="/board"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}
@@ -244,6 +279,67 @@ func TestTickPublishesWhileStarted(t *testing.T) {
 	time.Sleep(40 * time.Millisecond)
 	if h.publishedCount(eventTick) != n {
 		t.Fatal("tick continued after Stop")
+	}
+}
+
+func TestPauseStopsTickAndIgnoresTaps(t *testing.T) {
+	old := tickEvery
+	tickEvery = 15 * time.Millisecond
+	defer func() { tickEvery = old }()
+
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
+	g := startedGame(t, h)
+	deadline := time.Now().Add(400 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if h.publishedCount(eventTick) >= 1 {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if h.publishedCount(eventTick) < 1 {
+		t.Fatal("no testing tick before Pause")
+	}
+	if err := g.Pause(); err != nil {
+		t.Fatal(err)
+	}
+	n := h.publishedCount(eventTick)
+	time.Sleep(40 * time.Millisecond)
+	if h.publishedCount(eventTick) != n {
+		t.Fatal("tick continued after Pause")
+	}
+	play(g, http.MethodPost, "/tap", "p1")
+	if tapCount(g, h, "p1") != 0 {
+		t.Fatal("tap counted while paused")
+	}
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if !strings.Contains(board.Body.String(), "Paused") {
+		t.Fatalf("paused board = %q", board.Body.String())
+	}
+	phone := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Player", "p1")
+	g.Phone(phone, req)
+	html := phone.Body.String()
+	if !strings.Contains(html, "Paused") || strings.Contains(html, "/play/tap") {
+		t.Fatalf("paused phone = %q", html)
+	}
+	if err := g.Resume(); err != nil {
+		t.Fatal(err)
+	}
+	deadline = time.Now().Add(400 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if h.publishedCount(eventTick) > n {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if h.publishedCount(eventTick) <= n {
+		t.Fatal("no testing tick after Resume")
+	}
+	play(g, http.MethodPost, "/tap", "p1")
+	if tapCount(g, h, "p1") != 1 {
+		t.Fatal("tap ignored after Resume")
 	}
 }
 

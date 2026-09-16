@@ -56,7 +56,10 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 
-	subscriber := make(chan string, 1)
+	// Several publishes can land in one write (Start sends roster then
+	// round). A buffer of 1 dropped the second event, so the board stayed
+	// on Lobby.
+	subscriber := make(chan string, 16)
 	h.subscribe(subscriber)
 	defer h.unsubscribe(subscriber)
 
