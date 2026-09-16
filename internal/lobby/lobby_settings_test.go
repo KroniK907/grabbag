@@ -113,6 +113,7 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 	phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, hostPlayer, hostAdmin).Body.String()
 	if !strings.Contains(phone, `id="host-drawer"`) ||
 		!strings.Contains(phone, `ui-drawer-handle`) ||
+		!strings.Contains(phone, `ui-drawer-scrim`) ||
 		!strings.Contains(phone, ">Back</button>") ||
 		!strings.Contains(phone, "Kick Players") ||
 		!strings.Contains(phone, `action="/settings/stand"`) {

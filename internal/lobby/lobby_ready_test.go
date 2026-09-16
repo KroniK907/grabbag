@@ -204,7 +204,7 @@ func TestLivenessSettingsPersist(t *testing.T) {
 		!strings.Contains(page, `value="12"`) ||
 		!strings.Contains(page, "Protect host") ||
 		!strings.Contains(page, "Seat disconnected waiters") ||
-		!strings.Contains(page, "Reset Ready When") ||
+		!strings.Contains(page, "Reset Player Ready State") ||
 		!strings.Contains(page, `value="every"`) {
 		t.Fatalf("settings page = %q", page)
 	}

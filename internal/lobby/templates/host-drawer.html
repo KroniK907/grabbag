@@ -1,4 +1,11 @@
 {{define "host-drawer"}}
+<button
+  type="button"
+  class="ui-drawer-scrim"
+  aria-label="Close host panel"
+  tabindex="-1"
+  onclick="document.getElementById('host-drawer').classList.remove('is-open')"
+></button>
 <aside id="host-drawer" class="ui-drawer" aria-label="Host panel">
   <button
     type="button"

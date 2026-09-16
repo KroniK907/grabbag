@@ -28,6 +28,8 @@
   --ui-you-shadow: none;
   --ui-field-bg: #fff;
   --ui-field-fg: #1a0730;
+  --ui-field-well: #fff3f9;
+  --ui-field-border: #d9a0c8;
   --ui-sheet-bg: #fff;
   --ui-row-bg: #fff;
   --ui-card-bg: #fff;
@@ -82,6 +84,8 @@
   --ui-you-shadow: 0 0 12px #ff2ad4;
   --ui-field-bg: #2a1048;
   --ui-field-fg: #fff;
+  --ui-field-well: #160824;
+  --ui-field-border: #6a3a80;
   --ui-sheet-bg: #1c0a30;
   --ui-row-bg: #2a1048;
   --ui-card-bg: #1c0a30;
@@ -279,6 +283,24 @@ button {
   visibility: hidden;
 }
 
+.ui-drawer-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.ui-phone:has(.ui-drawer.is-open) .ui-drawer-scrim {
+  visibility: visible;
+  pointer-events: auto;
+  background: var(--ui-overlay);
+}
+
 .ui-drawer {
   position: absolute;
   top: 22px;
@@ -408,8 +430,9 @@ button {
 .ui-page-compact .ui-row .ui-field {
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  flex: 1 1 12rem;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -420,13 +443,57 @@ button {
 .ui-page-compact .ui-field input,
 .ui-page-compact .ui-field select {
   padding: 6px 8px;
-  border-radius: 8px;
+  border: 1px solid var(--ui-field-border);
+  border-radius: 6px;
+  background-color: var(--ui-field-well);
   min-width: 0;
-  flex: 1;
 }
 
-.ui-page-compact .ui-field select {
+.ui-page-compact .ui-row-field .ui-field input,
+.ui-page-compact .ui-row-field .ui-field select {
+  flex: 0 0 auto;
+}
+
+.ui-page-compact .ui-field-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.ui-page-compact .ui-field-unit {
+  font-size: 13px;
+  color: var(--ui-fg);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.ui-page-compact .ui-row-field .ui-field input[type="number"] {
+  width: 4.5rem;
+  text-align: right;
+  appearance: textfield;
+}
+
+.ui-page-compact .ui-row-field .ui-field input[type="number"]::-webkit-outer-spin-button,
+.ui-page-compact .ui-row-field .ui-field input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.ui-page-compact .ui-row-field .ui-field select {
+  width: max-content;
+  max-width: 16rem;
   padding-right: 1.75rem;
+}
+
+.ui-page-compact .ui-row-field-wide .ui-field {
+  flex-wrap: wrap;
+}
+
+.ui-page-compact .ui-row-field-wide .ui-field input {
+  flex: 1 1 12rem;
+  width: auto;
+  max-width: none;
 }
 
 .ui-page-compact .ui-btn {
@@ -434,18 +501,6 @@ button {
   border-radius: 10px;
   font-size: 16px;
   flex-shrink: 0;
-}
-
-@media (max-width: 520px) {
-  .ui-page-compact .ui-row .ui-field {
-    flex: 1 1 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .ui-page-compact .ui-row-field .ui-btn-inline {
-    width: 100%;
-  }
 }
 
 .ui-field {

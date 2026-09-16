@@ -35,14 +35,20 @@
       <form class="ui-row ui-row-field" method="post" action="/settings/disconnect-after">
         <label class="ui-field">
           <span>Disconnected after</span>
-          <input name="disconnect_after" type="number" min="0" max="3600" value="{{.DisconnectAfter}}" onchange="this.form.submit()">
+          <span class="ui-field-value">
+            <input name="disconnect_after" type="number" min="0" max="3600" value="{{.DisconnectAfter}}" onchange="this.form.submit()">
+            <span class="ui-field-unit">Seconds</span>
+          </span>
         </label>
         <button class="ui-btn ui-btn-inline" type="submit">Save</button>
       </form>
       <form class="ui-row ui-row-field" method="post" action="/settings/kick-timeout">
         <label class="ui-field">
           <span>Kick timeout</span>
-          <input name="kick_timeout" type="number" min="0" max="86400" value="{{.KickTimeout}}" onchange="this.form.submit()">
+          <span class="ui-field-value">
+            <input name="kick_timeout" type="number" min="0" max="86400" value="{{.KickTimeout}}" onchange="this.form.submit()">
+            <span class="ui-field-unit">Seconds</span>
+          </span>
         </label>
         <button class="ui-btn ui-btn-inline" type="submit">Save</button>
       </form>
@@ -79,7 +85,7 @@
       </form>
       <form class="ui-row ui-row-field" method="post" action="/settings/reset-ready">
         <label class="ui-field">
-          <span>Reset Ready When</span>
+          <span>Reset Player Ready State</span>
           <select name="reset_ready" onchange="this.form.submit()">
             <option value="every" {{if eq .ResetReadyWhen "every"}}selected{{end}}>After every game</option>
             <option value="switch" {{if eq .ResetReadyWhen "switch"}}selected{{end}}>Only on game switch</option>
@@ -107,7 +113,7 @@
         <button class="ui-btn ui-btn-inline" type="submit">Off</button>
         {{end}}
       </form>
-      <form class="ui-row ui-row-field" method="post" action="/settings/hostname">
+      <form class="ui-row ui-row-field ui-row-field-wide" method="post" action="/settings/hostname">
         <label class="ui-field">
           <span>Advertised hostname</span>
           <input name="hostname" type="text" value="{{.AdvertisedHostname}}" onchange="this.form.submit()">

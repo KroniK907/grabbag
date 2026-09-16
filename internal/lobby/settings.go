@@ -423,11 +423,11 @@ func (l *Lobby) setResetReady(w http.ResponseWriter, r *http.Request) {
 	switch mode {
 	case ResetReadyEvery, ResetReadySwitch, ResetReadyNever:
 	default:
-		http.Error(w, "Unknown Reset Ready When value.", http.StatusBadRequest)
+		http.Error(w, "Unknown Reset Player Ready State value.", http.StatusBadRequest)
 		return
 	}
 	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET reset_ready = ? WHERE id = 1`, mode); err != nil {
-		http.Error(w, "Could not save Reset Ready When.", http.StatusInternalServerError)
+		http.Error(w, "Could not save Reset Player Ready State.", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
