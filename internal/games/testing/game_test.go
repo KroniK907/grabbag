@@ -220,10 +220,13 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "/play/static/game.css?v=tap-fill-1", `sse:round`, `hx-get="/board"`} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "/play/static/game.css?v=paused-1", `sse:round`, `hx-get="/board"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}
+	}
+	if strings.Contains(html, "is-paused") || strings.Contains(html, "testing-paused") {
+		t.Fatal("running board looks paused")
 	}
 
 	h.admin = false
@@ -242,6 +245,9 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Fatalf("phone missing %q in %s", want, html)
 		}
+	}
+	if strings.Contains(html, "is-paused") || strings.Contains(html, "testing-paused") {
+		t.Fatal("running phone looks paused")
 	}
 
 	guest := games.Player{ID: "p2", DisplayName: "Bea", Seated: true}
@@ -313,15 +319,18 @@ func TestPauseStopsTickAndIgnoresTaps(t *testing.T) {
 	}
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
-	if !strings.Contains(board.Body.String(), "Paused") {
-		t.Fatalf("paused board = %q", board.Body.String())
+	boardHTML := board.Body.String()
+	if !strings.Contains(boardHTML, `class="testing-board is-paused"`) ||
+		!strings.Contains(boardHTML, `class="testing-paused"`) {
+		t.Fatalf("paused board = %q", boardHTML)
 	}
 	phone := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Player", "p1")
 	g.Phone(phone, req)
 	html := phone.Body.String()
-	if !strings.Contains(html, "Paused") || strings.Contains(html, "/play/tap") {
+	if !strings.Contains(html, `class="testing-phone ui-stack is-paused"`) ||
+		!strings.Contains(html, `class="testing-paused"`) {
 		t.Fatalf("paused phone = %q", html)
 	}
 	if err := g.Resume(); err != nil {

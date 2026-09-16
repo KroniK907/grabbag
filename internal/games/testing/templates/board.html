@@ -1,9 +1,8 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 <link rel="stylesheet" href="{{.GameCSS}}">
-<div class="testing-board">
+<div class="testing-board{{if .Paused}} is-paused{{end}}">
   <h1>Testing</h1>
-  {{if .Paused}}<p class="ui-muted">Paused</p>{{end}}
   {{template "board-list" .}}
   {{if .ShowEnd}}
   <form method="post" action="/play/end">
@@ -11,5 +10,6 @@
     <button class="ui-btn ui-btn-danger testing-end" type="submit">End game</button>
   </form>
   {{end}}
+  {{if .Paused}}<p class="testing-paused">Paused</p>{{end}}
 </div>
 {{template "ui-end"}}

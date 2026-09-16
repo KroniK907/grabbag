@@ -54,6 +54,32 @@
   width: auto;
 }
 
+.testing-phone {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+.testing-board.is-paused > :not(.testing-paused),
+.testing-phone.is-paused > :not(.testing-paused) {
+  filter: grayscale(1);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.testing-paused {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: clamp(72px, 16vw, 160px);
+  line-height: 0.9;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
 @keyframes testing-flash {
   from {
     background: var(--ui-accent-2);
