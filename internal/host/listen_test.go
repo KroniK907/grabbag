@@ -42,8 +42,15 @@ func TestFirstNonLoopbackIPv4RefusesMissingAddress(t *testing.T) {
 	}
 }
 
+func TestListenAddrAllInterfaces(t *testing.T) {
+	t.Parallel()
+	if got := net.JoinHostPort("", listenPort); got != ":8654" {
+		t.Fatalf("production listen addr = %q, want :8654", got)
+	}
+}
+
 func TestListenerAcceptsLoopback(t *testing.T) {
-	listener, err := openListener("0")
+	listener, err := listenOn("127.0.0.1", "0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,8 +60,8 @@ func TestListenerAcceptsLoopback(t *testing.T) {
 	if !ok {
 		t.Fatalf("addr type %T", listener.Addr())
 	}
-	if !tcpAddr.IP.IsUnspecified() {
-		t.Fatalf("listener bound to %s, want all interfaces", tcpAddr.IP)
+	if !tcpAddr.IP.IsLoopback() {
+		t.Fatalf("listener bound to %s, want loopback", tcpAddr.IP)
 	}
 
 	port := strconv.Itoa(tcpAddr.Port)

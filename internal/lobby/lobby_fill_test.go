@@ -51,20 +51,56 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	assertBoardLists(t, board, []string{"Host"}, []string{"Guest"})
-	if strings.Contains(board, "Audience") {
-		t.Fatal("board showed an audience list")
+	if strings.Contains(board, "<h2>Audience</h2>") {
+		t.Fatal("board showed an audience name list")
 	}
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(phone, "<h1>In the wait list</h1>") ||
+	if !strings.Contains(phone, "Guest") ||
 		!strings.Contains(phone, `action="/lobby/wait"`) ||
-		!strings.Contains(phone, "Leave wait list") {
+		!strings.Contains(phone, "Leave wait list") ||
+		strings.Contains(phone, "ui-plunger") ||
+		strings.Contains(phone, "READY") {
 		t.Fatalf("waiting phone body = %q", phone)
 	}
 	hostPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, hostCookie).Body.String()
-	if !strings.Contains(hostPhone, "<h1>In the room</h1>") ||
+	if !strings.Contains(hostPhone, "Host") ||
+		strings.Contains(hostPhone, `class="ui-plunger"`) ||
 		strings.Contains(hostPhone, `action="/lobby/wait"`) {
 		t.Fatalf("seated host phone body = %q", hostPhone)
+	}
+}
+
+func TestBoardListsHostTokenFirst(t *testing.T) {
+	t.Parallel()
+	_, handler, room := testLobby(t)
+	open := lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
+	if open.Code != http.StatusSeeOther {
+		t.Fatalf("Open status = %d, want %d; body = %q", open.Code, http.StatusSeeOther, open.Body.String())
+	}
+
+	earlyCookie := joinNamed(t, handler, "Early", "")
+	hostCookie := joinNamed(t, handler, "Host", "correct horse")
+	early := playerFromCookie(t, room, earlyCookie)
+	host := playerFromCookie(t, room, hostCookie)
+	if !early.Seated || early.ClaimedHost {
+		t.Fatalf("early joiner = %#v, want seated guest", early)
+	}
+	if !host.Seated || !host.ClaimedHost {
+		t.Fatalf("late host = %#v, want seated claimed host", host)
+	}
+
+	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
+	clusterAt := strings.Index(board, `class="ui-cluster"`)
+	marqueeAt := strings.Index(board, `class="ui-marquee"`)
+	if clusterAt < 0 || marqueeAt < 0 || marqueeAt < clusterAt {
+		t.Fatalf("board missing token cluster: %q", board)
+	}
+	seatedBody := board[clusterAt:marqueeAt]
+	hostAt := strings.Index(seatedBody, `class="ui-token-name">Host</div>`)
+	earlyAt := strings.Index(seatedBody, `class="ui-token-name">Early</div>`)
+	if hostAt < 0 || earlyAt < 0 || hostAt > earlyAt {
+		t.Fatalf("host token was not first: %q", seatedBody)
 	}
 }
 
@@ -127,7 +163,8 @@ func testWaitOptOut(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatalf("opt-out guest = %#v, want audience-only", guest)
 	}
 	audiencePhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(audiencePhone, "<h1>In the audience</h1>") {
+	if !strings.Contains(audiencePhone, "You are watching") ||
+		!strings.Contains(audiencePhone, "Join wait list") {
 		t.Fatalf("audience phone body = %q", audiencePhone)
 	}
 
@@ -174,9 +211,46 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatal("Kick left the guest on the roster")
 	}
 
+	liveCookie := joinNamed(t, handler, "Live", "")
+	live := playerFromCookie(t, room, liveCookie)
+	hxForm := url.Values{"player_id": {live.ID}}
+	hxReq := httptest.NewRequest(http.MethodPost, "http://hackbox.test/settings/kick", strings.NewReader(hxForm.Encode()))
+	hxReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	hxReq.Header.Set("HX-Request", "true")
+	hxReq.AddCookie(operatorCookie())
+	hxRec := httptest.NewRecorder()
+	handler.ServeHTTP(hxRec, hxReq)
+	if hxRec.Code != http.StatusNoContent {
+		t.Fatalf("HTMX Kick status = %d, want %d; body = %q", hxRec.Code, http.StatusNoContent, hxRec.Body.String())
+	}
+	if loc := hxRec.Header().Get("Location"); loc != "" {
+		t.Fatalf("HTMX Kick redirected to %q", loc)
+	}
+	if _, ok := findPlayer(t, room, liveCookie); ok {
+		t.Fatal("HTMX Kick left the player on the roster")
+	}
+
 	kickedJoin := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie)
-	if !strings.Contains(kickedJoin.Body.String(), `action="/lobby/join"`) {
-		t.Fatalf("post-Kick phone = %q, want Join", kickedJoin.Body.String())
+	kickedBody := kickedJoin.Body.String()
+	if !strings.Contains(kickedBody, `action="/lobby/join"`) {
+		t.Fatalf("post-Kick phone = %q, want Join", kickedBody)
+	}
+	if strings.Count(kickedBody, `class="ui-notch"`) != 1 {
+		t.Fatalf("post-Kick notches = %d in %q", strings.Count(kickedBody, `class="ui-notch"`), kickedBody)
+	}
+	if !strings.Contains(kickedBody, "The host kicked you") || !strings.Contains(kickedBody, ">Out.<") {
+		t.Fatalf("post-Kick missing kick copy: %q", kickedBody)
+	}
+	kickedPartial := lobbyRequest(t, handler, http.MethodGet, "/lobby/partials/phone", nil, guestCookie).Body.String()
+	if strings.Contains(kickedPartial, `class="ui-notch"`) || strings.Contains(kickedPartial, `class="ui-phone-wrap"`) {
+		t.Fatalf("kicked SSE fragment nested the phone chrome: %q", kickedPartial)
+	}
+	if !strings.Contains(kickedPartial, "The host kicked you") {
+		t.Fatalf("kicked SSE fragment missing kick copy: %q", kickedPartial)
+	}
+	freshJoin := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil).Body.String()
+	if strings.Contains(freshJoin, "The host kicked you") {
+		t.Fatal("anonymous Join showed a kick message")
 	}
 
 	otherCookie := joinNamed(t, handler, "Other", "")
@@ -191,12 +265,15 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 		t.Fatal("Leave removed someone else")
 	}
 
-	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, nil).Body.String()
-	if strings.Contains(settings, "sse-connect") {
-		t.Fatal("settings subscribed to SSE")
+	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
+	if strings.Contains(settings, "sse:roster") || strings.Contains(settings, "/lobby/partials/board-roster") {
+		t.Fatal("settings live-updated the player list")
 	}
-	if !strings.Contains(settings, `action="/settings/open"`) ||
+	openAt := strings.Index(settings, `action="/settings/open"`)
+	kickAt := strings.Index(settings, "Kick Players")
+	if openAt < 0 || kickAt < 0 || kickAt < openAt ||
 		!strings.Contains(settings, `action="/settings/kick"`) ||
+		strings.Contains(settings, `hx-post="/settings/kick"`) ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}
@@ -225,6 +302,10 @@ func TestRoomFillPersistsAcrossReopen(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	handler, room = lobbyHandler(t, db)
+	keep := lobbyRequest(t, handler, http.MethodPost, "/settings/keep", nil, operatorCookie())
+	if keep.Code != http.StatusSeeOther {
+		t.Fatalf("Keep after reopen = %d %q", keep.Code, keep.Body.String())
+	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	assertBoardLists(t, board, []string{"Host", "First", "Second"}, nil)
 
@@ -287,7 +368,12 @@ func joinNamed(t *testing.T, handler http.Handler, name, password string) *http.
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("Join %s status = %d, want %d; body = %q", name, rec.Code, http.StatusSeeOther, rec.Body.String())
 	}
-	return cookieNamed(t, rec, lobby.PlayerCookieName)
+	cookie := cookieNamed(t, rec, lobby.PlayerCookieName)
+	beat := lobbyRequest(t, handler, http.MethodPost, "/lobby/heartbeat", nil, cookie)
+	if beat.Code != http.StatusNoContent {
+		t.Fatalf("Join %s heartbeat status = %d, want %d", name, beat.Code, http.StatusNoContent)
+	}
+	return cookie
 }
 
 func operatorCookie() *http.Cookie {
@@ -296,26 +382,29 @@ func operatorCookie() *http.Cookie {
 
 func assertBoardLists(t *testing.T, body string, seated, waiting []string) {
 	t.Helper()
-	seatedAt := strings.Index(body, "<h2>Seated</h2>")
-	waitingAt := strings.Index(body, "<h2>Waiting</h2>")
-	if seatedAt < 0 || waitingAt < 0 || waitingAt < seatedAt {
-		t.Fatalf("board missing seated-then-wait lists: %q", body)
+	clusterAt := strings.Index(body, `class="ui-cluster"`)
+	marqueeAt := strings.Index(body, `class="ui-marquee"`)
+	if clusterAt < 0 || marqueeAt < 0 || marqueeAt < clusterAt {
+		t.Fatalf("board missing token cluster then wait marquee: %q", body)
 	}
-	seatedBody := body[seatedAt:waitingAt]
-	waitingBody := body[waitingAt:]
+	seatedBody := body[clusterAt:marqueeAt]
+	waitingBody := body[marqueeAt:]
+	if strings.Contains(body, "<h2>Audience</h2>") {
+		t.Fatal("board showed an audience name list")
+	}
 	for _, name := range seated {
-		if !strings.Contains(seatedBody, "<li>"+name+"</li>") {
-			t.Fatalf("seated list missing %q in %q", name, seatedBody)
+		if !strings.Contains(seatedBody, `class="ui-token-name">`+name+`</div>`) {
+			t.Fatalf("seated cluster missing %q in %q", name, seatedBody)
 		}
-		if strings.Contains(waitingBody, "<li>"+name+"</li>") {
+		if strings.Contains(waitingBody, `</svg> `+name+`</span>`) {
 			t.Fatalf("%q listed as waiting: %q", name, waitingBody)
 		}
 	}
 	for _, name := range waiting {
-		if !strings.Contains(waitingBody, "<li>"+name+"</li>") {
-			t.Fatalf("wait list missing %q in %q", name, waitingBody)
+		if !strings.Contains(waitingBody, `</svg> `+name+`</span>`) {
+			t.Fatalf("wait marquee missing %q in %q", name, waitingBody)
 		}
-		if strings.Contains(seatedBody, "<li>"+name+"</li>") {
+		if strings.Contains(seatedBody, `class="ui-token-name">`+name+`</div>`) {
 			t.Fatalf("%q listed as seated: %q", name, seatedBody)
 		}
 	}
@@ -326,6 +415,9 @@ func lobbyHandler(t *testing.T, db *store.DB) (http.Handler, *lobby.Lobby) {
 	room, err := lobby.New(db, lobby.Config{
 		AdminCookieName: "hackbox_admin",
 		Events:          hub.New(),
+		JoinURL: func(*http.Request) string {
+			return "http://192.168.10.24:8654/"
+		},
 		PasswordMatches: func(hash, password string) bool {
 			return hash == "stored-hash" && password == "correct horse"
 		},

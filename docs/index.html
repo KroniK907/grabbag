@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to run Hackbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&amp;family=Russo+One&amp;family=Source+Sans+3:wght@400;600;700&amp;family=Source+Code+Pro:wght@500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fff7fb;
+      --bg-2: #ffe6f7;
+      --fg: #1a0730;
+      --muted: #5c3a6e;
+      --brand: #c40a90;
+      --brand-shadow: 2px 2px 0 #ffe14a;
+      --accent: #ff2ad4;
+      --btn-bg: #19e3ff;
+      --btn-fg: #042;
+      --btn-border: #0aa8bc;
+      --inline-bg: #fff3f9;
+      --border: #d9a0c8;
+      --card: #fff;
+      --toc-w: 16rem;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    a { color: #087a8a; }
+    a.btn {
+      display: inline-block;
+      padding: 8px 14px;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      text-decoration: none;
+      border: 3px solid var(--btn-border);
+      border-radius: 8px;
+      font-family: "Russo One", "Arial Black", sans-serif;
+      font-size: 0.85rem;
+    }
+    .skip {
+      position: absolute;
+      left: -999px;
+    }
+    .skip:focus {
+      left: 8px;
+      top: 8px;
+      z-index: 20;
+      background: var(--btn-bg);
+      padding: 8px 12px;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 18px 24px;
+      border-bottom: 3px solid var(--accent);
+      background: var(--card);
+    }
+    .brand {
+      font-family: Bangers, Impact, sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      line-height: 0.9;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+    }
+    nav.links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .layout { display: grid; grid-template-columns: 1fr; }
+    .toc {
+      background: var(--bg-2);
+      border-bottom: 3px solid var(--accent);
+      padding: 16px 20px 24px;
+    }
+    .toc h2 {
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 10px;
+      color: var(--brand);
+    }
+    .toc ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .toc a {
+      color: var(--fg);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .toc a:hover,
+    .toc a.is-active {
+      background: var(--card);
+      color: var(--brand);
+    }
+    main {
+      padding: 24px 20px 96px;
+      max-width: 42rem;
+    }
+    h1 {
+      font-family: Bangers, Impact, sans-serif;
+      font-weight: 400;
+      font-size: 42px;
+      letter-spacing: 1px;
+      line-height: 0.95;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+      margin: 0 0 12px;
+    }
+    h2 {
+      font-family: Bangers, Impact, sans-serif;
+      font-weight: 400;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--brand);
+      text-shadow: var(--brand-shadow);
+      margin: 40px 0 12px;
+      padding-top: 8px;
+      border-top: 3px solid var(--accent);
+      scroll-margin-top: 12px;
+    }
+    h2:first-of-type { border-top: 0; margin-top: 8px; }
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 1.15rem;
+    }
+    p, li { margin: 0 0 10px; }
+    ol, ul { padding-left: 1.3rem; }
+    ol li, ul li { margin-bottom: 12px; }
+    .lede { font-size: 1.15rem; }
+    .result,
+    .note {
+      background: var(--inline-bg);
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      margin: 12px 0 16px;
+    }
+    .result strong { display: block; margin-bottom: 4px; }
+    code {
+      font-family: "Source Code Pro", Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--inline-bg);
+      border: 1px solid var(--border);
+      padding: 0 0.25em;
+      border-radius: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    td:first-child {
+      white-space: nowrap;
+      font-weight: 700;
+      padding-right: 16px;
+    }
+    @media (min-width: 980px) {
+      .layout { grid-template-columns: var(--toc-w) 1fr; align-items: start; }
+      .toc {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        border-bottom: 0;
+        border-right: 3px solid var(--accent);
+      }
+      main { padding: 28px 36px 96px; }
+    }
+    @media (max-width: 640px) {
+      td:first-child { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="top">
+    <div class="brand">HOW TO RUN</div>
+    <nav class="links">
+      <a class="btn" href="/setup">Setup</a>
+      <a class="btn" href="/board">Board</a>
+      <a class="btn" href="/docs/game-contract.html">Game API</a>
+    </nav>
+  </div>
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <h2>On this page</h2>
+      <ul>
+        <li><a href="#what-you-need">What you need</a></li>
+        <li><a href="#start">Start the program</a></li>
+        <li><a href="#setup">First-time setup</a></li>
+        <li><a href="#tv">Put it on the TV</a></li>
+        <li><a href="#join">Join from a phone</a></li>
+        <li><a href="#round">Play a round</a></li>
+        <li><a href="#host-phone">The Host button</a></li>
+        <li><a href="#settings">Settings</a></li>
+        <li><a href="#restart">If you quit and come back</a></li>
+        <li><a href="#phones-stuck">Phones cannot join</a></li>
+        <li><a href="#stop">Stop Hackbox</a></li>
+        <li><a href="#write-a-game">Write a game</a></li>
+      </ul>
+    </nav>
+    <main id="content">
+      <h1>How to run Hackbox</h1>
+      <p class="lede">Get a living-room game on a TV, with phones as controllers. This page is for a downloaded Hackbox binary. You do not compile anything to host a room.</p>
+      <p>You are the person with the PC. Everyone else only needs a phone browser. Follow the sections in order the first time. Use the table of contents later when you only need one answer. You can open this file from disk, or from the running host at <code>http://127.0.0.1:8654/docs</code>.</p>
+
+      <h2 id="what-you-need">What you need</h2>
+      <ul>
+        <li>A Windows computer that stays on for the whole party. That machine runs Hackbox. Closing the window ends the room.</li>
+        <li>A TV, projector, or a second window for the board. That is the screen the room watches.</li>
+        <li>Phones or tablets on the <strong>same Wi-Fi</strong> as the computer. Guest Wi-Fi often blocks this. Use the house network.</li>
+        <li>An admin password you are about to pick. You will type it on setup, and once more on the first phone that should run the room.</li>
+      </ul>
+
+      <h2 id="start">Start the program</h2>
+      <ol>
+        <li>Double-click the Hackbox program. On Windows that is usually <code>hackbox.exe</code>.</li>
+        <li>Leave the black console window open. That window <em>is</em> the server.</li>
+        <li>If Windows Firewall asks, allow Hackbox on a private network.</li>
+        <li>In a browser <strong>on this computer</strong>, open the address the console printed. It looks like <code>http://127.0.0.1:8654</code>.</li>
+      </ol>
+      <div class="result"><strong>You should see</strong> either first-time setup, or the board if you already finished setup on this PC.</div>
+      <div class="note">Hackbox always uses port 8654. If another copy is already running, this one prints an error and exits. Close the other window, then start again.</div>
+      <p><code>127.0.0.1</code> only works on the machine running Hackbox. Phones use a different URL. You will see it on the board, next to the QR code.</p>
+
+      <h2 id="setup">First-time setup</h2>
+      <p>The first visit on this computer opens <code>/setup</code>.</p>
+      <ol>
+        <li>Pick a password of at least 8 characters. This is not a player nickname. It unlocks Room settings and lets a phone claim host. There is no "forgot password" in the binary yet. Write it down.</li>
+        <li>Type it again to confirm.</li>
+        <li>Leave the other boxes on their defaults for a living-room night. Seat cap 8 is plenty. Advertised hostname should stay blank unless you are putting the room on the public internet through a tunnel. Logging can stay off.</li>
+        <li>Tap Finish.</li>
+      </ol>
+      <div class="result"><strong>You should see</strong> the board. This browser stays signed in for 30 days.</div>
+      <p>You can change the extra boxes later under <a href="#settings">Settings</a>.</p>
+
+      <h2 id="tv">Put it on the TV</h2>
+      <ol>
+        <li>On the host computer, open <code>http://127.0.0.1:8654/board</code>.</li>
+        <li>Fullscreen that tab. F11 works in most browsers.</li>
+        <li>Plug the PC into the TV, or cast that window.</li>
+      </ol>
+      <div class="result"><strong>You should see</strong> a QR code and a join URL on the left, and empty seats in the middle. The join URL is not 127.0.0.1. That is the address phones type if they cannot scan.</div>
+      <p>The gear in the corner opens Room settings in a new tab. You need the admin password there if this browser is not already signed in from Finish.</p>
+
+      <h2 id="join">Join from a phone</h2>
+      <ol>
+        <li>Each person opens the camera and scans the QR on the TV.</li>
+        <li>They land on a "Who are you?" screen. They can reroll the cartoon face, type a name, and tap Join.</li>
+        <li>The first joiner also sees a password field. The person who should run the room types the admin password, then Join. Everyone else leaves that field blank.</li>
+      </ol>
+      <div class="result"><strong>You should see</strong> cartoon faces appear in seats on the TV. The phone that typed the password gets a Host button. Later joiners do not see the password field once someone has claimed host.</div>
+      <p>If the board says Closed, new people cannot Join. Open the room from settings or from the Host panel. Closed locks the door. It does not kick people who are already in.</p>
+      <p>When every seat is taken, new joiners still arrive. They land in the audience and can get in line on the wait list. They watch. They do not take a seat until one frees up or you raise the seat cap.</p>
+      <p>To hand the room to someone else later, use Make host in settings. That person's phone then shows Take host and asks for the admin password.</p>
+
+      <h2 id="round">Play a round</h2>
+      <p>Do this from the claimed-host phone. The TV stays on the board so the room can watch.</p>
+      <ol>
+        <li>Confirm the board is up and the room says Open.</li>
+        <li>Wait until faces are in seats. Each seated player taps Ready when they are looking at the TV.</li>
+        <li>Open Host. Pick a game, then tap <strong>Load</strong>. This build ships Testing. Load mounts that package. The TV stays on the lobby. Testing is a wiring check, not a scored party game.</li>
+        <li>Tap <strong>Start</strong>. Start needs at least one seated player. Some games also want a minimum table size and will refuse until enough seats are filled.</li>
+        <li>Play. If you need a break, tap <strong>Pause</strong>. The round stays in memory. <strong>Resume</strong> continues it.</li>
+        <li>When the round is over, tap <strong>Stop</strong>. The lobby comes back on the TV. The same game stays selected, so you can Start again without Load.</li>
+        <li>Tap <strong>Shutdown</strong> only when you want to unload that game and pick a different one, or none at all.</li>
+      </ol>
+      <div class="result"><strong>After Start</strong> the TV and the seated phones switch into the game. After Stop they return to the lobby.</div>
+      <p>If you turn Auto-start on in settings, a full set of Ready taps can start the round for you. Leave it off until that feels natural.</p>
+
+      <h2 id="host-phone">The Host button</h2>
+      <p>Only the claimed-host phone shows this. It is a slide-out on that device, not a menu on every phone.</p>
+      <p>If nobody claimed host at join, the next person who still sees the password field on Join can take it. After a host exists, use Make host in settings, then Take host on that phone.</p>
+
+      <h3>Load, Start, Pause, Resume, Stop, Shutdown</h3>
+      <p>These are the round controls from the previous section. Load picks the package. Start begins play. Pause and Resume freeze and continue. Stop ends the round. Shutdown unloads the package.</p>
+
+      <h3>Sit and Stand</h3>
+      <p>Sit puts someone into a seat. Stand takes them out of a seat without kicking them from the room. Use this when you want to swap who is at the table.</p>
+
+      <h3>Kick</h3>
+      <p>Removes that person from the room right now. They have to join again. Kick does not wait for any timeout.</p>
+
+      <h3>Room settings</h3>
+      <p>Opens the same settings page as the gear on the board.</p>
+
+      <h2 id="settings">Settings</h2>
+      <p>Open <code>/settings</code> from the board gear, the Host panel, or by typing the address. Sign in with the admin password if this tab is not already signed in.</p>
+      <p>You can ignore most of this on night one. The table is for the labels people stare at and guess wrong.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Room Open or Closed</td>
+            <td>Open lets new phones Join. Closed shuts the door. People already in keep playing.</td>
+          </tr>
+          <tr>
+            <td>Auto-start</td>
+            <td>When on, a full set of Ready taps can start the loaded game without a tap on Start. Leave it off until that feels natural.</td>
+          </tr>
+          <tr>
+            <td>Seat cap</td>
+            <td>How many people get a face on the table. Default 8. Range 1 to 64. Audience can still watch when the table is full.</td>
+          </tr>
+          <tr>
+            <td>After a game</td>
+            <td><strong>Keep seats</strong> leaves the same people sitting after Stop. <strong>Cycle seats</strong> sends the current table to the wait list and pulls the next people from the line. Use cycle when you have more guests than seats.</td>
+          </tr>
+          <tr>
+            <td>Fill empty seats</td>
+            <td>Off by default. When on, a free seat during a round can go to someone waiting. When off, the current table stays frozen until Stop.</td>
+          </tr>
+          <tr>
+            <td>Disconnected after</td>
+            <td>Seconds of silence before Hackbox treats a phone as gone. They still own the seat for a while. The face dims.</td>
+          </tr>
+          <tr>
+            <td>Kick timeout</td>
+            <td>While a round is running, a dropped seated phone keeps the chair. After the round, if they still have not come back, Hackbox removes them once this many extra seconds have passed. Set 0 to never auto-drop.</td>
+          </tr>
+          <tr>
+            <td>Seat disconnected waiters</td>
+            <td>When on, someone who was only in line and then dropped off can still be pulled into a seat. Leave it off unless you mean that.</td>
+          </tr>
+          <tr>
+            <td>Protect host</td>
+            <td>When on, a claimed host whose phone goes quiet is not auto-removed after Kick timeout. Operator Kick still works. Default is on.</td>
+          </tr>
+          <tr>
+            <td>Admin-only board</td>
+            <td>When on, a random tab that opens <code>/board</code> without signing in does not see the roster. Use this if the TV URL might leak. The signed-in operator tab still works.</td>
+          </tr>
+          <tr>
+            <td>Auto-pause on seated disconnect</td>
+            <td>When on, a seated phone dying pauses the game so you can wait. Audience disconnects do not pause. You can Resume while they are still gone.</td>
+          </tr>
+          <tr>
+            <td>Advertised hostname</td>
+            <td>Leave blank for a LAN party. The board then shows the IPv4 Hackbox found at start. Fill this in only when you publish the room through a tunnel. A Cloudflare hostname is the usual case. Phones must be able to reach that name on port 8654.</td>
+          </tr>
+          <tr>
+            <td>Log to stdout / host.log</td>
+            <td>Stdout is the console window. host.log is a file next to the database. The Game log page is a live tail of those lines. Off is fine for a party.</td>
+          </tr>
+          <tr>
+            <td>Game Settings</td>
+            <td>After Load, extra checkboxes for that game appear here.</td>
+          </tr>
+          <tr>
+            <td>Clear game data</td>
+            <td>Wipes that game's saved options. It does not wipe seats, names, or host.log.</td>
+          </tr>
+          <tr>
+            <td>Make host</td>
+            <td>Marks another seated person. Their phone then shows Take host and asks for the admin password.</td>
+          </tr>
+          <tr>
+            <td>Log out</td>
+            <td>Signs this browser out of admin. Other signed-in phones stay signed in.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 id="restart">If you quit and come back</h2>
+      <p>Closing Hackbox does not forget the room. The next start reloads names and seats from disk.</p>
+      <ol>
+        <li>Start the program again.</li>
+        <li>Open the board.</li>
+        <li>Tap <strong>Keep this room</strong> to restore last night's table, or <strong>Clear room</strong> for a fresh house.</li>
+      </ol>
+      <div class="result"><strong>Until someone taps one of those</strong> you cannot Load or Start. That pause is on purpose so a crash does not dump eight people on the floor.</div>
+      <p>Files live in the user cache, in a folder named <code>hackbox</code>. On Windows that is <code>%LOCALAPPDATA%\hackbox</code>. You will see <code>host.sqlite</code>, maybe <code>host.log</code>, and a <code>games</code> folder per game id.</p>
+
+      <h2 id="phones-stuck">Phones cannot join</h2>
+      <p>Work down the list. Most nights it is Wi-Fi or the wrong URL.</p>
+      <ol>
+        <li>Confirm the phone and PC are on the same Wi-Fi. Not a guest network. Not cellular.</li>
+        <li>Confirm Windows Firewall allowed Hackbox on that private network.</li>
+        <li>On the phone, use the URL or QR on the board. Do not type <code>127.0.0.1</code>. That address means "this device," so the phone would look for Hackbox inside itself.</li>
+        <li>Confirm the board says Open.</li>
+        <li>If you set advertised hostname, that name has to reach this PC on port 8654 from the phone.</li>
+      </ol>
+
+      <h2 id="stop">Stop Hackbox</h2>
+      <p>Close the console window, or press Ctrl+C in it. There is no tray icon in this build.</p>
+      <p>Starting the program again brings the last room back until you Keep or Clear it.</p>
+
+      <h2 id="write-a-game">Write a game</h2>
+      <p>This guide is for running a room, not for shipping a package. Method-by-method Game and Helper docs are the <a href="/docs/game-contract.html">game API reference</a>.</p>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var sections = document.querySelectorAll("main h2");
+      if (!("IntersectionObserver" in window)) {
+        return;
+      }
+      var byId = {};
+      document.querySelectorAll(".toc a[href^='#']").forEach(function (a) {
+        byId[a.getAttribute("href").slice(1)] = a;
+      });
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          var id = entry.target.id;
+          if (!id || !byId[id]) {
+            return;
+          }
+          document.querySelectorAll(".toc a.is-active").forEach(function (a) {
+            a.classList.remove("is-active");
+          });
+          byId[id].classList.add("is-active");
+        });
+      }, { rootMargin: "0px 0px -70% 0px", threshold: 0.1 });
+      sections.forEach(function (el) {
+        observer.observe(el);
+      });
+    })();
+  </script>
+</body>
+</html>

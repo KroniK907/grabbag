@@ -1,0 +1,11 @@
+{{define "phone-status"}}
+<div
+  id="testing-phone-status"
+  hx-get="/play/partials/phone-status"
+  hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  <div class="ui-you">{{.DisplayName}}</div>
+  <div data-latency>{{.Latency}}</div>
+</div>
+{{end}}

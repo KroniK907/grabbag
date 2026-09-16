@@ -1,0 +1,138 @@
+.testing-info {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.testing-info h1 {
+  font-family: var(--ui-font-display);
+  font-size: 56px;
+  margin: 0 0 16px;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.testing-info p {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.testing-info .ui-btn {
+  margin-top: 12px;
+}
+
+.testing-board {
+  min-height: 100dvh;
+  padding: 24px 20px 96px;
+  position: relative;
+}
+
+.testing-board h1 {
+  font-family: var(--ui-font-display);
+  font-size: 56px;
+  margin: 0 0 16px;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.testing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  max-height: calc(100dvh - 160px);
+}
+
+.testing-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 12px;
+  background: var(--ui-row-bg);
+}
+
+.testing-row-flash {
+  animation: testing-flash 0.7s ease;
+}
+
+.testing-row .ui-token {
+  width: 52px;
+  height: 52px;
+}
+
+.testing-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 14px;
+}
+
+.testing-end {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: auto;
+  margin: 0;
+}
+
+.testing-phone {
+  position: relative;
+  isolation: isolate;
+  align-self: stretch;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: auto;
+  min-height: 100%;
+  margin: -42px -18px -28px;
+  padding: 42px 18px 28px;
+  align-items: center;
+  text-align: center;
+}
+
+#testing-phone-status {
+  width: 100%;
+  text-align: center;
+}
+
+.testing-phone form {
+  width: 100%;
+}
+
+.testing-paused {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-family: var(--ui-font-display);
+  font-size: clamp(72px, 16vw, 160px);
+  line-height: 0.9;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+  background: var(--ui-overlay);
+  backdrop-filter: grayscale(1);
+}
+
+@media (max-width: 520px) {
+  .testing-phone .testing-paused {
+    position: fixed;
+    z-index: 4;
+  }
+}
+
+@keyframes testing-flash {
+  from {
+    background: var(--ui-accent-2);
+    border-color: var(--ui-accent-2);
+    color: var(--ui-accent-2-fg);
+  }
+  to {
+    background: var(--ui-row-bg);
+    border-color: var(--ui-accent);
+  }
+}

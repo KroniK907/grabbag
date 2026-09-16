@@ -1,0 +1,25 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+{{template "board-frame" .}}
+{{template "ui-end"}}
+
+{{define "board-frame"}}
+<div
+  id="testing-board"
+  class="testing-board{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:pause"
+  hx-swap="outerHTML"
+>
+  <h1>Testing</h1>
+  {{template "board-list" .}}
+  {{if .ShowEnd}}
+  <form class="testing-end" method="post" action="/play/end">
+    <input type="hidden" name="return" value="/board">
+    <button class="ui-btn ui-btn-danger" type="submit">End game</button>
+  </form>
+  {{end}}
+  {{if .Paused}}<p class="testing-paused">Paused</p>{{end}}
+</div>
+{{end}}

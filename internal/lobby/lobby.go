@@ -1,4 +1,5 @@
-// Package lobby owns player identity, Join, Leave, seats, wait, and the live roster.
+// Package lobby owns player identity, Join, Leave, seats, wait, live roster,
+// and operator /settings writes.
 package lobby
 
 import (
@@ -12,22 +13,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
+
+	"html/template"
 
 	"github.com/KroniK907/hackbox/internal/platform/hub"
 	"github.com/KroniK907/hackbox/internal/store"
+	"github.com/KroniK907/hackbox/internal/ui"
 )
 
 const (
 	// PlayerCookieName is the host-only cookie that identifies a roster player.
 	PlayerCookieName = "hackbox_player"
 
-	// SeatCap is the v1 host seat limit. The settings field is later.
-	SeatCap = 8
+	// DefaultSeatCap is the host seat limit until /settings or /setup changes it.
+	DefaultSeatCap = 8
 
 	cookieMaxAge = 30 * 24 * 60 * 60
+	minSeatCap   = 1
+	maxSeatCap   = 64
 )
 
 var (
@@ -39,24 +46,68 @@ var (
 //go:embed templates/*.html
 var templateFiles embed.FS
 
-var pageTemplates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
+var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 
-// Config supplies the host-owned password and cookie policies used by Lobby.
+// SettingsExtras is host-owned /settings state Lobby cannot import from games.
+type SettingsExtras struct {
+	GameIDs      []string
+	LoadedGameID string
+	GameSettings template.HTML
+	AutoPause    bool
+	LogLines     []string
+}
+
+// PhoneExtras is host-owned Start and game-picker chrome for the claim-host drawer.
+type PhoneExtras struct {
+	ShowStart    bool
+	Started      bool
+	Paused       bool
+	AutoStart    bool
+	GameIDs      []string
+	LoadedGameID string
+}
+
+// BoardButton is a loaded-game link on the Lobby /board rail.
+type BoardButton struct {
+	Label string
+	Path  string
+}
+
+// BoardExtras is host-owned Lobby /board rail state Lobby cannot import from games.
+type BoardExtras struct {
+	LoadedGame string
+	Buttons    []BoardButton
+}
+
+// Config supplies host-owned password, cookie, and advertised join-URL policies.
 type Config struct {
 	AdminCookieName string
 	Events          *hub.Hub
+	JoinURL         func(*http.Request) string
 	PasswordMatches func(encodedHash, password string) bool
 	SecureCookie    func(*http.Request) bool
+	Notice          func(string)
+	LogSinksChanged func(stdout, file bool)
+	SettingsExtras  func(context.Context) SettingsExtras
+	PhoneExtras     func(*http.Request, Player) PhoneExtras
+	BoardExtras     func(*http.Request) BoardExtras
+	Clock           func() time.Time
+	StartRound      func(context.Context) error
+	AfterDisconnect func(context.Context, Player)
+	AfterRestore    func(context.Context, bool)
 }
 
 // Player is a live roster row.
 type Player struct {
-	ID          string
-	DisplayName string
-	AvatarSeed  string
-	ClaimedHost bool
-	Seated      bool
-	Waiting     bool
+	ID                 string
+	DisplayName        string
+	AvatarSeed         string
+	ClaimedHost        bool
+	PendingDesignation bool
+	Disconnected       bool
+	Seated             bool
+	Waiting            bool
+	Ready              bool
 }
 
 // Lobby owns the live roster and its phone writes.
@@ -64,8 +115,20 @@ type Lobby struct {
 	sql             *sql.DB
 	adminCookieName string
 	events          *hub.Hub
+	joinURL         func(*http.Request) string
 	passwordMatches func(encodedHash, password string) bool
 	secureCookie    func(*http.Request) bool
+	notice          func(string)
+	logSinksChanged func(stdout, file bool)
+	settingsExtras  func(context.Context) SettingsExtras
+	phoneExtras     func(*http.Request, Player) PhoneExtras
+	boardExtras     func(*http.Request) BoardExtras
+	startRound      func(context.Context) error
+	afterDisconnect func(context.Context, Player)
+	afterRestore    func(context.Context, bool)
+	live            *liveMem
+	restoreMu       sync.Mutex
+	restorePending  bool
 }
 
 // New creates Lobby and its SQLite tables.
@@ -89,10 +152,26 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		sql:             db.SQL(),
 		adminCookieName: config.AdminCookieName,
 		events:          config.Events,
+		joinURL:         config.JoinURL,
 		passwordMatches: config.PasswordMatches,
 		secureCookie:    config.SecureCookie,
+		notice:          config.Notice,
+		logSinksChanged: config.LogSinksChanged,
+		settingsExtras:  config.SettingsExtras,
+		phoneExtras:     config.PhoneExtras,
+		boardExtras:     config.BoardExtras,
+		startRound:      config.StartRound,
+		afterDisconnect: config.AfterDisconnect,
+		afterRestore:    config.AfterRestore,
+		live:            newLiveMem(config.Clock),
 	}
 	if err := room.ensureSchema(); err != nil {
+		return nil, err
+	}
+	if _, err := room.sql.Exec(`UPDATE roster SET disconnected = 1`); err != nil {
+		return nil, fmt.Errorf("lobby: mark roster disconnected: %w", err)
+	}
+	if err := room.beginRestoreIfRoster(); err != nil {
 		return nil, err
 	}
 	return room, nil
@@ -103,13 +182,44 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
+	mux.HandleFunc("GET /lobby/presence", l.presence)
+	mux.HandleFunc("GET /lobby/partials/theme", l.themeSync)
 	mux.HandleFunc("POST /lobby/join", l.join)
+	mux.HandleFunc("POST /lobby/heartbeat", l.heartbeat)
+	mux.HandleFunc("POST /lobby/ready", l.readyToggle)
+	mux.HandleFunc("POST /lobby/reroll", l.reroll)
 	mux.HandleFunc("POST /lobby/leave", l.leave)
 	mux.HandleFunc("POST /lobby/wait", l.waitToggle)
 	mux.HandleFunc("GET /settings", l.settings)
+	mux.HandleFunc("GET /settings/log", l.settingsLog)
+	mux.HandleFunc("GET /settings/log/tail", l.settingsLogTail)
+	mux.HandleFunc("POST /settings/login", l.login)
+	mux.HandleFunc("POST /settings/logout", l.logout)
+	mux.HandleFunc("POST /settings/keep", l.keepRoom)
+	mux.HandleFunc("POST /settings/clear-room", l.clearRoom)
+	mux.HandleFunc("POST /settings/admin-only-board", l.setAdminOnlyBoard)
 	mux.HandleFunc("POST /settings/open", l.openRoom)
 	mux.HandleFunc("POST /settings/close", l.closeRoom)
 	mux.HandleFunc("POST /settings/kick", l.kick)
+	mux.HandleFunc("POST /settings/theme", l.toggleTheme)
+	mux.HandleFunc("POST /settings/seat-cap", l.setSeatCap)
+	mux.HandleFunc("POST /settings/hostname", l.setHostname)
+	mux.HandleFunc("POST /settings/cycle-mode", l.setCycleMode)
+	mux.HandleFunc("POST /settings/cycle", l.cycleSeated)
+	mux.HandleFunc("POST /settings/fill-empty", l.setFillEmpty)
+	mux.HandleFunc("POST /settings/auto-pause", l.setAutoPause)
+	mux.HandleFunc("POST /settings/auto-start", l.setAutoStart)
+	mux.HandleFunc("POST /settings/disconnect-after", l.setDisconnectAfter)
+	mux.HandleFunc("POST /settings/kick-timeout", l.setKickTimeout)
+	mux.HandleFunc("POST /settings/protect-host", l.setProtectHost)
+	mux.HandleFunc("POST /settings/seat-disconnected-waiters", l.setSeatDisconnectedWaiters)
+	mux.HandleFunc("POST /settings/reset-ready", l.setResetReady)
+	mux.HandleFunc("POST /settings/log-stdout", l.setLogStdout)
+	mux.HandleFunc("POST /settings/log-file", l.setLogFile)
+	mux.HandleFunc("POST /settings/stand", l.hostStand)
+	mux.HandleFunc("POST /settings/sit", l.hostSit)
+	mux.HandleFunc("POST /settings/make-host", l.makeHost)
+	mux.HandleFunc("POST /lobby/take-host", l.takeHost)
 }
 
 // Phone writes the current Lobby phone body. A live player cookie opens the
@@ -121,45 +231,164 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		l.render(w, "room.html", player, http.StatusOK)
+		view, err := l.phoneView(r, player)
+		if err != nil {
+			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "room.html", view, http.StatusOK)
 		return
 	}
 	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
 }
 
-// Board writes the current Lobby board with seated names, then the wait list.
+// Board writes neon cabinet chrome: left rail (QR, join URL, open/closed,
+// seat and audience counts), seated tokens with the claimed host first, and the wait marquee.
 func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
-	data, err := l.boardData(r.Context())
+	data, err := l.boardView(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	data.JoinURL = joinURL
+	if joinURL != "" {
+		data.JoinURL = joinURL
+	}
+	if advertised := l.advertisedURL(r); advertised != "" {
+		data.JoinURL = advertised
+	}
 	l.render(w, "board.html", data, http.StatusOK)
 }
 
 type boardData struct {
-	JoinURL string
-	Seated  []Player
-	Waiting []Player
+	ui.Chrome
+	JoinURL        string
+	Open           bool
+	SeatCap        int
+	SeatedCount    int
+	AudienceCount  int
+	Seated         []Player
+	Waiting        []Player
+	LoadedGame     string
+	Buttons        []BoardButton
+	RestorePending bool
+	RestoreNames   []string
+	AdminLocked    bool
 }
 
 type settingsData struct {
-	Open    bool
-	Players []Player
+	ui.Chrome
+	Open               bool
+	CycleSeats         bool
+	FillEmpty          bool
+	LogStdout          bool
+	LogFile            bool
+	AutoPause          bool
+	AutoStart          bool
+	ProtectHost        bool
+	SeatDisconnected   bool
+	DisconnectAfter    int
+	KickTimeout        int
+	ResetReadyWhen     string
+	SeatCap            int
+	AdvertisedHostname string
+	SeatCapError       string
+	LoginError         string
+	CanMakeHost        bool
+	Players            []Player
+	GameIDs            []string
+	LoadedGameID       string
+	GameSettings       template.HTML
+	LiveKick           bool
+	RestorePending     bool
+	AdminOnlyBoard     bool
+	StayOnSettings     bool
+}
+
+type joinView struct {
+	ui.Chrome
+	DisplayName  string
+	AvatarSeed   string
+	ShowPassword bool
+	Error        string
+	Kicked       bool
+}
+
+type roomView struct {
+	ui.Chrome
+	Player
+	HostPanel      bool
+	TakeHost       bool
+	TableFull      bool
+	ShowStart      bool
+	ShowReady      bool
+	Started        bool
+	Paused         bool
+	AutoStart      bool
+	GameIDs        []string
+	LoadedGameID   string
+	BumpCandidates []Player
+	Players        []Player
+	GameBody       template.HTML
+	LiveKick       bool
+	RestorePending bool
+	StayOnSettings bool
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
-	data, err := l.boardData(r.Context())
+	data, err := l.boardView(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
+	data.JoinURL = l.advertisedURL(r)
 	l.render(w, "board-roster", data, http.StatusOK)
 }
 
+func (l *Lobby) advertisedURL(r *http.Request) string {
+	stored, err := readAdvertisedHostname(r.Context(), l.sql)
+	if err == nil && stored != "" {
+		return joinURLFromHostname(stored, l.fallbackJoinURL(r))
+	}
+	return l.fallbackJoinURL(r)
+}
+
+func (l *Lobby) fallbackJoinURL(r *http.Request) string {
+	if l.joinURL == nil {
+		return ""
+	}
+	return l.joinURL(r)
+}
+
+func (l *Lobby) boardView(r *http.Request) (boardData, error) {
+	data, err := l.boardData(r.Context())
+	if err != nil {
+		return boardData{}, err
+	}
+	adminOnly, err := l.adminOnlyBoard(r.Context())
+	if err != nil {
+		return boardData{}, err
+	}
+	if l.boardExtras != nil {
+		extra := l.boardExtras(r)
+		data.LoadedGame = extra.LoadedGame
+		data.Buttons = extra.Buttons
+	}
+	if adminOnly && !l.hasAdminCookie(r) {
+		data.AdminLocked = true
+		data.Seated = nil
+		data.Waiting = nil
+		data.SeatedCount = 0
+		data.AudienceCount = 0
+		data.RestorePending = false
+		data.RestoreNames = nil
+		return data, nil
+	}
+	data.RestorePending = l.RestorePending()
+	return data, nil
+}
+
 func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
-	seated, err := l.listPlayers(ctx, `seated = 1 ORDER BY rowid`)
+	seated, err := l.listPlayers(ctx, `seated = 1 ORDER BY claimed_host DESC, rowid`)
 	if err != nil {
 		return boardData{}, err
 	}
@@ -167,7 +396,40 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err != nil {
 		return boardData{}, err
 	}
-	return boardData{Seated: seated, Waiting: waiting}, nil
+	everyone, err := l.listPlayers(ctx, `1 = 1 ORDER BY rowid`)
+	if err != nil {
+		return boardData{}, err
+	}
+	open, err := l.roomOpen(ctx)
+	if err != nil {
+		return boardData{}, err
+	}
+	var audience int
+	if err := l.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM roster WHERE seated = 0`).Scan(&audience); err != nil {
+		return boardData{}, fmt.Errorf("lobby: count audience: %w", err)
+	}
+	chrome, err := l.chrome(ctx, "Hackbox board")
+	if err != nil {
+		return boardData{}, err
+	}
+	cap, err := readSeatCap(ctx, l.sql)
+	if err != nil {
+		return boardData{}, err
+	}
+	names := make([]string, 0, len(everyone))
+	for _, p := range everyone {
+		names = append(names, p.DisplayName)
+	}
+	return boardData{
+		Chrome:        chrome,
+		Open:          open,
+		SeatCap:       cap,
+		SeatedCount:   len(seated),
+		AudienceCount: audience,
+		Seated:        seated,
+		Waiting:       waiting,
+		RestoreNames:  names,
+	}, nil
 }
 
 func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
@@ -177,10 +439,32 @@ func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ok {
-		l.render(w, "room-body", player, http.StatusOK)
+		view, err := l.phoneView(r, player)
+		if err != nil {
+			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "room-inner", view, http.StatusOK)
 		return
 	}
-	l.writeJoin(w, r, "join-body", "", "", http.StatusOK)
+	l.writeJoin(w, r, "join-inner", "", "", http.StatusOK)
+}
+
+func (l *Lobby) presence(w http.ResponseWriter, r *http.Request) {
+	_, ok, err := l.PlayerFromRequest(r)
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	if ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if _, hasCookie := playerCookieFromRequest(r); hasCookie {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // PlayerFromRequest resolves player identity only from the player cookie.
@@ -200,10 +484,14 @@ func (l *Lobby) PlayerFromRequest(r *http.Request) (Player, bool, error) {
 	if err != nil {
 		return Player{}, false, fmt.Errorf("lobby: find player: %w", err)
 	}
+	l.attachLive(&player)
 	return player, true, nil
 }
 
 func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	if _, ok, err := l.PlayerFromRequest(r); err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
@@ -222,10 +510,14 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 	}
 
 	staleCookie, _ := playerCookieFromRequest(r)
+	avatarSeed := strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	if avatarSeed == "" {
+		avatarSeed = staleCookie.AvatarSeed
+	}
 	result, err := l.addPlayer(
 		r.Context(),
 		name,
-		staleCookie.AvatarSeed,
+		avatarSeed,
 		r.PostFormValue("admin_password"),
 	)
 	if err != nil {
@@ -261,6 +553,9 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -275,6 +570,7 @@ func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
+	http.SetCookie(w, l.clearCookie(r, PlayerCookieName))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -335,7 +631,7 @@ func (l *Lobby) addPlayer(ctx context.Context, name, avatarSeed, password string
 			return joinResult{}, fmt.Errorf("lobby: make avatar seed: %w", err)
 		}
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return joinResult{}, err
 	}
 	seated, waiting, waitSeq, err := seatOnJoin(ctx, tx, claimHost)
@@ -353,8 +649,8 @@ func (l *Lobby) addPlayer(ctx context.Context, name, avatarSeed, password string
 	if _, err := tx.ExecContext(
 		ctx,
 		`INSERT INTO roster
-			(player_id, display_name, avatar_seed, claimed_host, pending_designation, seated, waiting, wait_seq)
-		 VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+			(player_id, display_name, avatar_seed, claimed_host, pending_designation, seated, waiting, wait_seq, disconnected)
+		 VALUES (?, ?, ?, ?, 0, ?, ?, ?, 1)`,
 		player.ID,
 		player.DisplayName,
 		player.AvatarSeed,
@@ -413,31 +709,21 @@ func (l *Lobby) removePlayer(ctx context.Context, playerID string) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM roster WHERE player_id = ?`, playerID); err != nil {
 		return fmt.Errorf("lobby: delete roster player: %w", err)
 	}
-	if err := fillWait(ctx, tx); err != nil {
+	if err := l.fillWait(ctx, tx); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("lobby: commit Leave: %w", err)
 	}
+	l.forgetLive(playerID)
 	return nil
-}
-
-func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
-	open, err := l.roomOpen(r.Context())
-	if err != nil {
-		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-		return
-	}
-	players, err := l.listPlayers(r.Context(), `1 = 1 ORDER BY rowid`)
-	if err != nil {
-		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
-		return
-	}
-	l.render(w, "settings.html", settingsData{Open: open, Players: players}, http.StatusOK)
 }
 
 func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
+		return
+	}
+	if l.refusePending(w) {
 		return
 	}
 	if err := l.setRoomOpen(r.Context(), true); err != nil {
@@ -452,6 +738,9 @@ func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	if err := l.setRoomOpen(r.Context(), false); err != nil {
 		http.Error(w, "Could not close the room.", http.StatusInternalServerError)
 		return
@@ -460,8 +749,84 @@ func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
+func (l *Lobby) toggleTheme(w http.ResponseWriter, r *http.Request) {
+	if !l.requireAdmin(w, r) {
+		return
+	}
+	current, err := l.readTheme(r.Context())
+	if err != nil {
+		http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+		return
+	}
+	next := ui.ThemeNeonDark
+	if current == ui.ThemeNeonDark {
+		next = ui.ThemeNeonLight
+	}
+	if err := l.setTheme(r.Context(), next); err != nil {
+		http.Error(w, "Could not save the theme.", http.StatusInternalServerError)
+		return
+	}
+	l.events.PublishData("theme", next)
+	if r.Header.Get("HX-Request") == "true" {
+		chrome, err := l.chrome(r.Context(), "Hackbox settings")
+		if err != nil {
+			http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+			return
+		}
+		l.render(w, "theme-toggle", chrome, http.StatusOK)
+		return
+	}
+	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+}
+
+func (l *Lobby) themeSync(w http.ResponseWriter, r *http.Request) {
+	chrome, err := l.chrome(r.Context(), "")
+	if err != nil {
+		http.Error(w, "Could not read the theme.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, "theme-sync-node", chrome, http.StatusOK)
+}
+
+func (l *Lobby) chrome(ctx context.Context, title string) (ui.Chrome, error) {
+	theme, err := l.readTheme(ctx)
+	if err != nil {
+		return ui.Chrome{}, err
+	}
+	return ui.Chrome{Title: title, Theme: theme}, nil
+}
+
+// Theme is the stored neon palette id.
+func (l *Lobby) Theme(ctx context.Context) string {
+	theme, err := l.readTheme(ctx)
+	if err != nil {
+		return ui.DefaultTheme
+	}
+	return theme
+}
+
+func (l *Lobby) readTheme(ctx context.Context) (string, error) {
+	var theme string
+	err := l.sql.QueryRowContext(ctx, `SELECT theme FROM room_state WHERE id = 1`).Scan(&theme)
+	if err != nil {
+		return "", fmt.Errorf("lobby: read theme: %w", err)
+	}
+	return ui.NormalizeTheme(theme), nil
+}
+
+func (l *Lobby) setTheme(ctx context.Context, theme string) error {
+	theme = ui.NormalizeTheme(theme)
+	if _, err := l.sql.ExecContext(ctx, `UPDATE room_state SET theme = ? WHERE id = 1`, theme); err != nil {
+		return fmt.Errorf("lobby: update theme: %w", err)
+	}
+	return nil
+}
+
 func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
+		return
+	}
+	if l.refusePending(w) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -477,11 +842,71 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not kick the player.", http.StatusInternalServerError)
 		return
 	}
+	l.emit("kick")
 	l.events.Publish("roster")
+	if r.Header.Get("HX-Request") == "true" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
+func (l *Lobby) reroll(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	seed, err := newRandomValue(16)
+	if err != nil {
+		http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+		return
+	}
+	player, ok, err := l.PlayerFromRequest(r)
+	if err != nil {
+		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
+		return
+	}
+	if ok && l.refusePending(w) {
+		return
+	}
+	name := strings.TrimSpace(r.PostFormValue("display_name"))
+	if ok {
+		if err := l.setAvatarSeed(r.Context(), player.ID, seed); err != nil {
+			http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+			return
+		}
+		name = player.DisplayName
+		l.events.Publish("roster")
+	}
+	value, err := encodePlayerCookie(playerCookie{
+		ID:          player.ID,
+		DisplayName: name,
+		AvatarSeed:  seed,
+	})
+	if err != nil {
+		http.Error(w, "Could not reroll the avatar.", http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, l.cookie(r, PlayerCookieName, value))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (l *Lobby) setAvatarSeed(ctx context.Context, playerID, seed string) error {
+	if _, err := l.sql.ExecContext(
+		ctx,
+		`UPDATE roster SET avatar_seed = ? WHERE player_id = ?`,
+		seed,
+		playerID,
+	); err != nil {
+		return fmt.Errorf("lobby: reroll avatar: %w", err)
+	}
+	return nil
+}
+
 func (l *Lobby) waitToggle(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -535,7 +960,7 @@ func (l *Lobby) setRoomOpen(ctx context.Context, open bool) error {
 		return fmt.Errorf("lobby: update room open: %w", err)
 	}
 	if open {
-		if err := fillWait(ctx, tx); err != nil {
+		if err := l.fillWait(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -575,7 +1000,7 @@ func (l *Lobby) toggleWait(ctx context.Context, player Player) error {
 		); err != nil {
 			return fmt.Errorf("lobby: join wait: %w", err)
 		}
-		if err := fillWait(ctx, tx); err != nil {
+		if err := l.fillWait(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -606,6 +1031,7 @@ func (l *Lobby) listPlayers(ctx context.Context, where string) ([]Player, error)
 		if err != nil {
 			return nil, fmt.Errorf("lobby: scan roster: %w", err)
 		}
+		l.attachLive(&player)
 		players = append(players, player)
 	}
 	if err := rows.Err(); err != nil {
@@ -614,15 +1040,26 @@ func (l *Lobby) listPlayers(ctx context.Context, where string) ([]Player, error)
 	return players, nil
 }
 
-const playerSelect = `SELECT player_id, display_name, avatar_seed, claimed_host, seated, waiting FROM roster`
+const playerSelect = `SELECT player_id, display_name, avatar_seed, claimed_host, pending_designation, disconnected, seated, waiting FROM roster`
 
 func scanPlayer(scan func(dest ...any) error) (Player, error) {
 	var player Player
-	var claimed, seated, waiting int
-	if err := scan(&player.ID, &player.DisplayName, &player.AvatarSeed, &claimed, &seated, &waiting); err != nil {
+	var claimed, pending, disconnected, seated, waiting int
+	if err := scan(
+		&player.ID,
+		&player.DisplayName,
+		&player.AvatarSeed,
+		&claimed,
+		&pending,
+		&disconnected,
+		&seated,
+		&waiting,
+	); err != nil {
 		return Player{}, err
 	}
 	player.ClaimedHost = claimed != 0
+	player.PendingDesignation = pending != 0
+	player.Disconnected = disconnected != 0
 	player.Seated = seated != 0
 	player.Waiting = waiting != 0
 	return player, nil
@@ -637,12 +1074,22 @@ func seatOnJoin(ctx context.Context, tx *sql.Tx, claimHost bool) (seated bool, w
 		return false, false, nil, err
 	}
 	if open {
-		count, err := seatedCount(ctx, tx)
-		if err != nil {
-			return false, false, nil, err
+		var roundActive, fillEmpty int
+		if err := tx.QueryRowContext(ctx, `SELECT round_active, fill_empty FROM room_state WHERE id = 1`).Scan(&roundActive, &fillEmpty); err != nil {
+			return false, false, nil, fmt.Errorf("lobby: read fill policy: %w", err)
 		}
-		if count < SeatCap {
-			return true, false, nil, nil
+		if roundActive == 0 || fillEmpty != 0 {
+			count, err := seatedCount(ctx, tx)
+			if err != nil {
+				return false, false, nil, err
+			}
+			cap, err := seatCapTx(ctx, tx)
+			if err != nil {
+				return false, false, nil, err
+			}
+			if count < cap {
+				return true, false, nil, nil
+			}
 		}
 	}
 	seq, err := nextWaitSeq(ctx, tx)
@@ -652,7 +1099,7 @@ func seatOnJoin(ctx context.Context, tx *sql.Tx, claimHost bool) (seated bool, w
 	return false, true, seq, nil
 }
 
-func fillWait(ctx context.Context, tx *sql.Tx) error {
+func (l *Lobby) fillWait(ctx context.Context, tx *sql.Tx) error {
 	open, err := roomOpenTx(ctx, tx)
 	if err != nil {
 		return err
@@ -660,18 +1107,32 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 	if !open {
 		return nil
 	}
+	var roundActive, fillEmpty int
+	if err := tx.QueryRowContext(ctx, `SELECT round_active, fill_empty FROM room_state WHERE id = 1`).Scan(&roundActive, &fillEmpty); err != nil {
+		return fmt.Errorf("lobby: read fill policy: %w", err)
+	}
+	if roundActive != 0 && fillEmpty == 0 {
+		return nil
+	}
 	for {
 		count, err := seatedCount(ctx, tx)
 		if err != nil {
 			return err
 		}
-		if count >= SeatCap {
+		cap, err := seatCapTx(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if count >= cap {
 			return nil
 		}
 		var playerID string
 		err = tx.QueryRowContext(
 			ctx,
-			`SELECT player_id FROM roster WHERE waiting = 1 ORDER BY wait_seq LIMIT 1`,
+			`SELECT player_id FROM roster
+			 WHERE waiting = 1
+			   AND (disconnected = 0 OR (SELECT seat_disconnected_waiters FROM room_state WHERE id = 1) = 1)
+			 ORDER BY wait_seq LIMIT 1`,
 		).Scan(&playerID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
@@ -686,6 +1147,7 @@ func fillWait(ctx context.Context, tx *sql.Tx) error {
 		); err != nil {
 			return fmt.Errorf("lobby: seat waiter: %w", err)
 		}
+		l.forgetReady(playerID)
 	}
 }
 
@@ -735,6 +1197,19 @@ func (l *Lobby) writeJoin(
 	if submittedName != "" {
 		state.DisplayName = submittedName
 	}
+	seed := strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	if seed == "" {
+		seed = state.AvatarSeed
+	}
+	if seed == "" {
+		var err error
+		seed, err = newRandomValue(16)
+		if err != nil {
+			http.Error(w, "Could not make an avatar.", http.StatusInternalServerError)
+			return
+		}
+	}
+	state.AvatarSeed = seed
 	var hostExists int
 	if err := l.sql.QueryRowContext(
 		r.Context(),
@@ -743,14 +1218,18 @@ func (l *Lobby) writeJoin(
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, templateName, struct {
-		DisplayName  string
-		ShowPassword bool
-		Error        string
-	}{
+	chrome, err := l.chrome(r.Context(), "Join Hackbox")
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, templateName, joinView{
+		Chrome:       chrome,
 		DisplayName:  state.DisplayName,
+		AvatarSeed:   seed,
 		ShowPassword: hostExists == 0,
 		Error:        message,
+		Kicked:       state.ID != "",
 	}, status)
 }
 
@@ -764,6 +1243,12 @@ func (l *Lobby) cookie(r *http.Request, name, value string) *http.Cookie {
 		Secure:   l.secureCookie(r),
 		SameSite: http.SameSiteLaxMode,
 	}
+}
+
+func (l *Lobby) clearCookie(r *http.Request, name string) *http.Cookie {
+	c := l.cookie(r, name, "")
+	c.MaxAge = -1
+	return c
 }
 
 func (l *Lobby) render(w http.ResponseWriter, name string, data any, status int) {
@@ -852,7 +1337,8 @@ CREATE TABLE IF NOT EXISTS host_phone_session (
 );
 CREATE TABLE IF NOT EXISTS room_state (
 	id INTEGER PRIMARY KEY CHECK (id = 1),
-	open INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1))
+	open INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1)),
+	theme TEXT NOT NULL DEFAULT 'neon-light'
 );
 INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 `)
@@ -863,6 +1349,26 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE roster ADD COLUMN seated INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN waiting INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN wait_seq INTEGER`,
+		`ALTER TABLE roster ADD COLUMN disconnected INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN theme TEXT NOT NULL DEFAULT 'neon-light'`,
+		`ALTER TABLE room_state ADD COLUMN advertised_hostname TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN seat_cap INTEGER NOT NULL DEFAULT 8`,
+		`ALTER TABLE room_state ADD COLUMN cycle_seats INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN fill_empty INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN log_stdout INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN log_file INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN host_queue TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN round_active INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN selected_game_id TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE room_state ADD COLUMN game_max_players INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN auto_pause INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN auto_start INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN disconnect_after INTEGER NOT NULL DEFAULT 5`,
+		`ALTER TABLE room_state ADD COLUMN kick_timeout INTEGER NOT NULL DEFAULT 60`,
+		`ALTER TABLE room_state ADD COLUMN protect_host INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE room_state ADD COLUMN seat_disconnected_waiters INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN reset_ready TEXT NOT NULL DEFAULT 'switch'`,
+		`ALTER TABLE room_state ADD COLUMN admin_only_board INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

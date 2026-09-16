@@ -1,26 +1,15 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Hackbox board</title>
-  <link rel="stylesheet" href="/static/live.css">
-  <script defer src="/static/htmx.min.js"></script>
-  <script defer src="/static/sse.min.js"></script>
-</head>
-<body
-  hx-ext="sse"
-  sse-connect="/lobby/events"
-  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false"
-  hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
->
-  <div id="connection-overlay" class="connection-overlay" role="status" hidden>Connection lost. Reconnecting...</div>
-  <main>
-    <h1>Hackbox board</h1>
-    {{with .JoinURL}}
-    <p>Join from another device: <a href="{{.}}">{{.}}</a></p>
-    {{end}}
-    {{template "board-roster" .}}
-  </main>
-</body>
-</html>
+{{if .AdminLocked}}
+{{template "ui-start-quiet" .}}
+<div class="ui-page ui-page-compact">
+  <div class="ui-card">
+    <h1>Host screen only</h1>
+    <p>The operator turned on admin-only board. Open Settings from a signed-in tab.</p>
+  </div>
+</div>
+{{template "ui-end"}}
+{{else}}
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+{{template "board-roster" .}}
+{{template "ui-end"}}
+{{end}}

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="{{.GameCSS}}">
+{{template "phone-frame" .}}
+
+{{define "phone-frame"}}
+<div
+  id="testing-phone"
+  class="testing-phone ui-stack{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/phone"
+  hx-trigger="sse:pause"
+  hx-swap="outerHTML"
+>
+  {{template "phone-status" .}}
+  <form>
+    <button class="ui-plunger" type="button" hx-post="/play/tap" hx-swap="none">Tap</button>
+  </form>
+  {{if .ShowEnd}}
+  <form method="post" action="/play/end">
+    <button class="ui-btn ui-btn-danger" type="submit">End game</button>
+  </form>
+  {{end}}
+  {{if .Paused}}<p class="testing-paused">Paused</p>{{end}}
+</div>
+{{end}}

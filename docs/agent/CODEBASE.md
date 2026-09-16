@@ -1,8 +1,8 @@
 # Hackbox codebase
 
-v1 layout and coding standards. Binding. Source: [CORE-HOST-GM-001 through GM-005](https://github.com/KroniK907/hackbox/issues/1) from [Grill: code layout and standards](https://github.com/KroniK907/hackbox/issues/4).
+Layout and coding standards. Binding. Source: [CORE-HOST-GM-001 through GM-005](https://github.com/KroniK907/hackbox/issues/1) from [Grill: code layout and standards](https://github.com/KroniK907/hackbox/issues/4).
 
-Read this before adding Go packages, templates, or static files. Operator and player docs belong in `docs/guide/`, not here.
+Read this before adding Go packages, templates, or static files. Operator HTML belongs in `docs/*.html`, not here. The Game/Helper contract is [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
 ## Jump list
 
@@ -14,6 +14,7 @@ Read this before adding Go packages, templates, or static files. Operator and pl
 - [Tests](#tests)
 - [gofmt](#gofmt)
 - [Changing this file](#changing-this-file)
+- [Game / host contract](GAME_CONTRACT.md)
 
 ## Directory tree
 
@@ -23,55 +24,64 @@ One Go module. No `pkg/`. No second module for shared code. Directories exist in
 hackbox/
   go.mod
   AGENTS.md
+  README.md
   cmd/
     hackbox/
       main.go                 # process entry; almost no logic
   docs/
+    embed.go                  # package docs; embeds *.html
+    index.html                # operator how-to-run; CSS in the file
+    game-contract.html        # human Game/Helper API reference
+    shots/                    # README photos
     agent/
       CODEBASE.md             # this file
-    guide/                    # operator and player manual, later
   internal/
     host/                     # process, mux, register Lobby + games
     lobby/
       templates/
     ui/
-      static/                 # compiled host chrome CSS/JS
-      templates/              # shared board/phone chrome
-    store/                    # host/Lobby persistence + path helpers
+      static/                 # host chrome CSS/JS (theme tokens + widgets)
+      templates/              # shared chrome defines (ui-start, overlay)
+    store/                    # host/Lobby persistence, game_kv, path helpers
     platform/                 # host-wide packages
       hub/                    # in-process named SSE broadcaster
-    games/                    # compile-time loader
+      applog/                 # in-memory log ring + optional host.log
+    games/                    # compile-time loader + Game/Helper contract
+      game.go
       testing/                # Testing diagnostics; package testinggame
         templates/
         static/
   web/                        # host Tailwind source only; not embedded
 ```
 
-`internal/ui` is one package in v1. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
+`internal/ui` is one package. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
 
-A later `cmd/hackbox-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/hackbox/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/hackbox/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/hackbox/issues/9).
+Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-light` (default) and `neon-dark`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
+
+A later `cmd/hackbox-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/hackbox/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/hackbox/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/hackbox/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
 ## Import rules
 
-`cmd/hackbox` imports only `internal/host`. Host is the composition root. It may import lobby, games, ui, store, and platform.
+`cmd/hackbox` imports only `internal/host`. Host is the composition root. It may import lobby, games, ui, store, platform, and `docs`.
 
 | From | May import | Must not import |
 |------|------------|-----------------|
 | `cmd/hackbox` | `internal/host` | everything else |
-| `internal/host` | lobby, games, ui, store, platform | - |
+| `internal/host` | lobby, games, ui, store, platform, docs | - |
+| `docs` | stdlib only | host, lobby, games, ui, store, platform |
 | `internal/lobby` | ui, platform, store | host, games |
 | `internal/games` and `internal/games/<name>` | ui, platform, sibling-free game code | host, lobby, store, other games |
 | `internal/ui` | platform | host, lobby, games, store |
 | `internal/store` | (stdlib / SQLite only) | host, lobby, games, ui |
 | `internal/platform/<name>` | other platform packages if needed | host, lobby, games, ui |
 
-Games never open host/Lobby storage. Player and Lobby details reach a game through host. Host injects a namespaced data dir or handle. Each game may keep its own persistence code under `internal/games/<name>`.
+Games never open host/Lobby storage. Player and Lobby details reach a game through host. Host injects a namespaced data dir or handle. Opaque game KV is the `game_kv` table in `host.sqlite`, namespaced by game id. Host does not parse values. Each game may keep its own persistence code under `internal/games/<name>`.
 
-`internal/games` owns compile-time loading. It imports child packages such as `internal/games/testing` and exposes the list plus start/stop to host. No runtime folder scan in v1. External or binary games are a later expansion.
+`internal/games` owns compile-time loading. Child packages call `games.Register` from `init`. Host blank-imports those packages (Testing first) so `Catalog()` is populated. `games` cannot import the children; they already import `games` for `Helper`. No runtime folder scan. External or binary games are a later expansion.
 
 ## Package names
 
-The `package` clause matches the last path element (`host`, `lobby`, `ui`, `store`, `games`, and `platform/<name>` as the folder name).
+The `package` clause matches the last path element (`host`, `lobby`, `ui`, `store`, `games`, `docs`, and `platform/<name>` as the folder name).
 
 The only planned exception is `internal/games/testing`. Product name is Testing. Package name is `testinggame`. Do not use `package testing` (stdlib clash). Do not use `package diag` (likely clash with a later `internal/platform/diag`).
 
@@ -79,7 +89,9 @@ The only planned exception is `internal/games/testing`. Product name is Testing.
 
 HTML lives in `templates/` next to the embedding package. Compiled CSS/JS/images live in `static/`. Filenames are lowercase (`board.html`, `game.css`).
 
-`//go:embed` patterns are relative to the package directory. They cannot reach `web/` from `internal/`. Shared chrome and compiled host CSS belong in `internal/ui`. A game's shipped assets (templates, prompts, art, metadata, CSS) live under `internal/games/<name>` and that package embeds them.
+The operator how-to-run page is `docs/index.html`. The human Game/Helper API reference is `docs/game-contract.html`. Each is one file with CSS in a `<style>` tag. Double-click them, or open `GET /docs` and `GET /docs/game-contract.html` on a running host. Host serves the embedded bytes. It does not restyle these pages through `live.css`. Build-from-source notes belong in a developer guide, not the operator page.
+
+`//go:embed` patterns are relative to the package directory. They cannot reach `web/` from `internal/`. Package `docs` embeds `docs/*.html` from that folder. Shared chrome and compiled host CSS belong in `internal/ui`. A game's shipped assets (templates, prompts, art, metadata, CSS) live under `internal/games/<name>` and that package embeds them.
 
 Host Tailwind input is `web/`. Its compiled output is `internal/ui/static/`. Each game that needs custom utilities compiles CSS in its own tree and checks in the result under that game's `static/`. The running host never runs Tailwind. A per-game `web/` folder exists only if that game actually compiles Tailwind there.
 
@@ -91,7 +103,7 @@ Godoc on every exported type, func, and const. Package comment on each package (
 
 ## Tests
 
-`_test.go` next to the code it covers. No top-level `tests/` tree. Prefer `package foo_test` unless the test must see unexported details. Focused unit and integration tests. No broad smoke suites. Automated tray UI tests are out of scope. CI is not a v1 gate.
+`_test.go` next to the code it covers. No top-level `tests/` tree. Prefer `package foo_test` unless the test must see unexported details. Focused unit and integration tests. No broad smoke suites. Automated tray UI tests are out of scope. CI is not a gate.
 
 ## gofmt
 

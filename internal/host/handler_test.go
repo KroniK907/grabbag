@@ -17,6 +17,32 @@ func TestSetupLifecycle(t *testing.T) {
 
 	assertRedirect(t, handler, http.MethodGet, "/", nil, "/setup")
 	assertStatus(t, handler, http.MethodGet, "/setup", nil, http.StatusOK)
+	docs := request(t, handler, http.MethodGet, "/docs", nil, "")
+	if docs.Code != http.StatusOK {
+		t.Fatalf("GET /docs before setup = %d", docs.Code)
+	}
+	if docs.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatalf("GET /docs Content-Type = %q", docs.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(docs.Body.String(), "downloaded Hackbox binary") ||
+		!strings.Contains(docs.Body.String(), "<style>") ||
+		!strings.Contains(docs.Body.String(), "http://127.0.0.1:8654") {
+		t.Fatalf("docs before setup = %q", docs.Body.String())
+	}
+	contract := request(t, handler, http.MethodGet, "/docs/game-contract.html", nil, "")
+	if contract.Code != http.StatusOK {
+		t.Fatalf("GET /docs/game-contract.html before setup = %d", contract.Code)
+	}
+	if contract.Header().Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Fatalf("GET /docs/game-contract.html Content-Type = %q", contract.Header().Get("Content-Type"))
+	}
+	if !strings.Contains(contract.Body.String(), "On this page") ||
+		!strings.Contains(contract.Body.String(), "PlayerFromRequest") ||
+		!strings.Contains(contract.Body.String(), "func Register(f Factory)") ||
+		!strings.Contains(contract.Body.String(), `sse-connect="/lobby/events"`) ||
+		!strings.Contains(contract.Body.String(), "data: update") {
+		t.Fatalf("game contract docs = %q", contract.Body.String())
+	}
 
 	bad := url.Values{"password": {"abcdefgh"}, "confirm": {"different"}}
 	assertStatus(t, handler, http.MethodPost, "/setup", bad, http.StatusBadRequest)
@@ -61,6 +87,9 @@ func TestSetupLifecycle(t *testing.T) {
 	if cookie.Secure {
 		t.Fatal("plain LAN HTTP cookie must not be Secure")
 	}
+	if cookie.MaxAge != 30*24*60*60 {
+		t.Fatalf("Finish cookie MaxAge = %d, want 30 days", cookie.MaxAge)
+	}
 	hasSession, err := db.HasAdminSession(context.Background(), cookie.Value)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +108,7 @@ func TestSetupLifecycle(t *testing.T) {
 
 	assertStatus(t, handler, http.MethodPost, "/setup", form, http.StatusConflict)
 	assertRedirect(t, handler, http.MethodGet, "/setup", nil, "/board")
-	for _, path := range []string{"/", "/board", "/settings"} {
+	for _, path := range []string{"/", "/board", "/settings", "/docs", "/docs/index.html", "/docs/game-contract.html"} {
 		assertStatus(t, handler, http.MethodGet, path, nil, http.StatusOK)
 	}
 
@@ -149,17 +178,23 @@ func TestLiveAssetsAreLocalAndSettingsDoesNotSubscribe(t *testing.T) {
 		if !strings.Contains(rec.Header().Get("Content-Type"), contentType) {
 			t.Fatalf("GET %s Content-Type = %q", asset, rec.Header().Get("Content-Type"))
 		}
-		if asset == "/static/live.css" && !strings.Contains(rec.Body.String(), "position: fixed") {
-			t.Fatalf("GET %s did not contain fixed overlay styling", asset)
+		if asset == "/static/live.css" {
+			css := rec.Body.String()
+			if !strings.Contains(css, "position: fixed") {
+				t.Fatalf("GET %s did not contain fixed overlay styling", asset)
+			}
+			if !strings.Contains(css, "appearance: none") || !strings.Contains(css, `[data-theme="neon-dark"] .ui-field select`) {
+				t.Fatalf("GET %s missing themed select caret", asset)
+			}
 		}
 	}
 
 	setup := url.Values{"password": {"correct horse"}, "confirm": {"correct horse"}}
 	request(t, handler, http.MethodPost, "/setup", setup, "")
 	settings := request(t, handler, http.MethodGet, "/settings", nil, "")
-	if strings.Contains(settings.Body.String(), "sse-connect") ||
-		strings.Contains(settings.Body.String(), "sse.min.js") {
-		t.Fatalf("settings subscribed to SSE: %q", settings.Body.String())
+	if strings.Contains(settings.Body.String(), "sse:roster") ||
+		strings.Contains(settings.Body.String(), "/lobby/partials/board-roster") {
+		t.Fatalf("settings live-updated the player list: %q", settings.Body.String())
 	}
 }
 

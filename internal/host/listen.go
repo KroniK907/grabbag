@@ -45,13 +45,14 @@ func run() error {
 		joinURL = advertisedJoinURL(ip)
 	}
 
-	listener, err := openListener(listenPort)
+	listener, err := listenOn("", listenPort)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = listener.Close() }()
 
 	log.Printf("Hackbox listening on http://127.0.0.1:%s", listenPort)
+	log.Printf("Setup guide http://127.0.0.1:%s/docs", listenPort)
 	if joinURL != "" {
 		log.Printf("LAN join URL %s", joinURL)
 	}
@@ -69,11 +70,11 @@ func advertisedJoinURL(ip net.IP) string {
 	return "http://" + net.JoinHostPort(ip.String(), listenPort) + "/"
 }
 
-// openListener binds TCP on all unicast addresses for port, including
-// 127.0.0.1 and ::1. Cloudflare and the operator browser use loopback. Phones
-// on the LAN still use the advertised join URL.
-func openListener(port string) (net.Listener, error) {
-	addr := net.JoinHostPort("", port)
+// listenOn binds TCP on host:port. Production uses host "" (all interfaces)
+// so phones on the LAN can join. Tests bind 127.0.0.1 so Windows Firewall
+// does not prompt for each throwaway test binary.
+func listenOn(host, port string) (net.Listener, error) {
+	addr := net.JoinHostPort(host, port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("host: listen on %s: %w", addr, err)
