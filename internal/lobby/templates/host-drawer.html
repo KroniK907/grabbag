@@ -12,6 +12,13 @@
     class="ui-btn"
     onclick="document.getElementById('host-drawer').classList.remove('is-open')"
   >Back</button>
+  {{if .RestorePending}}
+  <form method="post" action="/settings/keep">
+    <button class="ui-btn" type="submit">Keep this room</button>
+  </form>
+  <button class="ui-btn ui-btn-danger" type="button" onclick="document.getElementById('clear-room-modal').hidden = false">Clear room</button>
+  {{template "clear-room-modal"}}
+  {{else}}
   {{if .ShowStart}}
   <form method="post" action="/settings/start">
     <button class="ui-btn" type="submit">Start</button>
@@ -72,6 +79,7 @@
   </form>
   {{end}}
   {{template "kick-players" .}}
+  {{end}}
   <a class="ui-btn" href="/settings" target="_blank" rel="noopener">Room settings</a>
 </aside>
 {{end}}

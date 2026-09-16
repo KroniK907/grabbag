@@ -1,4 +1,15 @@
+{{if .AdminLocked}}
+{{template "ui-start-quiet" .}}
+<div class="ui-page ui-page-compact">
+  <div class="ui-card">
+    <h1>Host screen only</h1>
+    <p>The operator turned on admin-only board. Open Settings from a signed-in tab.</p>
+  </div>
+</div>
+{{template "ui-end"}}
+{{else}}
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 {{template "board-roster" .}}
 {{template "ui-end"}}
+{{end}}

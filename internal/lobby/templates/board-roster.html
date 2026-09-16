@@ -40,6 +40,17 @@
     <span class="ui-chip" style="background: {{color .AvatarSeed}}">{{avatar .AvatarSeed}} {{.DisplayName}}</span>
     {{end}}
   </div>
+  {{if .RestorePending}}
+  <div class="keep-overlay" role="status">
+    <div class="ui-card">
+      <h2>This room came back</h2>
+      <p>Keep and Clear live on Settings and the host phone. Not here.</p>
+      {{if .RestoreNames}}
+      <p><b>Still here:</b> {{range $i, $name := .RestoreNames}}{{if $i}}, {{end}}{{$name}}{{end}}</p>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
   <a class="ui-gear" href="/settings" target="_blank" rel="noopener" title="Settings">⚙</a>
 </div>
 {{end}}

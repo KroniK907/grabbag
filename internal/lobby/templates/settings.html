@@ -6,6 +6,16 @@
       {{template "theme-toggle" .}}
     </div>
     <div class="ui-list">
+      {{if .RestorePending}}
+      <form class="ui-row" method="post" action="/settings/keep">
+        <span>This room came back</span>
+        <button class="ui-btn ui-btn-inline" type="submit">Keep this room</button>
+      </form>
+      <div class="ui-row">
+        <span>Clear the roster</span>
+        <button class="ui-btn ui-btn-inline ui-btn-danger" type="button" onclick="document.getElementById('clear-room-modal').hidden = false">Clear room</button>
+      </div>
+      {{end}}
       <form class="ui-row" method="post" action="{{if .Open}}/settings/close{{else}}/settings/open{{end}}">
         <span>Room</span>
         <button class="ui-btn ui-btn-inline" type="submit">{{if .Open}}Open{{else}}Closed{{end}}</button>
@@ -55,6 +65,16 @@
       <form class="ui-row" method="post" action="/settings/protect-host">
         <span>Protect host</span>
         {{if .ProtectHost}}
+        <input type="hidden" name="enabled" value="0">
+        <button class="ui-btn ui-btn-inline" type="submit">On</button>
+        {{else}}
+        <input type="hidden" name="enabled" value="1">
+        <button class="ui-btn ui-btn-inline" type="submit">Off</button>
+        {{end}}
+      </form>
+      <form class="ui-row" method="post" action="/settings/admin-only-board">
+        <span>Admin-only board</span>
+        {{if .AdminOnlyBoard}}
         <input type="hidden" name="enabled" value="0">
         <button class="ui-btn ui-btn-inline" type="submit">On</button>
         {{else}}
@@ -172,6 +192,7 @@
     {{end}}
   </div>
 </div>
+{{template "clear-room-modal"}}
 <div id="clear-kv-modal" class="ui-modal" hidden>
   <div class="ui-card">
     <h2>Clear data for {{.LoadedGameID}}?</h2>

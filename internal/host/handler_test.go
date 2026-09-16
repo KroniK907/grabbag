@@ -61,6 +61,9 @@ func TestSetupLifecycle(t *testing.T) {
 	if cookie.Secure {
 		t.Fatal("plain LAN HTTP cookie must not be Secure")
 	}
+	if cookie.MaxAge != 30*24*60*60 {
+		t.Fatalf("Finish cookie MaxAge = %d, want 30 days", cookie.MaxAge)
+	}
 	hasSession, err := db.HasAdminSession(context.Background(), cookie.Value)
 	if err != nil {
 		t.Fatal(err)

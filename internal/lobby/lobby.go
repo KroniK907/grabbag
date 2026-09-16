@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"html/template"
@@ -80,6 +81,7 @@ type Config struct {
 	Clock           func() time.Time
 	StartRound      func(context.Context) error
 	AfterDisconnect func(context.Context, Player)
+	AfterRestore    func(context.Context, bool)
 }
 
 // Player is a live roster row.
@@ -109,7 +111,10 @@ type Lobby struct {
 	phoneExtras     func(*http.Request, Player) PhoneExtras
 	startRound      func(context.Context) error
 	afterDisconnect func(context.Context, Player)
+	afterRestore    func(context.Context, bool)
 	live            *liveMem
+	restoreMu       sync.Mutex
+	restorePending  bool
 }
 
 // New creates Lobby and its SQLite tables.
@@ -142,6 +147,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		phoneExtras:     config.PhoneExtras,
 		startRound:      config.StartRound,
 		afterDisconnect: config.AfterDisconnect,
+		afterRestore:    config.AfterRestore,
 		live:            newLiveMem(config.Clock),
 	}
 	if err := room.ensureSchema(); err != nil {
@@ -149,6 +155,9 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 	}
 	if _, err := room.sql.Exec(`UPDATE roster SET disconnected = 1`); err != nil {
 		return nil, fmt.Errorf("lobby: mark roster disconnected: %w", err)
+	}
+	if err := room.beginRestoreIfRoster(); err != nil {
+		return nil, err
 	}
 	return room, nil
 }
@@ -171,6 +180,9 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /settings/log/tail", l.settingsLogTail)
 	mux.HandleFunc("POST /settings/login", l.login)
 	mux.HandleFunc("POST /settings/logout", l.logout)
+	mux.HandleFunc("POST /settings/keep", l.keepRoom)
+	mux.HandleFunc("POST /settings/clear-room", l.clearRoom)
+	mux.HandleFunc("POST /settings/admin-only-board", l.setAdminOnlyBoard)
 	mux.HandleFunc("POST /settings/open", l.openRoom)
 	mux.HandleFunc("POST /settings/close", l.closeRoom)
 	mux.HandleFunc("POST /settings/kick", l.kick)
@@ -218,7 +230,7 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 // Board writes neon cabinet chrome: left rail (QR, join URL, open/closed,
 // seat and audience counts), seated tokens with the claimed host first, and the wait marquee.
 func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
-	data, err := l.boardData(r.Context())
+	data, err := l.boardView(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
@@ -234,13 +246,16 @@ func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 
 type boardData struct {
 	ui.Chrome
-	JoinURL       string
-	Open          bool
-	SeatCap       int
-	SeatedCount   int
-	AudienceCount int
-	Seated        []Player
-	Waiting       []Player
+	JoinURL        string
+	Open           bool
+	SeatCap        int
+	SeatedCount    int
+	AudienceCount  int
+	Seated         []Player
+	Waiting        []Player
+	RestorePending bool
+	RestoreNames   []string
+	AdminLocked    bool
 }
 
 type settingsData struct {
@@ -267,6 +282,8 @@ type settingsData struct {
 	LoadedGameID       string
 	GameSettings       template.HTML
 	LiveKick           bool
+	RestorePending     bool
+	AdminOnlyBoard     bool
 }
 
 type joinView struct {
@@ -295,10 +312,11 @@ type roomView struct {
 	Players        []Player
 	GameBody       template.HTML
 	LiveKick       bool
+	RestorePending bool
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
-	data, err := l.boardData(r.Context())
+	data, err := l.boardView(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
@@ -322,12 +340,39 @@ func (l *Lobby) fallbackJoinURL(r *http.Request) string {
 	return l.joinURL(r)
 }
 
+func (l *Lobby) boardView(r *http.Request) (boardData, error) {
+	data, err := l.boardData(r.Context())
+	if err != nil {
+		return boardData{}, err
+	}
+	adminOnly, err := l.adminOnlyBoard(r.Context())
+	if err != nil {
+		return boardData{}, err
+	}
+	if adminOnly && !l.hasAdminCookie(r) {
+		data.AdminLocked = true
+		data.Seated = nil
+		data.Waiting = nil
+		data.SeatedCount = 0
+		data.AudienceCount = 0
+		data.RestorePending = false
+		data.RestoreNames = nil
+		return data, nil
+	}
+	data.RestorePending = l.RestorePending()
+	return data, nil
+}
+
 func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	seated, err := l.listPlayers(ctx, `seated = 1 ORDER BY claimed_host DESC, rowid`)
 	if err != nil {
 		return boardData{}, err
 	}
 	waiting, err := l.listPlayers(ctx, `waiting = 1 ORDER BY wait_seq`)
+	if err != nil {
+		return boardData{}, err
+	}
+	everyone, err := l.listPlayers(ctx, `1 = 1 ORDER BY rowid`)
 	if err != nil {
 		return boardData{}, err
 	}
@@ -347,6 +392,10 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 	if err != nil {
 		return boardData{}, err
 	}
+	names := make([]string, 0, len(everyone))
+	for _, p := range everyone {
+		names = append(names, p.DisplayName)
+	}
 	return boardData{
 		Chrome:        chrome,
 		Open:          open,
@@ -355,6 +404,7 @@ func (l *Lobby) boardData(ctx context.Context) (boardData, error) {
 		AudienceCount: audience,
 		Seated:        seated,
 		Waiting:       waiting,
+		RestoreNames:  names,
 	}, nil
 }
 
@@ -415,6 +465,9 @@ func (l *Lobby) PlayerFromRequest(r *http.Request) (Player, bool, error) {
 }
 
 func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	if _, ok, err := l.PlayerFromRequest(r); err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
@@ -476,6 +529,9 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -643,6 +699,9 @@ func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	if err := l.setRoomOpen(r.Context(), true); err != nil {
 		http.Error(w, "Could not open the room.", http.StatusInternalServerError)
 		return
@@ -653,6 +712,9 @@ func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
 
 func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
+		return
+	}
+	if l.refusePending(w) {
 		return
 	}
 	if err := l.setRoomOpen(r.Context(), false); err != nil {
@@ -740,6 +802,9 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
@@ -777,6 +842,9 @@ func (l *Lobby) reroll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
+	if ok && l.refusePending(w) {
+		return
+	}
 	name := strings.TrimSpace(r.PostFormValue("display_name"))
 	if ok {
 		if err := l.setAvatarSeed(r.Context(), player.ID, seed); err != nil {
@@ -812,6 +880,9 @@ func (l *Lobby) setAvatarSeed(ctx context.Context, playerID, seed string) error 
 }
 
 func (l *Lobby) waitToggle(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -1273,6 +1344,7 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE room_state ADD COLUMN protect_host INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE room_state ADD COLUMN seat_disconnected_waiters INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN reset_ready TEXT NOT NULL DEFAULT 'switch'`,
+		`ALTER TABLE room_state ADD COLUMN admin_only_board INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

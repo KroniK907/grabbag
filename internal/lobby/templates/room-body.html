@@ -7,6 +7,9 @@
   hx-swap="outerHTML"
 >
   <div class="ui-you">{{.DisplayName}}</div>
+  {{if .RestorePending}}
+  <p class="ui-alert" role="status">Host is deciding whether to keep this room. Ready waits until they Keep.</p>
+  {{end}}
   <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
   <form method="post" action="/lobby/reroll">
     <button class="ui-btn" type="submit">Reroll face</button>

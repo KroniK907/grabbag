@@ -302,6 +302,10 @@ func TestRoomFillPersistsAcrossReopen(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	handler, room = lobbyHandler(t, db)
+	keep := lobbyRequest(t, handler, http.MethodPost, "/settings/keep", nil, operatorCookie())
+	if keep.Code != http.StatusSeeOther {
+		t.Fatalf("Keep after reopen = %d %q", keep.Code, keep.Body.String())
+	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	assertBoardLists(t, board, []string{"Host", "First", "Second"}, nil)
 

@@ -37,7 +37,19 @@ func (rt *runtime) phone(w http.ResponseWriter, r *http.Request) {
 	rt.wrapPhone(w, r, buf.Bytes())
 }
 
+func (rt *runtime) refusePending(w http.ResponseWriter) bool {
+	if rt.room == nil || !rt.room.RestorePending() {
+		return false
+	}
+	http.Error(w, "Keep or clear the room first.", http.StatusConflict)
+	return true
+}
+
 func (rt *runtime) board(w http.ResponseWriter, r *http.Request, joinURL string) {
+	if rt.room.RestorePending() {
+		rt.room.Board(w, r, joinURL)
+		return
+	}
 	rt.mu.Lock()
 	started, game := rt.started, rt.game
 	rt.mu.Unlock()
@@ -50,6 +62,9 @@ func (rt *runtime) board(w http.ResponseWriter, r *http.Request, joinURL string)
 
 func (rt *runtime) postLoad(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
+		return
+	}
+	if rt.refusePending(w) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -71,6 +86,9 @@ func (rt *runtime) postStart(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
 		return
 	}
+	if rt.refusePending(w) {
+		return
+	}
 	if err := rt.start(r.Context()); err != nil {
 		if err == errStartRefused || err == errNotLoaded {
 			http.Error(w, "Start needs a loaded game and at least one seated player.", http.StatusConflict)
@@ -86,6 +104,9 @@ func (rt *runtime) postStop(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
 		return
 	}
+	if rt.refusePending(w) {
+		return
+	}
 	if err := rt.stop(r.Context(), r.PostFormValue("graceful") == "1"); err != nil {
 		http.Error(w, "Could not stop.", http.StatusInternalServerError)
 		return
@@ -95,6 +116,9 @@ func (rt *runtime) postStop(w http.ResponseWriter, r *http.Request) {
 
 func (rt *runtime) postShutdown(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
+		return
+	}
+	if rt.refusePending(w) {
 		return
 	}
 	if err := rt.shutdown(r.Context()); err != nil {
@@ -108,6 +132,9 @@ func (rt *runtime) postPause(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
 		return
 	}
+	if rt.refusePending(w) {
+		return
+	}
 	if err := rt.pause(); err != nil {
 		http.Error(w, "Could not pause.", http.StatusConflict)
 		return
@@ -117,6 +144,9 @@ func (rt *runtime) postPause(w http.ResponseWriter, r *http.Request) {
 
 func (rt *runtime) postResume(w http.ResponseWriter, r *http.Request) {
 	if !rt.requireAdmin(w, r) {
+		return
+	}
+	if rt.refusePending(w) {
 		return
 	}
 	if err := rt.resume(); err != nil {

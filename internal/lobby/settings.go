@@ -81,6 +81,11 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		view.GameIDs = extra.GameIDs
 		view.LoadedGameID = extra.LoadedGameID
 	}
+	if l.RestorePending() {
+		view.RestorePending = true
+		view.ShowStart = false
+		view.ShowReady = false
+	}
 	if !player.ClaimedHost || !l.hasAdminCookie(r) {
 		return view, nil
 	}
@@ -307,6 +312,9 @@ func (l *Lobby) cycleSeated(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	if err := l.rotateSeated(r.Context()); err != nil {
 		http.Error(w, "Could not cycle seated players.", http.StatusInternalServerError)
 		return
@@ -409,6 +417,10 @@ func (l *Lobby) setProtectHost(w http.ResponseWriter, r *http.Request) {
 	l.setBoolSetting(w, r, "protect_host", "Could not save protect-host.")
 }
 
+func (l *Lobby) setAdminOnlyBoard(w http.ResponseWriter, r *http.Request) {
+	l.setBoolSetting(w, r, "admin_only_board", "Could not save admin-only board.")
+}
+
 func (l *Lobby) setSeatDisconnectedWaiters(w http.ResponseWriter, r *http.Request) {
 	l.setBoolSetting(w, r, "seat_disconnected_waiters", "Could not save seat disconnected waiters.")
 }
@@ -487,6 +499,9 @@ func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil || !ok || !player.ClaimedHost {
 		http.Error(w, "Host phone required.", http.StatusForbidden)
@@ -506,6 +521,9 @@ func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
 
 func (l *Lobby) hostSit(w http.ResponseWriter, r *http.Request) {
 	if !l.requireAdmin(w, r) {
+		return
+	}
+	if l.refusePending(w) {
 		return
 	}
 	player, ok, err := l.PlayerFromRequest(r)
@@ -537,6 +555,9 @@ func (l *Lobby) makeHost(w http.ResponseWriter, r *http.Request) {
 	if !l.requireOperator(w, r) {
 		return
 	}
+	if l.refusePending(w) {
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
@@ -559,6 +580,9 @@ func (l *Lobby) makeHost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -631,6 +655,8 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 		SeatCapError:       seatErr,
 		CanMakeHost:        canMake,
 		Players:            players,
+		RestorePending:     l.RestorePending(),
+		AdminOnlyBoard:     row.adminOnlyBoard,
 	}
 	autoStart, err := l.AutoStart(ctx)
 	if err != nil {
@@ -1025,19 +1051,22 @@ type roomSettings struct {
 	disconnectAfter  int
 	kickTimeout      int
 	resetReady       string
+	adminOnlyBoard   bool
 }
 
 func readRoomSettings(ctx context.Context, q queryer) (roomSettings, error) {
 	var row roomSettings
-	var cycle, fill, stdout, file, protect, seatDisc int
+	var cycle, fill, stdout, file, protect, seatDisc, adminOnly int
 	err := q.QueryRowContext(
 		ctx,
 		`SELECT advertised_hostname, seat_cap, cycle_seats, fill_empty, log_stdout, log_file,
-		        protect_host, seat_disconnected_waiters, disconnect_after, kick_timeout, reset_ready
+		        protect_host, seat_disconnected_waiters, disconnect_after, kick_timeout, reset_ready,
+		        admin_only_board
 		 FROM room_state WHERE id = 1`,
 	).Scan(
 		&row.hostname, &row.seatCap, &cycle, &fill, &stdout, &file,
 		&protect, &seatDisc, &row.disconnectAfter, &row.kickTimeout, &row.resetReady,
+		&adminOnly,
 	)
 	if err != nil {
 		return roomSettings{}, fmt.Errorf("lobby: read room settings: %w", err)
@@ -1051,6 +1080,7 @@ func readRoomSettings(ctx context.Context, q queryer) (roomSettings, error) {
 	row.logFile = file != 0
 	row.protectHost = protect != 0
 	row.seatDisconnected = seatDisc != 0
+	row.adminOnlyBoard = adminOnly != 0
 	switch row.resetReady {
 	case ResetReadyEvery, ResetReadySwitch, ResetReadyNever:
 	default:
@@ -1061,6 +1091,14 @@ func readRoomSettings(ctx context.Context, q queryer) (roomSettings, error) {
 
 type queryer interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+func (l *Lobby) adminOnlyBoard(ctx context.Context) (bool, error) {
+	row, err := readRoomSettings(ctx, l.sql)
+	if err != nil {
+		return false, err
+	}
+	return row.adminOnlyBoard, nil
 }
 
 func readSeatCap(ctx context.Context, q queryer) (int, error) {

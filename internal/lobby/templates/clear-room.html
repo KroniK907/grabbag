@@ -1,0 +1,12 @@
+{{define "clear-room-modal"}}
+<div id="clear-room-modal" class="ui-modal" hidden>
+  <div class="ui-card">
+    <h2>Clear room</h2>
+    <p>Clear the room? Everyone rejoins. Settings and game data stay.</p>
+    <button class="ui-btn" type="button" onclick="document.getElementById('clear-room-modal').hidden = true">Cancel</button>
+    <form method="post" action="/settings/clear-room">
+      <button class="ui-btn ui-btn-danger" type="submit">Clear room</button>
+    </form>
+  </div>
+</div>
+{{end}}

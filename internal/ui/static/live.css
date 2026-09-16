@@ -156,6 +156,18 @@ button {
   display: none;
 }
 
+.keep-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--ui-overlay);
+  color: var(--ui-card-fg);
+  text-align: center;
+}
+
 .ui-spin {
   width: 64px;
   height: 64px;
@@ -774,7 +786,7 @@ button {
   position: absolute;
   top: 18px;
   right: 18px;
-  z-index: 5;
+  z-index: 50;
   width: 48px;
   height: 48px;
   border-radius: 50%;

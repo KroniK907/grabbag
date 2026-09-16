@@ -53,6 +53,9 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 		PhoneExtras:     rt.phoneExtras,
 		StartRound:      rt.start,
 		AfterDisconnect: rt.afterDisconnect,
+		AfterRestore: func(ctx context.Context, _ bool) {
+			rt.restore(ctx)
+		},
 	})
 	if err != nil {
 		return nil, nil, err
@@ -64,7 +67,9 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 		return nil, nil, err
 	}
 	rt.log.SetSinks(row.stdout, row.file)
-	rt.restore(context.Background())
+	if !room.RestorePending() {
+		rt.restore(context.Background())
+	}
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))

@@ -103,7 +103,7 @@ func (l *Lobby) TickLiveness(ctx context.Context, now time.Time) error {
 	if err != nil {
 		return err
 	}
-	kickOK := now.Sub(l.live.startedAt) >= StartupDebounce
+	kickOK := !l.RestorePending() && now.Sub(l.live.startedAt) >= StartupDebounce
 	for _, p := range players {
 		if err := l.tickPlayer(ctx, p, now, settings, round, kickOK); err != nil {
 			return err
@@ -189,6 +189,9 @@ func (l *Lobby) heartbeat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) readyToggle(w http.ResponseWriter, r *http.Request) {
+	if l.refusePending(w) {
+		return
+	}
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
@@ -216,7 +219,7 @@ func (l *Lobby) readyAllowed(r *http.Request, player Player) bool {
 }
 
 func (l *Lobby) maybeAutoStart(ctx context.Context) {
-	if l.startRound == nil {
+	if l.startRound == nil || l.RestorePending() {
 		return
 	}
 	on, err := l.AutoStart(ctx)
@@ -350,6 +353,15 @@ func (l *Lobby) clearAllReady() bool {
 func (l *Lobby) forgetReady(id string) {
 	l.live.mu.Lock()
 	delete(l.live.ready, id)
+	l.live.mu.Unlock()
+}
+
+func (l *Lobby) resetLivePlayers() {
+	l.live.mu.Lock()
+	l.live.ready = map[string]bool{}
+	l.live.lastBeat = map[string]time.Time{}
+	l.live.dimmedAt = map[string]time.Time{}
+	l.live.rtt = map[string]time.Duration{}
 	l.live.mu.Unlock()
 }
 
