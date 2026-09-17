@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,7 +21,7 @@ import (
 
 const (
 	id         = "apples"
-	cssVersion = "picker-1"
+	cssVersion = "match-1"
 	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
 	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )
@@ -42,6 +43,12 @@ type Game struct {
 	importErr  string
 	fetchURL   string
 	httpClient *http.Client
+	match      *matchState
+	stopTick   chan struct{}
+	rng        *rand.Rand
+	now        func() time.Time
+	needFinish bool
+	needPause  bool
 }
 
 // New constructs an unloaded Apples package.
@@ -88,22 +95,45 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /select-all", g.postSelectAll)
 	mux.HandleFunc("POST /select-none", g.postSelectNone)
 	mux.HandleFunc("POST /import-official", g.postImportOfficial)
+	mux.HandleFunc("POST /hand-size", g.postHandSize)
+	mux.HandleFunc("POST /win-score", g.postWinScore)
+	mux.HandleFunc("POST /win-by-rounds", g.postWinByRounds)
+	mux.HandleFunc("POST /round-limit", g.postRoundLimit)
+	mux.HandleFunc("POST /winner-points", g.postWinnerPoints)
+	mux.HandleFunc("POST /fav-1", g.postFav1)
+	mux.HandleFunc("POST /fav-2", g.postFav2)
+	mux.HandleFunc("POST /fav-3", g.postFav3)
+	mux.HandleFunc("POST /multiplier", g.postMultiplier)
+	mux.HandleFunc("POST /prompt-mode", g.postPromptMode)
+	mux.HandleFunc("POST /bot-count", g.postBotCount)
+	mux.HandleFunc("POST /voting", g.postVoting)
+	mux.HandleFunc("POST /live-counts", g.postLiveCounts)
+	mux.HandleFunc("POST /timer-auto-draw", g.postAutoDraw)
+	mux.HandleFunc("POST /timer-submit", g.postSubmitSec)
+	mux.HandleFunc("POST /timer-between", g.postBetweenSec)
+	mux.HandleFunc("POST /timer-judge-pick", g.postJudgePickSec)
+	mux.HandleFunc("POST /wildcard-cap", g.postWildcardCap)
+	mux.HandleFunc("POST /wildcard-save", g.postWildcardSave)
+	mux.HandleFunc("POST /wildcard-favorites", g.postWildcardFavorites)
+	mux.HandleFunc("POST /wildcard-deal-previous", g.postDealPrevious)
+	mux.HandleFunc("POST /wildcard-duplicate", g.postDuplicateBlock)
+	mux.HandleFunc("POST /wildcard-banned", g.postBanned)
+	mux.HandleFunc("POST /wildcard-show-word", g.postShowWord)
+	mux.HandleFunc("POST /wildcard-journal-delay", g.postJournalDelay)
 	return mux
 }
 
-// Start marks the match running so picker toggles freeze.
+// Start deals hands, fills bots, and freezes picker toggles.
 func (g *Game) Start(h games.Helper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.helper = h
-	g.started = true
-	g.paused = false
-	return nil
+	return g.beginMatchLocked(h)
 }
 
-// Board is a stub TV document until the round-loop task.
+// Board is the full-bleed TV document after Start.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board.html", g.chromeView("Apples for Humanity"), http.StatusOK)
+	g.render(w, "board.html", g.boardView(), http.StatusOK)
 }
 
 // BoardButtons publishes Deck Library on the Lobby rail after Load.
@@ -115,15 +145,29 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	}}
 }
 
-// Phone is a stub seated-phone body until the round-loop task.
+// Phone is the seated, judge, audience, or wait-list column. Host currently
+// only mounts this for seated players (CoreHost #59).
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "phone.html", g.chromeView("Apples for Humanity"), http.StatusOK)
+	g.render(w, "phone.html", g.phoneView(r), http.StatusOK)
 }
 
 // Play mounts the Deck Library GET page and game CSS.
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /picker", g.getPicker)
+	mux.HandleFunc("GET /partials/board", g.getBoardPartial)
+	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
+	mux.HandleFunc("POST /draw", g.postDraw)
+	mux.HandleFunc("POST /skip", g.postSkip)
+	mux.HandleFunc("POST /choose-prompt", g.postChoosePrompt)
+	mux.HandleFunc("POST /slot", g.postSlot)
+	mux.HandleFunc("POST /unslot", g.postUnslot)
+	mux.HandleFunc("POST /discard", g.postDiscard)
+	mux.HandleFunc("POST /lock", g.postLock)
+	mux.HandleFunc("POST /wildcard-draft", g.postWildcardDraft)
+	mux.HandleFunc("POST /reveal", g.postReveal)
+	mux.HandleFunc("POST /vote", g.postVote)
+	mux.HandleFunc("POST /confirm", g.postConfirm)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("apples: embedded static directory is missing")
@@ -137,6 +181,9 @@ func (g *Game) Pause() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = true
+	if g.match != nil {
+		g.freezeTimerLocked(g.match)
+	}
 	return nil
 }
 
@@ -145,6 +192,12 @@ func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
+	if g.match != nil {
+		g.thawTimerLocked(g.match)
+	}
+	if g.started {
+		g.startTickerLocked()
+	}
 	return nil
 }
 
@@ -152,8 +205,10 @@ func (g *Game) Resume() error {
 func (g *Game) Stop() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.stopTickerLocked()
 	g.started = false
 	g.paused = false
+	g.match = nil
 	return nil
 }
 
@@ -161,10 +216,12 @@ func (g *Game) Stop() error {
 func (g *Game) Shutdown() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.stopTickerLocked()
 	g.helper = nil
 	g.started = false
 	g.paused = false
 	g.importErr = ""
+	g.match = nil
 	return nil
 }
 
@@ -185,8 +242,8 @@ func (g *Game) chromeView(title string) pageView {
 		Chrome:  ui.Chrome{Title: title, Theme: ui.DefaultTheme},
 		GameCSS: "/play/static/game.css?v=" + cssVersion,
 	}
-	if h := g.helperNow(); h != nil {
-		view.Chrome.Theme = ui.NormalizeTheme(h.Theme())
+	if g.helper != nil {
+		view.Chrome.Theme = ui.NormalizeTheme(g.helper.Theme())
 	}
 	return view
 }
@@ -216,7 +273,7 @@ func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "settings.html", g.pickerView(pickerErr{}), http.StatusOK)
+	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 }
 
 func (g *Game) postPack(w http.ResponseWriter, r *http.Request) {
@@ -288,8 +345,9 @@ func (g *Game) selectAll(w http.ResponseWriter, r *http.Request, on bool) {
 		return
 	}
 	cat := scanDataDir(h.DataDir())
-	settings := matchSettings{}
-	settings.setAll(cat, on)
+	settings, ok := g.loadSettings(h)
+	settings = reconcileSettings(settings, ok, cat)
+	settings.setAllEnabled(cat, on)
 	if err := g.saveSettings(h, settings); err != nil {
 		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: "Could not save pack enablement."}), http.StatusOK)
 		return
@@ -394,52 +452,6 @@ func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
 	return h.KVSet(kvMatchSettings, raw)
 }
 
-func (g *Game) pickerView(rowErr pickerErr) pickerView {
-	view := pickerView{
-		pageView:     g.chromeView("Deck Library"),
-		RowError:     rowErr.Msg,
-		ErrorLibrary: rowErr.LibraryID,
-		ErrorPack:    rowErr.PackID,
-	}
-	h := g.helperNow()
-	if h == nil {
-		return view
-	}
-	view.DataDir = h.DataDir()
-	view.Frozen = g.matchFrozen()
-	g.mu.Lock()
-	if view.RowError == "" {
-		view.RowError = g.importErr
-	}
-	g.mu.Unlock()
-	cat := scanDataDir(h.DataDir())
-	settings, ok := g.loadSettings(h)
-	settings = reconcileSettings(settings, ok, cat)
-	for _, lib := range cat.Libraries {
-		item := libraryView{
-			ID:          lib.ID,
-			Name:        lib.Name,
-			Description: lib.Description,
-			License:     lib.License,
-			Filename:    lib.Source,
-		}
-		for _, pack := range lib.Packs {
-			item.Packs = append(item.Packs, packView{
-				LibraryID:   lib.ID,
-				ID:          pack.ID,
-				Name:        pack.Name,
-				Description: pack.Description,
-				Enabled:     settings.packOn(lib.ID, pack.ID),
-				PromptCount: len(pack.Prompts),
-				AnswerCount: len(pack.Answers),
-			})
-		}
-		view.Libraries = append(view.Libraries, item)
-	}
-	view.Failed = cat.Failed
-	return view
-}
-
 func packExists(cat catalog, libraryID, packID string) bool {
 	for _, lib := range cat.Libraries {
 		if lib.ID != libraryID {
@@ -472,6 +484,7 @@ type pickerView struct {
 	RowError     string
 	ErrorLibrary string
 	ErrorPack    string
+	Shortage     []string
 	Libraries    []libraryView
 	Failed       []failedFile
 }

@@ -216,6 +216,7 @@ func TestTogglePackPersistsUntilStarted(t *testing.T) {
 	page := picker(t, g)
 	assertCheckbox(t, page, "wildcard", "wildcard", true)
 
+	h.sit("p1", "Pat")
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
@@ -498,21 +499,44 @@ func packSlice(page, libraryID, packID, open, close string) string {
 }
 
 type fakeHelper struct {
-	dir   string
-	admin bool
-	kv    map[string][]byte
+	dir       string
+	admin     bool
+	kv        map[string][]byte
+	seated    []games.Player
+	waiting   []games.Player
+	audience  []games.Player
+	players   map[string]games.Player
+	published []string
+	finishN   int
+	pauseN    int
 }
 
 func newFakeHelper(dir string, admin bool) *fakeHelper {
-	return &fakeHelper{dir: dir, admin: admin, kv: map[string][]byte{}}
+	return &fakeHelper{dir: dir, admin: admin, kv: map[string][]byte{}, players: map[string]games.Player{}}
 }
 
-func (h *fakeHelper) Seated() []games.Player             { return nil }
-func (h *fakeHelper) Waiting() []games.Player            { return nil }
-func (h *fakeHelper) Audience() []games.Player           { return nil }
-func (h *fakeHelper) Player(string) (games.Player, bool) { return games.Player{}, false }
-func (h *fakeHelper) PlayerFromRequest(*http.Request) (games.Player, bool, error) {
-	return games.Player{}, false, nil
+func (h *fakeHelper) sit(id, name string) {
+	p := games.Player{ID: id, DisplayName: name, Seated: true}
+	h.seated = append(h.seated, p)
+	h.players[id] = p
+}
+
+func (h *fakeHelper) Seated() []games.Player  { return append([]games.Player(nil), h.seated...) }
+func (h *fakeHelper) Waiting() []games.Player { return append([]games.Player(nil), h.waiting...) }
+func (h *fakeHelper) Audience() []games.Player {
+	return append([]games.Player(nil), h.audience...)
+}
+func (h *fakeHelper) Player(id string) (games.Player, bool) {
+	p, ok := h.players[id]
+	return p, ok
+}
+func (h *fakeHelper) PlayerFromRequest(r *http.Request) (games.Player, bool, error) {
+	id := r.Header.Get("X-Player")
+	if id == "" {
+		return games.Player{}, false, nil
+	}
+	p, ok := h.players[id]
+	return p, ok, nil
 }
 func (h *fakeHelper) DataDir() string { return h.dir }
 func (h *fakeHelper) KVGet(key string) ([]byte, bool, error) {
@@ -523,10 +547,12 @@ func (h *fakeHelper) KVSet(key string, value []byte) error {
 	h.kv[key] = append([]byte(nil), value...)
 	return nil
 }
-func (h *fakeHelper) Finish()                     {}
-func (h *fakeHelper) Pause()                      {}
-func (h *fakeHelper) Resume()                     {}
-func (h *fakeHelper) Publish(string)              {}
+func (h *fakeHelper) Finish() { h.finishN++ }
+func (h *fakeHelper) Pause()  { h.pauseN++ }
+func (h *fakeHelper) Resume() {}
+func (h *fakeHelper) Publish(name string) {
+	h.published = append(h.published, name)
+}
 func (h *fakeHelper) Log(string)                  {}
 func (h *fakeHelper) Theme() string               { return ui.DefaultTheme }
 func (h *fakeHelper) HasAdmin(*http.Request) bool { return h.admin }

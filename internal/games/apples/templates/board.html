@@ -1,8 +1,56 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 <link rel="stylesheet" href="{{.GameCSS}}">
-<article class="apples-board">
-  <h1 class="display">Apples for Humanity</h1>
-  <p>The match UI is not in this slice. Use Stop, then Deck Library, to change packs.</p>
-</article>
+{{template "board-frame" .}}
 {{template "ui-end"}}
+
+{{define "board-frame"}}
+<div
+  id="apples-board"
+  class="apples-tv{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{if .Paused}}<div class="apples-dim">Paused</div>{{end}}
+  {{if .Sudden}}
+  <div class="apples-win"><div class="apples-win-card"><h1 class="display">Tie breaker</h1><p>Leaders play sudden death.</p></div></div>
+  {{else if .Over}}
+  <div class="apples-win"><div class="apples-win-card"><h1 class="display">Winner</h1><p>{{.WinnerName}}</p></div></div>
+  {{else}}
+  {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
+  {{if .Prompt}}
+    {{if and .FaceDown (eq .Phase "choose")}}
+    <div class="apples-prompt down">Judge, pick a prompt</div>
+    {{else}}
+    <div class="apples-prompt">{{.Prompt.Text}}</div>
+    {{end}}
+  {{else}}
+    <div class="apples-prompt down">Judge, draw</div>
+  {{end}}
+  <div class="apples-slots">
+    {{range .Packets}}
+    <article class="apples-slot{{if not .Revealed}} down{{end}}{{if .Winner}} winner{{end}}">
+      {{if .Revealed}}
+        {{range .Cards}}<p>{{.Text}}</p>{{end}}
+        {{if $.Over}}{{else if .Winner}}<p class="apples-chip">Winner</p>{{end}}
+        {{if ge .ShowVote 0}}<p>{{.ShowVote}}</p>{{end}}
+        {{if or .Winner $.NamesShown}}<p>{{.Name}}</p>{{end}}
+      {{else}}
+        <p>?</p>
+      {{end}}
+    </article>
+    {{end}}
+  </div>
+  {{end}}
+  <div class="apples-roster">
+    {{range .Roster}}
+    <div class="apples-player{{if .Judge}} judge{{end}}">
+      <strong>{{.Name}}</strong>
+      <span>{{.Score}}</span>
+      {{if .Judge}}<span>Judge</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

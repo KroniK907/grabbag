@@ -1,3 +1,124 @@
-<div class="apples-phone">
-  <p>Wait for the host. The play round is not in this slice.</p>
+<link rel="stylesheet" href="{{.GameCSS}}">
+{{template "phone-frame" .}}
+
+{{define "phone-frame"}}
+<div
+  id="apples-phone"
+  class="apples-phone{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/phone"
+  hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{if .Paused}}<p class="apples-dim">Paused</p>{{end}}
+  {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
+  {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
+
+  {{if eq .Role "judge"}}
+    {{if .CanDraw}}
+      <p>Judge, draw</p>
+      <form hx-post="/play/draw" hx-swap="outerHTML" hx-target="#apples-phone">
+        <button class="ui-btn" type="submit">Draw</button>
+      </form>
+    {{end}}
+    {{if eq .Phase "choose"}}
+      {{range .Choices}}
+      {{if .}}
+      <form hx-post="/play/choose-prompt" hx-swap="outerHTML" hx-target="#apples-phone">
+        <input type="hidden" name="prompt" value="{{.CardID}}">
+        <button class="ui-btn" type="submit">{{.Text}}</button>
+      </form>
+      {{end}}
+      {{end}}
+    {{end}}
+    {{if .Skip}}
+      <form hx-post="/play/skip" hx-swap="outerHTML" hx-target="#apples-phone">
+        <button class="ui-btn" type="submit">Skip</button>
+      </form>
+    {{end}}
+    {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{end}}
+    {{if .CanReveal}}
+      <form hx-post="/play/reveal" hx-swap="outerHTML" hx-target="#apples-phone">
+        <button class="ui-btn" type="submit">Reveal next</button>
+      </form>
+    {{end}}
+    {{range .Packets}}
+      {{if .Revealed}}
+      <form hx-post="/play/confirm" hx-swap="outerHTML" hx-target="#apples-phone">
+        <input type="hidden" name="winner" value="{{.ActorID}}">
+        <button class="ui-btn" type="submit" {{if not $.CanConfirm}}disabled{{end}}>{{range .Cards}}{{.Text}} {{end}}</button>
+      </form>
+      {{else}}
+      <p class="apples-slot down">?</p>
+      {{end}}
+    {{end}}
+  {{else if or (eq .Role "submit") (eq .Role "locked")}}
+    {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{end}}
+    <div class="apples-holes">
+      {{range .Holes}}
+      <div class="apples-slot">
+        {{if .Number}}<span>{{.Number}}</span>{{end}}
+        {{if .Card}}
+          <form hx-post="/play/unslot" hx-swap="outerHTML" hx-target="#apples-phone">
+            <input type="hidden" name="hole" value="{{.Index}}">
+            <button type="submit" {{if eq $.Role "locked"}}disabled{{end}}>{{.Card.Text}}</button>
+          </form>
+        {{else}}
+          <span class="apples-empty">Hole</span>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+    {{if eq .Role "submit"}}
+    <div class="apples-hand">
+      {{range .Hand}}
+      <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
+        <input type="hidden" name="card" value="{{.CardID}}">
+        <button type="submit">{{.Text}}</button>
+      </form>
+      {{end}}
+      {{if .Blank}}
+      <form hx-post="/play/wildcard-draft" hx-swap="outerHTML" hx-target="#apples-phone">
+        <label>Wildcard <span>{{.Remain}}</span>
+          <textarea name="text" maxlength="{{.Cap}}">{{.Draft}}</textarea>
+        </label>
+        <button type="submit">Done</button>
+      </form>
+      {{if .Draft}}
+      <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
+        <input type="hidden" name="card" value="{{.Blank.CardID}}">
+        <button type="submit">Use wildcard</button>
+      </form>
+      {{end}}
+      {{end}}
+      {{if .HasWildSlot}}
+      {{range .Hand}}
+      <form hx-post="/play/discard" hx-swap="outerHTML" hx-target="#apples-phone">
+        <input type="hidden" name="card" value="{{.CardID}}">
+        <button type="submit">Discard</button>
+      </form>
+      {{end}}
+      {{end}}
+    </div>
+    <form hx-post="/play/lock" hx-swap="outerHTML" hx-target="#apples-phone">
+      <button class="ui-btn" type="submit" {{if not .LockReady}}disabled{{end}}>{{.LockLabel}}</button>
+    </form>
+    {{end}}
+  {{else}}
+    {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{else}}<p>Wait for the judge.</p>{{end}}
+    {{range .Packets}}
+      {{if .Revealed}}
+        {{if $.CanVote}}
+        <form hx-post="/play/vote" hx-swap="outerHTML" hx-target="#apples-phone">
+          <input type="hidden" name="target" value="{{.ActorID}}">
+          <button type="submit" {{if .Own}}disabled{{end}}>{{range .Cards}}{{.Text}} {{end}}</button>
+        </form>
+        {{else}}
+        <article class="apples-slot{{if .Own}} own{{end}}">{{range .Cards}}<p>{{.Text}}</p>{{end}}</article>
+        {{end}}
+      {{else}}
+        <p class="apples-slot down">?</p>
+      {{end}}
+    {{end}}
+  {{end}}
 </div>
+{{end}}

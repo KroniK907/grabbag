@@ -22,6 +22,9 @@
     <div class="apples-head">
       <h1 class="display">Deck Library</h1>
     </div>
+    {{if .Shortage}}
+    {{range .Shortage}}<p class="apples-error">{{.}}</p>{{end}}
+    {{end}}
     {{if .Frozen}}
     <p class="apples-note">Match is running. Pack changes wait until the game ends.</p>
     {{end}}

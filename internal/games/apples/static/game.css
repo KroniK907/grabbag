@@ -117,8 +117,122 @@
 }
 
 .apples-phone {
-  padding: 12px;
+  padding: 12px 12px 72px;
+  display: grid;
+  gap: 10px;
   text-align: center;
+}
+
+.apples-tv {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(circle at 15% 10%, var(--ui-spot-a, #3a0a4a), transparent 38%),
+    radial-gradient(circle at 88% 75%, var(--ui-spot-b, #062a4a), transparent 40%),
+    var(--ui-board-bg);
+  position: relative;
+}
+
+.apples-prompt {
+  margin: 20px auto 12px;
+  width: min(980px, calc(100% - 32px));
+  padding: 18px 22px;
+  border: 4px solid var(--ui-accent-2);
+  border-radius: 16px;
+  background: var(--ui-card-bg);
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+  font-size: clamp(22px, 4vw, 44px);
+  text-align: center;
+}
+
+.apples-prompt.down,
+.apples-slot.down {
+  background: repeating-linear-gradient(45deg, #1c0a30 0 12px, #260d41 12px 24px);
+  color: var(--ui-accent-2);
+}
+
+.apples-slots,
+.apples-holes,
+.apples-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.apples-slot {
+  width: min(220px, 42vw);
+  min-height: 140px;
+  padding: 14px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 16px 16px 28px 8px;
+  background: var(--ui-card-bg);
+}
+
+.apples-slot.winner {
+  border-color: var(--ui-brand);
+}
+
+.apples-slot.own {
+  filter: grayscale(0.6);
+}
+
+.apples-roster {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  border-top: 4px solid var(--ui-brand);
+}
+
+.apples-player {
+  flex: 1 0 120px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--ui-card-bg);
+  text-align: center;
+}
+
+.apples-player.judge {
+  outline: 3px solid var(--ui-brand);
+}
+
+.apples-mult {
+  text-align: center;
+  color: var(--ui-brand);
+  font-weight: 900;
+}
+
+.apples-win {
+  display: grid;
+  place-items: center;
+  min-height: 60dvh;
+}
+
+.apples-win-card {
+  padding: 32px;
+  border: 6px solid var(--ui-brand);
+  border-radius: 24px;
+  background: var(--ui-card-bg);
+  text-align: center;
+}
+
+.apples-dim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000a;
+  color: #fff;
+  font-size: 42px;
+  z-index: 2;
+}
+
+.apples-phone.is-paused,
+.apples-tv.is-paused {
+  filter: brightness(0.7);
 }
 
 .display {
