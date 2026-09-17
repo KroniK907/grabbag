@@ -181,3 +181,37 @@
   </form>
 </details>
 {{end}}
+
+<h2>Burns</h2>
+{{if .BurnCorrupt}}
+<p class="ui-alert" role="alert">Burn list is unreadable</p>
+{{else if not .Burns}}
+<p>Nothing to unburn</p>
+{{else}}
+<details>
+  <summary>Recent burns</summary>
+  {{range .Burns}}
+  <form class="ui-row" method="post" action="/settings/game/unburn">
+    <input type="hidden" name="kind" value="{{.Kind}}">
+    <input type="hidden" name="text" value="{{.Text}}">
+    <span>{{.Kind}}: {{.Text}}</span>
+    <button class="ui-btn ui-btn-inline" type="submit">Unburn</button>
+  </form>
+  {{end}}
+</details>
+{{end}}
+{{if eq .Err.Field "unburn"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Discard</h2>
+{{if .DiscardCorrupt}}
+<p class="ui-alert" role="alert">Discard list is unreadable</p>
+{{else}}
+<form class="ui-row" method="post" action="/settings/game/reshuffle-on-unload">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.ReshuffleDiscardOnUnload}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Reshuffle discard on unload</label>
+</form>
+<form class="ui-row" method="post" action="/settings/game/reshuffle-discard">
+  <button class="ui-btn" type="submit" {{if or .Frozen .DiscardEmpty}}disabled{{end}}>Reshuffle discard pile</button>
+</form>
+{{end}}
+{{if eq .Err.Field "reshuffle-discard"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}

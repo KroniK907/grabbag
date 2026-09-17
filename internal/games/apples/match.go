@@ -129,9 +129,20 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 		return fmt.Errorf("Start needs a seated player.")
 	}
 	piles := buildPiles(cat, settings)
-	if msg := startShortage(piles, settings, len(seated)); msg != "" {
+	if g.burnCorrupt {
+		return fmt.Errorf("Burn list is unreadable")
+	}
+	if g.discardCorrupt {
+		return fmt.Errorf("Discard list is unreadable")
+	}
+	noBurn := filterBurns(piles, g.burns)
+	if msg := startShortage(noBurn, settings, len(seated)); msg != "" {
 		return fmt.Errorf("%s", msg)
 	}
+	if allDealableSpent(noBurn, settings.HandSize, g.played) {
+		g.wipeDiscardLocked()
+	}
+	unplayed := filterPlayed(noBurn, g.played)
 
 	m := &matchState{
 		Settings:        settings,
@@ -140,8 +151,8 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 		Actors:          map[string]*actor{},
 		Votes:           map[string]string{},
 		PhoneErr:        map[string]string{},
-		Prompts:         append([]playPrompt(nil), piles.Prompts...),
-		Answers:         append([]playCard(nil), piles.Answers...),
+		Prompts:         append([]playPrompt(nil), unplayed.Prompts...),
+		Answers:         append([]playCard(nil), unplayed.Answers...),
 		NextBot:         1,
 	}
 	g.rngLocked().Shuffle(len(m.Prompts), func(i, j int) { m.Prompts[i], m.Prompts[j] = m.Prompts[j], m.Prompts[i] })
@@ -164,12 +175,16 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 	for i := 0; i < needBots; i++ {
 		g.spawnBotLocked(m)
 	}
-	for _, p := range seated {
-		g.dealHumanLocked(m, m.Actors[p.ID], settings.HandSize)
-	}
 	g.match = m
 	g.started = true
 	g.paused = false
+	if g.openingOverlayLocked(m, len(seated)) {
+		g.startTickerLocked()
+		return nil
+	}
+	for _, p := range seated {
+		g.dealHumanLocked(m, m.Actors[p.ID], settings.HandSize)
+	}
 	g.armTimerLocked(m, "auto-draw", settings.AutoDrawSec)
 	g.startTickerLocked()
 	return nil
@@ -258,6 +273,12 @@ func (g *Game) syncRosterLocked(h games.Helper) {
 		return
 	}
 	for humans+bots < 3 {
+		if m.Phase == phaseSubmit && m.LivePrompt != nil {
+			pick := promptPick(m.LivePrompt)
+			if g.maybeOverlayDealLocked(m, pendingBotFill, 0, pick) {
+				break
+			}
+		}
 		bot := g.spawnBotLocked(m)
 		bots++
 		if m.Phase == phaseSubmit && m.LivePrompt != nil {
@@ -300,6 +321,15 @@ func (g *Game) drawLocked(m *matchState) error {
 	if m.Phase != phaseDrawWait && m.Phase != phaseSudden {
 		return fmt.Errorf("Draw waits until this round is over.")
 	}
+	g.rebuildUnplayedLocked(m)
+	needP, needA := g.drawNeedLocked(m)
+	kind := pendingDraw
+	if m.Settings.PromptMode == modeMulti {
+		kind = pendingMulti
+	}
+	if g.maybeOverlayDealLocked(m, kind, needP, needA) {
+		return nil
+	}
 	m.WinnerID = ""
 	m.NamesShown = false
 	m.Packets = nil
@@ -323,6 +353,8 @@ func (g *Game) drawLocked(m *matchState) error {
 		return fmt.Errorf("%s", startRefuseMsg)
 	}
 	m.LivePrompt = &p
+	g.recordPlayedLocked(p.LibraryID, p.CardID)
+	g.enqueueDiscardLocked()
 	g.enterSubmitLocked(m)
 	return nil
 }
@@ -339,14 +371,10 @@ func (g *Game) skipLocked(m *matchState) error {
 			return fmt.Errorf("Skip is gone after the first lock.")
 		}
 	}
-	p, ok := g.popDealablePromptLocked(m)
-	if !ok {
-		return fmt.Errorf("%s", startRefuseMsg)
+	if g.maybeOverlayDealLocked(m, pendingSkip, 1, 0) {
+		return nil
 	}
-	m.LivePrompt = &p
-	g.resetSubmitLocked(m)
-	g.enterSubmitLocked(m)
-	return nil
+	return g.skipAfterReshuffleLocked(m)
 }
 
 func (g *Game) choosePromptLocked(m *matchState, cardID string) error {
@@ -372,6 +400,8 @@ func (g *Game) choosePromptLocked(m *matchState, cardID string) error {
 	}
 	m.Choice = [2]*playPrompt{}
 	m.LivePrompt = keep
+	g.recordPlayedLocked(keep.LibraryID, keep.CardID)
+	g.enqueueDiscardLocked()
 	g.enterSubmitLocked(m)
 	return nil
 }

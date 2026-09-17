@@ -16,6 +16,10 @@ type settingsView struct {
 	WildcardAtStart bool
 	Err             settingsErr
 	VotingOff       bool
+	Burns           []burnEntry
+	BurnCorrupt     bool
+	DiscardCorrupt  bool
+	DiscardEmpty    bool
 }
 
 type holeView struct {
@@ -45,17 +49,19 @@ type rosterView struct {
 
 type boardView struct {
 	pageView
-	Paused     bool
-	Phase      string
-	Prompt     *playPrompt
-	FaceDown   bool
-	Multiplier string
-	Sudden     bool
-	Packets    []packetView
-	Roster     []rosterView
-	Over       bool
-	WinnerName string
-	NamesShown bool
+	Paused      bool
+	Phase       string
+	Prompt      *playPrompt
+	FaceDown    bool
+	Multiplier  string
+	Sudden      bool
+	Packets     []packetView
+	Roster      []rosterView
+	Over        bool
+	WinnerName  string
+	NamesShown  bool
+	Overlay     bool
+	OverlayCopy string
 }
 
 type phoneView struct {
@@ -85,6 +91,13 @@ type phoneView struct {
 	Multiplier  string
 	Sudden      bool
 	JudgeName   string
+	Help        bool
+	ClaimedHost bool
+	BurnFaces   []burnFace
+	BurnErr     string
+	Overlay     bool
+	OverlayCopy string
+	OverlayYes  bool
 }
 
 func (g *Game) currentSettings() matchSettings {
@@ -106,7 +119,11 @@ func (g *Game) shortageNow() []string {
 	cat := scanDataDir(h.DataDir())
 	piles := buildPiles(cat, s)
 	n := len(h.Seated())
-	return shortageLines(piles, s, n, false)
+	g.mu.Lock()
+	noBurn := filterBurns(piles, g.burns)
+	help := burnedWouldHelp(piles, noBurn, s, n)
+	g.mu.Unlock()
+	return shortageLines(noBurn, s, n, help)
 }
 
 func (g *Game) settingsView(rowErr settingsErr) settingsView {
@@ -121,6 +138,12 @@ func (g *Game) settingsView(rowErr settingsErr) settingsView {
 		VotingOff:       s.Voting == voteOff,
 	}
 	g.mu.Lock()
+	view.BurnCorrupt = g.burnCorrupt
+	view.DiscardCorrupt = g.discardCorrupt
+	view.DiscardEmpty = len(g.played) == 0
+	if !g.burnCorrupt {
+		view.Burns = g.lastBurns(10)
+	}
 	if g.match != nil {
 		view.WildcardAtStart = g.match.WildcardAtStart
 		view.WildcardEnabled = view.WildcardEnabled || g.match.WildcardAtStart
@@ -161,6 +184,13 @@ func (g *Game) boardViewLocked() boardView {
 			view.WinnerName = a.Name
 		}
 	}
+	if g.overlay != "" {
+		view.Overlay = true
+		view.OverlayCopy = overlayTVCopy
+		if g.overlayTooSmall {
+			view.OverlayCopy = overlayFailCopy
+		}
+	}
 	view.Packets = g.packetViewsLocked(m, "", true)
 	for _, a := range m.Actors {
 		view.Roster = append(view.Roster, rosterView{
@@ -199,6 +229,19 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	view.Choices = []*playPrompt{m.Choice[0], m.Choice[1]}
 	view.Sudden = m.Phase == phaseSudden
 	view.Error = m.PhoneErr[p.ID]
+	view.Help = true
+	view.ClaimedHost = p.ClaimedHost
+	view.BurnErr = g.burnErr
+	for _, f := range g.burnSnap {
+		f.Checked = g.burnChecks[f.Kind+"\x00"+f.Text]
+		view.BurnFaces = append(view.BurnFaces, f)
+	}
+	if g.overlay != "" {
+		view.Overlay = true
+		copy, yes := overlayCopy(p.ClaimedHost, g.overlayTooSmall)
+		view.OverlayCopy = copy
+		view.OverlayYes = yes
+	}
 	if a := m.Actors[m.JudgeID]; a != nil {
 		view.JudgeName = a.Name
 	}

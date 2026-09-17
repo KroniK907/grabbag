@@ -22,7 +22,20 @@ func (g *Game) lockLocked(m *matchState, id string) error {
 		return fmt.Errorf("%d of %d", filledCount(a.Holes), pick)
 	}
 	a.Locked = true
+	if a.Discard != nil && !a.Discard.Blank {
+		g.recordPlayedLocked(a.Discard.LibraryID, a.Discard.CardID)
+	}
+	for _, c := range holeCards(a.Holes) {
+		if c.Blank {
+			continue
+		}
+		if c.Wildcard {
+			continue
+		}
+		g.recordPlayedLocked(c.LibraryID, c.CardID)
+	}
 	a.Discard = nil
+	g.enqueueDiscardLocked()
 	g.recordPacketLocked(m, a)
 	g.maybeRevealLocked(m)
 	return nil
@@ -79,6 +92,7 @@ func (g *Game) revealNextLocked(m *matchState) error {
 		}
 		if all {
 			g.armTimerLocked(m, "judge-pick", m.Settings.JudgePickSec)
+			g.snapshotBurnDrawerLocked(m)
 		} else {
 			g.armTimerLocked(m, "between-reveals", m.Settings.BetweenRevealSec)
 		}
@@ -153,6 +167,8 @@ func (g *Game) confirmLocked(h games.Helper, m *matchState, winnerID string) err
 	g.saveWildcardsLocked(h, m, winnerID)
 	g.clearTimerLocked(m)
 	m.Round++
+	gen := g.enqueueDiscardLocked()
+	g.waitDiscardLocked(gen)
 	return g.afterConfirmLocked(h, m)
 }
 

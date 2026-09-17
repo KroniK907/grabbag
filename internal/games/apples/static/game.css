@@ -235,6 +235,76 @@
   filter: brightness(0.7);
 }
 
+.apples-help {
+  position: relative;
+  z-index: 5;
+  justify-self: start;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ui-accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.apples-reshuffle {
+  position: absolute;
+  inset: 0 0 72px 0;
+  display: grid;
+  place-items: center;
+  background: #000a;
+  z-index: 3;
+}
+
+.apples-reshuffle-panel,
+.apples-reshuffle-sheet {
+  padding: 28px;
+  border: 4px solid var(--ui-brand);
+  border-radius: 18px;
+  background: var(--ui-card-bg);
+  text-align: center;
+  z-index: 4;
+}
+
+.apples-reshuffle-sheet {
+  position: absolute;
+  inset: 48px 0 0 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  background: var(--ui-board-bg);
+  z-index: 4;
+}
+
+.apples-howto {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 28px 18px 64px;
+}
+
+.apples-howto-bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  background: var(--ui-board-bg);
+  z-index: 6;
+}
+
+.apples-howto-scroll {
+  text-align: left;
+}
+
+.apples-burn {
+  text-align: left;
+}
+
 .display {
   font-family: var(--ui-font-display);
   letter-spacing: 0.04em;

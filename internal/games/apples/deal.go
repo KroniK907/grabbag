@@ -99,6 +99,10 @@ func startShortage(piles enabledPiles, settings matchSettings, seatedHumans int)
 	return ""
 }
 
+func burnedWouldHelp(raw, burned enabledPiles, settings matchSettings, seatedHumans int) bool {
+	return startShortage(burned, settings, seatedHumans) != "" && startShortage(raw, settings, seatedHumans) == ""
+}
+
 func shortageLines(piles enabledPiles, settings matchSettings, seatedHumans int, burnedWouldHelp bool) []string {
 	if startShortage(piles, settings, seatedHumans) == "" {
 		return nil

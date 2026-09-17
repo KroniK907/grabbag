@@ -9,6 +9,22 @@
   hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
+  {{if .Help}}
+  <a class="apples-help" href="/play/howto-sheet" hx-get="/play/howto-sheet" hx-target="#apples-phone" hx-swap="outerHTML" aria-label="How to play">?</a>
+  {{end}}
+  {{if .Overlay}}
+  <div class="apples-reshuffle-sheet">
+    <p>{{.OverlayCopy}}</p>
+    {{if .OverlayYes}}
+    <form hx-post="/play/reshuffle-yes" hx-swap="outerHTML" hx-target="#apples-phone">
+      <button class="ui-btn" type="submit">Yes</button>
+    </form>
+    <form hx-post="/play/end-game" hx-swap="outerHTML" hx-target="#apples-phone">
+      <button class="ui-btn" type="submit">End game</button>
+    </form>
+    {{end}}
+  </div>
+  {{else}}
   {{if .Paused}}<p class="apples-dim">Paused</p>{{end}}
   {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
   {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
@@ -119,6 +135,25 @@
         <p class="apples-slot down">?</p>
       {{end}}
     {{end}}
+  {{end}}
+  {{if .ClaimedHost}}
+  <div id="apples-burn" class="apples-burn">
+    <details>
+      <summary>Burn</summary>
+      {{if .BurnErr}}<p class="ui-alert" role="alert">{{.BurnErr}}</p>{{end}}
+      {{if not .BurnFaces}}<p>Nothing to burn yet</p>{{end}}
+      <form hx-post="/play/burn" hx-swap="outerHTML" hx-target="#apples-phone">
+        {{range .BurnFaces}}
+        <label>
+          <input type="checkbox" name="face" value="{{.Kind}}	{{.Text}}" {{if or .Burned .Checked}}checked{{end}} {{if .Burned}}disabled{{end}}>
+          {{.Text}}
+        </label>
+        {{end}}
+        <button class="ui-btn" type="submit" {{if not .BurnFaces}}disabled{{end}}>Burn</button>
+      </form>
+    </details>
+  </div>
+  {{end}}
   {{end}}
 </div>
 {{end}}

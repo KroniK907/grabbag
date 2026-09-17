@@ -1,0 +1,11 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+<article class="apples-howto">
+  <header>
+    <h1 class="display">How to play</h1>
+    <a class="ui-btn" href="/board">Back to board</a>
+  </header>
+  {{template "howto-body" .}}
+</article>
+{{template "ui-end"}}

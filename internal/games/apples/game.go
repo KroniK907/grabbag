@@ -21,7 +21,7 @@ import (
 
 const (
 	id         = "apples"
-	cssVersion = "match-1"
+	cssVersion = "match-2"
 	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
 	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )
@@ -49,6 +49,18 @@ type Game struct {
 	now        func() time.Time
 	needFinish bool
 	needPause  bool
+
+	burns           []burnEntry
+	burnCorrupt     bool
+	played          map[string]playedRow
+	discardCorrupt  bool
+	burnWriter      *fileWriter
+	discardWriter   *fileWriter
+	burnSnap        []burnFace
+	burnChecks      map[string]bool
+	burnErr         string
+	overlay         string
+	overlayTooSmall bool
 }
 
 // New constructs an unloaded Apples package.
@@ -80,6 +92,7 @@ func (g *Game) Load(h games.Helper) error {
 	g.started = false
 	g.paused = false
 	g.importErr = ""
+	g.openJournalsLocked(h)
 	g.mu.Unlock()
 	if err := copyShippedLibraries(h.DataDir()); err != nil {
 		return err
@@ -120,6 +133,9 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /wildcard-banned", g.postBanned)
 	mux.HandleFunc("POST /wildcard-show-word", g.postShowWord)
 	mux.HandleFunc("POST /wildcard-journal-delay", g.postJournalDelay)
+	mux.HandleFunc("POST /unburn", g.postUnburn)
+	mux.HandleFunc("POST /reshuffle-discard", g.postReshuffleDiscard)
+	mux.HandleFunc("POST /reshuffle-on-unload", g.postReshuffleOnUnload)
 	return mux
 }
 
@@ -136,13 +152,12 @@ func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "board.html", g.boardView(), http.StatusOK)
 }
 
-// BoardButtons publishes Deck Library on the Lobby rail after Load.
+// BoardButtons publishes How to play and Deck Library on the Lobby rail after Load.
 func (g *Game) BoardButtons() []games.BoardButton {
-	return []games.BoardButton{{
-		Label:    "Deck Library",
-		Path:     "/play/picker",
-		HostOnly: true,
-	}}
+	return []games.BoardButton{
+		{Label: "How to play", Path: "/play/howto"},
+		{Label: "Deck Library", Path: "/play/picker", HostOnly: true},
+	}
 }
 
 // Phone is the seated, judge, audience, or wait-list column. Host currently
@@ -155,8 +170,13 @@ func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /picker", g.getPicker)
+	mux.HandleFunc("GET /howto", g.getHowto)
+	mux.HandleFunc("GET /howto-sheet", g.getHowtoSheet)
 	mux.HandleFunc("GET /partials/board", g.getBoardPartial)
 	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
+	mux.HandleFunc("POST /burn", g.postBurn)
+	mux.HandleFunc("POST /reshuffle-yes", g.postReshuffleYes)
+	mux.HandleFunc("POST /end-game", g.postEndGame)
 	mux.HandleFunc("POST /draw", g.postDraw)
 	mux.HandleFunc("POST /skip", g.postSkip)
 	mux.HandleFunc("POST /choose-prompt", g.postChoosePrompt)
@@ -192,7 +212,7 @@ func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
-	if g.match != nil {
+	if g.match != nil && g.overlay == "" {
 		g.thawTimerLocked(g.match)
 	}
 	if g.started {
@@ -206,9 +226,13 @@ func (g *Game) Stop() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.stopTickerLocked()
+	g.drainJournalsLocked()
 	g.started = false
 	g.paused = false
 	g.match = nil
+	g.overlay = ""
+	g.overlayTooSmall = false
+	g.burnSnap = nil
 	return nil
 }
 
@@ -217,11 +241,20 @@ func (g *Game) Shutdown() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.stopTickerLocked()
+	if g.helper != nil {
+		settings, ok := g.loadSettings(g.helper)
+		if ok && settings.ReshuffleDiscardOnUnload && !g.discardCorrupt {
+			g.wipeDiscardLocked()
+		}
+	}
+	g.drainJournalsLocked()
+	g.stopWritersLocked()
 	g.helper = nil
 	g.started = false
 	g.paused = false
 	g.importErr = ""
 	g.match = nil
+	g.overlay = ""
 	return nil
 }
 

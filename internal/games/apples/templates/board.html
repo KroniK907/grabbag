@@ -12,6 +12,11 @@
   hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
+  {{if .Overlay}}
+  <div class="apples-reshuffle">
+    <div class="apples-reshuffle-panel">{{.OverlayCopy}}</div>
+  </div>
+  {{end}}
   {{if .Paused}}<div class="apples-dim">Paused</div>{{end}}
   {{if .Sudden}}
   <div class="apples-win"><div class="apples-win-card"><h1 class="display">Tie breaker</h1><p>Leaders play sudden death.</p></div></div>

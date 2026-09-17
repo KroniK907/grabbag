@@ -31,8 +31,11 @@ func TestCatalogRegistersApples(t *testing.T) {
 		t.Fatalf("id=%s name=%s min=%d max=%d", g.ID(), g.Name(), g.MinPlayers(), g.MaxPlayers())
 	}
 	buttons := g.BoardButtons()
-	if len(buttons) != 1 || buttons[0].Label != "Deck Library" || buttons[0].Path != "/play/picker" || !buttons[0].HostOnly {
-		t.Fatalf("BoardButtons = %#v", buttons)
+	if len(buttons) != 2 || buttons[0].Label != "How to play" || buttons[0].Path != "/play/howto" || buttons[0].HostOnly {
+		t.Fatalf("BoardButtons howto = %#v", buttons)
+	}
+	if buttons[1].Label != "Deck Library" || buttons[1].Path != "/play/picker" || !buttons[1].HostOnly {
+		t.Fatalf("BoardButtons picker = %#v", buttons)
 	}
 }
 
@@ -509,6 +512,7 @@ type fakeHelper struct {
 	published []string
 	finishN   int
 	pauseN    int
+	logs      []string
 }
 
 func newFakeHelper(dir string, admin bool) *fakeHelper {
@@ -517,6 +521,12 @@ func newFakeHelper(dir string, admin bool) *fakeHelper {
 
 func (h *fakeHelper) sit(id, name string) {
 	p := games.Player{ID: id, DisplayName: name, Seated: true}
+	h.seated = append(h.seated, p)
+	h.players[id] = p
+}
+
+func (h *fakeHelper) sitHost(id, name string) {
+	p := games.Player{ID: id, DisplayName: name, Seated: true, ClaimedHost: true}
 	h.seated = append(h.seated, p)
 	h.players[id] = p
 }
@@ -553,7 +563,9 @@ func (h *fakeHelper) Resume() {}
 func (h *fakeHelper) Publish(name string) {
 	h.published = append(h.published, name)
 }
-func (h *fakeHelper) Log(string)                  {}
+func (h *fakeHelper) Log(line string) {
+	h.logs = append(h.logs, line)
+}
 func (h *fakeHelper) Theme() string               { return ui.DefaultTheme }
 func (h *fakeHelper) HasAdmin(*http.Request) bool { return h.admin }
 
