@@ -70,7 +70,7 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	}
 	phone = requestWithCookie(t, handler, http.MethodGet, "/", nil, admin)
 	body = phone.Body.String()
-	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, "ui-gear") || !strings.Contains(body, ">Stop<") {
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `action="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") || !strings.Contains(body, ">Stop<") {
 		t.Fatalf("in-game phone = %q", body)
 	}
 	if !strings.Contains(body, `hx-get="/lobby/presence"`) {
