@@ -10,9 +10,9 @@
   --ui-brand: #c40a90;
   --ui-brand-shadow: 2px 2px 0 #ffe14a;
   --ui-accent: #ff2ad4;
-  --ui-accent-2: #19e3ff;
+  --ui-accent-2: #0ab8d4;
   --ui-accent-2-fg: #041820;
-  --ui-accent-2-shadow: #0aa8bc;
+  --ui-accent-2-shadow: #087a8a;
   --ui-url: #087a8a;
   --ui-rail-border: #ff2ad4;
   --ui-rail-bg: linear-gradient(180deg, #fff, #ffe6f7);
@@ -50,7 +50,7 @@
   --ui-gear-fg: #c40a90;
   --ui-gear-border: #c40a90;
   --ui-check-shadow: 0 4px 0 #2a8a20;
-  --ui-btn-bg: #19e3ff;
+  --ui-btn-bg: #0ab8d4;
   --ui-btn-fg: #042;
   --ui-danger-bg: #ff3b5c;
   --ui-danger-fg: #fff;
