@@ -1,0 +1,63 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+<div class="apples-picker">
+  <aside>
+    <p class="apples-logo display">Apples for Humanity</p>
+    <p class="apples-path">Libraries load from {{.DataDir}}</p>
+    <a class="ui-btn" href="/board">Back to board</a>
+    {{if not .Frozen}}
+    <form method="post" action="/settings/game/select-all">
+      <button class="ui-btn" type="submit">Select all</button>
+    </form>
+    <form method="post" action="/settings/game/select-none">
+      <button class="ui-btn" type="submit">Select none</button>
+    </form>
+    <form method="post" action="/settings/game/import-official">
+      <button class="ui-btn" type="submit">Quickly add these CAH official card packs</button>
+    </form>
+    {{end}}
+  </aside>
+  <main>
+    <div class="apples-head">
+      <h1 class="display">Deck Library</h1>
+    </div>
+    {{if .Frozen}}
+    <p class="apples-note">Match is running. Pack changes wait until the game ends.</p>
+    {{end}}
+    {{if and .RowError (not .ErrorPack)}}
+    <p class="apples-error">{{.RowError}}</p>
+    {{end}}
+    <div class="apples-cabinets">
+      {{range .Libraries}}
+        {{range .Packs}}
+        <article class="apples-pack{{if .Enabled}} on{{end}}">
+          <h2>{{.Name}}</h2>
+          {{if .Description}}<p>{{.Description}}</p>{{end}}
+          <p>{{.PromptCount}} prompts · {{.AnswerCount}} answers</p>
+          {{if and $.RowError (eq .LibraryID $.ErrorLibrary) (eq .ID $.ErrorPack)}}
+          <p class="apples-error">{{$.RowError}}</p>
+          {{end}}
+          <form method="post" action="/settings/game/pack">
+            <input type="hidden" name="library" value="{{.LibraryID}}">
+            <input type="hidden" name="pack" value="{{.ID}}">
+            <input type="hidden" name="enabled" value="0">
+            <label class="apples-toggle">
+              <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}} {{if not $.Frozen}}onchange="this.form.submit()"{{end}}>
+              {{if .Enabled}}On{{else}}Off{{end}}
+            </label>
+          </form>
+        </article>
+        {{end}}
+        {{if .License}}<p class="apples-license">{{.License}}</p>{{end}}
+      {{end}}
+      {{range .Failed}}
+        <article class="apples-pack bad">
+          <h2>{{.Filename}}</h2>
+          <p class="apples-error">{{.Reason}}</p>
+        </article>
+      {{end}}
+    </div>
+  </main>
+</div>
+{{template "ui-end"}}

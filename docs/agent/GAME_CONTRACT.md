@@ -28,6 +28,7 @@ Operator playbook is `/docs`.
 - [Game hooks](#game-hooks)
 - [Helper hooks](#helper-hooks)
 - [HTTP mounts](#http-mounts)
+- [Extra pages](#extra-pages)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
 - [Examples](#examples)
@@ -193,6 +194,16 @@ Public paths stay host-owned. Lobby vs game is a state swap on `/` and `/board`.
 Forms in the settings fragment must post under `/settings/game/...`. Play forms post under `/play/...`.
 
 After Stop, a GET to `/play` may still hit `Play()`. POST `/play` is 404 until the next Start.
+
+### Extra pages
+
+Full extra documents after Load are `Play()` GET routes (`GET /play/picker`, `GET /play/info`). Mutations that must run before Start POST through `Settings()` at `/settings/game/`. `/settings/game/` stays the inlined settings column. It is not those documents.
+
+Do not add a Game method or host mount for extra pages. Do not open `Play()` POST before Start. v1 leaves the CoreHost mux unchanged.
+
+Operator-only extra GET pages check `HasAdmin` in the game. Signed-out GET is plain `401` text, the same idea as host Settings with no admin session. Host does not make every `Play()` GET admin-only. Public extra pages (Testing `/play/info`) stay unsigned. Hiding a `HostOnly` `BoardButton` does not protect the URL.
+
+Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby `HostOnly` button `Deck Library`, pack enable POSTs to `/settings/game/`. Success is `303` to `/play/picker`. A failed write or a refused-after-Start toggle returns `200` HTML so the checkboxes match stored state.
 
 ## Live SSE
 
