@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "id": "white-black",
   "name": "White and Black",
-  "description": "An AI generated CAH-style stating library.",
+  "description": "An AI generated CAH-style starting library.",
   "packs": [
     {
       "id": "white-black",
