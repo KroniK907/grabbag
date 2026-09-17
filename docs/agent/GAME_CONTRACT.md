@@ -150,7 +150,7 @@ Host calls these on the Game value.
 | `Start(h Helper) error` | operator or auto-start | Store `h` again. Begin ticks or round state. |
 | `Board(w, r)` | GET `/board` after Start | Full HTML document. Stamp theme from `h.Theme()`. |
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
-| `Phone(w, r)` | GET `/` after Start, seated player only | Inner body only. Host wraps gear and the claimed-host drawer. Audience and unknown cookies stay on Lobby phone. |
+| `Phone(w, r)` | GET `/` after Start, seated player only | Inner body only. Host wraps Leave and the claimed-host drawer. Audience and unknown cookies stay on Lobby phone. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
 | `Pause() error` | operator or auto-pause on seated disconnect | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
@@ -337,7 +337,7 @@ The live package that does this is Testing (`internal/games/testing`).
 
 ### Phone body vs board document
 
-`Phone` writes the inner column. Do not send `<html>`. Host wraps `ui-gear` and the Host drawer.
+`Phone` writes the inner column. Do not send `<html>`. Host wraps Leave and the Host drawer.
 
 `Board` writes a full document. Testing stamps chrome and listens for `sse:pause` plus its own `sse:tap` / `sse:testing` events.
 

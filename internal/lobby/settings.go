@@ -119,7 +119,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	return view, nil
 }
 
-// WritePlayPhone wraps a running game body with Lobby gear and the host drawer.
+// WritePlayPhone wraps a running game body with Leave and the host drawer.
 func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body template.HTML) {
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil || !ok {

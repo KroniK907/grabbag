@@ -687,14 +687,14 @@ func (g *Game) ID() string { return id }</pre>
         <h4>Parameters</h4>
         <dl>
           <dt>w</dt>
-          <dd>Host captures these bytes, then wraps Lobby gear and the claimed-host drawer around them.</dd>
+          <dd>Host captures these bytes, then wraps Leave and the claimed-host drawer around them.</dd>
           <dt>r</dt>
           <dd>The phone request. Read the player with <a href="#helper-playerfromrequest">PlayerFromRequest</a>.</dd>
         </dl>
         <h4>Return value</h4>
         <p>None.</p>
         <h4>Description</h4>
-        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, the gear, and maybe the Host drawer. Audience phones and unknown cookies never reach this method. Lobby still renders those.</p>
+        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, Leave, and maybe the Host drawer. Audience phones and unknown cookies never reach this method. Lobby still renders those.</p>
         <p>A claimed-host phone gets the drawer from host, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
         <h4>Examples</h4>
         <h5>Tap button plus optional End game</h5>
