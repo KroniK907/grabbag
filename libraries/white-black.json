@@ -1,0 +1,1282 @@
+{
+  "formatVersion": 1,
+  "id": "white-black",
+  "name": "White and Black",
+  "description": "Original CAH-style prompt and answer library.",
+  "packs": [
+    {
+      "id": "white-black",
+      "name": "White and Black",
+      "description": "Black fill-in-the-blank prompts and white punchline answers.",
+      "prompts": [
+        {
+          "id": "white-black-p-what-s-my-secret-superpower",
+          "text": "What's my secret superpower?"
+        },
+        {
+          "id": "white-black-p-the-new-diet-craze-involves-eating-nothing-but",
+          "text": "The new diet craze involves eating nothing but _."
+        },
+        {
+          "id": "white-black-p-my-therapist-says-i-need-to-stop-obsessing-over",
+          "text": "My therapist says I need to stop obsessing over _."
+        },
+        {
+          "id": "white-black-p-what-s-hiding-under-my-bed",
+          "text": "What's hiding under my bed?"
+        },
+        {
+          "id": "white-black-p-the-worst-thing-to-announce-at-a-wedding-is",
+          "text": "The worst thing to announce at a wedding is _."
+        },
+        {
+          "id": "white-black-p-the-tooth-fairy-now-leaves-bad-kids",
+          "text": "The tooth fairy now leaves bad kids _."
+        },
+        {
+          "id": "white-black-p-what-s-the-next-big-tech-innovation",
+          "text": "What's the next big tech innovation?"
+        },
+        {
+          "id": "white-black-p-i-got-fired-for-bringing-to-the-office-potluck",
+          "text": "I got fired for bringing _ to the office potluck."
+        },
+        {
+          "id": "white-black-p-during-the-apocalypse-currency-will-be-replaced",
+          "text": "During the apocalypse, currency will be replaced by _."
+        },
+        {
+          "id": "white-black-p-the-new-olympic-sport-is-just",
+          "text": "The new Olympic sport is just _."
+        },
+        {
+          "id": "white-black-p-what-ruined-my-childhood",
+          "text": "What ruined my childhood?"
+        },
+        {
+          "id": "white-black-p-my-safe-word-is",
+          "text": "My safe word is _."
+        },
+        {
+          "id": "white-black-p-the-only-thing-keeping-me-going-is",
+          "text": "The only thing keeping me going is _."
+        },
+        {
+          "id": "white-black-p-what-s-that-sticky-stuff-on-the-floor",
+          "text": "What's that sticky stuff on the floor?"
+        },
+        {
+          "id": "white-black-p-the-secret-ingredient-in-my-chili-is",
+          "text": "The secret ingredient in my chili is _."
+        },
+        {
+          "id": "white-black-p-i-m-opening-a-boutique-that-exclusively-sells",
+          "text": "I'm opening a boutique that exclusively sells _."
+        },
+        {
+          "id": "white-black-p-what-did-i-forget-at-the-grocery-store",
+          "text": "What did I forget at the grocery store?"
+        },
+        {
+          "id": "white-black-p-my-dying-wish-is-to-be-buried-with",
+          "text": "My dying wish is to be buried with _."
+        },
+        {
+          "id": "white-black-p-the-new-tinder-update-matches-you-based-on",
+          "text": "The new Tinder update matches you based on _."
+        },
+        {
+          "id": "white-black-p-what-is-the-government-hiding-from-us",
+          "text": "What is the government hiding from us?"
+        },
+        {
+          "id": "white-black-p-i-finally-found-peace-through",
+          "text": "I finally found peace through _."
+        },
+        {
+          "id": "white-black-p-the-worst-part-of-growing-up-is",
+          "text": "The worst part of growing up is _."
+        },
+        {
+          "id": "white-black-p-what-s-my-excuse-for-being-late",
+          "text": "What's my excuse for being late?"
+        },
+        {
+          "id": "white-black-p-i-m-writing-a-self-help-book-about",
+          "text": "I'm writing a self-help book about _."
+        },
+        {
+          "id": "white-black-p-the-new-trendy-cocktail-is-just-vodka-and",
+          "text": "The new trendy cocktail is just vodka and _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-find-in-your-burrito",
+          "text": "What's the worst thing to find in your burrito?"
+        },
+        {
+          "id": "white-black-p-my-patronus-is",
+          "text": "My patronus is _."
+        },
+        {
+          "id": "white-black-p-the-only-thing-worse-than-mondays-is",
+          "text": "The only thing worse than Mondays is _."
+        },
+        {
+          "id": "white-black-p-what-s-my-hidden-talent",
+          "text": "What's my hidden talent?"
+        },
+        {
+          "id": "white-black-p-i-m-starting-a-podcast-about",
+          "text": "I'm starting a podcast about _."
+        },
+        {
+          "id": "white-black-p-the-new-reality-show-features-celebrities-surviv",
+          "text": "The new reality show features celebrities surviving _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-gift-to-give-a-toddler",
+          "text": "What's the worst gift to give a toddler?"
+        },
+        {
+          "id": "white-black-p-my-biggest-fear-is",
+          "text": "My biggest fear is _."
+        },
+        {
+          "id": "white-black-p-the-new-school-curriculum-replaces-math-with",
+          "text": "The new school curriculum replaces math with _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-say-on-a-first-date",
+          "text": "What's the worst thing to say on a first date?"
+        },
+        {
+          "id": "white-black-p-i-m-allergic-to",
+          "text": "I'm allergic to _."
+        },
+        {
+          "id": "white-black-p-the-new-superhero-s-weakness-is",
+          "text": "The new superhero's weakness is _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-find-in-your-hotel-roo",
+          "text": "What's the worst thing to find in your hotel room?"
+        },
+        {
+          "id": "white-black-p-my-last-words-will-probably-be-about",
+          "text": "My last words will probably be about _."
+        },
+        {
+          "id": "white-black-p-the-new-fashion-trend-is-wearing",
+          "text": "The new fashion trend is wearing _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-bring-to-a-job-intervi",
+          "text": "What's the worst thing to bring to a job interview?"
+        },
+        {
+          "id": "white-black-p-i-m-addicted-to",
+          "text": "I'm addicted to _."
+        },
+        {
+          "id": "white-black-p-the-new-theme-park-ride-is-based-on",
+          "text": "The new theme park ride is based on _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-say-to-a-cop",
+          "text": "What's the worst thing to say to a cop?"
+        },
+        {
+          "id": "white-black-p-my-spirit-animal-is",
+          "text": "My spirit animal is _."
+        },
+        {
+          "id": "white-black-p-the-new-diet-pill-side-effects-include",
+          "text": "The new diet pill side effects include _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-find-in-your-basement",
+          "text": "What's the worst thing to find in your basement?"
+        },
+        {
+          "id": "white-black-p-i-m-legally-banned-from",
+          "text": "I'm legally banned from _."
+        },
+        {
+          "id": "white-black-p-the-new-hit-song-is-just-three-minutes-of",
+          "text": "The new hit song is just three minutes of _."
+        },
+        {
+          "id": "white-black-p-what-s-the-worst-thing-to-say-in-a-job-interview",
+          "text": "What's the worst thing to say in a job interview?"
+        },
+        {
+          "id": "white-black-p-my-autobiography-will-be-titled",
+          "text": "My autobiography will be titled: _."
+        },
+        {
+          "id": "white-black-p-i-never-truly-understood-until-i-experienced",
+          "text": "I never truly understood _ until I experienced _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-the-perfect-date-starts-with-and-ends-with",
+          "text": "The perfect date starts with _ and ends with _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-they-said-it-was-impossible-to-combine-and",
+          "text": "They said it was impossible to combine _ and _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-my-startup-is-like-but-for",
+          "text": "My startup is like _, but for _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-first-comes-then-comes",
+          "text": "First comes _, then comes _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-i-would-trade-for-just-one-taste-of",
+          "text": "I would trade _ for just one taste of _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-the-recipe-calls-for-but-i-substitute-it-with",
+          "text": "The recipe calls for _, but I substitute it with _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-if-you-liked-you-ll-love",
+          "text": "If you liked _, you'll love _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-the-hardest-part-of-is-the",
+          "text": "The hardest part of _ is the _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-i-went-to-the-doctor-for-but-they-diagnosed-me",
+          "text": "I went to the doctor for _, but they diagnosed me with _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-in-a-world-ravaged-by-our-only-hope-is",
+          "text": "In a world ravaged by _, our only hope is _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-step-one-step-two",
+          "text": "Step one: _. Step two: _.",
+          "pick": 2
+        },
+        {
+          "id": "white-black-p-the-holy-trinity-of-my-weekend-and",
+          "text": "The holy trinity of my weekend: _, _, and _.",
+          "pick": 3
+        },
+        {
+          "id": "white-black-p-to-unlock-the-ancient-tomb-you-must-sacrifice",
+          "text": "To unlock the ancient tomb, you must sacrifice _, _, and _.",
+          "pick": 3
+        },
+        {
+          "id": "white-black-p-my-dating-profile-says-i-love-and",
+          "text": "My dating profile says I love _, _, and _.",
+          "pick": 3
+        },
+        {
+          "id": "white-black-p-the-new-blockbuster-movie-features-and",
+          "text": "The new blockbuster movie features _, _, and _.",
+          "pick": 3
+        },
+        {
+          "id": "white-black-p-the-three-stages-of-grief-and",
+          "text": "The three stages of grief: _, _, and _.",
+          "pick": 3
+        }
+      ],
+      "answers": [
+        {
+          "id": "white-black-a-a-sentient-pile-of-laundry",
+          "text": "A sentient pile of laundry."
+        },
+        {
+          "id": "white-black-a-accidentally-liking-an-ex-s-post-from-2014",
+          "text": "Accidentally liking an ex's post from 2014."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-existential-dread",
+          "text": "The crushing weight of existential dread."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-laser-eye-surgery",
+          "text": "A suspiciously cheap laser eye surgery."
+        },
+        {
+          "id": "white-black-a-getting-aggressively-audited-by-the-irs",
+          "text": "Getting aggressively audited by the IRS."
+        },
+        {
+          "id": "white-black-a-a-raccoon-with-a-switchblade",
+          "text": "A raccoon with a switchblade."
+        },
+        {
+          "id": "white-black-a-weaponized-incompetence",
+          "text": "Weaponized incompetence."
+        },
+        {
+          "id": "white-black-a-explaining-crypto-to-your-grandmother",
+          "text": "Explaining crypto to your grandmother."
+        },
+        {
+          "id": "white-black-a-a-lukewarm-hot-pocket",
+          "text": "A lukewarm Hot Pocket."
+        },
+        {
+          "id": "white-black-a-a-nap-that-lasts-until-thursday",
+          "text": "A nap that lasts until Thursday."
+        },
+        {
+          "id": "white-black-a-an-unsolicited-picture-of-a-rash",
+          "text": "An unsolicited picture of a rash."
+        },
+        {
+          "id": "white-black-a-forgetting-how-to-read",
+          "text": "Forgetting how to read."
+        },
+        {
+          "id": "white-black-a-a-cult-led-by-a-golden-retriever",
+          "text": "A cult led by a golden retriever."
+        },
+        {
+          "id": "white-black-a-the-sticky-floor-of-a-movie-theater",
+          "text": "The sticky floor of a movie theater."
+        },
+        {
+          "id": "white-black-a-a-moderately-successful-pyramid-scheme",
+          "text": "A moderately successful pyramid scheme."
+        },
+        {
+          "id": "white-black-a-binge-watching-conspiracy-theories-at-3-am",
+          "text": "Binge-watching conspiracy theories at 3 AM."
+        },
+        {
+          "id": "white-black-a-a-polite-but-firm-rejection",
+          "text": "A polite but firm rejection."
+        },
+        {
+          "id": "white-black-a-the-ghost-of-a-victorian-child",
+          "text": "The ghost of a Victorian child."
+        },
+        {
+          "id": "white-black-a-a-cursed-amulet-bought-on-craigslist",
+          "text": "A cursed amulet bought on Craigslist."
+        },
+        {
+          "id": "white-black-a-aggressive-eye-contact-during-a-prostate-exam",
+          "text": "Aggressive eye contact during a prostate exam."
+        },
+        {
+          "id": "white-black-a-faking-a-seizure-to-get-out-of-a-conversation",
+          "text": "Faking a seizure to get out of a conversation."
+        },
+        {
+          "id": "white-black-a-a-heavily-armed-toddler",
+          "text": "A heavily armed toddler."
+        },
+        {
+          "id": "white-black-a-sobbing-uncontrollably-in-a-denny-s-parking-lot",
+          "text": "Sobbing uncontrollably in a Denny's parking lot."
+        },
+        {
+          "id": "white-black-a-a-mildly-offensive-bumper-sticker",
+          "text": "A mildly offensive bumper sticker."
+        },
+        {
+          "id": "white-black-a-the-feeling-of-a-wet-sock",
+          "text": "The feeling of a wet sock."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-local-politician",
+          "text": "A completely unhinged local politician."
+        },
+        {
+          "id": "white-black-a-trying-to-explain-memes-to-your-parents",
+          "text": "Trying to explain memes to your parents."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-goose",
+          "text": "A surprisingly aggressive goose."
+        },
+        {
+          "id": "white-black-a-the-lingering-smell-of-cheap-cologne",
+          "text": "The lingering smell of cheap cologne."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-joke-about-tragedy",
+          "text": "A poorly timed joke about tragedy."
+        },
+        {
+          "id": "white-black-a-accidentally-joining-a-cult",
+          "text": "Accidentally joining a cult."
+        },
+        {
+          "id": "white-black-a-a-very-confused-time-traveler",
+          "text": "A very confused time traveler."
+        },
+        {
+          "id": "white-black-a-the-inevitable-heat-death-of-the-universe",
+          "text": "The inevitable heat death of the universe."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-sticky-doorknob",
+          "text": "A suspiciously sticky doorknob."
+        },
+        {
+          "id": "white-black-a-getting-into-a-fistfight-with-a-mime",
+          "text": "Getting into a fistfight with a mime."
+        },
+        {
+          "id": "white-black-a-a-dangerously-cheesy-pickup-line",
+          "text": "A dangerously cheesy pickup line."
+        },
+        {
+          "id": "white-black-a-the-awkward-silence-after-a-bad-pun",
+          "text": "The awkward silence after a bad pun."
+        },
+        {
+          "id": "white-black-a-a-slightly-used-coffin",
+          "text": "A slightly used coffin."
+        },
+        {
+          "id": "white-black-a-trying-to-outrun-your-responsibilities",
+          "text": "Trying to outrun your responsibilities."
+        },
+        {
+          "id": "white-black-a-a-very-angry-badger",
+          "text": "A very angry badger."
+        },
+        {
+          "id": "white-black-a-the-overwhelming-urge-to-scream",
+          "text": "The overwhelming urge to scream."
+        },
+        {
+          "id": "white-black-a-a-deeply-unsettling-family-portrait",
+          "text": "A deeply unsettling family portrait."
+        },
+        {
+          "id": "white-black-a-accidentally-sending-a-nude-to-your-boss",
+          "text": "Accidentally sending a nude to your boss."
+        },
+        {
+          "id": "white-black-a-a-flock-of-pigeons-plotting-your-demise",
+          "text": "A flock of pigeons plotting your demise."
+        },
+        {
+          "id": "white-black-a-the-sudden-realization-that-you-re-an-adult",
+          "text": "The sudden realization that you're an adult."
+        },
+        {
+          "id": "white-black-a-a-very-persuasive-telemarketer",
+          "text": "A very persuasive telemarketer."
+        },
+        {
+          "id": "white-black-a-getting-trapped-in-an-elevator-with-a-clown",
+          "text": "Getting trapped in an elevator with a clown."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-empty-parking-lot",
+          "text": "A suspiciously empty parking lot."
+        },
+        {
+          "id": "white-black-a-the-feeling-of-impending-doom",
+          "text": "The feeling of impending doom."
+        },
+        {
+          "id": "white-black-a-a-very-persistent-rash",
+          "text": "A very persistent rash."
+        },
+        {
+          "id": "white-black-a-a-group-project-where-you-did-all-the-work",
+          "text": "A group project where you did all the work."
+        },
+        {
+          "id": "white-black-a-drinking-tap-water-in-a-foreign-country",
+          "text": "Drinking tap water in a foreign country."
+        },
+        {
+          "id": "white-black-a-a-sudden-and-violent-bowel-movement",
+          "text": "A sudden and violent bowel movement."
+        },
+        {
+          "id": "white-black-a-the-dark-web",
+          "text": "The dark web."
+        },
+        {
+          "id": "white-black-a-a-fully-functional-guillotine",
+          "text": "A fully functional guillotine."
+        },
+        {
+          "id": "white-black-a-getting-cancelled-on-twitter",
+          "text": "Getting cancelled on Twitter."
+        },
+        {
+          "id": "white-black-a-a-5g-microchip-implanted-in-your-brain",
+          "text": "A 5G microchip implanted in your brain."
+        },
+        {
+          "id": "white-black-a-the-existential-terror-of-a-tuesday-afternoon",
+          "text": "The existential terror of a Tuesday afternoon."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-high-five",
+          "text": "A poorly executed high five."
+        },
+        {
+          "id": "white-black-a-getting-ghosted-by-your-therapist",
+          "text": "Getting ghosted by your therapist."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-warm-toilet-seat",
+          "text": "A suspiciously warm toilet seat."
+        },
+        {
+          "id": "white-black-a-the-illusion-of-free-will",
+          "text": "The illusion of free will."
+        },
+        {
+          "id": "white-black-a-a-half-eaten-burrito-found-on-the-subway",
+          "text": "A half-eaten burrito found on the subway."
+        },
+        {
+          "id": "white-black-a-getting-catfished-by-a-russian-bot",
+          "text": "Getting catfished by a Russian bot."
+        },
+        {
+          "id": "white-black-a-a-spontaneous-musical-number",
+          "text": "A spontaneous musical number."
+        },
+        {
+          "id": "white-black-a-the-sweet-sweet-embrace-of-capitalism",
+          "text": "The sweet, sweet embrace of capitalism."
+        },
+        {
+          "id": "white-black-a-a-crippling-addiction-to-iced-coffee",
+          "text": "A crippling addiction to iced coffee."
+        },
+        {
+          "id": "white-black-a-getting-into-a-screaming-match-with-a-teenager",
+          "text": "Getting into a screaming match with a teenager."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-sushi-roll",
+          "text": "A suspiciously cheap sushi roll."
+        },
+        {
+          "id": "white-black-a-the-crushing-reality-of-student-debt",
+          "text": "The crushing reality of student debt."
+        },
+        {
+          "id": "white-black-a-a-poorly-disguised-pyramid-scheme",
+          "text": "A poorly disguised pyramid scheme."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-crossfit",
+          "text": "Getting stuck in a conversation about CrossFit."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-deep-puddle",
+          "text": "A surprisingly deep puddle."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-regret",
+          "text": "The lingering taste of regret."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-conspiracy-theory",
+          "text": "A completely unhinged conspiracy theory."
+        },
+        {
+          "id": "white-black-a-getting-trapped-in-a-group-chat",
+          "text": "Getting trapped in a group chat."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-quiet-toddler",
+          "text": "A suspiciously quiet toddler."
+        },
+        {
+          "id": "white-black-a-the-slow-decay-of-western-civilization",
+          "text": "The slow decay of western civilization."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-sneeze",
+          "text": "A poorly timed sneeze."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-dog",
+          "text": "Getting rejected by a dog."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-accurate-tarot-reading",
+          "text": "A surprisingly accurate tarot reading."
+        },
+        {
+          "id": "white-black-a-the-crushing-disappointment-of-adulthood",
+          "text": "The crushing disappointment of adulthood."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-rant-about-birds",
+          "text": "A completely unhinged rant about birds."
+        },
+        {
+          "id": "white-black-a-getting-stuck-behind-a-tractor",
+          "text": "Getting stuck behind a tractor."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-clean-gas-station-bathroom",
+          "text": "A suspiciously clean gas station bathroom."
+        },
+        {
+          "id": "white-black-a-the-lingering-smell-of-burnt-popcorn",
+          "text": "The lingering smell of burnt popcorn."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-magic-trick",
+          "text": "A poorly executed magic trick."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-an-ikea",
+          "text": "Getting lost in an IKEA."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-commercial",
+          "text": "A surprisingly emotional commercial."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-forgot-your-wallet",
+          "text": "The crushing realization that you forgot your wallet."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-youtube-comment-section",
+          "text": "A completely unhinged YouTube comment section."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-loop-of-automated-customer-service",
+          "text": "Getting stuck in an endless loop of automated customer service."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-stranger",
+          "text": "A suspiciously friendly stranger."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-being-cancelled",
+          "text": "The lingering fear of being cancelled."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-laugh",
+          "text": "A poorly timed laugh."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-vending-machine",
+          "text": "Getting rejected by a vending machine."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-squirrel",
+          "text": "A surprisingly aggressive squirrel."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-societal-expectations",
+          "text": "The crushing weight of societal expectations."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-tiktok-trend",
+          "text": "A completely unhinged TikTok trend."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-astrology",
+          "text": "Getting stuck in a conversation about astrology."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-bottle-of-tequila",
+          "text": "A suspiciously cheap bottle of tequila."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-cheap-wine",
+          "text": "The lingering taste of cheap wine."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-high-dive",
+          "text": "A poorly executed high dive."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-corn-maze",
+          "text": "Getting lost in a corn maze."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-breakdown",
+          "text": "A surprisingly emotional breakdown."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-re-out-of-coffee",
+          "text": "The crushing realization that you're out of coffee."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-reddit-thread",
+          "text": "A completely unhinged Reddit thread."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-elevator-with-your-ex",
+          "text": "Getting stuck in an elevator with your ex."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-stray-cat",
+          "text": "A suspiciously friendly stray cat."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-the-dark",
+          "text": "The lingering fear of the dark."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-fart",
+          "text": "A poorly timed fart."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-bouncer",
+          "text": "Getting rejected by a bouncer."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-seagull",
+          "text": "A surprisingly aggressive seagull."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-your-own-ego",
+          "text": "The crushing weight of your own ego."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-conspiracy-theorist",
+          "text": "A completely unhinged conspiracy theorist."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-veganism",
+          "text": "Getting stuck in a conversation about veganism."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-pair-of-sunglasses",
+          "text": "A suspiciously cheap pair of sunglasses."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-garlic",
+          "text": "The lingering taste of garlic."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-parallel-park",
+          "text": "A poorly executed parallel park."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-foreign-city",
+          "text": "Getting lost in a foreign city."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-movie",
+          "text": "A surprisingly emotional movie."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-forgot-your-keys",
+          "text": "The crushing realization that you forgot your keys."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-facebook-post",
+          "text": "A completely unhinged Facebook post."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-meeting",
+          "text": "Getting stuck in an endless meeting."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-dog",
+          "text": "A suspiciously friendly dog."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-spiders",
+          "text": "The lingering fear of spiders."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-yawn",
+          "text": "A poorly timed yawn."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-job",
+          "text": "Getting rejected by a job."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-pigeon",
+          "text": "A surprisingly aggressive pigeon."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-your-own-insecurities",
+          "text": "The crushing weight of your own insecurities."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-twitter-rant",
+          "text": "A completely unhinged Twitter rant."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-politics",
+          "text": "Getting stuck in a conversation about politics."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-haircut",
+          "text": "A suspiciously cheap haircut."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-disappointment",
+          "text": "The lingering taste of disappointment."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-cartwheel",
+          "text": "A poorly executed cartwheel."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-forest",
+          "text": "Getting lost in a forest."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-song",
+          "text": "A surprisingly emotional song."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-forgot-your-phone",
+          "text": "The crushing realization that you forgot your phone."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-instagram-story",
+          "text": "A completely unhinged Instagram story."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-line",
+          "text": "Getting stuck in an endless line."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-neighbor",
+          "text": "A suspiciously friendly neighbor."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-heights",
+          "text": "The lingering fear of heights."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-hiccup",
+          "text": "A poorly timed hiccup."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-crush",
+          "text": "Getting rejected by a crush."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-duck",
+          "text": "A surprisingly aggressive duck."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-your-own-mistakes",
+          "text": "The crushing weight of your own mistakes."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-blog-post",
+          "text": "A completely unhinged blog post."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-sports",
+          "text": "Getting stuck in a conversation about sports."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-meal",
+          "text": "A suspiciously cheap meal."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-defeat",
+          "text": "The lingering taste of defeat."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-backflip",
+          "text": "A poorly executed backflip."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-museum",
+          "text": "Getting lost in a museum."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-book",
+          "text": "A surprisingly emotional book."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-forgot-your-password",
+          "text": "The crushing realization that you forgot your password."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-podcast-episode",
+          "text": "A completely unhinged podcast episode."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-traffic-jam",
+          "text": "Getting stuck in an endless traffic jam."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-coworker",
+          "text": "A suspiciously friendly coworker."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-failure",
+          "text": "The lingering fear of failure."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-burp",
+          "text": "A poorly timed burp."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-publisher",
+          "text": "Getting rejected by a publisher."
+        },
+        {
+          "id": "white-black-a-a-gentle-caress-from-a-stranger",
+          "text": "A gentle caress from a stranger."
+        },
+        {
+          "id": "white-black-a-violently-defending-a-minor-grammatical-error",
+          "text": "Violently defending a minor grammatical error."
+        },
+        {
+          "id": "white-black-a-screaming-into-the-void",
+          "text": "Screaming into the void."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-moist-handshake",
+          "text": "A suspiciously moist handshake."
+        },
+        {
+          "id": "white-black-a-unleashing-a-horde-of-angry-badgers",
+          "text": "Unleashing a horde of angry badgers."
+        },
+        {
+          "id": "white-black-a-the-undeniable-allure-of-a-discount-bin",
+          "text": "The undeniable allure of a discount bin."
+        },
+        {
+          "id": "white-black-a-a-poorly-constructed-papier-mâché-volcano",
+          "text": "A poorly constructed papier-mâché volcano."
+        },
+        {
+          "id": "white-black-a-getting-trapped-in-a-revolving-door-with-your-nemesis",
+          "text": "Getting trapped in a revolving door with your nemesis."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-articulate-parrot",
+          "text": "A surprisingly articulate parrot."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-a-thousand-unread-emails",
+          "text": "The crushing weight of a thousand unread emails."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-rant-about-the-price-of-cheese",
+          "text": "A completely unhinged rant about the price of cheese."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-crypto",
+          "text": "Getting stuck in a conversation about crypto."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-bottle-of-cologne",
+          "text": "A suspiciously cheap bottle of cologne."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-a-bad-decision",
+          "text": "The lingering taste of a bad decision."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-high-five-2",
+          "text": "A poorly executed high-five."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-spreadsheet",
+          "text": "Getting lost in a spreadsheet."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-powerpoint-presentation",
+          "text": "A surprisingly emotional PowerPoint presentation."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-it-s-only-tuesday",
+          "text": "The crushing realization that it's only Tuesday."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-linkedin-post",
+          "text": "A completely unhinged LinkedIn post."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-loop-of-small-talk",
+          "text": "Getting stuck in an endless loop of small talk."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-ai-assistant",
+          "text": "A suspiciously friendly AI assistant."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-public-speaking",
+          "text": "The lingering fear of public speaking."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-cough",
+          "text": "A poorly timed cough."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-self-checkout-machine",
+          "text": "Getting rejected by a self-checkout machine."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-swan",
+          "text": "A surprisingly aggressive swan."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-a-missed-opportunity",
+          "text": "The crushing weight of a missed opportunity."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-review-on-yelp",
+          "text": "A completely unhinged review on Yelp."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-diets",
+          "text": "Getting stuck in a conversation about diets."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-piece-of-furniture",
+          "text": "A suspiciously cheap piece of furniture."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-artificial-sweetener",
+          "text": "The lingering taste of artificial sweetener."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-humblebrag",
+          "text": "A poorly executed humblebrag."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-wikipedia-rabbit-hole",
+          "text": "Getting lost in a Wikipedia rabbit hole."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-unboxing-video",
+          "text": "A surprisingly emotional unboxing video."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-re-out-of-snacks",
+          "text": "The crushing realization that you're out of snacks."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-comment-on-a-cooking-blog",
+          "text": "A completely unhinged comment on a cooking blog."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-loop-of-automated-phone-menus",
+          "text": "Getting stuck in an endless loop of automated phone menus."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-telemarketer",
+          "text": "A suspiciously friendly telemarketer."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-missing-out",
+          "text": "The lingering fear of missing out."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-wink",
+          "text": "A poorly timed wink."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-captcha",
+          "text": "Getting rejected by a captcha."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-roomba",
+          "text": "A surprisingly aggressive roomba."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-a-bad-haircut",
+          "text": "The crushing weight of a bad haircut."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-rant-about-the-weather",
+          "text": "A completely unhinged rant about the weather."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-the-good-old-days",
+          "text": "Getting stuck in a conversation about the good old days."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-piece-of-electronics",
+          "text": "A suspiciously cheap piece of electronics."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-stale-coffee",
+          "text": "The lingering taste of stale coffee."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-photobomb",
+          "text": "A poorly executed photobomb."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-daydream",
+          "text": "Getting lost in a daydream."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-tutorial-on-how-to-tie-a-tie",
+          "text": "A surprisingly emotional tutorial on how to tie a tie."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-forgot-someone-s-name",
+          "text": "The crushing realization that you forgot someone's name."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-conspiracy-theory-about-the-moon",
+          "text": "A completely unhinged conspiracy theory about the moon."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-endless-loop-of-overthinking",
+          "text": "Getting stuck in an endless loop of overthinking."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-friendly-neighbor-who-always-wants-to-borrow-things",
+          "text": "A suspiciously friendly neighbor who always wants to borrow things."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-being-judged",
+          "text": "The lingering fear of being judged."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-joke",
+          "text": "A poorly timed joke."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-revolving-door",
+          "text": "Getting rejected by a revolving door."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-aggressive-houseplant",
+          "text": "A surprisingly aggressive houseplant."
+        },
+        {
+          "id": "white-black-a-the-crushing-weight-of-a-bad-pun",
+          "text": "The crushing weight of a bad pun."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-rant-about-the-state-of-the-world",
+          "text": "A completely unhinged rant about the state of the world."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-someone-s-pet",
+          "text": "Getting stuck in a conversation about someone's pet."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-vacation-package",
+          "text": "A suspiciously cheap vacation package."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-a-bad-joke",
+          "text": "The lingering taste of a bad joke."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-magic-trick-that-ends-in-disaster",
+          "text": "A poorly executed magic trick that ends in disaster."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-a-maze-of-your-own-thoughts",
+          "text": "Getting lost in a maze of your own thoughts."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-well-dressed-squirrel",
+          "text": "A suspiciously well-dressed squirrel."
+        },
+        {
+          "id": "white-black-a-the-overwhelming-urge-to-fake-a-british-accent",
+          "text": "The overwhelming urge to fake a British accent."
+        },
+        {
+          "id": "white-black-a-a-lukewarm-cup-of-revenge",
+          "text": "A lukewarm cup of revenge."
+        },
+        {
+          "id": "white-black-a-getting-emotionally-attached-to-a-roomba",
+          "text": "Getting emotionally attached to a Roomba."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-profound-fortune-cookie",
+          "text": "A surprisingly profound fortune cookie."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-are-the-drama",
+          "text": "The crushing realization that you are the drama."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-conspiracy-theory-about-pigeons",
+          "text": "A completely unhinged conspiracy theory about pigeons."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-an-elevator-with-a-mime",
+          "text": "Getting stuck in an elevator with a mime."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-clean-public-restroom",
+          "text": "A suspiciously clean public restroom."
+        },
+        {
+          "id": "white-black-a-the-lingering-taste-of-a-lie",
+          "text": "The lingering taste of a lie."
+        },
+        {
+          "id": "white-black-a-a-poorly-executed-attempt-at-flirting",
+          "text": "A poorly executed attempt at flirting."
+        },
+        {
+          "id": "white-black-a-getting-lost-in-the-sauce",
+          "text": "Getting lost in the sauce."
+        },
+        {
+          "id": "white-black-a-a-surprisingly-emotional-infomercial",
+          "text": "A surprisingly emotional infomercial."
+        },
+        {
+          "id": "white-black-a-the-crushing-realization-that-you-peaked-in-high-school",
+          "text": "The crushing realization that you peaked in high school."
+        },
+        {
+          "id": "white-black-a-a-completely-unhinged-rant-about-fonts",
+          "text": "A completely unhinged rant about fonts."
+        },
+        {
+          "id": "white-black-a-getting-stuck-in-a-conversation-about-nfts",
+          "text": "Getting stuck in a conversation about NFTs."
+        },
+        {
+          "id": "white-black-a-a-suspiciously-cheap-luxury-car",
+          "text": "A suspiciously cheap luxury car."
+        },
+        {
+          "id": "white-black-a-the-lingering-fear-of-being-perceived",
+          "text": "The lingering fear of being perceived."
+        },
+        {
+          "id": "white-black-a-a-poorly-timed-existential-crisis",
+          "text": "A poorly timed existential crisis."
+        },
+        {
+          "id": "white-black-a-getting-rejected-by-a-stray-cat",
+          "text": "Getting rejected by a stray cat."
+        }
+      ]
+    }
+  ]
+}
