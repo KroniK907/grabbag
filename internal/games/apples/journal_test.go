@@ -132,6 +132,9 @@ func TestDiscardSpendThenConfirmWritesStateFile(t *testing.T) {
 	if playPOST(g, "/draw", judge, nil).Code != http.StatusOK {
 		t.Fatal("draw")
 	}
+	if playPOST(g, "/keep-prompt", judge, nil).Code != http.StatusOK {
+		t.Fatal("keep")
+	}
 	card := firstHandCard(g, other)
 	playPOST(g, "/slot", other, url.Values{"card": {card}})
 	playPOST(g, "/lock", other, nil)
@@ -276,7 +279,7 @@ func TestPhoneHelpAfterStart(t *testing.T) {
 	}
 	sheet := httptest.NewRecorder()
 	g.Play().ServeHTTP(sheet, httptest.NewRequest(http.MethodGet, "/howto-sheet", nil))
-	if sheet.Code != http.StatusOK || !strings.Contains(sheet.Body.String(), "Close") {
+	if sheet.Code != http.StatusOK || !strings.Contains(sheet.Body.String(), "Close") || !strings.Contains(sheet.Body.String(), "apples-howto-sheet") {
 		t.Fatalf("sheet = %d %s", sheet.Code, sheet.Body.String())
 	}
 }

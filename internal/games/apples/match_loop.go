@@ -12,6 +12,8 @@ import (
 	"github.com/KroniK907/grabbag/internal/games"
 )
 
+const matchWinnerHold = 8 * time.Second
+
 func (g *Game) lockLocked(m *matchState, id string) error {
 	a := m.Actors[id]
 	if a == nil || !g.canSubmit(m, id) {
@@ -164,6 +166,7 @@ func (g *Game) confirmLocked(h games.Helper, m *matchState, winnerID string) err
 	g.applyFavoritesLocked(m, mult)
 	m.WinnerID = winnerID
 	m.NamesShown = true
+	m.PhoneErr = map[string]string{}
 	g.saveWildcardsLocked(h, m, winnerID)
 	g.clearTimerLocked(m)
 	m.Round++
@@ -308,8 +311,7 @@ func (g *Game) enterSuddenLocked(h games.Helper, m *matchState) {
 
 func (g *Game) finishLocked(_ games.Helper, m *matchState) {
 	m.Phase = phaseOver
-	g.clearTimerLocked(m)
-	g.needFinish = true
+	g.armTimerLocked(m, "finish", int(matchWinnerHold/time.Second))
 }
 
 func (g *Game) autoPickLocked(m *matchState) {
@@ -459,18 +461,21 @@ func (g *Game) armTimerLocked(m *matchState, kind string, sec int) {
 	}
 	if g.paused {
 		m.TimerKind = kind
-		m.FrozenLeft = time.Duration(sec) * time.Second
+		m.TimerTotal = time.Duration(sec) * time.Second
+		m.FrozenLeft = m.TimerTotal
 		m.TimerEnd = time.Time{}
 		return
 	}
 	m.TimerKind = kind
-	m.TimerEnd = g.clock().Add(time.Duration(sec) * time.Second)
+	m.TimerTotal = time.Duration(sec) * time.Second
+	m.TimerEnd = g.clock().Add(m.TimerTotal)
 	m.FrozenLeft = 0
 }
 
 func (g *Game) clearTimerLocked(m *matchState) {
 	m.TimerKind = ""
 	m.TimerEnd = time.Time{}
+	m.TimerTotal = 0
 	m.FrozenLeft = 0
 }
 
@@ -513,6 +518,8 @@ func (g *Game) fireTimerLocked() {
 		_ = g.revealNextLocked(m)
 	case "judge-pick":
 		g.autoPickLocked(m)
+	case "finish":
+		g.needFinish = true
 	}
 	g.publishLocked()
 	g.flushHostLocked()

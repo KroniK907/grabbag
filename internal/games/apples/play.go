@@ -100,6 +100,15 @@ func (g *Game) postSkip(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (g *Game) postKeepPrompt(w http.ResponseWriter, r *http.Request) {
+	g.withMatch(w, r, func(m *matchState, p games.Player) error {
+		if p.ID != m.JudgeID {
+			return fmt.Errorf("Only the judge can lock in the prompt.")
+		}
+		return g.keepPromptLocked(m)
+	})
+}
+
 func (g *Game) postChoosePrompt(w http.ResponseWriter, r *http.Request) {
 	g.withMatch(w, r, func(m *matchState, p games.Player) error {
 		if p.ID != m.JudgeID {
@@ -218,6 +227,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 	if !p.ClaimedHost {
 		g.burnErr = "Only the claimed host can burn cards."
 		view := g.phoneViewLocked(p)
+		view.BurnOpen = true
 		g.mu.Unlock()
 		g.render(w, "phone.html", view, http.StatusOK)
 		return
@@ -225,6 +235,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 	if g.burnCorrupt {
 		g.burnErr = "Burn list is unreadable"
 		view := g.phoneViewLocked(p)
+		view.BurnOpen = true
 		g.mu.Unlock()
 		g.render(w, "phone.html", view, http.StatusOK)
 		return
@@ -245,6 +256,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 	}
 	g.burnErr = ""
 	view := g.phoneViewLocked(p)
+	view.BurnOpen = true
 	g.mu.Unlock()
 	g.render(w, "phone.html", view, http.StatusOK)
 }

@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/KroniK907/grabbag/internal/games"
 )
 
 func TestStartRefusesWhenLibraryTooSmall(t *testing.T) {
@@ -133,8 +136,16 @@ func TestRoundLockRevealConfirm(t *testing.T) {
 	if draw.Code != http.StatusOK {
 		t.Fatal(draw.Body.String())
 	}
-	if !strings.Contains(draw.Body.String(), "Skip") && settingsMode(g) == modeSkip {
-		t.Fatalf("judge missing skip: %s", draw.Body.String())
+	if !strings.Contains(draw.Body.String(), "Skip") || !strings.Contains(draw.Body.String(), ">Lock in<") {
+		t.Fatalf("judge missing hold controls: %s", draw.Body.String())
+	}
+	if keep := playPOST(g, "/keep-prompt", judge, nil); keep.Code != http.StatusOK {
+		t.Fatal(keep.Body.String())
+	}
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if got := strings.Count(board.Body.String(), `class="apples-slot down"`); got != 2 {
+		t.Fatalf("submit board has %d face-down packets, want 2: %s", got, board.Body.String())
 	}
 	card := firstHandCard(g, other)
 	slot := playPOST(g, "/slot", other, url.Values{"card": {card}})
@@ -162,6 +173,13 @@ func TestRoundLockRevealConfirm(t *testing.T) {
 	for phaseOf(g) == phaseReveal && !allRevealed(g) {
 		playPOST(g, "/reveal", judge, nil)
 	}
+	judgePhone := httptest.NewRecorder()
+	judgeRequest := httptest.NewRequest(http.MethodGet, "/", nil)
+	judgeRequest.Header.Set("X-Player", judge)
+	g.Phone(judgePhone, judgeRequest)
+	if strings.Contains(judgePhone.Body.String(), ">Reveal next<") || !strings.Contains(judgePhone.Body.String(), "Choose the round winner.") {
+		t.Fatalf("final reveal controls = %s", judgePhone.Body.String())
+	}
 	winner := firstPacket(g)
 	conf := playPOST(g, "/confirm", judge, url.Values{"winner": {winner}})
 	if conf.Code != http.StatusOK {
@@ -169,6 +187,17 @@ func TestRoundLockRevealConfirm(t *testing.T) {
 	}
 	if g.match.Actors[winner].Score != 100 {
 		t.Fatalf("score = %d", g.match.Actors[winner].Score)
+	}
+	nextJudge := currentJudge(g)
+	if nextJudge == judge {
+		t.Fatalf("judge did not rotate from %s", judge)
+	}
+	nextPhone := httptest.NewRecorder()
+	nextRequest := httptest.NewRequest(http.MethodGet, "/", nil)
+	nextRequest.Header.Set("X-Player", nextJudge)
+	g.Phone(nextPhone, nextRequest)
+	if !strings.Contains(nextPhone.Body.String(), ">Draw<") {
+		t.Fatalf("incoming judge %s missing Draw: %s", nextJudge, nextPhone.Body.String())
 	}
 }
 
@@ -239,13 +268,23 @@ func TestSkipSpendsPromptMultiReturnsOther(t *testing.T) {
 	left := len(g.match.Prompts)
 	judge := currentJudge(g)
 	playPOST(g, "/draw", judge, nil)
+	if g.match.Phase != phaseHold {
+		t.Fatalf("phase after draw = %s", g.match.Phase)
+	}
 	first := g.match.LivePrompt.CardID
 	playPOST(g, "/skip", judge, nil)
 	if g.match.LivePrompt.CardID == first {
 		t.Fatal("skip kept the same prompt")
 	}
+	if g.match.Phase != phaseHold {
+		t.Fatalf("phase after skip = %s", g.match.Phase)
+	}
 	if len(g.match.Prompts) != left-2 {
 		t.Fatalf("skip returned prompt to pile: have %d started %d", len(g.match.Prompts), left)
+	}
+	playPOST(g, "/keep-prompt", judge, nil)
+	if g.match.Phase != phaseSubmit {
+		t.Fatalf("phase after lock in = %s", g.match.Phase)
 	}
 
 	g2h, g2 := tinyGame(t, 6, 40, 1)
@@ -297,13 +336,20 @@ func TestBotsGetPickOnlyOnDraw(t *testing.T) {
 			t.Fatal("bot dealt before draw")
 		}
 	}
-	playPOST(g, "/draw", currentJudge(g), nil)
+	judge := currentJudge(g)
+	playPOST(g, "/draw", judge, nil)
+	for _, a := range g.match.Actors {
+		if a.Bot && filledCount(a.Holes) != 0 {
+			t.Fatalf("bot dealt before lock in: %#v", a)
+		}
+	}
+	playPOST(g, "/keep-prompt", judge, nil)
 	for _, a := range g.match.Actors {
 		if !a.Bot {
 			continue
 		}
 		if filledCount(a.Holes) != 1 || !a.Locked || len(a.Hand) != 0 {
-			t.Fatalf("bot after draw: %#v", a)
+			t.Fatalf("bot after lock in: %#v", a)
 		}
 	}
 }
@@ -335,6 +381,218 @@ func TestSuddenDeathWhenLeadTiedAtFinish(t *testing.T) {
 	_ = g.confirmLocked(h, g.match, "p1")
 	if g.match.Phase != phaseSudden {
 		t.Fatalf("phase = %s", g.match.Phase)
+	}
+}
+
+func TestScoringViewLabelsWinnerAndFavoriteVotes(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	g := loadedGame(t, h)
+	g.mu.Lock()
+	g.started = true
+	g.match = &matchState{
+		Settings:   factorySettings(),
+		Phase:      phaseDrawWait,
+		Actors:     map[string]*actor{"p1": {ID: "p1", Name: "Pat"}, "p2": {ID: "p2", Name: "Sam"}},
+		Packets:    []packet{{ActorID: "p1", Cards: []playCard{{Text: "One"}}, Revealed: true}, {ActorID: "p2", Cards: []playCard{{Text: "Two"}}, Revealed: true}},
+		Votes:      map[string]string{"v1": "p1", "v2": "p1"},
+		WinnerID:   "p1",
+		NamesShown: true,
+		PhoneErr:   map[string]string{},
+	}
+	g.mu.Unlock()
+
+	rec := httptest.NewRecorder()
+	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
+	body := rec.Body.String()
+	for _, want := range []string{"Round winner - Pat", "2 favorite votes", "Favorite 1st", "Judge's pick"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("board missing %q: %s", want, body)
+		}
+	}
+}
+
+func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	g := loadedGame(t, h)
+	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
+	g.now = func() time.Time { return now }
+	m := &matchState{
+		Actors:   map[string]*actor{"p1": {ID: "p1", Name: "Pat"}},
+		WinnerID: "p1",
+		PhoneErr: map[string]string{},
+	}
+	g.mu.Lock()
+	g.started = true
+	g.match = m
+	g.finishLocked(h, m)
+	g.mu.Unlock()
+
+	rec := httptest.NewRecorder()
+	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if body := rec.Body.String(); !strings.Contains(body, ">Winner<") || !strings.Contains(body, "Back to lobby") || !strings.Contains(body, "0:08") {
+		t.Fatalf("winner hold page = %s", body)
+	}
+	if h.finishN != 0 {
+		t.Fatal("host finished before the winner hold elapsed")
+	}
+
+	now = now.Add(matchWinnerHold + time.Second)
+	g.mu.Lock()
+	g.fireTimerLocked()
+	g.mu.Unlock()
+	if h.finishN != 1 {
+		t.Fatalf("Finish calls = %d, want 1", h.finishN)
+	}
+}
+
+func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	viewer := games.Player{ID: "viewer", DisplayName: "Viewer", Audience: true}
+	h.players[viewer.ID] = viewer
+	h.audience = append(h.audience, viewer)
+	g := loadedGame(t, h)
+	g.mu.Lock()
+	g.started = true
+	g.match = &matchState{
+		Settings: factorySettings(),
+		Phase:    phaseReveal,
+		JudgeID:  "judge",
+		Actors: map[string]*actor{
+			"judge": {ID: "judge", Name: "Judge"},
+			"p1":    {ID: "p1", Name: "Pat"},
+			"p2":    {ID: "p2", Name: "Sam"},
+		},
+		LivePrompt: &playPrompt{Text: "Prompt _"},
+		Packets: []packet{
+			{ActorID: "p1", Cards: []playCard{{Text: "One"}}, Revealed: true},
+			{ActorID: "p2", Cards: []playCard{{Text: "Two"}}, Revealed: true},
+		},
+		Votes:    map[string]string{"viewer": "p1"},
+		PhoneErr: map[string]string{},
+	}
+	g.mu.Unlock()
+
+	renderPhone := func() string {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("X-Player", viewer.ID)
+		g.Phone(rec, req)
+		return rec.Body.String()
+	}
+	voting := renderPhone()
+	if !strings.Contains(voting, "apples-vote-card") || !strings.Contains(voting, "Your favorite") || !strings.Contains(voting, "is-voted") {
+		t.Fatalf("audience voting phone = %s", voting)
+	}
+
+	g.mu.Lock()
+	g.match.Phase = phaseDrawWait
+	g.match.NamesShown = true
+	g.match.WinnerID = "p2"
+	g.mu.Unlock()
+	scoring := renderPhone()
+	for _, want := range []string{"Judge's pick", "Favorite 1st", "Your favorite", "Sam"} {
+		if !strings.Contains(scoring, want) {
+			t.Fatalf("scoring phone missing %q: %s", want, scoring)
+		}
+	}
+}
+
+func TestSkipHoldHidesPromptUntilKeep(t *testing.T) {
+	t.Parallel()
+	h, g := tinyGame(t, 6, 40, 1)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	postSettings(g, "/prompt-mode", url.Values{"prompt_mode": {modeSkip}})
+	postSettings(g, "/voting", url.Values{"voting": {"off"}})
+	postSettings(g, "/timer-submit", url.Values{"submit": {"0"}})
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	seedRNG(g)
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	judge := currentJudge(g)
+	other := "p1"
+	if other == judge {
+		other = "p2"
+	}
+	playPOST(g, "/draw", judge, nil)
+	prompt := g.match.LivePrompt.Text
+
+	otherPhone := httptest.NewRecorder()
+	otherReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	otherReq.Header.Set("X-Player", other)
+	g.Phone(otherPhone, otherReq)
+	if body := otherPhone.Body.String(); strings.Contains(body, prompt) || strings.Contains(body, `hx-post="/play/slot"`) {
+		t.Fatalf("player saw the prompt or hand before lock in: %s", body)
+	} else if !strings.Contains(body, "Wait for the judge to lock in or skip.") {
+		t.Fatalf("player wait copy: %s", body)
+	}
+
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if body := board.Body.String(); strings.Contains(body, prompt) || !strings.Contains(body, "Judge, pick a prompt") {
+		t.Fatalf("hold board = %s", body)
+	}
+
+	card := firstHandCard(g, other)
+	slot := playPOST(g, "/slot", other, url.Values{"card": {card}})
+	if !strings.Contains(slot.Body.String(), "You cannot play a card now.") {
+		t.Fatalf("slot during hold = %s", slot.Body.String())
+	}
+
+	playPOST(g, "/keep-prompt", judge, nil)
+	ready := httptest.NewRecorder()
+	readyReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	readyReq.Header.Set("X-Player", other)
+	g.Phone(ready, readyReq)
+	if body := ready.Body.String(); !strings.Contains(body, prompt) || !strings.Contains(body, `hx-post="/play/slot"`) {
+		t.Fatalf("player after lock in = %s", body)
+	}
+}
+
+func TestTimerViewKeepsEndAcrossTicks(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	g := loadedGame(t, h)
+	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
+	g.now = func() time.Time { return now }
+	m := &matchState{PhoneErr: map[string]string{}}
+	g.mu.Lock()
+	g.started = true
+	g.match = m
+	g.armTimerLocked(m, "submit", 30)
+	label1, text1, sec1, total1, end1 := g.timerViewLocked(m)
+	now = now.Add(5 * time.Second)
+	label2, text2, sec2, total2, end2 := g.timerViewLocked(m)
+	g.mu.Unlock()
+	if label1 != "Submit" || total1 != 30 || end1 == 0 {
+		t.Fatalf("first timer view = %s %s %d %d %d", label1, text1, sec1, total1, end1)
+	}
+	if end2 != end1 || total2 != total1 || sec2 != 25 || text2 != "0:25" {
+		t.Fatalf("second timer view = %s %s %d %d %d", label2, text2, sec2, total2, end2)
+	}
+}
+
+func TestClaimedHostPhoneUsesBurnDrawer(t *testing.T) {
+	t.Parallel()
+	h, g := tinyGame(t, 4, 30, 1)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sitHost("host", "Host")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Player", "host")
+	g.Phone(rec, req)
+	body := rec.Body.String()
+	for _, want := range []string{"apples-burn-handle", "apples-burn-drawer", ">Back<", "Nothing to burn yet"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("burn drawer missing %q: %s", want, body)
+		}
 	}
 }
 

@@ -17,6 +17,7 @@ type phase string
 const (
 	phaseDrawWait phase = "draw-wait"
 	phaseChoose   phase = "choose"
+	phaseHold     phase = "hold"
 	phaseSubmit   phase = "submit"
 	phaseReveal   phase = "reveal"
 	phaseSudden   phase = "sudden-death"
@@ -67,6 +68,7 @@ type matchState struct {
 	NamesShown      bool
 	TimerKind       string
 	TimerEnd        time.Time
+	TimerTotal      time.Duration
 	FrozenLeft      time.Duration
 	PhoneErr        map[string]string
 }
@@ -355,6 +357,11 @@ func (g *Game) drawLocked(m *matchState) error {
 	m.LivePrompt = &p
 	g.recordPlayedLocked(p.LibraryID, p.CardID)
 	g.enqueueDiscardLocked()
+	if m.Settings.PromptMode == modeSkip {
+		m.Phase = phaseHold
+		g.clearTimerLocked(m)
+		return nil
+	}
 	g.enterSubmitLocked(m)
 	return nil
 }
@@ -363,18 +370,21 @@ func (g *Game) skipLocked(m *matchState) error {
 	if m.Settings.PromptMode != modeSkip || m.LivePrompt == nil {
 		return fmt.Errorf("Skip is not available.")
 	}
-	if m.Phase != phaseSubmit {
+	if m.Phase != phaseHold {
 		return fmt.Errorf("Skip is not available.")
-	}
-	for _, a := range m.Actors {
-		if a.Locked && !a.Bot && a.ID != m.JudgeID {
-			return fmt.Errorf("Skip is gone after the first lock.")
-		}
 	}
 	if g.maybeOverlayDealLocked(m, pendingSkip, 1, 0) {
 		return nil
 	}
 	return g.skipAfterReshuffleLocked(m)
+}
+
+func (g *Game) keepPromptLocked(m *matchState) error {
+	if m.Settings.PromptMode != modeSkip || m.Phase != phaseHold || m.LivePrompt == nil {
+		return fmt.Errorf("There is no prompt to lock in.")
+	}
+	g.enterSubmitLocked(m)
+	return nil
 }
 
 func (g *Game) choosePromptLocked(m *matchState, cardID string) error {

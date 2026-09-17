@@ -221,8 +221,13 @@ func (g *Game) skipAfterReshuffleLocked(m *matchState) error {
 	m.LivePrompt = &p
 	g.recordPlayedLocked(p.LibraryID, p.CardID)
 	g.enqueueDiscardLocked()
-	g.resetSubmitLocked(m)
-	g.enterSubmitLocked(m)
+	if m.Phase == phaseSubmit {
+		g.resetSubmitLocked(m)
+		g.enterSubmitLocked(m)
+		return nil
+	}
+	m.Phase = phaseHold
+	g.clearTimerLocked(m)
 	return nil
 }
 

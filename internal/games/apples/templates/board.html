@@ -1,6 +1,7 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 <link rel="stylesheet" href="{{.GameCSS}}">
+<script defer src="{{.GameJS}}"></script>
 {{template "board-frame" .}}
 {{template "ui-end"}}
 
@@ -21,32 +22,42 @@
   {{if .Sudden}}
   <div class="apples-win"><div class="apples-win-card"><h1 class="display">Tie breaker</h1><p>Leaders play sudden death.</p></div></div>
   {{else if .Over}}
-  <div class="apples-win"><div class="apples-win-card"><h1 class="display">Winner</h1><p>{{.WinnerName}}</p></div></div>
+  <div class="apples-win"><div class="apples-win-card">
+    <h1 class="display">Winner</h1>
+    <p class="apples-final-winner">{{.WinnerName}}</p>
+    {{template "apples-timer" .}}
+  </div></div>
   {{else}}
-  {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
-  {{if .Prompt}}
-    {{if and .FaceDown (eq .Phase "choose")}}
-    <div class="apples-prompt down">Judge, pick a prompt</div>
+  <header class="apples-board-head">
+    <span class="display">Apples for Humanity</span>
+    {{template "apples-timer" .}}
+  </header>
+  <main class="apples-board-center">
+    {{if .RoundWinner}}<p class="apples-round-winner">Round winner - {{.RoundWinner}}</p>{{end}}
+    {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
+    {{if or (eq .Phase "choose") (eq .Phase "hold")}}
+      <div class="apples-prompt down">Judge, pick a prompt</div>
+    {{else if .Prompt}}
+      <div class="apples-prompt">{{.Prompt.Text}}</div>
     {{else}}
-    <div class="apples-prompt">{{.Prompt.Text}}</div>
+      <div class="apples-prompt down">Judge, draw</div>
     {{end}}
-  {{else}}
-    <div class="apples-prompt down">Judge, draw</div>
-  {{end}}
-  <div class="apples-slots">
-    {{range .Packets}}
-    <article class="apples-slot{{if not .Revealed}} down{{end}}{{if .Winner}} winner{{end}}">
-      {{if .Revealed}}
-        {{range .Cards}}<p>{{.Text}}</p>{{end}}
-        {{if $.Over}}{{else if .Winner}}<p class="apples-chip">Winner</p>{{end}}
-        {{if ge .ShowVote 0}}<p>{{.ShowVote}}</p>{{end}}
-        {{if or .Winner $.NamesShown}}<p>{{.Name}}</p>{{end}}
-      {{else}}
-        <p>?</p>
+    <div class="apples-slots">
+      {{range .Packets}}
+      <article class="apples-slot{{if not .Revealed}} down{{end}}{{if .Winner}} winner{{end}}">
+        {{if .Revealed}}
+          {{range .Cards}}<p>{{.Text}}</p>{{end}}
+          {{if .Winner}}<p class="apples-chip">Judge's pick</p>{{end}}
+          {{if .FavoriteMark}}<p class="apples-chip favorite">{{.FavoriteMark}}</p>{{end}}
+          {{if .VoteLabel}}<p class="apples-vote-count">{{.VoteLabel}}</p>{{end}}
+          {{if or .Winner $.NamesShown}}<p class="apples-player-name">{{.Name}}</p>{{end}}
+        {{else}}
+          <p>?</p>
+        {{end}}
+      </article>
       {{end}}
-    </article>
-    {{end}}
-  </div>
+    </div>
+  </main>
   {{end}}
   <div class="apples-roster">
     {{range .Roster}}
@@ -58,4 +69,13 @@
     {{end}}
   </div>
 </div>
+{{end}}
+
+{{define "apples-timer"}}
+{{if .TimerLabel}}
+<div class="apples-timer" data-apples-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+  <span class="apples-timer-pie" aria-hidden="true"></span>
+  <span>{{.TimerLabel}} <strong data-timer-value>{{.TimerText}}</strong></span>
+</div>
+{{end}}
 {{end}}

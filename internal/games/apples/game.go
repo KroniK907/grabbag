@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	id         = "apples"
-	cssVersion = "match-2"
+	id           = "apples"
+	assetVersion = "match-4"
 	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
 	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )
@@ -179,6 +179,7 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /end-game", g.postEndGame)
 	mux.HandleFunc("POST /draw", g.postDraw)
 	mux.HandleFunc("POST /skip", g.postSkip)
+	mux.HandleFunc("POST /keep-prompt", g.postKeepPrompt)
 	mux.HandleFunc("POST /choose-prompt", g.postChoosePrompt)
 	mux.HandleFunc("POST /slot", g.postSlot)
 	mux.HandleFunc("POST /unslot", g.postUnslot)
@@ -273,7 +274,8 @@ func (g *Game) matchFrozen() bool {
 func (g *Game) chromeView(title string) pageView {
 	view := pageView{
 		Chrome:  ui.Chrome{Title: title, Theme: ui.DefaultTheme},
-		GameCSS: "/play/static/game.css?v=" + cssVersion,
+		GameCSS: "/play/static/game.css?v=" + assetVersion,
+		GameJS:  "/play/static/game.js?v=" + assetVersion,
 	}
 	if g.helper != nil {
 		view.Chrome.Theme = ui.NormalizeTheme(g.helper.Theme())
@@ -508,6 +510,7 @@ type pickerErr struct {
 type pageView struct {
 	ui.Chrome
 	GameCSS string
+	GameJS  string
 }
 
 type pickerView struct {
