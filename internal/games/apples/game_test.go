@@ -563,6 +563,7 @@ func (h *fakeHelper) Resume() {}
 func (h *fakeHelper) Publish(name string) {
 	h.published = append(h.published, name)
 }
+func (h *fakeHelper) Notify(string, string, string, int) {}
 func (h *fakeHelper) Log(line string) {
 	h.logs = append(h.logs, line)
 }
