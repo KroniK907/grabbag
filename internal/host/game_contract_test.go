@@ -188,7 +188,7 @@ func TestLobbyBoardShowsGameRailButtons(t *testing.T) {
 	}
 }
 
-func TestStartedWaitPhoneStaysOnLobby(t *testing.T) {
+func TestStartedWaitPhoneGetsGameBody(t *testing.T) {
 	t.Parallel()
 	_, handler, _, _ := testGameHandler(t, 0, 0)
 	admin := finishAndJoinHost(t, handler)
@@ -199,11 +199,51 @@ func TestStartedWaitPhoneStaysOnLobby(t *testing.T) {
 	waitCookies := waitJoin.Result().Cookies()
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, waitCookies)
 	body := phone.Body.String()
-	if strings.Contains(body, "FAKE-PHONE") {
-		t.Fatalf("wait phone used the game body: %q", body)
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, "ui-gear") {
+		t.Fatalf("wait phone missing game wrap: %q", body)
 	}
-	if !strings.Contains(body, "You are in line.") {
-		t.Fatalf("wait phone left Lobby: %q", body)
+	if strings.Contains(body, "You are in line.") {
+		t.Fatalf("wait phone stayed on Lobby: %q", body)
+	}
+}
+
+func TestStartedAudiencePhoneGetsGameBody(t *testing.T) {
+	t.Parallel()
+	_, handler, _, _ := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
+
+	join := request(t, handler, http.MethodPost, "/lobby/join", url.Values{"display_name": {"Bea"}}, "")
+	cookies := join.Result().Cookies()
+	optOut := requestWithCookie(t, handler, http.MethodPost, "/lobby/wait", nil, cookies)
+	if optOut.Code != http.StatusSeeOther {
+		t.Fatalf("wait-toggle status = %d", optOut.Code)
+	}
+	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, cookies)
+	body := phone.Body.String()
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, "ui-gear") {
+		t.Fatalf("audience phone missing game wrap: %q", body)
+	}
+	if strings.Contains(body, "You are watching") {
+		t.Fatalf("audience phone stayed on Lobby: %q", body)
+	}
+}
+
+func TestStartedUnknownCookieStaysOnLobbyJoin(t *testing.T) {
+	t.Parallel()
+	_, handler, _, _ := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
+
+	phone := request(t, handler, http.MethodGet, "/", nil, "")
+	body := phone.Body.String()
+	if strings.Contains(body, "FAKE-PHONE") {
+		t.Fatalf("unknown cookie used the game body: %q", body)
+	}
+	if !strings.Contains(body, `name="display_name"`) {
+		t.Fatalf("unknown cookie left Lobby join: %q", body)
 	}
 }
 

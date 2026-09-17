@@ -149,7 +149,7 @@ Host calls these on the Game value.
 | `Start(h Helper) error` | operator or auto-start | Store `h` again. Begin ticks or round state. |
 | `Board(w, r)` | GET `/board` after Start | Full HTML document. Stamp theme from `h.Theme()`. |
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
-| `Phone(w, r)` | GET `/` after Start, seated player only | Inner body only. Host wraps gear and the claimed-host drawer. Audience and unknown cookies stay on Lobby phone. |
+| `Phone(w, r)` | GET `/` after Start, any signed-in player | Inner body only. Host wraps gear and the claimed-host drawer. Unknown cookies stay on Lobby join. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
 | `Pause() error` | operator or auto-pause on seated disconnect | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
@@ -184,7 +184,7 @@ Public paths stay host-owned. Lobby vs game is a state swap on `/` and `/board`.
 
 | Path | Owner after Load | Owner after Start |
 |------|------------------|-------------------|
-| `/` | Lobby phone | Game `Phone` body inside host chrome, seated only |
+| `/` | Lobby phone | Game `Phone` body inside host chrome, any signed-in player |
 | `/board` | Lobby TV, plus `BoardButtons` | Game `Board` full document |
 | `/settings` | Host operator | Host operator, Game Settings fragment inlined |
 | `/settings/game/*` | `Settings()` mux | same |

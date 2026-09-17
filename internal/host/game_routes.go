@@ -26,8 +26,8 @@ func (rt *runtime) phone(w http.ResponseWriter, r *http.Request) {
 		rt.room.Phone(w, r)
 		return
 	}
-	player, ok, err := rt.room.PlayerFromRequest(r)
-	if err != nil || !ok || !player.Seated {
+	_, ok, err := rt.room.PlayerFromRequest(r)
+	if err != nil || !ok {
 		rt.room.Phone(w, r)
 		return
 	}
