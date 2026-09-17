@@ -282,9 +282,9 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 func TestEndRoundFillsWaitersWhenRoomIsOpen(t *testing.T) {
 	t.Parallel()
 	_, handler, room := testLobby(t)
-	joinNamed(t, handler, "Host", "correct horse")
+	hostCookie := joinNamed(t, handler, "Host", "correct horse")
 	lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
-	joinNamed(t, handler, "Pat", "")
+	pat := joinNamed(t, handler, "Pat", "")
 	if err := room.SetRoundActive(context.Background(), true); err != nil {
 		t.Fatal(err)
 	}
@@ -292,11 +292,45 @@ func TestEndRoundFillsWaitersWhenRoomIsOpen(t *testing.T) {
 	if p := playerFromCookie(t, room, waiter); p.Seated || !p.Waiting {
 		t.Fatalf("in-round join = %#v, want waiting", p)
 	}
-	if err := room.EndRound(context.Background(), false); err != nil {
+	if err := room.EndRound(context.Background(), true); err != nil {
 		t.Fatal(err)
 	}
 	if p := playerFromCookie(t, room, waiter); !p.Seated || p.Waiting {
 		t.Fatalf("after Stop = %#v, want seated", p)
+	}
+	if p := playerFromCookie(t, room, hostCookie); !p.Seated {
+		t.Fatalf("host lost a seat: %#v", p)
+	}
+	if p := playerFromCookie(t, room, pat); !p.Seated {
+		t.Fatalf("sitter lost a seat: %#v", p)
+	}
+}
+
+func TestEndRoundKeepsFullTableWhenCycleIsOn(t *testing.T) {
+	t.Parallel()
+	_, handler, room := testLobby(t)
+	hostCookie := joinNamed(t, handler, "Host", "correct horse")
+	lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
+	lobbyRequest(t, handler, http.MethodPost, "/settings/seat-cap", url.Values{"seat_cap": {"2"}}, operatorCookie())
+	two := joinNamed(t, handler, "Two", "")
+	if err := room.SetRoundActive(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	waiter := joinNamed(t, handler, "Wait", "")
+	if p := playerFromCookie(t, room, waiter); p.Seated {
+		t.Fatal("third joiner sat during the round")
+	}
+	if err := room.EndRound(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	if p := playerFromCookie(t, room, hostCookie); !p.Seated || p.Waiting {
+		t.Fatalf("host after full Stop = %#v", p)
+	}
+	if p := playerFromCookie(t, room, two); !p.Seated || p.Waiting {
+		t.Fatalf("sitter after full Stop = %#v", p)
+	}
+	if p := playerFromCookie(t, room, waiter); p.Seated || !p.Waiting {
+		t.Fatalf("waiter after full Stop = %#v, want still waiting", p)
 	}
 }
 
