@@ -117,6 +117,7 @@ func (l *Lobby) AutoPause(ctx context.Context) (bool, error) {
 
 // EndRound returns Lobby after Stop. cycle rotates seats on a graceful finish.
 // Disconnected seated rows are dropped. A queued host sit or stand is applied.
+// Open rooms then fill leftover seats from the wait list.
 func (l *Lobby) EndRound(ctx context.Context, cycle bool) error {
 	if err := l.SetRoundActive(ctx, false); err != nil {
 		return err
@@ -129,7 +130,25 @@ func (l *Lobby) EndRound(ctx context.Context, cycle bool) error {
 			return err
 		}
 	}
-	return l.applyHostQueue(ctx)
+	if err := l.applyHostQueue(ctx); err != nil {
+		return err
+	}
+	return l.fillNow(ctx)
+}
+
+func (l *Lobby) fillNow(ctx context.Context) error {
+	tx, err := l.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("lobby: begin fill: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := l.fillWait(ctx, tx); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("lobby: commit fill: %w", err)
+	}
+	return nil
 }
 
 func (l *Lobby) dropDisconnectedSeated(ctx context.Context) error {

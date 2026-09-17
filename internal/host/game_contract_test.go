@@ -188,6 +188,37 @@ func TestLobbyBoardShowsGameRailButtons(t *testing.T) {
 	}
 }
 
+func TestStopFillsInRoundWaiterWhenRoomIsOpen(t *testing.T) {
+	t.Parallel()
+	_, handler, _, _ := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/open", nil, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
+
+	waitJoin := request(t, handler, http.MethodPost, "/lobby/join", url.Values{"display_name": {"Bea"}}, "")
+	waitCookies := waitJoin.Result().Cookies()
+	if beat := requestWithCookie(t, handler, http.MethodPost, "/lobby/heartbeat", nil, waitCookies); beat.Code != http.StatusNoContent {
+		t.Fatalf("waiter heartbeat = %d", beat.Code)
+	}
+	inRound := requestWithCookie(t, handler, http.MethodGet, "/", nil, waitCookies).Body.String()
+	if strings.Contains(inRound, "You are in line.") {
+		t.Fatalf("in-round wait phone stayed on Lobby: %q", inRound)
+	}
+
+	stop := requestWithCookie(t, handler, http.MethodPost, "/settings/stop", nil, admin)
+	if stop.Code != http.StatusSeeOther {
+		t.Fatalf("Stop status = %d", stop.Code)
+	}
+	after := requestWithCookie(t, handler, http.MethodGet, "/", nil, waitCookies).Body.String()
+	if strings.Contains(after, "Leave wait list") || strings.Contains(after, "You are in line.") {
+		t.Fatalf("waiter still in line after Stop: %q", after)
+	}
+	if !strings.Contains(after, "Bea") || strings.Contains(after, "Join wait list") {
+		t.Fatalf("seated phone after Stop = %q", after)
+	}
+}
+
 func TestStartedWaitPhoneGetsGameBody(t *testing.T) {
 	t.Parallel()
 	_, handler, _, _ := testGameHandler(t, 0, 0)

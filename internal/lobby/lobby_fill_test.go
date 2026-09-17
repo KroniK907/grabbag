@@ -279,6 +279,27 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	}
 }
 
+func TestEndRoundFillsWaitersWhenRoomIsOpen(t *testing.T) {
+	t.Parallel()
+	_, handler, room := testLobby(t)
+	joinNamed(t, handler, "Host", "correct horse")
+	lobbyRequest(t, handler, http.MethodPost, "/settings/open", nil, operatorCookie())
+	joinNamed(t, handler, "Pat", "")
+	if err := room.SetRoundActive(context.Background(), true); err != nil {
+		t.Fatal(err)
+	}
+	waiter := joinNamed(t, handler, "Sam", "")
+	if p := playerFromCookie(t, room, waiter); p.Seated || !p.Waiting {
+		t.Fatalf("in-round join = %#v, want waiting", p)
+	}
+	if err := room.EndRound(context.Background(), false); err != nil {
+		t.Fatal(err)
+	}
+	if p := playerFromCookie(t, room, waiter); !p.Seated || p.Waiting {
+		t.Fatalf("after Stop = %#v, want seated", p)
+	}
+}
+
 func TestRoomFillPersistsAcrossReopen(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
