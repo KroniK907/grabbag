@@ -72,11 +72,7 @@ func (rt *runtime) postLoad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.load(r.Context(), strings.TrimSpace(r.PostFormValue("game_id"))); err != nil {
-		if err == errLoadRefused {
-			http.Error(w, "Could not load that game.", http.StatusConflict)
-			return
-		}
-		http.Error(w, "Could not load that game.", http.StatusInternalServerError)
+		rt.operatorNotice(w, r, "Could not load that game.")
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -90,11 +86,11 @@ func (rt *runtime) postStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.start(r.Context()); err != nil {
+		msg := "Could not start."
 		if err == errStartRefused || err == errNotLoaded {
-			http.Error(w, "Start needs a loaded game and at least one seated player.", http.StatusConflict)
-			return
+			msg = "Start needs a loaded game and at least one seated player."
 		}
-		http.Error(w, "Could not start.", http.StatusInternalServerError)
+		rt.operatorNotice(w, r, msg)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)

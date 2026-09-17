@@ -78,7 +78,7 @@ sse:
   endpoint: GET /lobby/events
   connect: body hx-ext=sse sse-connect=/lobby/events on ui-start
   helper: Publish(name)  # data payload is always "update"
-  reserved: [roster, round, pause, theme, log]
+  reserved: [roster, round, pause, theme, log, notice]
   pattern: named event then hx-get current HTML, not a delta
   drop: slow pages miss events (non-blocking send, buffer 16)
 ```
@@ -175,6 +175,7 @@ Host implements Helper. Games do not parse cookies, open `host.sqlite`, or write
 | `Pause()` | | Same as operator Pause. |
 | `Resume()` | | Same as operator Resume. |
 | `Publish(name)` | | Named SSE on the room hub. One EventSource per page. A slow page may miss an event. Clients fetch current state. |
+| `Notify(target, typ, message, seconds)` | | Host toast. `target` is `board`, `host`, `seated`, `audience`, or `waiting`. Reserved SSE name `notice` with JSON `target`, `type`, `message`, `duration`. Empty message or unknown target is a no-op. Does not write the log. `seconds`: 0 until close, negative is 3s, above 30 clamps to 30. |
 | `Log(line)` | | Prefixed with `<ID>: ` in the host log ring. No-op if nothing is loaded. |
 | `Theme()` | `string` | `neon-light` or `neon-dark`. Stamp full documents so first paint matches `/settings`. |
 | `HasAdmin(r)` | `bool` | Valid admin session. Use for board End game. Do not read the admin cookie yourself. |
@@ -209,7 +210,7 @@ Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby 
 
 One EventSource per page. Host chrome (`ui-start`) sets `hx-ext="sse"` and `sse-connect="/lobby/events"` on `body`. `GET /lobby/events` is the in-process hub. `ui-start-quiet` (setup and `/docs`) does not connect.
 
-`Helper.Publish(name)` writes an SSE event with that name and data `update`. Games cannot set the data line. Host uses `PublishData` only for `theme` (palette id) and `log` (the log line). Put scores and names in a GET partial, not in the event body.
+`Helper.Publish(name)` writes an SSE event with that name and data `update`. Games cannot set the data line. Host uses `PublishData` for `theme` (palette id), `log` (the log line), and `notice` (toast JSON). Put scores and names in a GET partial, not in the event body. Toasts are fire-and-forget. A missed `notice` is not replayed.
 
 The page does not apply a delta from the event. It hears the name, then `hx-get`s current HTML. Include `htmx:sseOpen from:body` on those triggers so a reconnect refetches.
 
@@ -228,6 +229,7 @@ Do not publish these for game ticks. Host already owns them.
 | `pause` | host on Pause and Resume | pause chrome and game partials |
 | `theme` | host | `html[data-theme]` |
 | `log` | host log ring | settings log tail |
+| `notice` | host via `Helper.Notify` | chrome toast; client filters by target |
 
 Publishing `roster` is fine when a settings knob changes a board that also shows Lobby facts. Publishing `round` from a game reloads the whole document. Do not do that for a score tick.
 

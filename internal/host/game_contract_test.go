@@ -253,7 +253,7 @@ func TestStartRefusedBeforeLoadOrZeroSeatedOrBelowMin(t *testing.T) {
 	admin := cookieAfterSetup(t, handler)
 
 	refused := requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
-	if refused.Code != http.StatusConflict {
+	if refused.Code != http.StatusSeeOther {
 		t.Fatalf("Start before Load = %d", refused.Code)
 	}
 
@@ -267,7 +267,7 @@ func TestStartRefusedBeforeLoadOrZeroSeatedOrBelowMin(t *testing.T) {
 		t.Fatalf("Load = %d %q", load.Code, load.Body.String())
 	}
 	start := requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, host)
-	if start.Code != http.StatusConflict {
+	if start.Code != http.StatusSeeOther {
 		t.Fatalf("Start below min = %d %q", start.Code, start.Body.String())
 	}
 }
@@ -298,7 +298,7 @@ func TestLoadRefusedAboveGameMax(t *testing.T) {
 	requestWithCookie(t, handler, http.MethodPost, "/lobby/join", url.Values{"display_name": {"Bea"}}, nil)
 
 	load := requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
-	if load.Code != http.StatusConflict {
+	if load.Code != http.StatusSeeOther {
 		t.Fatalf("Load above max = %d %q", load.Code, load.Body.String())
 	}
 }

@@ -538,6 +538,8 @@ func (h *fakeHelper) Publish(name string) {
 	h.published = append(h.published, name)
 }
 
+func (h *fakeHelper) Notify(string, string, string, int) {}
+
 func (h *fakeHelper) Log(string) {}
 
 func (h *fakeHelper) Theme() string {

@@ -35,6 +35,11 @@ type Helper interface {
 	Pause()
 	Resume()
 	Publish(name string)
+	// Notify sends a host toast on the room hub. target is board, host,
+	// seated, audience, or waiting. seconds is display time; 0 stays until
+	// close, negative uses 3s, and values above 30 clamp to 30. Empty
+	// message or an unknown target is a no-op. Does not write the log.
+	Notify(target, typ, message string, seconds int)
 	Log(line string)
 	// Theme is the room palette id, neon-light or neon-dark. Games stamp it
 	// on full documents so the first paint matches /settings.
