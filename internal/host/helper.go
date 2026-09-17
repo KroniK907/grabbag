@@ -74,6 +74,10 @@ func (h *helper) Publish(name string) {
 	h.rt.events.Publish(name)
 }
 
+func (h *helper) Notify(target, typ, message string, seconds int) {
+	h.rt.notify(target, typ, message, seconds)
+}
+
 func (h *helper) Log(line string) {
 	if h.rt.loadedID == "" {
 		return

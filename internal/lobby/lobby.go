@@ -184,6 +184,7 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("GET /lobby/presence", l.presence)
 	mux.HandleFunc("GET /lobby/partials/theme", l.themeSync)
+	mux.HandleFunc("GET /lobby/partials/notice-targets", l.noticeTargets)
 	mux.HandleFunc("POST /lobby/join", l.join)
 	mux.HandleFunc("POST /lobby/heartbeat", l.heartbeat)
 	mux.HandleFunc("POST /lobby/ready", l.readyToggle)
@@ -384,6 +385,7 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 		return data, nil
 	}
 	data.RestorePending = l.RestorePending()
+	data.Chrome = l.stampNotice(r, data.Chrome)
 	return data, nil
 }
 
@@ -1224,7 +1226,7 @@ func (l *Lobby) writeJoin(
 		return
 	}
 	l.render(w, templateName, joinView{
-		Chrome:       chrome,
+		Chrome:       l.stampNotice(r, chrome),
 		DisplayName:  state.DisplayName,
 		AvatarSeed:   seed,
 		ShowPassword: hostExists == 0,

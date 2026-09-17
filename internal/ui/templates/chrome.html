@@ -20,6 +20,7 @@
   hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
 >
 {{template "ui-overlay"}}
+{{template "notice-root" .}}
 {{template "theme-sync" .}}
 <script>
 (function () {
@@ -32,6 +33,12 @@
     var d = ev.detail || {};
     var data = typeof d.data === "string" ? d.data.trim() : "";
     applyTheme(data);
+    try {
+      var msg = JSON.parse(data);
+      if (msg && msg.target && msg.message) {
+        window.grabbagEnqueueNotice(msg);
+      }
+    } catch (e) {}
   }, true);
   function beat() {
     fetch("/lobby/heartbeat", { method: "POST", credentials: "same-origin" });
@@ -70,6 +77,109 @@
     <p>Waiting to hear from the machine on the table.</p>
   </div>
 </div>
+{{end}}
+
+{{define "notice-root"}}
+<div id="notice-root" class="ui-notice-root" hidden>
+  <div id="notice-toast" class="ui-notice" data-notice-type="info" data-notice-look="info">
+    <span class="ui-notice-mark" aria-hidden="true"></span>
+    <p id="notice-message" class="ui-notice-message"></p>
+    <button type="button" class="ui-notice-close" id="notice-close" aria-label="Dismiss">Close</button>
+  </div>
+</div>
+{{template "notice-targets" .}}
+<script>
+(function () {
+  var waiting = [];
+  var showing = null;
+  var timer = null;
+  function targets() {
+    var el = document.getElementById("notice-targets");
+    if (!el) return [];
+    return (el.getAttribute("data-notice-targets") || "").split(/\s+/).filter(Boolean);
+  }
+  function lookFor(type) {
+    if (type === "error" || type === "warning" || type === "info") return type;
+    return "info";
+  }
+  function hide() {
+    var root = document.getElementById("notice-root");
+    if (root) root.hidden = true;
+    showing = null;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+  function paint(msg) {
+    var root = document.getElementById("notice-root");
+    var toast = document.getElementById("notice-toast");
+    var text = document.getElementById("notice-message");
+    if (!root || !toast || !text) return;
+    showing = msg;
+    toast.setAttribute("data-notice-type", msg.type || "info");
+    toast.setAttribute("data-notice-look", lookFor(msg.type));
+    toast.setAttribute("role", lookFor(msg.type) === "error" ? "alert" : "status");
+    text.textContent = msg.message || "";
+    root.hidden = false;
+    if (timer) clearTimeout(timer);
+    timer = null;
+    var sec = +msg.duration;
+    if (sec < 0 || isNaN(sec)) sec = 3;
+    if (sec > 0) {
+      timer = setTimeout(function () {
+        hide();
+        showNext();
+      }, sec * 1000);
+    }
+  }
+  function showNext() {
+    if (waiting.length === 0) return;
+    paint(waiting.shift());
+  }
+  window.grabbagEnqueueNotice = function (msg) {
+    if (!msg || !msg.target || !msg.message) return;
+    if (targets().indexOf(msg.target) < 0) return;
+    if (!showing) {
+      paint(msg);
+      return;
+    }
+    waiting.push(msg);
+    if (waiting.length > 4) waiting.shift();
+  };
+  var closeBtn = document.getElementById("notice-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", function () {
+      hide();
+      showNext();
+    });
+  }
+  function refetchTargets() {
+    var el = document.getElementById("notice-targets");
+    if (!el || !window.htmx) return;
+    htmx.ajax("GET", "/lobby/partials/notice-targets", {source: el, target: el, swap: "outerHTML"});
+  }
+  document.body.addEventListener("sse:"+"roster", refetchTargets);
+  document.body.addEventListener("sse:"+"round", refetchTargets);
+  var match = document.cookie.match(/(?:^|; )grabbag_notice=([^;]*)/);
+  if (match) {
+    document.cookie = "grabbag_notice=; Max-Age=0; Path=/";
+    try {
+      window.grabbagEnqueueNotice(JSON.parse(decodeURIComponent(match[1])));
+    } catch (e) {}
+  }
+})();
+</script>
+{{end}}
+
+{{define "notice-targets"}}
+<div
+  id="notice-targets"
+  data-notice-targets="{{.NoticeTargets}}"
+  hx-get="/lobby/partials/notice-targets"
+  hx-trigger="load, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+></div>
 {{end}}
 
 {{define "theme-sync"}}
