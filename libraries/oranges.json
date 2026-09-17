@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "id": "oranges",
   "name": "Oranges to Oranges",
-  "description": "Original family-friendly starting library for Apples for Humanity.",
+  "description": "An AI generated Apples-to-Apples style starting library.",
   "packs": [
     {
       "id": "oranges",
