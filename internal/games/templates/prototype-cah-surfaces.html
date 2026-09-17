@@ -8,9 +8,9 @@
   Four structurally different variants share one file. Switch with
   ?variant=A|B|C|D&screen=picker|submit|reveal|winner|hand|judge|howto.
 
-  Initial verdict: A has the strongest connection to the host. B has the most
-  human personality. C reads best across a room. D has the clearest touch
-  targets. No winner has been selected.
+  Initial verdict: Start production design from A for host continuity. Borrow
+  C's across-room hierarchy for the TV and D's large phone controls. B is the
+  strongest alternate if handmade personality matters more than continuity.
 
   Double-click this file. Left and right arrow keys switch variants.
 -->
@@ -101,6 +101,75 @@
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
       border: 0;
+    }
+
+    /* Shared host-owned pre-game board. This rail does not change per game style. */
+    .host-lobby {
+      --pink: #ff2ad4;
+      --cyan: #19e3ff;
+      --yellow: #ffe14a;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      grid-template-rows: 1fr 86px;
+      padding-bottom: 64px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 20% 10%, #3a0a4a, transparent 40%),
+        radial-gradient(circle at 90% 80%, #062a4a, transparent 40%),
+        #090612;
+      font-family: "Arial Black", Arial, sans-serif;
+    }
+    .host-rail {
+      grid-row: 1;
+      padding: 24px 18px;
+      border-right: 4px solid var(--pink);
+      background: linear-gradient(#1a0730, #0b0618);
+    }
+    .host-brand {
+      color: var(--yellow);
+      font: 48px/.88 Impact, "Arial Black", sans-serif;
+      letter-spacing: .05em;
+      text-shadow: 0 0 18px var(--pink);
+      text-transform: uppercase;
+    }
+    .host-qr {
+      width: 142px;
+      height: 142px;
+      margin: 22px 0;
+      border: 9px solid #fff;
+      background:
+        repeating-linear-gradient(90deg, #111 0 8px, #fff 8px 15px),
+        repeating-linear-gradient(#111 0 8px, transparent 8px 15px);
+      box-shadow: 0 0 0 4px var(--cyan);
+    }
+    .host-rail p { color: var(--cyan); font-size: 12px; overflow-wrap: anywhere; }
+    .host-rail-action {
+      display: block;
+      width: 100%;
+      margin-top: 9px;
+      padding: 10px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #041820;
+      font-weight: 900;
+      text-align: center;
+      text-decoration: none;
+    }
+    .host-rail-action.public { background: var(--yellow); }
+    .host-main { display: grid; place-items: center; padding: 28px; text-align: center; }
+    .host-main h1 { margin: 0; color: var(--yellow); font: clamp(54px, 10vw, 130px)/.9 Impact, sans-serif; letter-spacing: .04em; text-shadow: 0 0 22px var(--pink); text-transform: uppercase; }
+    .host-main p { color: var(--cyan); font-size: clamp(18px, 3vw, 34px); }
+    .host-marquee {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 4px solid var(--yellow);
+      background: #111;
+      color: var(--yellow);
+      font-size: 22px;
     }
 
     /* A - Neon cabinet. Mirrors host tokens and cabinet construction. */
@@ -1125,6 +1194,8 @@
       .b-slip { width: 40vw; }
       .c-podiums { flex-wrap: wrap; align-content: end; }
       .c-podium { width: 42vw; }
+      .host-lobby { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+      .host-rail { grid-row: auto; border-right: 0; border-bottom: 4px solid var(--pink); }
     }
     @media (max-width: 520px) {
       .proto-bar { bottom: 6px; }
@@ -1144,7 +1215,7 @@
     <button id="close-notes" type="button">Close</button>
     <h2>Prototype question</h2>
     <p>Which visual direction best fits the picker, TV board, and player phone surfaces for Apples for Humanity?</p>
-    <p><strong>Initial read.</strong> A connects best to the host. B has the most human personality. C reads best across a room. D has the clearest touch targets. No winner has been selected.</p>
+    <p><strong>Initial verdict.</strong> Start production design from A for host continuity. Borrow C's across-room hierarchy for the TV and D's large phone controls. B is the strongest alternate if handmade personality matters more than continuity.</p>
     <p>All four directions can map their color tokens to the host's light or dark mode. This file shows one mode for each direction.</p>
   </aside>
   <nav id="proto-bar" class="proto-bar" aria-label="Prototype controls"></nav>
@@ -1157,6 +1228,7 @@
     ];
     const SCREENS = [
       { id: "picker", name: "Library picker" },
+      { id: "lobby", name: "TV - pre-game rail" },
       { id: "submit", name: "TV - submit" },
       { id: "reveal", name: "TV - reveal" },
       { id: "winner", name: "Winner splash" },
@@ -1186,7 +1258,21 @@
     }
 
     function license() {
-      return '<div class="license">Oranges to Oranges - original family library. Example third-party pack shown for layout testing. Licenses combine here when supplied by enabled libraries.</div>';
+      return "<div class=\"license\">Oranges to Oranges and Wildcard - original house libraries, no license field provided. Neighborhood Pack - CC BY 4.0 - Sam's Game Night.</div>";
+    }
+
+    function lobbyBoard() {
+      return `<section class="host-lobby">
+        <aside class="host-rail">
+          <div class="host-brand">Grab<br>Bag</div>
+          <div class="host-qr" aria-label="Example join QR code"></div>
+          <p>http://192.168.1.42:8080</p>
+          <a class="host-rail-action public" href="#" onclick="return false">How to play</a>
+          <a class="host-rail-action" href="#" onclick="return false">Deck Library - host only</a>
+        </aside>
+        <main class="host-main"><div><small>NOW PLAYING</small><h1>Apples for Humanity</h1><p>Pick your packs, then start from Settings.</p></div></main>
+        <div class="host-marquee">4 seated - room open - scan to join</div>
+      </section>`;
     }
 
     function aPicker() {
@@ -1205,7 +1291,7 @@
         <main>
           <div class="a-head">
             <div><small>ADMIN DECK CONSOLE</small><h1 class="display">Choose the mix</h1></div>
-            <button class="a-btn">Select none</button>
+            <div style="display:flex;gap:8px"><button class="a-btn">Select all</button><button class="a-btn">Select none</button></div>
           </div>
           <div class="a-cabinets">
             <article class="a-pack on"><h2>Oranges to Oranges</h2><p>Family-friendly house library</p><span class="a-toggle">5 PACKS ON</span></article>
@@ -1280,6 +1366,7 @@
     }
 
     function variantA(screen) {
+      if (screen === "lobby") return lobbyBoard();
       if (screen === "picker") return aPicker();
       if (screen === "submit") return aBoard(false);
       if (screen === "reveal") return aBoard(true);
@@ -1290,10 +1377,11 @@
     function bPicker() {
       return `<section class="b b-picker">
         <aside class="b-paper b-tape">
-          <h1 class="scribble">Tonight's card pile</h1>
+          <small>ADMIN ONLY</small><h1 class="scribble">Tonight's card pile</h1>
           <p>Mix any library. We will shuffle all enabled packs together.</p>
           <div class="b-selection"><strong>In the bowl</strong><p>Oranges to Oranges<br>Wildcard</p><b>248 prompts<br>812 answers</b></div>
           <button class="b-check" style="margin-top:18px">Select all</button>
+          <button class="b-check" style="margin-top:12px;background:#eee;color:#222">Select none</button>
           <button class="b-check" style="margin-top:12px;background:var(--blue)">How to play - TV rail</button>
           <p style="font-size:11px;overflow-wrap:anywhere">Folder: C:\\Games\\ApplesForHumanity\\libraries</p>
         </aside>
@@ -1301,7 +1389,7 @@
           <article class="b-library b-paper"><span class="b-dot">5</span><div><strong>Oranges to Oranges</strong><br><small>Our family-friendly starter library</small></div><button class="b-check">In the bowl</button></article>
           <article class="b-library b-paper"><span class="b-dot">1</span><div><strong>Wildcard</strong><br><small>Let players write answers</small></div><button class="b-check">In the bowl</button></article>
           <article class="b-library b-paper"><span class="b-dot">3</span><div><strong>Neighborhood Pack</strong><br><small>By Sam's Game Night - CC BY 4.0</small></div><button class="b-check" style="background:#eee;color:#222">Add it</button></article>
-          <article class="b-library b-paper bad"><span class="b-dot">!</span><div><strong>old-cards.json</strong><br><small style="color:#a41313">Can't read it: formatVersion is missing</small></div><span>needs fixing</span></article>
+          <article class="b-library b-paper bad"><span class="b-dot">!</span><div><strong>old-cards.json</strong><br><small style="color:#a41313">Can't read it. formatVersion is missing.</small></div><span>needs fixing</span></article>
           <article class="b-paper b-tape" style="padding:20px;margin-top:8px"><strong>Want the official packs?</strong><p>Download and convert the official CAH collection from GitHub. New packs start off.</p><button class="b-check">Quickly add packs</button></article>
         </main>
       </section>`;
@@ -1363,6 +1451,7 @@
     }
 
     function variantB(screen) {
+      if (screen === "lobby") return lobbyBoard();
       if (screen === "picker") return bPicker();
       if (screen === "submit") return bBoard(false);
       if (screen === "reveal") return bBoard(true);
@@ -1379,7 +1468,9 @@
           <div class="c-cue">ACT 2<br><strong>Wildcard</strong></div>
           <div class="c-cue" style="border-color:var(--gold)">248 prompts - 812 answers</div>
           <div class="c-cue" style="border-color:var(--red)">PUBLIC TV RAIL<br><strong>How to play</strong></div>
-          <button style="width:100%;padding:15px;border:0;background:var(--gold);font-weight:900">SELECT NONE</button>
+          <p style="font-size:11px;overflow-wrap:anywhere">C:\\Games\\ApplesForHumanity\\libraries</p>
+          <button style="width:49%;padding:15px;border:0;background:var(--blue);color:#fff;font-weight:900">SELECT ALL</button>
+          <button style="width:49%;padding:15px;border:0;background:var(--gold);font-weight:900">SELECT NONE</button>
         </aside>
         <main class="c-console">
           <div class="c-console-head"><div><small>LIBRARY CHANNELS</small><h2 class="showtype">Build the rundown</h2></div><span>Folder scanned now</span></div>
@@ -1440,6 +1531,7 @@
     }
 
     function variantC(screen) {
+      if (screen === "lobby") return lobbyBoard();
       if (screen === "picker") return cPicker();
       if (screen === "submit") return cBoard(false);
       if (screen === "reveal") return cBoard(true);
@@ -1450,10 +1542,13 @@
     function dPicker() {
       return `<section class="d d-picker">
         <aside class="d-filter d-peg">
-          <h1>Build your<br>card box</h1>
+          <small>ADMIN ONLY</small><h1>Build your<br>card box</h1>
           <button>All parts</button><button style="background:#fff">In the box</button><button style="background:#fff">Needs attention</button>
+          <button style="background:var(--green);color:#fff">Select all</button>
+          <button style="background:#fff">Select none</button>
           <button style="background:var(--blue);color:#fff">How to play - TV rail</button>
           <p><strong>Box count</strong><br>9 packs<br>248 prompts<br>812 answers</p>
+          <p style="font-size:11px;overflow-wrap:anywhere">C:\\Games\\ApplesForHumanity\\libraries</p>
         </aside>
         <main class="d-bins">
           <h2>Library parts bins</h2>
@@ -1522,6 +1617,7 @@
     }
 
     function variantD(screen) {
+      if (screen === "lobby") return lobbyBoard();
       if (screen === "picker") return dPicker();
       if (screen === "submit") return dBoard(false);
       if (screen === "reveal") return dBoard(true);
