@@ -11,31 +11,52 @@
       "prompts": [
         {
           "id": "oranges-p-bouncy",
-          "text": "Bouncy - (springy, elastic, lively)"
+          "text": "Bouncy - (springy, elastic, lively)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-clumsy",
-          "text": "Clumsy - (awkward, uncoordinated, bumbling)"
+          "text": "Clumsy - (awkward, uncoordinated, bumbling)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-dazzling",
-          "text": "Dazzling - (brilliant, shining, spectacular)"
+          "text": "Dazzling - (brilliant, shining, spectacular)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-fragile",
-          "text": "Fragile - (delicate, breakable, frail)"
+          "text": "Fragile - (delicate, breakable, frail)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-gigantic",
-          "text": "Gigantic - (huge, massive, enormous)"
+          "text": "Gigantic - (huge, massive, enormous)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-itchy",
-          "text": "Itchy - (scratchy, irritating, prickly)"
+          "text": "Itchy - (scratchy, irritating, prickly)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-lopsided",
-          "text": "Lopsided - (uneven, crooked, unbalanced)"
+          "text": "Lopsided - (uneven, crooked, unbalanced)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-pungent",
@@ -43,27 +64,45 @@
         },
         {
           "id": "oranges-p-sparkly",
-          "text": "Sparkly - (glittering, gleaming, shiny)"
+          "text": "Sparkly - (glittering, gleaming, shiny)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-squishy",
-          "text": "Squishy - (soft, yielding, spongy)"
+          "text": "Squishy - (soft, yielding, spongy)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-sticky",
-          "text": "Sticky - (tacky, adhesive, gummy)"
+          "text": "Sticky - (tacky, adhesive, gummy)",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "oranges-p-sweaty",
-          "text": "Sweaty - (perspiring, damp, clammy)"
+          "text": "Sweaty - (perspiring, damp, clammy)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-tiny",
-          "text": "Tiny - (miniature, small, microscopic)"
+          "text": "Tiny - (miniature, small, microscopic)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-wobbly",
-          "text": "Wobbly - (unsteady, shaky, unstable)"
+          "text": "Wobbly - (unsteady, shaky, unstable)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-bossy",
@@ -71,27 +110,45 @@
         },
         {
           "id": "oranges-p-cheerful",
-          "text": "Cheerful - (happy, upbeat, joyful)"
+          "text": "Cheerful - (happy, upbeat, joyful)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-dramatic",
-          "text": "Dramatic - (theatrical, exaggerated, over-the-top)"
+          "text": "Dramatic - (theatrical, exaggerated, over-the-top)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-grumpy",
-          "text": "Grumpy - (cranky, irritable, sour)"
+          "text": "Grumpy - (cranky, irritable, sour)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-heroic",
-          "text": "Heroic - (brave, courageous, valiant)"
+          "text": "Heroic - (brave, courageous, valiant)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-mischievous",
-          "text": "Mischievous - (playful, naughty, tricky)"
+          "text": "Mischievous - (playful, naughty, tricky)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-oblivious",
-          "text": "Oblivious - (unaware, clueless, blind)"
+          "text": "Oblivious - (unaware, clueless, blind)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-stubborn",
@@ -107,7 +164,10 @@
         },
         {
           "id": "oranges-p-anxious",
-          "text": "Anxious - (nervous, worried, tense)"
+          "text": "Anxious - (nervous, worried, tense)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-bewildered",
@@ -115,15 +175,24 @@
         },
         {
           "id": "oranges-p-delighted",
-          "text": "Delighted - (pleased, thrilled, ecstatic)"
+          "text": "Delighted - (pleased, thrilled, ecstatic)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-frustrated",
-          "text": "Frustrated - (annoyed, exasperated, defeated)"
+          "text": "Frustrated - (annoyed, exasperated, defeated)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-hysterical",
-          "text": "Hysterical - (frantic, wild, uncontrollable)"
+          "text": "Hysterical - (frantic, wild, uncontrollable)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-overwhelmed",
@@ -131,55 +200,94 @@
         },
         {
           "id": "oranges-p-panicked",
-          "text": "Panicked - (terrified, alarmed, scared)"
+          "text": "Panicked - (terrified, alarmed, scared)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-relieved",
-          "text": "Relieved - (comforted, reassured, relaxed)"
+          "text": "Relieved - (comforted, reassured, relaxed)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-shocked",
-          "text": "Shocked - (surprised, stunned, amazed)"
+          "text": "Shocked - (surprised, stunned, amazed)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-spooked",
-          "text": "Spooked - (frightened, startled, creeped out)"
+          "text": "Spooked - (frightened, startled, creeped out)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-annoying",
-          "text": "Annoying - (irritating, bothersome, pesky)"
+          "text": "Annoying - (irritating, bothersome, pesky)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-awesome",
-          "text": "Awesome - (amazing, fantastic, incredible)"
+          "text": "Awesome - (amazing, fantastic, incredible)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-boring",
-          "text": "Boring - (dull, tedious, uninteresting)"
+          "text": "Boring - (dull, tedious, uninteresting)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-creepy",
-          "text": "Creepy - (eerie, weird, unsettling)"
+          "text": "Creepy - (eerie, weird, unsettling)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-epic",
-          "text": "Epic - (legendary, monumental, grand)"
+          "text": "Epic - (legendary, monumental, grand)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-flawless",
-          "text": "Flawless - (perfect, impeccable, spotless)"
+          "text": "Flawless - (perfect, impeccable, spotless)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-hilarious",
-          "text": "Hilarious - (funny, amusing, comical)"
+          "text": "Hilarious - (funny, amusing, comical)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-pathetic",
-          "text": "Pathetic - (pitiful, sad, woeful)"
+          "text": "Pathetic - (pitiful, sad, woeful)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-ridiculous",
-          "text": "Ridiculous - (absurd, silly, preposterous)"
+          "text": "Ridiculous - (absurd, silly, preposterous)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-sketchy",
@@ -187,15 +295,24 @@
         },
         {
           "id": "oranges-p-ancient",
-          "text": "Ancient - (old, prehistoric, antique)"
+          "text": "Ancient - (old, prehistoric, antique)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-bizarre",
-          "text": "Bizarre - (strange, peculiar, odd)"
+          "text": "Bizarre - (strange, peculiar, odd)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-chaotic",
-          "text": "Chaotic - (disorderly, messy, turbulent)"
+          "text": "Chaotic - (disorderly, messy, turbulent)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-complex",
@@ -203,31 +320,52 @@
         },
         {
           "id": "oranges-p-cursed",
-          "text": "Cursed - (doomed, jinxed, unlucky)"
+          "text": "Cursed - (doomed, jinxed, unlucky)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-magical",
-          "text": "Magical - (mystical, enchanting, supernatural)"
+          "text": "Magical - (mystical, enchanting, supernatural)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-random",
-          "text": "Random - (arbitrary, chance, unpredictable)"
+          "text": "Random - (arbitrary, chance, unpredictable)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-secret",
-          "text": "Secret - (hidden, classified, undercover)"
+          "text": "Secret - (hidden, classified, undercover)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-toxic",
-          "text": "Toxic - (poisonous, harmful, deadly)"
+          "text": "Toxic - (poisonous, harmful, deadly)",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-p-useless",
-          "text": "Useless - (futile, pointless, ineffective)"
+          "text": "Useless - (futile, pointless, ineffective)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-wholesome",
-          "text": "Wholesome - (pure, good, uplifting)"
+          "text": "Wholesome - (pure, good, uplifting)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-salty",
@@ -243,61 +381,103 @@
         },
         {
           "id": "oranges-p-goofy",
-          "text": "Goofy - (silly, wacky, foolish)"
+          "text": "Goofy - (silly, wacky, foolish)",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-p-majestic",
-          "text": "Majestic - (grand, dignified, royal)"
+          "text": "Majestic - (grand, dignified, royal)",
+          "tags": [
+            "kid friendly"
+          ]
         }
       ],
       "answers": [
         {
           "id": "oranges-a-abraham-lincoln-s-top-hat",
-          "text": "Abraham Lincoln's Top Hat"
+          "text": "Abraham Lincoln's Top Hat",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "oranges-a-the-titanic",
-          "text": "The Titanic"
+          "text": "The Titanic",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-a-the-invention-of-the-wheel",
-          "text": "The Invention of the Wheel"
+          "text": "The Invention of the Wheel",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-rosetta-stone",
-          "text": "The Rosetta Stone"
+          "text": "The Rosetta Stone",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-great-emu-war",
-          "text": "The Great Emu War"
+          "text": "The Great Emu War",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-a-a-t-rex",
-          "text": "A T-Rex"
+          "text": "A T-Rex",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-first-thanksgiving",
-          "text": "The First Thanksgiving"
+          "text": "The First Thanksgiving",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-berlin-wall",
-          "text": "The Berlin Wall"
+          "text": "The Berlin Wall",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "oranges-a-amelia-earhart-s-plane",
-          "text": "Amelia Earhart's Plane"
+          "text": "Amelia Earhart's Plane",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-a-the-trojan-horse",
-          "text": "The Trojan Horse"
+          "text": "The Trojan Horse",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-a-a-fidget-spinner",
-          "text": "A Fidget Spinner"
+          "text": "A Fidget Spinner",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-baby-shark",
-          "text": "Baby Shark"
+          "text": "Baby Shark",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-algorithm",
@@ -309,7 +489,10 @@
         },
         {
           "id": "oranges-a-minecraft",
-          "text": "Minecraft"
+          "text": "Minecraft",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-an-influencer-s-apology",
@@ -321,11 +504,17 @@
         },
         {
           "id": "oranges-a-a-fortnite-dance",
-          "text": "A Fortnite Dance"
+          "text": "A Fortnite Dance",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-shrek",
-          "text": "Shrek"
+          "text": "Shrek",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-viral-meme",
@@ -333,15 +522,24 @@
         },
         {
           "id": "oranges-a-a-half-eaten-hot-dog",
-          "text": "A Half-Eaten Hot Dog"
+          "text": "A Half-Eaten Hot Dog",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-soggy-french-fry",
-          "text": "A Soggy French Fry"
+          "text": "A Soggy French Fry",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-roomba",
-          "text": "A Roomba"
+          "text": "A Roomba",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-used-tissue",
@@ -353,19 +551,31 @@
         },
         {
           "id": "oranges-a-a-jar-of-pickles",
-          "text": "A Jar of Pickles"
+          "text": "A Jar of Pickles",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-squeaky-shopping-cart",
-          "text": "A Squeaky Shopping Cart"
+          "text": "A Squeaky Shopping Cart",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-broken-pencil",
-          "text": "A Broken Pencil"
+          "text": "A Broken Pencil",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-pile-of-laundry",
-          "text": "A Pile of Laundry"
+          "text": "A Pile of Laundry",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-mystery-tupperware-container",
@@ -373,39 +583,66 @@
         },
         {
           "id": "oranges-a-stubbing-your-toe",
-          "text": "Stubbing Your Toe"
+          "text": "Stubbing Your Toe",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-forgetting-someone-s-name-immediately",
-          "text": "Forgetting Someone's Name Immediately"
+          "text": "Forgetting Someone's Name Immediately",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-waving-at-someone-who-wasn-t-waving-at-you",
-          "text": "Waving at Someone Who Wasn't Waving at You"
+          "text": "Waving at Someone Who Wasn't Waving at You",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-tripping-up-the-stairs",
-          "text": "Tripping Up the Stairs"
+          "text": "Tripping Up the Stairs",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-sending-a-text-to-the-wrong-person",
-          "text": "Sending a Text to the Wrong Person"
+          "text": "Sending a Text to the Wrong Person",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-biting-your-own-tongue",
-          "text": "Biting Your Own Tongue"
+          "text": "Biting Your Own Tongue",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-dropping-your-phone-on-your-face",
-          "text": "Dropping Your Phone on Your Face"
+          "text": "Dropping Your Phone on Your Face",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-sneezing-with-your-eyes-open",
-          "text": "Sneezing With Your Eyes Open"
+          "text": "Sneezing With Your Eyes Open",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-parallel-parking",
-          "text": "Parallel Parking"
+          "text": "Parallel Parking",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-winning-an-argument-in-the-shower",
@@ -413,11 +650,17 @@
         },
         {
           "id": "oranges-a-a-chuck-e-cheese-ball-pit",
-          "text": "A Chuck E. Cheese Ball Pit"
+          "text": "A Chuck E. Cheese Ball Pit",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-bermuda-triangle",
-          "text": "The Bermuda Triangle"
+          "text": "The Bermuda Triangle",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-public-restroom",
@@ -425,71 +668,122 @@
         },
         {
           "id": "oranges-a-the-international-space-station",
-          "text": "The International Space Station"
+          "text": "The International Space Station",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-target-target",
-          "text": "A Target Target"
+          "text": "A Target Target",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-dentist-s-waiting-room",
-          "text": "The Dentist's Waiting Room"
+          "text": "The Dentist's Waiting Room",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-bouncy-castle",
-          "text": "A Bouncy Castle"
+          "text": "A Bouncy Castle",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-middle-seat-on-an-airplane",
-          "text": "The Middle Seat on an Airplane"
+          "text": "The Middle Seat on an Airplane",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-corn-maze",
-          "text": "A Corn Maze"
+          "text": "A Corn Maze",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-bottom-of-the-ocean",
-          "text": "The Bottom of the Ocean"
+          "text": "The Bottom of the Ocean",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-golden-retriever",
-          "text": "A Golden Retriever"
+          "text": "A Golden Retriever",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-raccoon-eating-garbage",
-          "text": "A Raccoon Eating Garbage"
+          "text": "A Raccoon Eating Garbage",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-pigeon",
-          "text": "A Pigeon"
+          "text": "A Pigeon",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-sloth",
-          "text": "A Sloth"
+          "text": "A Sloth",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-chihuahua-shivering",
-          "text": "A Chihuahua Shivering"
+          "text": "A Chihuahua Shivering",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-honey-badger",
-          "text": "A Honey Badger"
+          "text": "A Honey Badger",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-platypus",
-          "text": "A Platypus"
+          "text": "A Platypus",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-blobfish",
-          "text": "A Blobfish"
+          "text": "A Blobfish",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-capybara",
-          "text": "A Capybara"
+          "text": "A Capybara",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-bear-on-a-tricycle",
-          "text": "A Bear on a Tricycle"
+          "text": "A Bear on a Tricycle",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-karma",
@@ -501,7 +795,10 @@
         },
         {
           "id": "oranges-a-the-friend-zone",
-          "text": "The Friend Zone"
+          "text": "The Friend Zone",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "oranges-a-procrastination",
@@ -517,11 +814,17 @@
         },
         {
           "id": "oranges-a-awkward-silence",
-          "text": "Awkward Silence"
+          "text": "Awkward Silence",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-common-sense",
-          "text": "Common Sense"
+          "text": "Common Sense",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-false-hope",
@@ -533,7 +836,10 @@
         },
         {
           "id": "oranges-a-a-coupon-for-50-cents-off",
-          "text": "A Coupon for 50 Cents Off"
+          "text": "A Coupon for 50 Cents Off",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-fart-in-an-elevator",
@@ -541,27 +847,45 @@
         },
         {
           "id": "oranges-a-a-glitter-bomb",
-          "text": "A Glitter Bomb"
+          "text": "A Glitter Bomb",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-hairball",
-          "text": "A Hairball"
+          "text": "A Hairball",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-handshake-that-lasts-too-long",
-          "text": "A Handshake That Lasts Too Long"
+          "text": "A Handshake That Lasts Too Long",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "oranges-a-a-high-five-left-hanging",
-          "text": "A High Five Left Hanging"
+          "text": "A High Five Left Hanging",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-mosquito-in-your-bedroom",
-          "text": "A Mosquito in Your Bedroom"
+          "text": "A Mosquito in Your Bedroom",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-paper-cut",
-          "text": "A Paper Cut"
+          "text": "A Paper Cut",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-puddle-of-unknown-origin",
@@ -569,43 +893,73 @@
         },
         {
           "id": "oranges-a-a-screen-door",
-          "text": "A Screen Door"
+          "text": "A Screen Door",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-seagull-stealing-your-french-fry",
-          "text": "A Seagull Stealing Your French Fry"
+          "text": "A Seagull Stealing Your French Fry",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-secret-handshake",
-          "text": "A Secret Handshake"
+          "text": "A Secret Handshake",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-sneeze-that-escapes",
-          "text": "A Sneeze That Escapes"
+          "text": "A Sneeze That Escapes",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-spider-on-the-ceiling",
-          "text": "A Spider on the Ceiling"
+          "text": "A Spider on the Ceiling",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-staring-contest",
-          "text": "A Staring Contest"
+          "text": "A Staring Contest",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-sudden-urge-to-dance",
-          "text": "A Sudden Urge to Dance"
+          "text": "A Sudden Urge to Dance",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-typo-in-an-important-email",
-          "text": "A Typo in an Important Email"
+          "text": "A Typo in an Important Email",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-wedgie",
-          "text": "A Wedgie"
+          "text": "A Wedgie",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "oranges-a-a-wet-sock",
-          "text": "A Wet Sock"
+          "text": "A Wet Sock",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-accidentally-liking-an-old-photo",
@@ -613,11 +967,17 @@
         },
         {
           "id": "oranges-a-an-itch-you-can-t-reach",
-          "text": "An Itch You Can't Reach"
+          "text": "An Itch You Can't Reach",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-an-overdue-library-book",
-          "text": "An Overdue Library Book"
+          "text": "An Overdue Library Book",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-autocorrect",
@@ -633,15 +993,24 @@
         },
         {
           "id": "oranges-a-brain-freeze",
-          "text": "Brain Freeze"
+          "text": "Brain Freeze",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-bubble-wrap",
-          "text": "Bubble Wrap"
+          "text": "Bubble Wrap",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-burning-your-tongue-on-hot-pizza",
-          "text": "Burning Your Tongue on Hot Pizza"
+          "text": "Burning Your Tongue on Hot Pizza",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-catching-someone-picking-their-nose",
@@ -649,39 +1018,66 @@
         },
         {
           "id": "oranges-a-choking-on-your-own-spit",
-          "text": "Choking on Your Own Spit"
+          "text": "Choking on Your Own Spit",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-dad-jokes",
-          "text": "Dad Jokes"
+          "text": "Dad Jokes",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-doing-the-macarena",
-          "text": "Doing the Macarena"
+          "text": "Doing the Macarena",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-dropping-a-spoon-in-the-garbage-disposal",
-          "text": "Dropping a Spoon in the Garbage Disposal"
+          "text": "Dropping a Spoon in the Garbage Disposal",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-eating-a-bug",
-          "text": "Eating a Bug"
+          "text": "Eating a Bug",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-fake-pockets",
-          "text": "Fake Pockets"
+          "text": "Fake Pockets",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-finding-money-in-your-pocket",
-          "text": "Finding Money in Your Pocket"
+          "text": "Finding Money in Your Pocket",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-forgetting-why-you-walked-into-a-room",
-          "text": "Forgetting Why You Walked Into a Room"
+          "text": "Forgetting Why You Walked Into a Room",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-getting-caught-talking-to-yourself",
-          "text": "Getting Caught Talking to Yourself"
+          "text": "Getting Caught Talking to Yourself",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-getting-rickrolled",
@@ -689,39 +1085,66 @@
         },
         {
           "id": "oranges-a-getting-soap-in-your-eyes",
-          "text": "Getting Soap in Your Eyes"
+          "text": "Getting Soap in Your Eyes",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-having-spinach-in-your-teeth",
-          "text": "Having Spinach in Your Teeth"
+          "text": "Having Spinach in Your Teeth",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-hiccups-that-won-t-go-away",
-          "text": "Hiccups That Won't Go Away"
+          "text": "Hiccups That Won't Go Away",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-hitting-the-snooze-button",
-          "text": "Hitting the Snooze Button"
+          "text": "Hitting the Snooze Button",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-holding-in-a-sneeze",
-          "text": "Holding in a Sneeze"
+          "text": "Holding in a Sneeze",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-laughing-at-a-funeral",
-          "text": "Laughing at a Funeral"
+          "text": "Laughing at a Funeral",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "oranges-a-losing-the-tv-remote",
-          "text": "Losing the TV Remote"
+          "text": "Losing the TV Remote",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-making-eye-contact-with-a-stranger",
-          "text": "Making Eye Contact With a Stranger"
+          "text": "Making Eye Contact With a Stranger",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-mismatched-socks",
-          "text": "Mismatched Socks"
+          "text": "Mismatched Socks",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-morning-breath",
@@ -733,11 +1156,17 @@
         },
         {
           "id": "oranges-a-pantomiming",
-          "text": "Pantomiming"
+          "text": "Pantomiming",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-petting-a-dog-without-asking",
-          "text": "Petting a Dog Without Asking"
+          "text": "Petting a Dog Without Asking",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-pretending-to-know-about-wine",
@@ -745,7 +1174,10 @@
         },
         {
           "id": "oranges-a-putting-the-usb-in-upside-down",
-          "text": "Putting the USB in Upside Down"
+          "text": "Putting the USB in Upside Down",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-realizing-you-re-muted-on-a-zoom-call",
@@ -761,15 +1193,24 @@
         },
         {
           "id": "oranges-a-saying-you-too-to-the-waiter",
-          "text": "Saying You Too to the Waiter"
+          "text": "Saying You Too to the Waiter",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-singing-in-the-shower",
-          "text": "Singing in the Shower"
+          "text": "Singing in the Shower",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-sleeping-through-your-alarm",
-          "text": "Sleeping Through Your Alarm"
+          "text": "Sleeping Through Your Alarm",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-smelling-your-own-armpit",
@@ -777,23 +1218,38 @@
         },
         {
           "id": "oranges-a-snorting-when-you-laugh",
-          "text": "Snorting When You Laugh"
+          "text": "Snorting When You Laugh",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-spilling-coffee-on-your-shirt",
-          "text": "Spilling Coffee on Your Shirt"
+          "text": "Spilling Coffee on Your Shirt",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-stepping-in-a-puddle",
-          "text": "Stepping in a Puddle"
+          "text": "Stepping in a Puddle",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-talking-to-your-pets-in-a-baby-voice",
-          "text": "Talking to Your Pets in a Baby Voice"
+          "text": "Talking to Your Pets in a Baby Voice",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-5-second-rule",
-          "text": "The 5-Second Rule"
+          "text": "The 5-Second Rule",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-awkward-teenage-years",
@@ -801,51 +1257,87 @@
         },
         {
           "id": "oranges-a-the-check-engine-light",
-          "text": "The Check Engine Light"
+          "text": "The Check Engine Light",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-crust-on-a-sandwich",
-          "text": "The Crust on a Sandwich"
+          "text": "The Crust on a Sandwich",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-end-of-a-roll-of-tape",
-          "text": "The End of a Roll of Tape"
+          "text": "The End of a Roll of Tape",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-ice-cream-machine-being-broken",
-          "text": "The Ice Cream Machine Being Broken"
+          "text": "The Ice Cream Machine Being Broken",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-smell-of-rain",
-          "text": "The Smell of Rain"
+          "text": "The Smell of Rain",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-sound-of-nails-on-a-chalkboard",
-          "text": "The Sound of Nails on a Chalkboard"
+          "text": "The Sound of Nails on a Chalkboard",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-trying-to-push-a-pull-door",
-          "text": "Trying to Push a Pull Door"
+          "text": "Trying to Push a Pull Door",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-unsubscribing-from-emails",
-          "text": "Unsubscribing from Emails"
+          "text": "Unsubscribing from Emails",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-waking-up-thinking-it-s-friday-when-it-s-tuesday",
-          "text": "Waking Up Thinking It's Friday When It's Tuesday"
+          "text": "Waking Up Thinking It's Friday When It's Tuesday",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-walking-into-a-spiderweb",
-          "text": "Walking Into a Spiderweb"
+          "text": "Walking Into a Spiderweb",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-yawning-contagiously",
-          "text": "Yawning Contagiously"
+          "text": "Yawning Contagiously",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-burnt-chicken-nugget",
-          "text": "A Burnt Chicken Nugget"
+          "text": "A Burnt Chicken Nugget",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-clogged-toilet",
@@ -853,47 +1345,80 @@
         },
         {
           "id": "oranges-a-a-deflated-balloon",
-          "text": "A Deflated Balloon"
+          "text": "A Deflated Balloon",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-fake-mustache",
-          "text": "A Fake Mustache"
+          "text": "A Fake Mustache",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-guinea-pig",
-          "text": "A Guinea Pig"
+          "text": "A Guinea Pig",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-moldy-piece-of-bread",
-          "text": "A Moldy Piece of Bread"
+          "text": "A Moldy Piece of Bread",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-pool-noodle",
-          "text": "A Pool Noodle"
+          "text": "A Pool Noodle",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-rubber-chicken",
-          "text": "A Rubber Chicken"
+          "text": "A Rubber Chicken",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-slinky-tangled-beyond-repair",
-          "text": "A Slinky Tangled Beyond Repair"
+          "text": "A Slinky Tangled Beyond Repair",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-stuffed-animal",
-          "text": "A Stuffed Animal"
+          "text": "A Stuffed Animal",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-sentient-toaster",
-          "text": "A Sentient Toaster"
+          "text": "A Sentient Toaster",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-illuminati",
-          "text": "The Illuminati"
+          "text": "The Illuminati",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "oranges-a-a-very-good-boy",
-          "text": "A Very Good Boy"
+          "text": "A Very Good Boy",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-an-uncomfortable-silence",
@@ -909,19 +1434,31 @@
         },
         {
           "id": "oranges-a-getting-ghosted",
-          "text": "Getting Ghosted"
+          "text": "Getting Ghosted",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "oranges-a-an-aggressively-friendly-golden-retriever",
-          "text": "An Aggressively Friendly Golden Retriever"
+          "text": "An Aggressively Friendly Golden Retriever",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-the-eiffel-tower",
-          "text": "The Eiffel Tower"
+          "text": "The Eiffel Tower",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "oranges-a-a-malfunctioning-robot",
-          "text": "A Malfunctioning Robot"
+          "text": "A Malfunctioning Robot",
+          "tags": [
+            "kid friendly"
+          ]
         }
       ]
     }

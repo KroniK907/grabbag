@@ -264,6 +264,46 @@ func TestTogglePackPersistsUntilStarted(t *testing.T) {
 	assertCheckbox(t, picker(t, g), "wildcard", "wildcard", false)
 }
 
+func TestPickerTogglesUseHTMX(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	page := picker(t, g)
+	for _, want := range []string{
+		`id="apples-picker"`,
+		`hx-post="/settings/game/pack"`,
+		`hx-post="/settings/game/tag"`,
+		`hx-post="/settings/game/select-all"`,
+		`hx-target="#apples-picker"`,
+		`hx-swap="outerHTML"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("picker missing %s", want)
+		}
+	}
+	if strings.Contains(page, `onchange="this.form.submit()"`) {
+		t.Fatal("picker still submits with a full navigation")
+	}
+
+	rec := postSettingsHX(g, "/pack", url.Values{
+		"library": {"wildcard"},
+		"pack":    {"wildcard"},
+		"enabled": {"0", "1"},
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("htmx pack = %d %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "<!doctype html>") || strings.Contains(body, "<html") {
+		t.Fatal("htmx pack returned a full document")
+	}
+	if !strings.Contains(body, `id="apples-picker"`) {
+		t.Fatalf("htmx pack missing picker body: %s", body)
+	}
+	assertCheckbox(t, body, "wildcard", "wildcard", true)
+}
+
 func TestSelectAllAndNone(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)
@@ -283,6 +323,238 @@ func TestSelectAllAndNone(t *testing.T) {
 	page = picker(t, g)
 	assertCheckbox(t, page, "wildcard", "wildcard", false)
 	assertCheckbox(t, page, "oranges", "oranges", false)
+}
+
+func TestPickerHidesTagsWhenNoneExist(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	// Existing files block copyShippedLibraries so embed tagged shipped JSON is not used.
+	writeLib(t, dir, "oranges.json", `{"formatVersion":1,"id":"oranges","name":"Oranges","packs":[{"id":"oranges","name":"Oranges","prompts":[{"id":"p1","text":"Fun - (nice, cool)"}],"answers":[{"id":"a1","text":"Thing"}]}]}`)
+	writeLib(t, dir, "white-black.json", `{"formatVersion":1,"id":"white-black","name":"WB","packs":[{"id":"white-black","name":"WB","prompts":[{"id":"p1","text":"Hi _."}],"answers":[{"id":"a1","text":"There."}]}]}`)
+	writeLib(t, dir, "wildcard.json", `{"formatVersion":1,"id":"wildcard","name":"Wildcard","packs":[{"id":"wildcard","name":"Wildcard","prompts":[],"answers":[{"id":"a1","text":"Wildcard"}]}]}`)
+	g := loadedGame(t, newFakeHelper(dir, true))
+	page := picker(t, g)
+	assertTag(t, page, untaggedFilterID, true)
+	if !strings.Contains(tagForm(page, untaggedFilterID), "Untagged") {
+		t.Fatalf("missing Untagged label: %s", page)
+	}
+	if strings.Contains(page, `name="tag" value="nsfw"`) || strings.Contains(page, `name="tag" value="politics"`) {
+		t.Fatalf("content tags leaked: %s", page)
+	}
+}
+
+func TestPickerShowsGlobalTagsAndPackDots(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+	page := picker(t, g)
+	if !strings.Contains(page, `class="apples-tag-list"`) {
+		t.Fatal(page)
+	}
+	if !strings.Contains(page, `name="tag" value="nsfw"`) || !strings.Contains(page, `name="tag" value="politics"`) {
+		t.Fatalf("missing sidebar tags: %s", page)
+	}
+	assertTag(t, page, untaggedFilterID, true)
+	if strings.Index(page, `class="apples-tag-list"`) > strings.Index(page, `class="apples-cabinets"`) {
+		t.Fatal("tag list is not in the sidebar")
+	}
+	row := packArticle(page, "tagged", "tagged")
+	if !strings.Contains(row, `title="nsfw"`) || !strings.Contains(row, `title="politics"`) {
+		t.Fatalf("pack dots missing: %s", row)
+	}
+	nsfwColor := tagColor("nsfw")
+	if !strings.Contains(page, "background:"+nsfwColor) {
+		t.Fatalf("nsfw color %s missing: %s", nsfwColor, page)
+	}
+}
+
+func TestToggleTagPersistsUntilStarted(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+
+	rec := postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0"}})
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/play/picker" {
+		t.Fatalf("toggle = %d %q", rec.Code, rec.Header().Get("Location"))
+	}
+	page := picker(t, g)
+	assertTag(t, page, "nsfw", false)
+	assertTag(t, page, "politics", true)
+
+	none := postSettings(g, "/select-none", nil)
+	if none.Code != http.StatusSeeOther {
+		t.Fatal(none.Body.String())
+	}
+	assertTag(t, picker(t, g), "nsfw", false)
+
+	disableShipped(t, g)
+	postSettings(g, "/pack", url.Values{"library": {"tagged"}, "pack": {"tagged"}, "enabled": {"1"}})
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sit("p1", "Pat")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	frozen := postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0", "1"}})
+	if frozen.Code != http.StatusOK {
+		t.Fatalf("started toggle status = %d", frozen.Code)
+	}
+	if !strings.Contains(frozen.Body.String(), "Tag changes wait until the game ends") {
+		t.Fatalf("missing freeze note: %s", frozen.Body.String())
+	}
+	assertTag(t, picker(t, g), "nsfw", false)
+}
+
+func TestExcludedTagsLeaveTheDeal(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+	disableShipped(t, g)
+	postSettings(g, "/pack", url.Values{"library": {"tagged"}, "pack": {"tagged"}, "enabled": {"1"}})
+	postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0"}})
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sit("p1", "Pat")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	ids := map[string]bool{}
+	for _, p := range g.match.Prompts {
+		ids[p.CardID] = true
+	}
+	if g.match.LivePrompt != nil {
+		ids[g.match.LivePrompt.CardID] = true
+	}
+	for _, a := range g.match.Answers {
+		ids[a.CardID] = true
+	}
+	for _, actor := range g.match.Actors {
+		for _, card := range actor.Hand {
+			ids[card.CardID] = true
+		}
+	}
+	if ids["p-nsfw"] || ids["a-nsfw"] || ids["a-both"] {
+		t.Fatalf("excluded cards still in piles: %#v", ids)
+	}
+	if !ids["p-clean"] {
+		t.Fatalf("untagged prompt missing: %#v", ids)
+	}
+	if !ids["a-clean-0"] && !ids["a-clean-1"] && !ids["a-clean-2"] && !ids["a-clean"] {
+		t.Fatalf("untagged answers missing: %#v", ids)
+	}
+}
+
+func TestExcludedUntaggedLeaveTheDeal(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+	disableShipped(t, g)
+	postSettings(g, "/pack", url.Values{"library": {"tagged"}, "pack": {"tagged"}, "enabled": {"1"}})
+	rec := postSettings(g, "/tag", url.Values{"tag": {untaggedFilterID}, "enabled": {"0"}})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatal(rec.Body.String())
+	}
+	assertTag(t, picker(t, g), untaggedFilterID, false)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sit("p1", "Pat")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	ids := map[string]bool{}
+	for _, p := range g.match.Prompts {
+		ids[p.CardID] = true
+	}
+	if g.match.LivePrompt != nil {
+		ids[g.match.LivePrompt.CardID] = true
+	}
+	for _, a := range g.match.Answers {
+		ids[a.CardID] = true
+	}
+	for _, actor := range g.match.Actors {
+		for _, card := range actor.Hand {
+			ids[card.CardID] = true
+		}
+	}
+	if ids["p-clean"] || ids["a-clean-0"] || ids["a-clean-1"] || ids["a-clean-2"] || ids["a-clean"] {
+		t.Fatalf("untagged cards still in piles: %#v", ids)
+	}
+	if !ids["p-nsfw"] && !ids["a-nsfw"] && !ids["a-both"] && !ids["a-pol"] {
+		t.Fatalf("tagged cards missing: %#v", ids)
+	}
+}
+
+func TestTagColorIsStable(t *testing.T) {
+	t.Parallel()
+	if tagColor("nsfw") != tagColor("nsfw") {
+		t.Fatal("nsfw color moved")
+	}
+	if tagColor("nsfw") != "#c38fff" {
+		t.Fatalf("nsfw color = %s", tagColor("nsfw"))
+	}
+	if tagColor("politics") != "#4dffd2" {
+		t.Fatalf("politics color = %s", tagColor("politics"))
+	}
+}
+
+func taggedLibraryJSON() string {
+	return `{
+  "formatVersion": 1,
+  "id": "tagged",
+  "name": "Tagged",
+  "packs": [{
+    "id": "tagged",
+    "name": "Tagged",
+    "prompts": [
+      {"id": "p-clean", "text": "Clean _"},
+      {"id": "p-nsfw", "text": "Dirty _", "tags": ["nsfw"]}
+    ],
+    "answers": [
+      {"id": "a-clean-0", "text": "Hello"},
+      {"id": "a-clean-1", "text": "There"},
+      {"id": "a-clean-2", "text": "Friend"},
+      {"id": "a-clean", "text": "Keep me"},
+      {"id": "a-nsfw", "text": "Oops", "tags": ["nsfw"]},
+      {"id": "a-both", "text": "Both", "tags": ["nsfw", "politics"]},
+      {"id": "a-pol", "text": "Vote", "tags": ["politics"]}
+    ]
+  }]
+}`
+}
+
+func assertTag(t *testing.T, page, tag string, on bool) {
+	t.Helper()
+	block := tagForm(page, tag)
+	if block == "" {
+		t.Fatalf("missing tag form %s in %s", tag, page)
+	}
+	checked := strings.Contains(block, "checked")
+	if checked != on {
+		t.Fatalf("%s checked=%v want %v in %s", tag, checked, on, block)
+	}
+}
+
+func tagForm(page, tag string) string {
+	needle := `name="tag" value="` + tag + `"`
+	start := strings.Index(page, needle)
+	if start < 0 {
+		return ""
+	}
+	formStart := strings.LastIndex(page[:start], "<form")
+	formEnd := strings.Index(page[start:], "</form>")
+	if formStart < 0 || formEnd < 0 {
+		return ""
+	}
+	return page[formStart : start+formEnd]
 }
 
 func TestCorruptMatchSettingsReloadsFactory(t *testing.T) {
@@ -468,6 +740,14 @@ func picker(t *testing.T, g *Game) string {
 }
 
 func postSettings(g *Game, path string, vals url.Values) *httptest.ResponseRecorder {
+	return postSettingsHeader(g, path, vals, nil)
+}
+
+func postSettingsHX(g *Game, path string, vals url.Values) *httptest.ResponseRecorder {
+	return postSettingsHeader(g, path, vals, http.Header{"HX-Request": {"true"}})
+}
+
+func postSettingsHeader(g *Game, path string, vals url.Values, extra http.Header) *httptest.ResponseRecorder {
 	var body io.Reader
 	if vals != nil {
 		body = strings.NewReader(vals.Encode())
@@ -475,6 +755,11 @@ func postSettings(g *Game, path string, vals url.Values) *httptest.ResponseRecor
 	req := httptest.NewRequest(http.MethodPost, path, body)
 	if vals != nil {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	for k, vs := range extra {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
 	}
 	rec := httptest.NewRecorder()
 	g.Settings().ServeHTTP(rec, req)

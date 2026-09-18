@@ -36,6 +36,39 @@ type libraryFile struct {
 // greenText matches Adjective - (syn, syn) or Adjective - (syn, syn, syn).
 var greenText = regexp.MustCompile(`^.+ - \([^,]+, [^,]+(?:, [^,]+)?\)$`)
 
+var allowedCardTags = map[string]bool{
+	"sex":          true,
+	"violence":     true,
+	"politics":     true,
+	"kid friendly": true,
+}
+
+func checkCardTags(t *testing.T, cardID string, tags []string) {
+	t.Helper()
+	if len(tags) == 0 {
+		return
+	}
+	seen := map[string]bool{}
+	var hasKid, hasMature bool
+	for _, tag := range tags {
+		if !allowedCardTags[tag] {
+			t.Fatalf("card %q has unknown tag %q", cardID, tag)
+		}
+		if seen[tag] {
+			t.Fatalf("card %q has duplicate tag %q", cardID, tag)
+		}
+		seen[tag] = true
+		if tag == "kid friendly" {
+			hasKid = true
+		} else {
+			hasMature = true
+		}
+	}
+	if hasKid && hasMature {
+		t.Fatalf("card %q combines kid friendly with sex/violence/politics", cardID)
+	}
+}
+
 func loadLibrary(t *testing.T, name string) libraryFile {
 	t.Helper()
 	path := filepath.Join("shipped", name)
@@ -105,9 +138,7 @@ func checkOrangesCards(t *testing.T, ids map[string]bool, cards []card, prompts 
 				t.Fatalf("oranges prompt %q has pick", c.ID)
 			}
 		}
-		if len(c.Tags) > 0 {
-			t.Fatalf("card %q has tags", c.ID)
-		}
+		checkCardTags(t, c.ID, c.Tags)
 		if prompts {
 			if strings.Contains(c.Text, "_") {
 				t.Fatalf("prompt %q contains a blank", c.ID)
@@ -144,6 +175,7 @@ func TestWildcardLibrarySchema(t *testing.T) {
 	if a.Pick != nil {
 		t.Fatalf("wildcard answer has pick")
 	}
+	checkCardTags(t, a.ID, a.Tags)
 }
 
 func TestWhiteBlackLibrarySchema(t *testing.T) {
@@ -179,9 +211,7 @@ func TestWhiteBlackLibrarySchema(t *testing.T) {
 			t.Fatalf("duplicate card id %q", c.ID)
 		}
 		ids[c.ID] = true
-		if len(c.Tags) > 0 {
-			t.Fatalf("prompt %q has tags", c.ID)
-		}
+		checkCardTags(t, c.ID, c.Tags)
 		if strings.Contains(c.Text, "__") {
 			t.Fatalf("prompt %q uses a multi-character blank", c.ID)
 		}
@@ -228,9 +258,7 @@ func TestWhiteBlackLibrarySchema(t *testing.T) {
 		if c.Pick != nil {
 			t.Fatalf("answer %q has pick", c.ID)
 		}
-		if len(c.Tags) > 0 {
-			t.Fatalf("answer %q has tags", c.ID)
-		}
+		checkCardTags(t, c.ID, c.Tags)
 		if !strings.HasSuffix(c.Text, ".") {
 			t.Fatalf("answer %q does not end with a period", c.ID)
 		}

@@ -1,21 +1,45 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 <link rel="stylesheet" href="{{.GameCSS}}">
-<div class="apples-picker">
+{{template "picker-body" .}}
+{{template "ui-end"}}
+
+{{define "picker-body"}}
+<div id="apples-picker" class="apples-picker">
   <aside>
     <p class="apples-logo display">Apples for Humanity</p>
     <p class="apples-path">Libraries load from {{.DataDir}}</p>
     <a class="ui-btn" href="/board">Back to board</a>
     {{if not .Frozen}}
-    <form method="post" action="/settings/game/select-all">
+    <form method="post" action="/settings/game/select-all" hx-post="/settings/game/select-all" hx-target="#apples-picker" hx-swap="outerHTML">
       <button class="ui-btn" type="submit">Select all</button>
     </form>
-    <form method="post" action="/settings/game/select-none">
+    <form method="post" action="/settings/game/select-none" hx-post="/settings/game/select-none" hx-target="#apples-picker" hx-swap="outerHTML">
       <button class="ui-btn" type="submit">Select none</button>
     </form>
     <form method="post" action="/settings/game/import-official">
       <button class="ui-btn" type="submit">Quickly add these CAH official card packs</button>
     </form>
+    {{end}}
+    {{if .Tags}}
+    <div class="apples-tag-list">
+      <p class="apples-tag-heading">Tags</p>
+      {{if and $.RowError $.ErrorTag (not $.ErrorPack)}}
+      <p class="apples-error">{{$.RowError}}</p>
+      {{end}}
+      {{range .Tags}}
+      <form method="post" action="/settings/game/tag" hx-post="/settings/game/tag" hx-target="#apples-picker" hx-swap="outerHTML" hx-trigger="change">
+        <input type="hidden" name="tag" value="{{.ID}}">
+        <input type="hidden" name="enabled" value="0">
+        <label class="apples-tag-chip{{if not .Enabled}} off{{end}}">
+          <span class="apples-tag-dot" style="background:{{.Color}}" title="{{.ID}}"></span>
+          <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}}>
+          {{.Label}}
+          {{if .Enabled}}On{{else}}Off{{end}}
+        </label>
+      </form>
+      {{end}}
+    </div>
     {{end}}
   </aside>
   <main>
@@ -26,9 +50,9 @@
     {{range .Shortage}}<p class="apples-error">{{.}}</p>{{end}}
     {{end}}
     {{if .Frozen}}
-    <p class="apples-note">Match is running. Pack changes wait until the game ends.</p>
+    <p class="apples-note">Match is running. Pack and tag changes wait until the game ends.</p>
     {{end}}
-    {{if and .RowError (not .ErrorPack)}}
+    {{if and .RowError (not .ErrorPack) (not .ErrorTag)}}
     <p class="apples-error">{{.RowError}}</p>
     {{end}}
     <div class="apples-cabinets">
@@ -38,15 +62,20 @@
           <h2>{{.Name}}</h2>
           {{if .Description}}<p>{{.Description}}</p>{{end}}
           <p>{{.PromptCount}} prompts · {{.AnswerCount}} answers</p>
+          {{if .Dots}}
+          <p class="apples-pack-dots">
+            {{range .Dots}}<span class="apples-tag-dot" style="background:{{.Color}}" title="{{.ID}}"></span>{{end}}
+          </p>
+          {{end}}
           {{if and $.RowError (eq .LibraryID $.ErrorLibrary) (eq .ID $.ErrorPack)}}
           <p class="apples-error">{{$.RowError}}</p>
           {{end}}
-          <form method="post" action="/settings/game/pack">
+          <form method="post" action="/settings/game/pack" hx-post="/settings/game/pack" hx-target="#apples-picker" hx-swap="outerHTML" hx-trigger="change">
             <input type="hidden" name="library" value="{{.LibraryID}}">
             <input type="hidden" name="pack" value="{{.ID}}">
             <input type="hidden" name="enabled" value="0">
             <label class="apples-toggle">
-              <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}} {{if not $.Frozen}}onchange="this.form.submit()"{{end}}>
+              <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}}>
               {{if .Enabled}}On{{else}}Off{{end}}
             </label>
           </form>
@@ -63,4 +92,4 @@
     </div>
   </main>
 </div>
-{{template "ui-end"}}
+{{end}}
