@@ -16,7 +16,9 @@
       </div>
       {{end}}
       {{if .ShowGameLibrary}}
-      {{template "game-library-open" .}}
+      <div class="ui-rail-actions">
+        {{template "game-library-open" .}}
+      </div>
       {{end}}
       <div class="ui-qr">{{qr .JoinURL}}</div>
       {{with .JoinURL}}<div class="ui-url">{{.}}</div>{{end}}
