@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestEngineMiniMatchAutoReveal(t *testing.T) {
+func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 3, 1, 18, 0, 0, 0, time.UTC)
 	clock := now
@@ -46,9 +46,10 @@ func TestEngineMiniMatchAutoReveal(t *testing.T) {
 			eng.now = func() time.Time { return tick }
 			eng.Advance(tick)
 		case phaseHold:
-			tick = tick.Add(2 * time.Second)
-			eng.now = func() time.Time { return tick }
-			eng.Advance(tick)
+			if eng.TimerKind != "" {
+				t.Fatalf("zero winner hold armed %s", eng.TimerKind)
+			}
+			eng.Do(Command{Kind: CmdHostNextSegment, Actor: "host"}, tick)
 		default:
 			t.Fatalf("unexpected phase %s", eng.Phase)
 		}
@@ -62,13 +63,15 @@ func TestEngineMiniMatchAutoReveal(t *testing.T) {
 	if eng.Scores["p1"] == 0 && eng.Scores["p2"] == 0 {
 		t.Fatalf("expected points: %v", eng.Scores)
 	}
-	if eng.Phase == phaseFinalScores {
-		tick = tick.Add(2 * time.Second)
-		eng.now = func() time.Time { return tick }
-		eng.Advance(tick)
+	if eng.Phase != phaseFinalScores {
+		t.Fatalf("after parade phase=%s scores=%v", eng.Phase, eng.Scores)
 	}
+	if eng.TimerKind != "" || eng.MatchOver {
+		t.Fatalf("zero final hold timer=%s over=%v", eng.TimerKind, eng.MatchOver)
+	}
+	eng.Do(Command{Kind: CmdHostEndMatch, Actor: "host"}, tick)
 	if !eng.MatchOver {
-		t.Fatal("match should finish after auto final scores")
+		t.Fatal("host did not finish final scores")
 	}
 }
 

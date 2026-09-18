@@ -152,7 +152,12 @@ func (g *Game) postVote(w http.ResponseWriter, r *http.Request) {
 
 func (g *Game) postHostAction(w http.ResponseWriter, r *http.Request, kind CommandKind) {
 	h := g.helperNow()
-	if h == nil || !h.HasAdmin(r) {
+	if h == nil {
+		http.Error(w, "Host only.", http.StatusForbidden)
+		return
+	}
+	p, ok, err := h.PlayerFromRequest(r)
+	if !h.HasAdmin(r) && (err != nil || !ok || !p.ClaimedHost) {
 		http.Error(w, "Host only.", http.StatusForbidden)
 		return
 	}

@@ -53,33 +53,33 @@ type rosterView struct {
 
 type phoneView struct {
 	pageView
-	Paused         bool
-	ClaimedHost    bool
-	BurnFaces      []burnFace
-	BurnErr        string
-	BurnOpen       bool
-	Overlay        bool
-	OverlayCopy    string
-	OverlayYes     bool
-	Role           string
-	Error          string
-	WaitCopy       string
-	Slots          []slotView
-	VoteOptions    []voteOptionView
-	LockLabel      string
-	LockReady      bool
-	Locked         bool
-	Policy         composePolicy
-	HostBar        bool
-	HostReveal     bool
-	HostNext       bool
-	HostSkipHold   bool
-	HostEndMatch   bool
-	TimerLabel     string
-	TimerText      string
-	TimerSeconds   int
-	TimerTotal     int
-	TimerEndUnix   int64
+	Paused       bool
+	ClaimedHost  bool
+	BurnFaces    []burnFace
+	BurnErr      string
+	BurnOpen     bool
+	Overlay      bool
+	OverlayCopy  string
+	OverlayYes   bool
+	Role         string
+	Error        string
+	WaitCopy     string
+	Slots        []slotView
+	VoteOptions  []voteOptionView
+	LockLabel    string
+	LockReady    bool
+	Locked       bool
+	Policy       composePolicy
+	HostBar      bool
+	HostReveal   bool
+	HostNext     bool
+	HostSkipHold bool
+	HostEndMatch bool
+	TimerLabel   string
+	TimerText    string
+	TimerSeconds int
+	TimerTotal   int
+	TimerEndUnix int64
 }
 
 type voteOptionView struct {
@@ -207,10 +207,10 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 
 func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phoneView {
 	view := phoneView{
-		pageView:     g.pageViewLocked("Quick Quips"),
-		Role:         "wait",
-		WaitCopy:     "Hang tight.",
-		ClaimedHost:  p.ClaimedHost,
+		pageView:    g.pageViewLocked("Quick Quips"),
+		Role:        "wait",
+		WaitCopy:    "Hang tight.",
+		ClaimedHost: p.ClaimedHost,
 	}
 	if g.overlay != "" {
 		view.Overlay = true
@@ -233,21 +233,26 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 	}
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
 
-	if r != nil && g.helper != nil && g.helper.HasAdmin(r) && eng.Settings.HostControlledReveals {
-		view.HostBar = true
+	canHost := p.ClaimedHost
+	if r != nil && g.helper != nil && g.helper.HasAdmin(r) {
+		canHost = true
+	}
+	if canHost {
 		switch eng.Phase {
 		case phaseReveal:
-			view.HostReveal = true
+			view.HostReveal = eng.Settings.HostControlledReveals
 		case phaseParadeWait:
-			view.HostNext = true
+			view.HostNext = eng.Settings.HostControlledReveals
 		case phaseHold:
-			view.HostSkipHold = true
 			if eng.Settings.WinnerScreenSec == 0 {
 				view.HostNext = true
+			} else {
+				view.HostSkipHold = eng.Settings.HostControlledReveals
 			}
 		case phaseFinalScores:
-			view.HostEndMatch = true
+			view.HostEndMatch = eng.Settings.FinalScoresSec == 0 || eng.Settings.HostControlledReveals
 		}
+		view.HostBar = view.HostReveal || view.HostNext || view.HostSkipHold || view.HostEndMatch
 	}
 
 	switch eng.Phase {
