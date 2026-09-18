@@ -46,6 +46,8 @@ type matchSettings struct {
 	SubmitSec                int                        `json:"submitSec"`
 	BetweenRevealSec         int                        `json:"betweenRevealSec"`
 	JudgePickSec             int                        `json:"judgePickSec"`
+	FavoriteVoteSec          int                        `json:"favoriteVoteSec"`
+	FinishHoldSec            int                        `json:"finishHoldSec"`
 	WildcardCap              int                        `json:"wildcardCap"`
 	WildcardSave             string                     `json:"wildcardSave"`
 	WildcardFavoritesKeep    string                     `json:"wildcardFavoritesKeep"`
@@ -73,6 +75,7 @@ func factorySettings() matchSettings {
 		LiveVoteCounts:         true,
 		SubmitSec:              45,
 		JudgePickSec:           60,
+		FavoriteVoteSec:        20,
 		WildcardCap:            80,
 		WildcardSave:           saveWinners,
 		WildcardFavoritesKeep:  keepOff,
@@ -122,7 +125,14 @@ func parseMatchSettings(raw []byte) (matchSettings, bool) {
 	if s.Enabled == nil {
 		return matchSettings{}, false
 	}
-	return fillSettingDefaults(s), true
+	s = fillSettingDefaults(s)
+	var keys map[string]json.RawMessage
+	if json.Unmarshal(raw, &keys) == nil {
+		if _, ok := keys["favoriteVoteSec"]; !ok {
+			s.FavoriteVoteSec = 20
+		}
+	}
+	return s, true
 }
 
 func fillSettingDefaults(s matchSettings) matchSettings {

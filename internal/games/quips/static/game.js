@@ -5,6 +5,16 @@
     return Array.from(text).length;
   }
 
+  function syncVisualViewport() {
+    var viewport = window.visualViewport;
+    var height = viewport ? viewport.height : window.innerHeight;
+    if (!height) {
+      return;
+    }
+    document.documentElement.style.setProperty("--quips-visual-height", Math.round(height) + "px");
+    document.documentElement.classList.toggle("quips-compact-height", height < 760);
+  }
+
   function bindComposeCards() {
     document.querySelectorAll(".quips-compose-card textarea").forEach(function (ta) {
       if (ta.dataset.quipsComposeBound === "1") {
@@ -58,6 +68,15 @@
       bindComposeCards();
     });
   }
+  if (!window.grabbagQuipsViewport) {
+    window.grabbagQuipsViewport = true;
+    window.addEventListener("resize", syncVisualViewport);
+    window.addEventListener("orientationchange", syncVisualViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncVisualViewport);
+    }
+  }
+  syncVisualViewport();
   paintTimers();
   bindComposeCards();
 })();

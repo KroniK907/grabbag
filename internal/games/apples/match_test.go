@@ -584,7 +584,7 @@ func TestScoringViewLabelsWinnerAndFavoriteVotes(t *testing.T) {
 	g.started = true
 	g.match = &matchState{
 		Settings:   factorySettings(),
-		Phase:      phaseDrawWait,
+		Phase:      phaseReveal,
 		Actors:     map[string]*actor{"p1": {ID: "p1", Name: "Pat"}, "p2": {ID: "p2", Name: "Sam"}},
 		Packets:    []packet{{ActorID: "p1", Cards: []playCard{{Text: "One"}}, Revealed: true}, {ActorID: "p2", Cards: []playCard{{Text: "Two"}}, Revealed: true}},
 		Votes:      map[string]string{"v1": "p1", "v2": "p1"},
@@ -611,6 +611,7 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 	g.now = func() time.Time { return now }
 	m := &matchState{
+		Settings: matchSettings{FinishHoldSec: 8},
 		Actors:   map[string]*actor{"p1": {ID: "p1", Name: "Pat"}},
 		WinnerID: "p1",
 		PhoneErr: map[string]string{},
@@ -630,9 +631,10 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 		t.Fatal("host finished before the winner hold elapsed")
 	}
 
-	now = now.Add(matchWinnerHold + time.Second)
+	now = now.Add(8*time.Second + time.Second)
 	g.mu.Lock()
 	g.fireTimerLocked()
+	g.flushHostLocked()
 	g.mu.Unlock()
 	if h.finishN != 1 {
 		t.Fatalf("Finish calls = %d, want 1", h.finishN)
@@ -734,7 +736,6 @@ func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
 	}
 
 	g.mu.Lock()
-	g.match.Phase = phaseDrawWait
 	g.match.NamesShown = true
 	g.match.WinnerID = "p2"
 	g.mu.Unlock()
@@ -772,8 +773,8 @@ func TestSkipHoldHidesPromptUntilKeep(t *testing.T) {
 	otherReq.Header.Set("X-Player", other)
 	g.Phone(otherPhone, otherReq)
 	if body := otherPhone.Body.String(); strings.Contains(body, prompt) || strings.Contains(body, `hx-post="/play/slot"`) {
-		t.Fatalf("player saw the prompt or hand before lock in: %s", body)
-	} else if !strings.Contains(body, "Wait for the judge to lock in or skip.") {
+		t.Fatalf("player saw the prompt or could slot before lock in: %s", body)
+	} else if !strings.Contains(body, `class="apples-prompt down"`) {
 		t.Fatalf("player wait copy: %s", body)
 	}
 

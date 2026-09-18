@@ -175,7 +175,9 @@
 }
 
 .apples-tv {
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   background:
@@ -206,6 +208,8 @@
 .apples-prompt {
   margin: 20px auto 12px;
   width: min(980px, calc(100% - 32px));
+  max-height: 22dvh;
+  overflow-y: auto;
   padding: 18px 22px;
   border: 4px solid var(--ui-accent-2);
   border-radius: 16px;
@@ -271,6 +275,7 @@
 
 .apples-roster {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
   padding: 10px 16px;
   overflow-x: auto;
@@ -621,6 +626,14 @@
   background: var(--ui-phone-bg);
 }
 
+.apples-lock-bar .ui-btn {
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
 .apples-vote-list form:nth-child(4n + 1) .apples-vote-card {
   border-color: var(--ui-accent-2);
 }
@@ -930,5 +943,89 @@
 
   .apples-phone-scroll {
     scrollbar-gutter: auto;
+  }
+}
+
+@media (max-width: 520px), (hover: none) and (pointer: coarse) {
+  .ui-phone-wrap:has(.apples-phone) {
+    min-height: var(--apples-visual-height, 100dvh);
+  }
+
+  .ui-phone:has(.apples-phone) {
+    height: var(--apples-visual-height, 100dvh);
+    min-height: 0;
+  }
+
+  .ui-phone:has(.apples-phone) .ui-phone-body {
+    height: calc(var(--apples-visual-height, 100dvh) - 22px);
+    min-height: 0;
+  }
+}
+
+html.apples-compact-height .ui-phone:has(.apples-phone) .ui-phone-body {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+html.apples-compact-height .apples-phone {
+  padding-bottom: 4px;
+}
+
+html.apples-compact-height .apples-phone-scroll {
+  gap: 6px;
+  padding-bottom: 5px;
+}
+
+html.apples-compact-height .apples-play-dock {
+  gap: 5px;
+  padding-bottom: 3px;
+}
+
+html.apples-compact-height .apples-phone .apples-prompt {
+  padding: 7px 10px;
+  font-size: clamp(16px, 4.8vw, 20px);
+  line-height: 1.12;
+}
+
+html.apples-compact-height .apples-phone .apples-hole {
+  min-height: 54px;
+  padding: 8px;
+}
+
+html.apples-compact-height .apples-hand {
+  gap: 6px;
+}
+
+html.apples-compact-height .apples-card-button {
+  min-height: 50px;
+  padding: 7px 10px;
+  box-shadow: 0 3px 0 var(--ui-accent-2-shadow);
+}
+
+html.apples-compact-height .apples-lock-bar {
+  padding: 5px 4px 1px;
+  border-top-width: 2px;
+}
+
+html.apples-compact-height .apples-lock-bar .ui-btn {
+  min-height: 44px;
+  padding: 7px 10px;
+  font-size: 18px;
+}
+
+@media (min-width: 700px) {
+  .apples-packet-list,
+  .apples-hand {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .apples-card-button,
+  .apples-hole-card {
+    min-height: 72px;
+    font-size: 18px;
+  }
+
+  .apples-phone .apples-prompt {
+    font-size: clamp(20px, 3vw, 28px);
   }
 }

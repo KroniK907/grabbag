@@ -56,6 +56,7 @@ type matchState struct {
 	JudgeCycle      []string
 	JudgeIdx        int
 	JudgeID         string
+	SeatOrder       []string
 	Actors          map[string]*actor
 	NextBot         int
 	Prompts         []playPrompt
@@ -164,6 +165,7 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 	for _, p := range seated {
 		ids = append(ids, p.ID)
 		m.Actors[p.ID] = &actor{ID: p.ID, Name: p.DisplayName}
+		m.SeatOrder = append(m.SeatOrder, p.ID)
 	}
 	g.rngLocked().Shuffle(len(ids), func(i, j int) { ids[i], ids[j] = ids[j], ids[i] })
 	m.JudgeCycle = ids
@@ -198,7 +200,15 @@ func (g *Game) spawnBotLocked(m *matchState) *actor {
 	id := fmt.Sprintf("bot:%d", n)
 	a := &actor{ID: id, Name: fmt.Sprintf("Bot %d", n), Bot: true, BotNum: n}
 	m.Actors[id] = a
+	g.appendSeatLocked(m, id)
 	return a
+}
+
+func (g *Game) appendSeatLocked(m *matchState, id string) {
+	if slices.Contains(m.SeatOrder, id) {
+		return
+	}
+	m.SeatOrder = append(m.SeatOrder, id)
 }
 
 func (g *Game) dealHumanLocked(m *matchState, a *actor, handSize int) {
@@ -247,6 +257,7 @@ func (g *Game) syncRosterLocked(h games.Helper) {
 		if _, ok := m.Actors[p.ID]; !ok {
 			m.Actors[p.ID] = &actor{ID: p.ID, Name: p.DisplayName}
 			m.JudgeCycle = append(m.JudgeCycle, p.ID)
+			g.appendSeatLocked(m, p.ID)
 			if m.Phase == phaseSubmit {
 				g.dealHumanLocked(m, m.Actors[p.ID], m.Settings.HandSize)
 			}

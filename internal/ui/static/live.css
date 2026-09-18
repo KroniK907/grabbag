@@ -878,6 +878,33 @@ button {
   text-decoration: none;
 }
 
+.ui-help {
+  position: absolute;
+  top: 18px;
+  right: 78px;
+  z-index: 50;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 800;
+  border: 3px solid var(--ui-gear-border);
+  background: var(--ui-accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+.ui-phone .ui-help {
+  top: 30px;
+  left: 10px;
+  right: auto;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+
 .ui-phone-wrap {
   min-height: 100vh;
   display: grid;
@@ -1178,6 +1205,36 @@ body:has(.ui-leave-control) {
     width: min(220px, 70vw);
     height: min(220px, 70vw);
     font-size: 44px;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (min-width: 521px) {
+  .ui-phone-wrap {
+    padding: 0;
+    min-height: 100dvh;
+    place-items: stretch center;
+  }
+
+  .ui-phone {
+    width: min(720px, 100vw);
+    min-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .ui-phone-body {
+    min-height: calc(100dvh - 22px);
+  }
+
+  .ui-phone:has(.ui-leave-control) {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .ui-phone:has(.ui-leave-control) .ui-phone-body {
+    height: calc(100dvh - 22px);
+    min-height: 0;
   }
 }
 

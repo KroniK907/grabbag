@@ -67,6 +67,7 @@ type PhoneExtras struct {
 	LoadedGameID    string
 	ShowGameLibrary bool
 	Catalog         []CatalogEntry
+	HelpPath        string
 }
 
 // BoardButton is a loaded-game link on the Lobby /board rail.
@@ -94,6 +95,7 @@ type BoardExtras struct {
 	Buttons         []BoardButton
 	ShowGameLibrary bool
 	Catalog         []CatalogEntry
+	HelpPath        string
 }
 
 // Config supplies host-owned password, cookie, and advertised join-URL policies.
@@ -279,23 +281,24 @@ func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
 
 type boardData struct {
 	ui.Chrome
-	JoinURL        string
-	Open           bool
-	SeatCap        int
-	SeatedCount    int
-	AudienceCount  int
-	Seated         []Player
-	Waiting        []Player
-	LoadedGame      string
-	LoadedGameID    string
-	Buttons         []BoardButton
-	ShowGameLibrary bool
-	Catalog         []CatalogEntry
-	LibraryReturn     string
-	LibraryElementID  string
-	RestorePending    bool
-	RestoreNames   []string
-	AdminLocked    bool
+	JoinURL          string
+	Open             bool
+	SeatCap          int
+	SeatedCount      int
+	AudienceCount    int
+	Seated           []Player
+	Waiting          []Player
+	LoadedGame       string
+	LoadedGameID     string
+	Buttons          []BoardButton
+	ShowGameLibrary  bool
+	Catalog          []CatalogEntry
+	LibraryReturn    string
+	LibraryElementID string
+	HelpPath         string
+	RestorePending   bool
+	RestoreNames     []string
+	AdminLocked      bool
 }
 
 type settingsData struct {
@@ -339,26 +342,27 @@ type joinView struct {
 type roomView struct {
 	ui.Chrome
 	Player
-	HostPanel      bool
-	TakeHost       bool
-	TableFull      bool
-	ShowStart      bool
-	ShowReady      bool
-	Started        bool
-	Paused         bool
-	AutoStart      bool
+	HostPanel        bool
+	TakeHost         bool
+	TableFull        bool
+	ShowStart        bool
+	ShowReady        bool
+	Started          bool
+	Paused           bool
+	AutoStart        bool
 	GameIDs          []string
 	LoadedGameID     string
 	ShowGameLibrary  bool
 	Catalog          []CatalogEntry
-	LibraryReturn      string
-	LibraryElementID   string
-	BumpCandidates     []Player
-	Players        []Player
-	GameBody       template.HTML
-	LiveKick       bool
-	RestorePending bool
-	StayOnSettings bool
+	LibraryReturn    string
+	LibraryElementID string
+	HelpPath         string
+	BumpCandidates   []Player
+	Players          []Player
+	GameBody         template.HTML
+	LiveKick         bool
+	RestorePending   bool
+	StayOnSettings   bool
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
@@ -402,6 +406,7 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 		data.Buttons = extra.Buttons
 		data.ShowGameLibrary = extra.ShowGameLibrary
 		data.Catalog = extra.Catalog
+		data.HelpPath = extra.HelpPath
 		if extra.ShowGameLibrary {
 			data.LibraryReturn = "/board"
 			data.LibraryElementID = "game-library-board"
@@ -417,6 +422,7 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 		data.RestoreNames = nil
 		data.ShowGameLibrary = false
 		data.Catalog = nil
+		data.HelpPath = ""
 		return data, nil
 	}
 	data.RestorePending = l.RestorePending()

@@ -21,7 +21,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "match-10"
+	assetVersion = "match-12"
 	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
 	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )
@@ -130,6 +130,8 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /timer-submit", g.postSubmitSec)
 	mux.HandleFunc("POST /timer-between", g.postBetweenSec)
 	mux.HandleFunc("POST /timer-judge-pick", g.postJudgePickSec)
+	mux.HandleFunc("POST /timer-favorite-vote", g.postFavoriteVoteSec)
+	mux.HandleFunc("POST /timer-finish-hold", g.postFinishHoldSec)
 	mux.HandleFunc("POST /wildcard-cap", g.postWildcardCap)
 	mux.HandleFunc("POST /wildcard-save", g.postWildcardSave)
 	mux.HandleFunc("POST /wildcard-favorites", g.postWildcardFavorites)
@@ -154,7 +156,7 @@ func (g *Game) Start(h games.Helper) error {
 
 // Board is the full-bleed TV document after Start.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board.html", g.boardView(), http.StatusOK)
+	g.render(w, "board.html", g.boardView(r), http.StatusOK)
 }
 
 // BoardButtons publishes How to play and Deck Library on the Lobby rail after Load.
@@ -194,6 +196,7 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /reveal", g.postReveal)
 	mux.HandleFunc("POST /vote", g.postVote)
 	mux.HandleFunc("POST /confirm", g.postConfirm)
+	mux.HandleFunc("POST /finish", g.postFinish)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("apples: embedded static directory is missing")

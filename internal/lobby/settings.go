@@ -82,6 +82,9 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		view.LoadedGameID = extra.LoadedGameID
 		view.ShowGameLibrary = extra.ShowGameLibrary
 		view.Catalog = extra.Catalog
+		if extra.LoadedGameID != "" && !extra.Started {
+			view.HelpPath = extra.HelpPath
+		}
 		if extra.ShowGameLibrary {
 			view.LibraryReturn = "/"
 			view.LibraryElementID = "game-library-phone"

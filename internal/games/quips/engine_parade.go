@@ -166,14 +166,18 @@ func (e *engine) doHostRevealAt(now time.Time, out Outcome) Outcome {
 }
 
 func (e *engine) doHostNextSegment(now time.Time, out Outcome) Outcome {
-	if !e.Settings.HostControlledReveals {
-		out.PhoneErr["host"] = "The parade advances on its own."
-		return out
-	}
 	switch e.Phase {
 	case phaseParadeWait:
+		if !e.Settings.HostControlledReveals {
+			out.PhoneErr["host"] = "The parade advances on its own."
+			return out
+		}
 		return e.startCurrentSegment(now, out)
 	case phaseHold:
+		if !e.Settings.HostControlledReveals && e.Settings.WinnerScreenSec > 0 {
+			out.PhoneErr["host"] = "The parade advances on its own."
+			return out
+		}
 		return e.afterHold(now, out)
 	default:
 		out.PhoneErr["host"] = "Nothing to advance now."
@@ -228,9 +232,6 @@ func (e *engine) closeVote(now time.Time, out Outcome) Outcome {
 	e.Phase = phaseHold
 	sec := e.Settings.WinnerScreenSec
 	if sec <= 0 {
-		if !e.Settings.HostControlledReveals {
-			return e.afterHold(now, out)
-		}
 		out.Changed = true
 		out.Events = appendUniqueEvent(out.Events, eventQuips)
 		return out
@@ -288,9 +289,6 @@ func (e *engine) enterFinalScores(now time.Time, out Outcome) Outcome {
 		out.Changed = true
 		out.Events = appendUniqueEvent(out.Events, eventQuips)
 		return out
-	}
-	if !e.Settings.HostControlledReveals {
-		return e.endMatch(out)
 	}
 	out.Changed = true
 	out.Events = appendUniqueEvent(out.Events, eventQuips)

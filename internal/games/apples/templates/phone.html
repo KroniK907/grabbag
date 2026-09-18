@@ -27,7 +27,7 @@
   </div>
   {{else}}
   {{if .Paused}}<p class="apples-dim">Paused</p>{{end}}
-  <div class="apples-phone-scroll{{if or (eq .Role "submit") (eq .Role "locked")}} apples-phone-play{{end}}">
+  <div class="apples-phone-scroll{{if or (eq .Role "submit") (eq .Role "locked") (eq .Role "preview")}} apples-phone-play{{end}}">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
     {{template "apples-timer" .}}
     {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
@@ -37,6 +37,11 @@
       <div class="apples-phone-winner">
         <h1 class="display">Winner</h1>
         <p>{{.WinnerName}}</p>
+        {{if .CanFinish}}
+        <form method="post" action="/play/finish">
+          <button class="ui-btn" type="submit">Back to lobby</button>
+        </form>
+        {{end}}
       </div>
     {{else if eq .Role "judge"}}
       {{if .CanDraw}}
@@ -90,9 +95,10 @@
         {{end}}
       {{end}}
       </div>
-    {{else if or (eq .Role "submit") (eq .Role "locked")}}
+    {{else if or (eq .Role "submit") (eq .Role "locked") (eq .Role "preview")}}
       <div class="apples-play-dock">
-        {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{end}}
+        {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{else}}<p class="apples-prompt down"> </p>{{end}}
+        {{if ne .Role "preview"}}
         <div class="apples-holes">
           {{range .Holes}}
           <div class="apples-slot apples-hole">
@@ -108,12 +114,16 @@
           </div>
           {{end}}
         </div>
+        {{end}}
       </div>
-      {{if eq .Role "submit"}}
+      {{if or (eq .Role "submit") (eq .Role "preview")}}
       <div class="apples-hand-scroll">
       <div class="apples-hand">
         {{range .Hand}}
         <div class="apples-hand-card">
+          {{if eq $.Role "preview"}}
+          <button class="apples-card-button" type="button" disabled>{{.Text}}</button>
+          {{else}}
           <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
             <input type="hidden" name="card" value="{{.CardID}}">
             <button class="apples-card-button" type="submit">{{.Text}}</button>
@@ -123,6 +133,7 @@
             <input type="hidden" name="card" value="{{.CardID}}">
             <button type="submit">Discard</button>
           </form>
+          {{end}}
           {{end}}
         </div>
         {{end}}
@@ -135,7 +146,7 @@
           </form>
         </div>
         {{end}}
-        {{if .Blank}}
+        {{if and .Blank (ne .Role "preview")}}
         <form class="apples-wildcard" hx-post="/play/wildcard-draft" hx-swap="outerHTML" hx-target="#apples-phone">
           <label>Wildcard <span>{{.Remain}} left</span>
             <textarea name="text" maxlength="{{.Cap}}">{{.Draft}}</textarea>

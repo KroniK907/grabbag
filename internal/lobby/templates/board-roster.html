@@ -69,8 +69,11 @@
       {{end}}
     </div>
   </div>
-  {{end}}
-  <a class="ui-gear" href="/settings" target="_blank" rel="noopener" title="Settings">⚙</a>
+      {{end}}
+      {{if .HelpPath}}
+      <a class="ui-help" href="{{.HelpPath}}" aria-label="How to play">?</a>
+      {{end}}
+      <a class="ui-gear" href="/settings" target="_blank" rel="noopener" title="Settings">⚙</a>
   {{if .ShowGameLibrary}}
   {{template "game-library" .}}
   {{end}}

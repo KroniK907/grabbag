@@ -10,6 +10,7 @@
   hx-trigger="sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
+  <a class="quips-help" href="/play/howto" aria-label="How to play">?</a>
   {{if .Overlay}}
   <div class="quips-reshuffle-sheet">
     <p>{{.OverlayCopy}}</p>

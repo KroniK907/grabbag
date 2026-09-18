@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "burn-journals-1"
+	assetVersion = "playtest-1"
 )
 
 //go:embed templates/*.html
@@ -30,25 +30,25 @@ var pages = ui.MustParse(templateFiles, "templates/*.html")
 
 // Game is one Quick Quips instance.
 type Game struct {
-	mu      sync.Mutex
-	helper  games.Helper
-	started bool
-	paused  bool
+	mu         sync.Mutex
+	helper     games.Helper
+	started    bool
+	paused     bool
 	engine     *engine
 	stopTick   chan struct{}
 	needFinish bool
 	needPause  bool
 
-	burns          []burnEntry
-	burnCorrupt    bool
-	played         map[string]playedRow
-	discardCorrupt bool
-	burnWriter     *fileWriter
-	discardWriter  *fileWriter
-	burnDrawer     []burnFace
-	burnChecks     map[string]bool
-	burnErr        string
-	overlay        string
+	burns           []burnEntry
+	burnCorrupt     bool
+	played          map[string]playedRow
+	discardCorrupt  bool
+	burnWriter      *fileWriter
+	discardWriter   *fileWriter
+	burnDrawer      []burnFace
+	burnChecks      map[string]bool
+	burnErr         string
+	overlay         string
 	overlayTooSmall bool
 
 	rng *rand.Rand
@@ -134,13 +134,12 @@ func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "board.html", g.boardView(), http.StatusOK)
 }
 
-// BoardButtons publishes Prompt Library on the Lobby rail after Load.
+// BoardButtons publishes How to play and Prompt Library on the Lobby rail.
 func (g *Game) BoardButtons() []games.BoardButton {
-	return []games.BoardButton{{
-		Label:    "Prompt Library",
-		Path:     "/play/picker",
-		HostOnly: true,
-	}}
+	return []games.BoardButton{
+		{Label: "How to play", Path: "/play/howto"},
+		{Label: "Prompt Library", Path: "/play/picker", HostOnly: true},
+	}
 }
 
 // Phone is the seated player column after Start.
@@ -152,6 +151,7 @@ func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /picker", g.getPicker)
+	mux.HandleFunc("GET /howto", g.getHowto)
 	mux.HandleFunc("GET /partials/board", g.getBoardPartial)
 	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
 	mux.HandleFunc("POST /draft", g.postDraft)
@@ -270,6 +270,14 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_, _ = w.Write(buf.Bytes())
+}
+
+func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
+	if g.helperNow() == nil {
+		http.NotFound(w, r)
+		return
+	}
+	g.render(w, "howto.html", g.pageView("How to play Quick Quips"), http.StatusOK)
 }
 
 type pageView struct {

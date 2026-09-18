@@ -75,6 +75,7 @@ type boardView struct {
 	TimerSeconds int
 	TimerTotal   int
 	TimerEndUnix int64
+	CanFinish    bool
 }
 
 type phoneView struct {
@@ -121,6 +122,7 @@ type phoneView struct {
 	TimerEndUnix int64
 	BurnOpen     bool
 	Keep         bool
+	CanFinish    bool
 }
 
 func (g *Game) currentSettings() matchSettings {
@@ -175,13 +177,17 @@ func (g *Game) settingsView(rowErr settingsErr) settingsView {
 	return view
 }
 
-func (g *Game) boardView() boardView {
+func (g *Game) boardView(r *http.Request) boardView {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.helper != nil {
 		g.syncRosterLocked(g.helper)
 	}
-	return g.boardViewLocked()
+	view := g.boardViewLocked()
+	if view.Over && g.helper != nil && r != nil && g.helper.HasAdmin(r) {
+		view.CanFinish = true
+	}
+	return view
 }
 
 func (g *Game) boardViewLocked() boardView {
@@ -194,7 +200,10 @@ func (g *Game) boardViewLocked() boardView {
 		return view
 	}
 	view.Phase = string(m.Phase)
-	view.Prompt = m.LivePrompt
+	view.Prompt = displayPrompt(m.LivePrompt)
+	if m.Phase == phaseDrawWait {
+		view.Prompt = nil
+	}
 	view.FaceDown = m.Phase == phaseChoose || m.Phase == phaseHold || m.Phase == phaseDrawWait
 	view.Sudden = m.Phase == phaseSudden
 	view.Over = m.Phase == phaseOver
@@ -203,10 +212,10 @@ func (g *Game) boardViewLocked() boardView {
 	if m.InMultiplier && m.Settings.LastRoundMultiplier > 1 {
 		view.Multiplier = "THIS ROUND IS " + strconv.Itoa(m.Settings.LastRoundMultiplier) + "X POINTS"
 	}
-	if m.WinnerID != "" {
+	if m.WinnerID != "" && m.Phase != phaseDrawWait {
 		if a := m.Actors[m.WinnerID]; a != nil {
 			view.WinnerName = a.Name
-			if m.NamesShown {
+			if m.NamesShown && m.Phase != phaseDrawWait {
 				view.RoundWinner = a.Name
 			}
 		}
@@ -218,8 +227,14 @@ func (g *Game) boardViewLocked() boardView {
 			view.OverlayCopy = overlayFailCopy
 		}
 	}
-	view.Packets = g.packetViewsLocked(m, "", true)
-	for _, a := range m.Actors {
+	if m.Phase != phaseDrawWait {
+		view.Packets = g.packetViewsLocked(m, "", true)
+	}
+	for _, id := range g.rosterIDsLocked(m) {
+		a := m.Actors[id]
+		if a == nil {
+			continue
+		}
 		view.Roster = append(view.Roster, rosterView{
 			ID:     a.ID,
 			Name:   a.Name,
@@ -257,8 +272,8 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		return view
 	}
 	view.Phase = string(m.Phase)
-	view.Prompt = m.LivePrompt
-	view.Choices = []*playPrompt{m.Choice[0], m.Choice[1]}
+	view.Prompt = displayPrompt(m.LivePrompt)
+	view.Choices = []*playPrompt{displayPrompt(m.Choice[0]), displayPrompt(m.Choice[1])}
 	view.Sudden = m.Phase == phaseSudden
 	view.Over = m.Phase == phaseOver
 	view.Error = m.PhoneErr[p.ID]
@@ -266,6 +281,9 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(m)
 	view.ClaimedHost = p.ClaimedHost
 	view.BurnErr = g.burnErr
+	if view.Over && p.ClaimedHost {
+		view.CanFinish = true
+	}
 	for _, f := range g.burnSnap {
 		f.Checked = g.burnChecks[f.Kind+"\x00"+f.Text]
 		view.BurnFaces = append(view.BurnFaces, f)
@@ -279,7 +297,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	if a := m.Actors[m.JudgeID]; a != nil {
 		view.JudgeName = a.Name
 	}
-	if m.WinnerID != "" {
+	if m.WinnerID != "" && m.Phase != phaseDrawWait {
 		if a := m.Actors[m.WinnerID]; a != nil {
 			view.WinnerName = a.Name
 			if m.NamesShown {
@@ -300,6 +318,8 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		view.Keep = view.Skip
 	case g.canSubmit(m, p.ID):
 		view.Role = "submit"
+	case p.Seated && (m.Phase == phaseChoose || m.Phase == phaseHold):
+		view.Role = "preview"
 	case p.Seated:
 		view.Role = "seated"
 	default:
@@ -347,9 +367,17 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	if m.Phase == phaseHold && view.Role != "judge" {
 		view.Prompt = nil
 	}
-	view.Packets = g.packetViewsLocked(m, p.ID, false)
+	if m.Phase == phaseDrawWait {
+		view.Prompt = nil
+		view.Packets = nil
+	} else {
+		view.Packets = g.packetViewsLocked(m, p.ID, false)
+	}
 	view.CanVote = g.playerMayVote(m, p)
 	view.CanReveal = false
+	if m.TimerKind == "favorite-vote" {
+		view.CanConfirm = false
+	}
 	for _, pk := range view.Packets {
 		if !pk.Revealed {
 			view.CanConfirm = false
@@ -454,6 +482,7 @@ func (g *Game) timerViewLocked(m *matchState) (string, string, int, int, int64) 
 		"auto-draw":       "Auto-draw",
 		"submit":          "Submit",
 		"between-reveals": "Next reveal",
+		"favorite-vote":   "Favorites",
 		"judge-pick":      "Judge picks",
 		"finish":          "Back to lobby",
 	}[m.TimerKind]
@@ -499,6 +528,27 @@ func favoriteMarks(counts map[string]int) map[string]string {
 		place += i - start
 	}
 	return marks
+}
+
+func (g *Game) rosterIDsLocked(m *matchState) []string {
+	seen := map[string]bool{}
+	var ids []string
+	for _, id := range m.SeatOrder {
+		if m.Actors[id] == nil || seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	var extra []string
+	for id := range m.Actors {
+		if seen[id] {
+			continue
+		}
+		extra = append(extra, id)
+	}
+	sort.Strings(extra)
+	return append(ids, extra...)
 }
 
 func (g *Game) pickerView(rowErr pickerErr) pickerView {

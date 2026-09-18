@@ -180,7 +180,7 @@ func (g *Game) postConfirm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) getBoardPartial(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board-frame", g.boardView(), http.StatusOK)
+	g.render(w, "board-frame", g.boardView(r), http.StatusOK)
 }
 
 func (g *Game) getPhonePartial(w http.ResponseWriter, r *http.Request) {
@@ -316,4 +316,33 @@ func (g *Game) postEndGame(w http.ResponseWriter, r *http.Request) {
 	g.flushHostLocked()
 	g.mu.Unlock()
 	g.render(w, "phone.html", view, http.StatusOK)
+}
+
+func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
+	h := g.helperNow()
+	if h == nil {
+		http.NotFound(w, r)
+		return
+	}
+	_ = r.ParseForm()
+	p, ok, err := h.PlayerFromRequest(r)
+	host := err == nil && ok && p.ClaimedHost
+	if !h.HasAdmin(r) && !host {
+		http.Error(w, "Only the host can continue.", http.StatusForbidden)
+		return
+	}
+	g.mu.Lock()
+	if g.match == nil || !g.started || g.match.Phase != phaseOver {
+		g.mu.Unlock()
+		http.NotFound(w, r)
+		return
+	}
+	g.needFinish = true
+	g.flushHostLocked()
+	g.mu.Unlock()
+	next := "/"
+	if r.FormValue("return") == "/board" {
+		next = "/board"
+	}
+	http.Redirect(w, r, next, http.StatusSeeOther)
 }

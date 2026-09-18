@@ -1,0 +1,27 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+<article class="quips-howto">
+  <header>
+    <h1 class="display">How to play</h1>
+    <a class="ui-btn ui-btn-inline" href="/">Back to game</a>
+    <a class="ui-btn ui-btn-inline" href="/board">Board</a>
+  </header>
+  <section>
+    <h2>Write</h2>
+    <p>Write a short answer for every prompt on your phone. Finish every answer, then lock them in.</p>
+  </section>
+  <section>
+    <h2>Vote</h2>
+    <p>Each pair of answers appears on the board. Pick your favorite on your phone. You cannot vote for your own answer unless the host allows it.</p>
+  </section>
+  <section>
+    <h2>Score</h2>
+    <p>Votes award points. Later rounds may multiply those points. The player with the highest final score wins.</p>
+  </section>
+  <section>
+    <h2>Last Quip</h2>
+    <p>When enabled, everyone answers the same final prompt. All answers compete in one vote.</p>
+  </section>
+</article>
+{{template "ui-end"}}

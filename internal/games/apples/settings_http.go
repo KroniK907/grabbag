@@ -216,6 +216,12 @@ func (g *Game) postBetweenSec(w http.ResponseWriter, r *http.Request) {
 func (g *Game) postJudgePickSec(w http.ResponseWriter, r *http.Request) {
 	g.postTimer(w, r, "timer-judge-pick", "judge_pick")
 }
+func (g *Game) postFavoriteVoteSec(w http.ResponseWriter, r *http.Request) {
+	g.postTimer(w, r, "timer-favorite-vote", "favorite_vote")
+}
+func (g *Game) postFinishHoldSec(w http.ResponseWriter, r *http.Request) {
+	g.postTimer(w, r, "timer-finish-hold", "finish_hold")
+}
 
 func (g *Game) postTimer(w http.ResponseWriter, r *http.Request, field, name string) {
 	g.mutateSettings(w, r, field, func(s *matchSettings) error {
@@ -232,6 +238,10 @@ func (g *Game) postTimer(w http.ResponseWriter, r *http.Request, field, name str
 			s.BetweenRevealSec = n
 		case "judge_pick":
 			s.JudgePickSec = n
+		case "favorite_vote":
+			s.FavoriteVoteSec = n
+		case "finish_hold":
+			s.FinishHoldSec = n
 		}
 		return nil
 	})

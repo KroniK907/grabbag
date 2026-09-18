@@ -26,6 +26,12 @@
     <h1 class="display">Winner</h1>
     <p class="apples-final-winner">{{.WinnerName}}</p>
     {{template "apples-timer" .}}
+    {{if .CanFinish}}
+    <form method="post" action="/play/finish">
+      <input type="hidden" name="return" value="/board">
+      <button class="ui-btn" type="submit">Back to lobby</button>
+    </form>
+    {{end}}
   </div></div>
   {{else}}
   <header class="apples-board-head">

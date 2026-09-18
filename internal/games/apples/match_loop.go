@@ -12,8 +12,6 @@ import (
 	"github.com/KroniK907/grabbag/internal/games"
 )
 
-const matchWinnerHold = 8 * time.Second
-
 func (g *Game) lockLocked(m *matchState, id string) error {
 	a := m.Actors[id]
 	if a == nil || !g.canSubmit(m, id) {
@@ -93,7 +91,11 @@ func (g *Game) revealNextLocked(m *matchState) error {
 			}
 		}
 		if all {
-			g.armTimerLocked(m, "judge-pick", m.Settings.JudgePickSec)
+			if m.Settings.Voting != voteOff && m.Settings.FavoriteVoteSec > 0 {
+				g.armTimerLocked(m, "favorite-vote", m.Settings.FavoriteVoteSec)
+			} else {
+				g.armTimerLocked(m, "judge-pick", m.Settings.JudgePickSec)
+			}
 			g.snapshotBurnDrawerLocked(m)
 		} else {
 			g.armTimerLocked(m, "between-reveals", m.Settings.BetweenRevealSec)
@@ -144,6 +146,9 @@ func (g *Game) voteLocked(m *matchState, voterID, targetID string) error {
 func (g *Game) confirmLocked(h games.Helper, m *matchState, winnerID string) error {
 	if m.Phase != phaseReveal {
 		return fmt.Errorf("Confirm waits until every answer is up.")
+	}
+	if m.TimerKind == "favorite-vote" {
+		return fmt.Errorf("Favorites are still open.")
 	}
 	for _, p := range m.Packets {
 		if !p.Revealed {
@@ -315,7 +320,7 @@ func (g *Game) enterSuddenLocked(h games.Helper, m *matchState) {
 
 func (g *Game) finishLocked(_ games.Helper, m *matchState) {
 	m.Phase = phaseOver
-	g.armTimerLocked(m, "finish", int(matchWinnerHold/time.Second))
+	g.armTimerLocked(m, "finish", m.Settings.FinishHoldSec)
 }
 
 func (g *Game) autoPickLocked(m *matchState) {
@@ -520,6 +525,8 @@ func (g *Game) fireTimerLocked() {
 		g.timerSubmitLocked(m)
 	case "between-reveals":
 		_ = g.revealNextLocked(m)
+	case "favorite-vote":
+		g.armTimerLocked(m, "judge-pick", m.Settings.JudgePickSec)
 	case "judge-pick":
 		g.autoPickLocked(m)
 	case "finish":
@@ -612,7 +619,7 @@ func remainingCap(draft string, cap int) int {
 }
 
 func (g *Game) playerMayVote(m *matchState, p games.Player) bool {
-	if m == nil || m.Settings.Voting == voteOff || m.Phase != phaseReveal {
+	if m == nil || m.Settings.Voting == voteOff || m.Phase != phaseReveal || m.NamesShown {
 		return false
 	}
 	if p.ID == m.JudgeID {

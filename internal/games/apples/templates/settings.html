@@ -131,6 +131,16 @@
     <input name="judge_pick" type="number" min="0" max="300" value="{{.Settings.JudgePickSec}}" {{if .Frozen}}disabled{{end}}>
   </label>
 </form>
+<form class="ui-row ui-row-field" {{template "game-live" "/settings/game/timer-favorite-vote"}}>
+  <label class="ui-field"><span>Favorite vote</span>
+    <input name="favorite_vote" type="number" min="0" max="300" value="{{.Settings.FavoriteVoteSec}}" {{if .Frozen}}disabled{{end}}>
+  </label>
+</form>
+<form class="ui-row ui-row-field" {{template "game-live" "/settings/game/timer-finish-hold"}}>
+  <label class="ui-field"><span>Winner screen</span>
+    <input name="finish_hold" type="number" min="0" max="300" value="{{.Settings.FinishHoldSec}}" {{if .Frozen}}disabled{{end}}>
+  </label>
+</form>
 {{if eq .Err.Field "timer-submit"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
 
 {{if .WildcardEnabled}}

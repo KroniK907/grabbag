@@ -90,6 +90,7 @@ func (rt *runtime) phoneExtras(r *http.Request, _ lobby.Player) lobby.PhoneExtra
 	rt.mu.Lock()
 	loadedID := rt.loadedID
 	started := rt.started
+	game := rt.game
 	rt.mu.Unlock()
 	showStart := loadedID != "" && !started
 	if showStart {
@@ -106,6 +107,7 @@ func (rt *runtime) phoneExtras(r *http.Request, _ lobby.Player) lobby.PhoneExtra
 		AutoStart:    auto,
 		GameIDs:      rt.gameIDs(),
 		LoadedGameID: loadedID,
+		HelpPath:     publicHowtoPath(game),
 	}
 	if lib, ok := rt.libraryExtras(r.Context(), loadedID, started); ok {
 		extra.ShowGameLibrary = true
@@ -176,7 +178,24 @@ func (rt *runtime) boardExtras(r *http.Request) lobby.BoardExtras {
 		out = append(out, lobby.BoardButton{Label: button.Label, Path: button.Path})
 	}
 	extra.Buttons = out
+	extra.HelpPath = publicHowtoPath(game)
 	return extra
+}
+
+func publicHowtoPath(game games.Game) string {
+	if game == nil {
+		return ""
+	}
+	for _, button := range game.BoardButtons() {
+		if button.HostOnly {
+			continue
+		}
+		if !strings.EqualFold(strings.TrimSpace(button.Label), "How to play") {
+			continue
+		}
+		return strings.TrimSpace(button.Path)
+	}
+	return ""
 }
 
 func (rt *runtime) load(ctx context.Context, id string) error {
