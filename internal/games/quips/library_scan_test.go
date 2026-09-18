@@ -25,16 +25,16 @@ func TestScanSkipsStateSubdirectory(t *testing.T) {
 func TestReconcileNewPackDefaultsOff(t *testing.T) {
 	t.Parallel()
 	existing := factorySettings()
-	existing.setPack("quips", "starter", true)
+	existing.setPack("quips", "comedy", true)
 	cat := catalog{Libraries: []libraryFile{{
 		ID: "quips", Name: "Quick Quips",
 		Packs: []packFile{
-			{ID: "starter", Name: "Starter"},
+			{ID: "comedy", Name: "Comedy"},
 			{ID: "extra", Name: "Extra"},
 		},
 	}}}
 	out := reconcileSettings(existing, true, cat)
-	if !out.packOn("quips", "starter") || out.packOn("quips", "extra") {
+	if !out.packOn("quips", "comedy") || out.packOn("quips", "extra") {
 		t.Fatalf("new pack should default off: %#v", out.Enabled)
 	}
 }

@@ -1,25 +1,1213 @@
 {
+  "description": "First-party comedy prompts for Quick Quips.",
   "formatVersion": 1,
   "id": "quips",
   "name": "Quick Quips",
-  "description": "Starter prompt library for Quick Quips. Pack contents may grow in a later task.",
   "packs": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "description": "Placeholder prompts until first-party packs ship.",
+      "description": "Party prompts sourced from the first-party comedy set.",
+      "id": "comedy",
+      "name": "Comedy",
       "prompts": [
         {
           "id": "quips-p-001",
-          "text": "The worst thing to find in your lunchbox is _."
+          "text": "The prom theme that got the dance cancelled. _"
         },
         {
           "id": "quips-p-002",
-          "text": "My new catchphrase is _."
+          "text": "Your surgeon leans over and whispers _."
         },
         {
           "id": "quips-p-003",
-          "text": "Scientists finally discovered that _ is actually good for you."
+          "text": "A candle scent that makes guests leave immediately. _"
+        },
+        {
+          "id": "quips-p-004",
+          "text": "The last thing you want to hear at a funeral: _."
+        },
+        {
+          "id": "quips-p-005",
+          "text": "The baby food flavor that made the toddler cry. _"
+        },
+        {
+          "id": "quips-p-006",
+          "text": "The raffle prize that made everyone groan: _."
+        },
+        {
+          "id": "quips-p-007",
+          "text": "A retirement home name that would empty the waiting list. _"
+        },
+        {
+          "id": "quips-p-008",
+          "text": "Never yell this on an airplane. _"
+        },
+        {
+          "id": "quips-p-009",
+          "text": "The show-and-tell that triggered a school lockdown. _"
+        },
+        {
+          "id": "quips-p-010",
+          "text": "Something you really do not want under the bed. _"
+        },
+        {
+          "id": "quips-p-011",
+          "text": "The excuse for being late that got you fired on the spot. _"
+        },
+        {
+          "id": "quips-p-012",
+          "text": "Your date leans in and whispers _."
+        },
+        {
+          "id": "quips-p-013",
+          "text": "A superpower that is absolutely useless in a street fight. _"
+        },
+        {
+          "id": "quips-p-014",
+          "text": "The wedding DJ cleared the dance floor by playing _."
+        },
+        {
+          "id": "quips-p-015",
+          "text": "A fast way to ruin a perfectly good toaster. _"
+        },
+        {
+          "id": "quips-p-016",
+          "text": "The worst advice to give a graduating senior. _"
+        },
+        {
+          "id": "quips-p-017",
+          "text": "The interview was going great until I said _."
+        },
+        {
+          "id": "quips-p-018",
+          "text": "The mascot that bankrupted the new vegan cafe. _"
+        },
+        {
+          "id": "quips-p-019",
+          "text": "You unzip your sleeping bag in the dark and feel _."
+        },
+        {
+          "id": "quips-p-020",
+          "text": "Name a toilet paper brand nobody would ever buy. _"
+        },
+        {
+          "id": "quips-p-021",
+          "text": "The pilot turns on the intercom and says _."
+        },
+        {
+          "id": "quips-p-022",
+          "text": "The toothpaste flavor that dentists actively warn against. _"
+        },
+        {
+          "id": "quips-p-023",
+          "text": "The potluck dish that sat untouched all evening. _"
+        },
+        {
+          "id": "quips-p-024",
+          "text": "The worst place to hide during hide and seek. _"
+        },
+        {
+          "id": "quips-p-025",
+          "text": "You pull back from the kiss and say _."
+        },
+        {
+          "id": "quips-p-026",
+          "text": "The motel room was fine until we found _."
+        },
+        {
+          "id": "quips-p-027",
+          "text": "Name this year's dating app that nobody downloaded. _"
+        },
+        {
+          "id": "quips-p-028",
+          "text": "A bad thing to write in my yearbook. _"
+        },
+        {
+          "id": "quips-p-029",
+          "text": "Charging into battle on a mighty _."
+        },
+        {
+          "id": "quips-p-030",
+          "text": "The traffic stop was going fine until I said _."
+        },
+        {
+          "id": "quips-p-031",
+          "text": "The ice cream machine is dispensing _."
+        },
+        {
+          "id": "quips-p-032",
+          "text": "You open the rental car glove box and find _."
+        },
+        {
+          "id": "quips-p-033",
+          "text": "A pirate ship name that strikes fear in absolutely nobody. _"
+        },
+        {
+          "id": "quips-p-034",
+          "text": "The worst thing to yell during a quiet movie. _"
+        },
+        {
+          "id": "quips-p-035",
+          "text": "Your one luxury item on the desert island is _."
+        },
+        {
+          "id": "quips-p-036",
+          "text": "The parenting advice that got you kicked out of the baby shower. _"
+        },
+        {
+          "id": "quips-p-037",
+          "text": "We opened the 1990 time capsule and found _."
+        },
+        {
+          "id": "quips-p-038",
+          "text": "The worst name for a luxury perfume. _"
+        },
+        {
+          "id": "quips-p-039",
+          "text": "The chip flavor they pulled after one week. _"
+        },
+        {
+          "id": "quips-p-040",
+          "text": "An Olympic sport that lasted exactly one Games. _"
+        },
+        {
+          "id": "quips-p-041",
+          "text": "The national flag design that caused a diplomatic incident. _"
+        },
+        {
+          "id": "quips-p-042",
+          "text": "The breakfast cereal that gave kids nightmares. _"
+        },
+        {
+          "id": "quips-p-043",
+          "text": "The smartphone feature they pulled from the first software update. _"
+        },
+        {
+          "id": "quips-p-044",
+          "text": "A children's book title that parents refused to read. _"
+        },
+        {
+          "id": "quips-p-045",
+          "text": "The theme park ride that was dismantled after one day. _"
+        },
+        {
+          "id": "quips-p-046",
+          "text": "The wilderness merit badge that was quietly discontinued. _"
+        },
+        {
+          "id": "quips-p-047",
+          "text": "The sports drink flavor that athletes refused to chug. _"
+        },
+        {
+          "id": "quips-p-048",
+          "text": "A superhero name that doesn't exactly inspire hope. _"
+        },
+        {
+          "id": "quips-p-049",
+          "text": "The magic school class that got banned on day one. _"
+        },
+        {
+          "id": "quips-p-050",
+          "text": "The flat-pack furniture piece that caused the most divorces. _"
+        },
+        {
+          "id": "quips-p-051",
+          "text": "A fast food slogan that completely backfired. _"
+        },
+        {
+          "id": "quips-p-052",
+          "text": "The animal that got banned from the petting zoo. _"
+        },
+        {
+          "id": "quips-p-053",
+          "text": "The toaster pastry flavor that never left the test kitchen. _"
+        },
+        {
+          "id": "quips-p-054",
+          "text": "A space mission name they quickly vetoed. _"
+        },
+        {
+          "id": "quips-p-055",
+          "text": "The kids' meal toy that resulted in lawsuits. _"
+        },
+        {
+          "id": "quips-p-056",
+          "text": "The mall candle scent they refuse to sell. _"
+        },
+        {
+          "id": "quips-p-057",
+          "text": "The chewing gum flavor that makes you gag. _"
+        },
+        {
+          "id": "quips-p-058",
+          "text": "A sports team name that the city protested. _"
+        },
+        {
+          "id": "quips-p-059",
+          "text": "A holiday card message that ruins the festive mood. _"
+        },
+        {
+          "id": "quips-p-060",
+          "text": "The bake sale item that the PTA confiscated. _"
+        },
+        {
+          "id": "quips-p-061",
+          "text": "A roller coaster name that makes people refuse to ride. _"
+        },
+        {
+          "id": "quips-p-062",
+          "text": "The lip balm flavor that guarantees no one will kiss you. _"
+        },
+        {
+          "id": "quips-p-063",
+          "text": "The wedding dress feature that made the bride cry. _"
+        },
+        {
+          "id": "quips-p-064",
+          "text": "The kindergarten lesson plan that got the teacher fired. _"
+        },
+        {
+          "id": "quips-p-065",
+          "text": "A minivan name that screams midlife crisis. _"
+        },
+        {
+          "id": "quips-p-066",
+          "text": "The dog food flavor that even dogs won't eat. _"
+        },
+        {
+          "id": "quips-p-067",
+          "text": "The most useless item in the emergency survival kit. _"
+        },
+        {
+          "id": "quips-p-068",
+          "text": "A heavy metal band name that sounds too friendly. _"
+        },
+        {
+          "id": "quips-p-069",
+          "text": "The children's cough syrup flavor that tastes like punishment. _"
+        },
+        {
+          "id": "quips-p-070",
+          "text": "The city monument that locals immediately petitioned to tear down. _"
+        },
+        {
+          "id": "quips-p-071",
+          "text": "The reality TV pitch that executives laughed out of the room. _"
+        },
+        {
+          "id": "quips-p-072",
+          "text": "The mouthwash flavor that leaves your breath smelling worse. _"
+        },
+        {
+          "id": "quips-p-073",
+          "text": "The vending machine item that HR had to remove. _"
+        },
+        {
+          "id": "quips-p-074",
+          "text": "A bottled water name that sounds completely toxic. _"
+        },
+        {
+          "id": "quips-p-075",
+          "text": "The jelly bean flavor that ruined the whole bag. _"
+        },
+        {
+          "id": "quips-p-076",
+          "text": "The item that ended my job interview: _."
+        },
+        {
+          "id": "quips-p-077",
+          "text": "The candle shop just released a scent that smells like _."
+        },
+        {
+          "id": "quips-p-078",
+          "text": "The intergalactic warning label on Earth just says: _."
+        },
+        {
+          "id": "quips-p-079",
+          "text": "The last thing you want to hear during surgery: _."
+        },
+        {
+          "id": "quips-p-080",
+          "text": "The golden rule of the gas station bathroom: _."
+        },
+        {
+          "id": "quips-p-081",
+          "text": "The ice cream flavor they discontinued after a week: _."
+        },
+        {
+          "id": "quips-p-082",
+          "text": "Grandma's soup tastes amazing until you find out it contains _."
+        },
+        {
+          "id": "quips-p-083",
+          "text": "The exact sentence that ruined my blind date: _."
+        },
+        {
+          "id": "quips-p-084",
+          "text": "The Halloween candy that made me cry: _."
+        },
+        {
+          "id": "quips-p-085",
+          "text": "The marriage counselor's final piece of advice: _."
+        },
+        {
+          "id": "quips-p-086",
+          "text": "Never ruin a romantic kiss by whispering: _."
+        },
+        {
+          "id": "quips-p-087",
+          "text": "The retirement home that sounds like a threat: _."
+        },
+        {
+          "id": "quips-p-088",
+          "text": "The superhero who only has the power to _."
+        },
+        {
+          "id": "quips-p-089",
+          "text": "Why I got kicked out of the library: _."
+        },
+        {
+          "id": "quips-p-090",
+          "text": "The interior designer insisted we frame and hang _."
+        },
+        {
+          "id": "quips-p-091",
+          "text": "The actual reason traffic is backed up for miles: _."
+        },
+        {
+          "id": "quips-p-092",
+          "text": "Sorry I'm late, boss, I was busy _."
+        },
+        {
+          "id": "quips-p-093",
+          "text": "Something you should never yell in an elevator. _"
+        },
+        {
+          "id": "quips-p-094",
+          "text": "The Olympic committee finally added a gold medal for _."
+        },
+        {
+          "id": "quips-p-095",
+          "text": "Name the toddler gift that made the parents cry. _"
+        },
+        {
+          "id": "quips-p-096",
+          "text": "The prom theme that got the principal fired: _."
+        },
+        {
+          "id": "quips-p-097",
+          "text": "Good luck explaining _ to a time traveler."
+        },
+        {
+          "id": "quips-p-098",
+          "text": "The housekeeper left a mint on my pillow and _ under the sheets."
+        },
+        {
+          "id": "quips-p-099",
+          "text": "The least intimidating pirate ship on the seven seas: _."
+        },
+        {
+          "id": "quips-p-100",
+          "text": "The IT guy confessed the Wi-Fi broke because of _."
+        },
+        {
+          "id": "quips-p-101",
+          "text": "Never buy _ from a stranger's driveway."
+        },
+        {
+          "id": "quips-p-102",
+          "text": "The marathon brought to you by _."
+        },
+        {
+          "id": "quips-p-103",
+          "text": "Never put this in a toaster. _"
+        },
+        {
+          "id": "quips-p-104",
+          "text": "The item that slipped out of my bag at church: _."
+        },
+        {
+          "id": "quips-p-105",
+          "text": "My rideshare driver gave me a 1-star rating because I left _."
+        },
+        {
+          "id": "quips-p-106",
+          "text": "The children's book that traumatized a generation: _."
+        },
+        {
+          "id": "quips-p-107",
+          "text": "The fortune cookie that emptied the restaurant. _"
+        },
+        {
+          "id": "quips-p-108",
+          "text": "The circus act that made the audience walk out: _."
+        },
+        {
+          "id": "quips-p-109",
+          "text": "The toilet paper brand name that never shipped: _."
+        },
+        {
+          "id": "quips-p-110",
+          "text": "The pilot turned on the intercom and screamed: _."
+        },
+        {
+          "id": "quips-p-111",
+          "text": "My weirdest flex is _."
+        },
+        {
+          "id": "quips-p-112",
+          "text": "The action that got me banned from the cemetery: _."
+        },
+        {
+          "id": "quips-p-113",
+          "text": "My grandfather's shocking final words: _."
+        },
+        {
+          "id": "quips-p-114",
+          "text": "A text message you might get from your house cat. _"
+        },
+        {
+          "id": "quips-p-115",
+          "text": "What a Roomba thinks about all day. _"
+        },
+        {
+          "id": "quips-p-116",
+          "text": "A Yelp review written by a mosquito. _"
+        },
+        {
+          "id": "quips-p-117",
+          "text": "A diary entry by a squirrel preparing for winter. _"
+        },
+        {
+          "id": "quips-p-118",
+          "text": "What your mattress secretly thinks of you. _"
+        },
+        {
+          "id": "quips-p-119",
+          "text": "A text message from your left shoe. _"
+        },
+        {
+          "id": "quips-p-120",
+          "text": "What a forgotten leftover in the fridge is thinking. _"
+        },
+        {
+          "id": "quips-p-121",
+          "text": "A complaint letter written by a toothbrush. _"
+        },
+        {
+          "id": "quips-p-122",
+          "text": "What a pigeon tells its therapist. _"
+        },
+        {
+          "id": "quips-p-123",
+          "text": "A voicemail left by an angry washing machine. _"
+        },
+        {
+          "id": "quips-p-124",
+          "text": "What a traffic light thinks about humans. _"
+        },
+        {
+          "id": "quips-p-125",
+          "text": "A Yelp review written by a dog at the vet. _"
+        },
+        {
+          "id": "quips-p-126",
+          "text": "What your bathroom mirror would say to you. _"
+        },
+        {
+          "id": "quips-p-127",
+          "text": "A diary entry written by a slice of bread. _"
+        },
+        {
+          "id": "quips-p-128",
+          "text": "What a goldfish thinks during its third lap. _"
+        },
+        {
+          "id": "quips-p-129",
+          "text": "A text message from your car's check engine light. _"
+        },
+        {
+          "id": "quips-p-130",
+          "text": "What a spider in the corner thinks of your dancing. _"
+        },
+        {
+          "id": "quips-p-131",
+          "text": "A complaint letter written by your alarm clock. _"
+        },
+        {
+          "id": "quips-p-132",
+          "text": "What a snowman thinks as spring approaches. _"
+        },
+        {
+          "id": "quips-p-133",
+          "text": "A diary entry by a forgotten gym membership card. _"
+        },
+        {
+          "id": "quips-p-134",
+          "text": "What a slice of pizza says before being eaten. _"
+        },
+        {
+          "id": "quips-p-135",
+          "text": "A text message from a confused moth. _"
+        },
+        {
+          "id": "quips-p-136",
+          "text": "What your coffee mug thinks about your morning routine. _"
+        },
+        {
+          "id": "quips-p-137",
+          "text": "A Yelp review written by a raccoon visiting a trash can. _"
+        },
+        {
+          "id": "quips-p-138",
+          "text": "What a cloud thinks before it rains. _"
+        },
+        {
+          "id": "quips-p-139",
+          "text": "A diary entry written by a lost pair of sunglasses. _"
+        },
+        {
+          "id": "quips-p-140",
+          "text": "What a houseplant screams when you forget to water it. _"
+        },
+        {
+          "id": "quips-p-141",
+          "text": "A voicemail from an exhausted ceiling fan. _"
+        },
+        {
+          "id": "quips-p-142",
+          "text": "What a bowling pin thinks before the ball hits. _"
+        },
+        {
+          "id": "quips-p-143",
+          "text": "A complaint letter from your Wi-Fi router. _"
+        },
+        {
+          "id": "quips-p-144",
+          "text": "What a shopping cart thinks of its wobbly wheel. _"
+        },
+        {
+          "id": "quips-p-145",
+          "text": "A text message from a very aggressive goose. _"
+        },
+        {
+          "id": "quips-p-146",
+          "text": "What a penny on the sidewalk thinks all day. _"
+        },
+        {
+          "id": "quips-p-147",
+          "text": "A Yelp review of the Earth written by an alien. _"
+        },
+        {
+          "id": "quips-p-148",
+          "text": "What your umbrella thinks about being left behind. _"
+        },
+        {
+          "id": "quips-p-149",
+          "text": "A diary entry by a tired microwave oven. _"
+        },
+        {
+          "id": "quips-p-150",
+          "text": "What a fire hydrant thinks about neighborhood dogs. _"
+        },
+        {
+          "id": "quips-p-151",
+          "text": "How to get a kid's birthday party shut down. _"
+        },
+        {
+          "id": "quips-p-152",
+          "text": "What to do with 50 pounds of leftover glitter. _"
+        },
+        {
+          "id": "quips-p-153",
+          "text": "One sentence that ends a job interview. _"
+        },
+        {
+          "id": "quips-p-154",
+          "text": "Name an inappropriate weapon to bring to a pillow fight. _"
+        },
+        {
+          "id": "quips-p-155",
+          "text": "Name a restaurant you would never eat at. _"
+        },
+        {
+          "id": "quips-p-156",
+          "text": "How to gracefully back out of a sword duel. _"
+        },
+        {
+          "id": "quips-p-157",
+          "text": "You stole a police car. Now what? _"
+        },
+        {
+          "id": "quips-p-158",
+          "text": "Hide a live badger. Where? _"
+        },
+        {
+          "id": "quips-p-159",
+          "text": "The quickest way to lose a bar fight. _"
+        },
+        {
+          "id": "quips-p-160",
+          "text": "What to scream in a completely silent library. _"
+        },
+        {
+          "id": "quips-p-161",
+          "text": "How to explain forgetting your own name. _"
+        },
+        {
+          "id": "quips-p-162",
+          "text": "How to assert dominance over a petting zoo goat. _"
+        },
+        {
+          "id": "quips-p-163",
+          "text": "The perfect wedding gift for your worst enemy. _"
+        },
+        {
+          "id": "quips-p-164",
+          "text": "The scariest thing to find at the bottom of the ocean. _"
+        },
+        {
+          "id": "quips-p-165",
+          "text": "How to escape a terrible blind date in five seconds. _"
+        },
+        {
+          "id": "quips-p-166",
+          "text": "Name the secret ingredient in a cursed soup. _"
+        },
+        {
+          "id": "quips-p-167",
+          "text": "Name a retirement home for supervillains. _"
+        },
+        {
+          "id": "quips-p-168",
+          "text": "How I accidentally started a cult. _"
+        },
+        {
+          "id": "quips-p-169",
+          "text": "What to do with a five-minute time machine. _"
+        },
+        {
+          "id": "quips-p-170",
+          "text": "Lean in and whisper this to a stranger on an elevator. _"
+        },
+        {
+          "id": "quips-p-171",
+          "text": "How to get permanently banned from a monastery. _"
+        },
+        {
+          "id": "quips-p-172",
+          "text": "Why did you eat your roommate's homework? _"
+        },
+        {
+          "id": "quips-p-173",
+          "text": "Name a pirate ship constructed entirely of cheese. _"
+        },
+        {
+          "id": "quips-p-174",
+          "text": "How to casually drop that you're a vampire. _"
+        },
+        {
+          "id": "quips-p-175",
+          "text": "The most practical use for a cursed amulet. _"
+        },
+        {
+          "id": "quips-p-176",
+          "text": "Bring this to a fistfight instead of fists. _"
+        },
+        {
+          "id": "quips-p-177",
+          "text": "How to ruin a romantic horse-drawn carriage ride. _"
+        },
+        {
+          "id": "quips-p-178",
+          "text": "Your excuse to the cops for stealing a penguin. _"
+        },
+        {
+          "id": "quips-p-179",
+          "text": "Name the world's most depressing theme park. _"
+        },
+        {
+          "id": "quips-p-180",
+          "text": "Survive a zombie apocalypse using only office supplies. How? _"
+        },
+        {
+          "id": "quips-p-181",
+          "text": "What to do with a bucket full of teeth. _"
+        },
+        {
+          "id": "quips-p-182",
+          "text": "What to tell the ghost haunting your toilet. _"
+        },
+        {
+          "id": "quips-p-183",
+          "text": "How to intentionally fail a lie detector test. _"
+        },
+        {
+          "id": "quips-p-184",
+          "text": "A dramatic way to quit a fast-food job. _"
+        },
+        {
+          "id": "quips-p-185",
+          "text": "Why are you grocery shopping in full plate armor? _"
+        },
+        {
+          "id": "quips-p-186",
+          "text": "The weirdest item to slip into a stranger's mailbox. _"
+        },
+        {
+          "id": "quips-p-187",
+          "text": "One ingredient that instantly ruins a perfect sandwich. _"
+        },
+        {
+          "id": "quips-p-188",
+          "text": "How to get fired on day one. _"
+        },
+        {
+          "id": "quips-p-189",
+          "text": "A practical use for a haunted toaster. _"
+        },
+        {
+          "id": "quips-p-190",
+          "text": "The first thing you do when you wake up with crab claws. _"
+        },
+        {
+          "id": "quips-p-191",
+          "text": "If cats ruled the world, the highest crime would be _."
+        },
+        {
+          "id": "quips-p-192",
+          "text": "You open your mattress and are shocked to find _."
+        },
+        {
+          "id": "quips-p-193",
+          "text": "You won the lottery, but must spend it all on _."
+        },
+        {
+          "id": "quips-p-194",
+          "text": "The real reason aliens refuse to visit Earth. _"
+        },
+        {
+          "id": "quips-p-195",
+          "text": "A strange item to find inside an ancient Egyptian tomb. _"
+        },
+        {
+          "id": "quips-p-196",
+          "text": "The most useless superpower to have during a traffic jam. _"
+        },
+        {
+          "id": "quips-p-197",
+          "text": "You are trapped in a mall overnight. Your weapon is _."
+        },
+        {
+          "id": "quips-p-198",
+          "text": "The secret society of pigeons is plotting to _."
+        },
+        {
+          "id": "quips-p-199",
+          "text": "The most embarrassing thing to happen during an alien abduction. _"
+        },
+        {
+          "id": "quips-p-200",
+          "text": "You open your fridge and find _."
+        },
+        {
+          "id": "quips-p-201",
+          "text": "Your surgeon leans in right before anesthesia and whispers _."
+        },
+        {
+          "id": "quips-p-202",
+          "text": "You find a time machine, but it only goes to _."
+        },
+        {
+          "id": "quips-p-203",
+          "text": "You are in a romantic comedy, but the twist is _."
+        },
+        {
+          "id": "quips-p-204",
+          "text": "You accidentally text your boss a picture of _."
+        },
+        {
+          "id": "quips-p-205",
+          "text": "You find a magic lamp, but the genie is incredibly _."
+        },
+        {
+          "id": "quips-p-206",
+          "text": "A witch curses you to loudly yell _ when sneezing."
+        },
+        {
+          "id": "quips-p-207",
+          "text": "You are trapped in an elevator with _."
+        },
+        {
+          "id": "quips-p-208",
+          "text": "If babies could talk, their biggest complaint would be _."
+        },
+        {
+          "id": "quips-p-209",
+          "text": "It starts raining, but instead of water, it's _."
+        },
+        {
+          "id": "quips-p-210",
+          "text": "You are a ghost, but can only haunt _."
+        },
+        {
+          "id": "quips-p-211",
+          "text": "You jump out of the plane. Your parachute is actually _."
+        },
+        {
+          "id": "quips-p-212",
+          "text": "The school cafeteria's mystery meat is actually made of _."
+        },
+        {
+          "id": "quips-p-213",
+          "text": "You are writing a children's book about a magical _."
+        },
+        {
+          "id": "quips-p-214",
+          "text": "You wake up after a wild night with _ in your pocket."
+        },
+        {
+          "id": "quips-p-215",
+          "text": "If trees could walk, the first thing they'd do is _."
+        },
+        {
+          "id": "quips-p-216",
+          "text": "The bank robber points his gun and demands all the _."
+        },
+        {
+          "id": "quips-p-217",
+          "text": "You are cursed to turn into a _ every full moon."
+        },
+        {
+          "id": "quips-p-218",
+          "text": "A time traveler appears and warns you about _."
+        },
+        {
+          "id": "quips-p-219",
+          "text": "The medieval knight charges forward holding a _."
+        },
+        {
+          "id": "quips-p-220",
+          "text": "The real reason the Mona Lisa is smiling is because she _."
+        },
+        {
+          "id": "quips-p-221",
+          "text": "You walk in on your new roommate secretly _."
+        },
+        {
+          "id": "quips-p-222",
+          "text": "If insects had a religion, their god would be _."
+        },
+        {
+          "id": "quips-p-223",
+          "text": "Stranded on a desert island with nothing but _."
+        },
+        {
+          "id": "quips-p-224",
+          "text": "You accidentally swallow a magic pill that makes you _."
+        },
+        {
+          "id": "quips-p-225",
+          "text": "You wake up and everyone in the world is _."
+        },
+        {
+          "id": "quips-p-226",
+          "text": "Why I missed the all-hands call: _."
+        },
+        {
+          "id": "quips-p-227",
+          "text": "The newsletter title that got the intern fired. _"
+        },
+        {
+          "id": "quips-p-228",
+          "text": "The real reason the breakroom microwave is broken. _"
+        },
+        {
+          "id": "quips-p-229",
+          "text": "My biggest career mistake was accidentally _."
+        },
+        {
+          "id": "quips-p-230",
+          "text": "The tab I accidentally shared in the meeting. _"
+        },
+        {
+          "id": "quips-p-231",
+          "text": "The Casual Friday rule that lasted one week. _"
+        },
+        {
+          "id": "quips-p-232",
+          "text": "Never say this during your performance review. _"
+        },
+        {
+          "id": "quips-p-233",
+          "text": "The company's new strategy for boosting morale is _."
+        },
+        {
+          "id": "quips-p-234",
+          "text": "What HR found abandoned on the office printer. _"
+        },
+        {
+          "id": "quips-p-235",
+          "text": "The team-building exercise that caused a lawsuit. _"
+        },
+        {
+          "id": "quips-p-236",
+          "text": "You hit reply-all to the CEO. The subject was _."
+        },
+        {
+          "id": "quips-p-237",
+          "text": "Instead of a raise, my boss gave me _."
+        },
+        {
+          "id": "quips-p-238",
+          "text": "Never whisper this during a quarterly presentation. _"
+        },
+        {
+          "id": "quips-p-239",
+          "text": "Why the new office chairs were immediately recalled. _"
+        },
+        {
+          "id": "quips-p-240",
+          "text": "You know you're fired when HR hands you _."
+        },
+        {
+          "id": "quips-p-241",
+          "text": "The icebreaker that made the new hire quit. _"
+        },
+        {
+          "id": "quips-p-242",
+          "text": "The accounting department's unauthorized new slogan. _"
+        },
+        {
+          "id": "quips-p-243",
+          "text": "The lunch odor that cleared out the entire cubicle block. _"
+        },
+        {
+          "id": "quips-p-244",
+          "text": "My excuse for being late to work is _."
+        },
+        {
+          "id": "quips-p-245",
+          "text": "The dish that ended Thanksgiving early. _"
+        },
+        {
+          "id": "quips-p-246",
+          "text": "The dinner topic that made Grandpa walk out. _"
+        },
+        {
+          "id": "quips-p-247",
+          "text": "The real reason Aunt Linda is banned from Christmas. _"
+        },
+        {
+          "id": "quips-p-248",
+          "text": "My family's dark secret involves _."
+        },
+        {
+          "id": "quips-p-249",
+          "text": "Something that should not be in the mashed potatoes. _"
+        },
+        {
+          "id": "quips-p-250",
+          "text": "The toast that ruined the family reunion. _"
+        },
+        {
+          "id": "quips-p-251",
+          "text": "How not to carve the Thanksgiving turkey. _"
+        },
+        {
+          "id": "quips-p-252",
+          "text": "Grandpa's inheritance is surprisingly just _."
+        },
+        {
+          "id": "quips-p-253",
+          "text": "The first thing said after grace that ruined dinner. _"
+        },
+        {
+          "id": "quips-p-254",
+          "text": "The new seating chart puts me right next to _."
+        },
+        {
+          "id": "quips-p-255",
+          "text": "What really ruins the family picnic. _"
+        },
+        {
+          "id": "quips-p-256",
+          "text": "How my sister inappropriately announced her pregnancy at dinner. _"
+        },
+        {
+          "id": "quips-p-257",
+          "text": "Mom's secret recipe finally revealed: it's mostly _."
+        },
+        {
+          "id": "quips-p-258",
+          "text": "The family photo shoot theme we agreed never to discuss. _"
+        },
+        {
+          "id": "quips-p-259",
+          "text": "The compliment that made the chef cry. _"
+        },
+        {
+          "id": "quips-p-260",
+          "text": "Why I skipped my cousin's wedding: _."
+        },
+        {
+          "id": "quips-p-261",
+          "text": "The real reason the family group chat is silent. _"
+        },
+        {
+          "id": "quips-p-262",
+          "text": "The board game that caused a fistfight. _"
+        },
+        {
+          "id": "quips-p-263",
+          "text": "Instead of dessert, Grandma served _."
+        },
+        {
+          "id": "quips-p-264",
+          "text": "Never say this on a first date. _"
+        },
+        {
+          "id": "quips-p-265",
+          "text": "The profile picture that guarantees zero matches. _"
+        },
+        {
+          "id": "quips-p-266",
+          "text": "Where we went for our final anniversary. _"
+        },
+        {
+          "id": "quips-p-267",
+          "text": "My dating red flag is _."
+        },
+        {
+          "id": "quips-p-268",
+          "text": "How I escaped my last blind date: _."
+        },
+        {
+          "id": "quips-p-269",
+          "text": "The opening message that got me instantly blocked. _"
+        },
+        {
+          "id": "quips-p-270",
+          "text": "What I accidentally left at their apartment. _"
+        },
+        {
+          "id": "quips-p-271",
+          "text": "The real reason I got ghosted was _."
+        },
+        {
+          "id": "quips-p-272",
+          "text": "The Valentine's Day gift that caused a breakup. _"
+        },
+        {
+          "id": "quips-p-273",
+          "text": "A niche dating app for people who love _."
+        },
+        {
+          "id": "quips-p-274",
+          "text": "Never whisper this while kissing. _"
+        },
+        {
+          "id": "quips-p-275",
+          "text": "My secret to a successful first date is _."
+        },
+        {
+          "id": "quips-p-276",
+          "text": "The most awkward way to split the dinner bill. _"
+        },
+        {
+          "id": "quips-p-277",
+          "text": "The romantic food gesture that ended in the ER. _"
+        },
+        {
+          "id": "quips-p-278",
+          "text": "The pet name that ended my marriage. _"
+        },
+        {
+          "id": "quips-p-279",
+          "text": "The real reason I'm single is _."
+        },
+        {
+          "id": "quips-p-280",
+          "text": "The question you should never ask their parents. _"
+        },
+        {
+          "id": "quips-p-281",
+          "text": "What I wore that ruined the romantic evening. _"
+        },
+        {
+          "id": "quips-p-282",
+          "text": "Instead of flowers, my date brought me _."
+        },
+        {
+          "id": "quips-p-283",
+          "text": "The hidden downside of commuting via jetpack. _"
+        },
+        {
+          "id": "quips-p-284",
+          "text": "The household robot feature that terrified everyone. _"
+        },
+        {
+          "id": "quips-p-285",
+          "text": "The real reason the time machine broke down. _"
+        },
+        {
+          "id": "quips-p-286",
+          "text": "My clone's most annoying habit is _."
+        },
+        {
+          "id": "quips-p-287",
+          "text": "The teleportation glitch they don't warn you about. _"
+        },
+        {
+          "id": "quips-p-288",
+          "text": "The hoverboard feature that caused mass casualties. _"
+        },
+        {
+          "id": "quips-p-289",
+          "text": "Why I missed the shuttle to Mars: _."
+        },
+        {
+          "id": "quips-p-290",
+          "text": "The real reason the aliens left Earth early. _"
+        },
+        {
+          "id": "quips-p-291",
+          "text": "The memory eraser's most embarrassing side effect. _"
+        },
+        {
+          "id": "quips-p-292",
+          "text": "Why the Space Force uniforms were immediately recalled. _"
+        },
+        {
+          "id": "quips-p-293",
+          "text": "The command that made my AI assistant turn evil. _"
+        },
+        {
+          "id": "quips-p-294",
+          "text": "The real reason we haven't colonized Mars is _."
+        },
+        {
+          "id": "quips-p-295",
+          "text": "The warning label missing from the new laser blaster. _"
+        },
+        {
+          "id": "quips-p-296",
+          "text": "The food that caused a zero-gravity disaster. _"
+        },
+        {
+          "id": "quips-p-297",
+          "text": "The VR headset glitch that trapped me inside. _"
+        },
+        {
+          "id": "quips-p-298",
+          "text": "The alien ambassador's highly offensive earth name. _"
+        },
+        {
+          "id": "quips-p-299",
+          "text": "What woke me up halfway through hypersleep. _"
+        },
+        {
+          "id": "quips-p-300",
+          "text": "My futuristic robot butler just handed me _."
         }
       ]
     }

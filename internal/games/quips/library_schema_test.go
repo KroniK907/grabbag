@@ -22,10 +22,10 @@ func TestShippedQuipsJSONIsPromptOnly(t *testing.T) {
 	if lib.ID != "quips" || lib.Name != "Quick Quips" {
 		t.Fatalf("id=%q name=%q", lib.ID, lib.Name)
 	}
-	if len(lib.Packs) != 1 || lib.Packs[0].ID != "starter" {
+	if len(lib.Packs) != 1 || lib.Packs[0].ID != "comedy" {
 		t.Fatalf("packs = %#v", lib.Packs)
 	}
-	if len(lib.Packs[0].Prompts) < 1 {
-		t.Fatal("starter pack has no prompts")
+	if len(lib.Packs[0].Prompts) < 100 {
+		t.Fatalf("comedy pack prompt count = %d", len(lib.Packs[0].Prompts))
 	}
 }

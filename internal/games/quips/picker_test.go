@@ -33,7 +33,7 @@ func TestFirstLoadEnablesShippedPackNewPackOff(t *testing.T) {
 		t.Fatal(err)
 	}
 	page := pickerPage(t, g)
-	assertPackCheckbox(t, page, "quips", "starter", true)
+	assertPackCheckbox(t, page, "quips", "comedy", true)
 	assertPackCheckbox(t, page, "house", "house", false)
 }
 
@@ -61,13 +61,13 @@ func TestTogglePackPersistsAndFreezesWhenStarted(t *testing.T) {
 	g := loadedPickerGame(t, h)
 	rec := postPickerSettings(g, "/pack", url.Values{
 		"library": {"quips"},
-		"pack":    {"starter"},
+		"pack":    {"comedy"},
 		"enabled": {"0"},
 	})
 	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/play/picker" {
 		t.Fatalf("toggle = %d %q", rec.Code, rec.Header().Get("Location"))
 	}
-	assertPackCheckbox(t, pickerPage(t, g), "quips", "starter", false)
+	assertPackCheckbox(t, pickerPage(t, g), "quips", "comedy", false)
 
 	g.mu.Lock()
 	g.engine = &matchEngine{}
@@ -77,7 +77,7 @@ func TestTogglePackPersistsAndFreezesWhenStarted(t *testing.T) {
 	}
 	frozen := postPickerSettings(g, "/pack", url.Values{
 		"library": {"quips"},
-		"pack":    {"starter"},
+		"pack":    {"comedy"},
 		"enabled": {"1"},
 	})
 	if frozen.Code != http.StatusOK || !strings.Contains(frozen.Body.String(), "Pack changes wait until the game ends") {

@@ -111,7 +111,7 @@ func TestLoadSeedsMatchSettingsKV(t *testing.T) {
 	if !parsed || s.RoundCount != 3 {
 		t.Fatalf("parsed=%v settings=%#v", parsed, s)
 	}
-	if !s.packOn("quips", "starter") {
+	if !s.packOn("quips", "comedy") {
 		t.Fatalf("shipped pack should default on: %#v", s.Enabled)
 	}
 }
