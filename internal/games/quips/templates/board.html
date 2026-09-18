@@ -1,8 +1,43 @@
 {{template "ui-start" .}}
 {{template "round-swap" "/board"}}
 <link rel="stylesheet" href="{{.GameCSS}}">
-<div class="quips-board">
-  <h1>Quick Quips</h1>
-  <p class="quips-placeholder">Match board wiring lands with the engine task.</p>
-</div>
+<script defer src="{{.GameJS}}"></script>
+{{template "board-frame" .}}
 {{template "ui-end"}}
+
+{{define "board-frame"}}
+<div
+  id="quips-board"
+  class="quips-board quips-tv{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:quips-lock, sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{if .Paused}}<div class="quips-dim">Paused</div>{{end}}
+  <header class="quips-board-head">
+    <span class="display">Quick Quips</span>
+    {{template "quips-timer" .}}
+  </header>
+  <main class="quips-board-center">
+    {{if .WritingBeat}}
+      {{if .CenterPrompt}}
+        <div class="quips-prompt">{{.CenterPrompt}}</div>
+      {{else}}
+        <p class="quips-writing-beat">Everyone is writing…</p>
+      {{end}}
+    {{else if eq .Phase "parade-ready"}}
+      <p class="quips-writing-beat">Write phase complete. Vote parade lands in the next task.</p>
+    {{else}}
+      <p class="quips-placeholder">Waiting to start.</p>
+    {{end}}
+  </main>
+  <div class="quips-roster">
+    {{range .Roster}}
+    <div class="quips-player{{if .Locked}} locked{{end}}">
+      <strong>{{.Name}}</strong>
+      {{if .Locked}}<span class="quips-locked-mark">Locked</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

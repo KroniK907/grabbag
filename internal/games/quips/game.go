@@ -4,7 +4,6 @@ package quips
 import (
 	"bytes"
 	"embed"
-	"errors"
 	"fmt"
 	"io/fs"
 	"math/rand"
@@ -18,10 +17,8 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "picker-1"
+	assetVersion = "match-write-1"
 )
-
-var errEngineNotReady = errors.New("quick quips match engine is not ready yet")
 
 //go:embed templates/*.html
 var templateFiles embed.FS
@@ -37,7 +34,10 @@ type Game struct {
 	helper  games.Helper
 	started bool
 	paused  bool
-	engine  *matchEngine
+	engine     *engine
+	stopTick   chan struct{}
+	needFinish bool
+	needPause  bool
 
 	burns          []burnEntry
 	burnCorrupt    bool
@@ -107,22 +107,17 @@ func (g *Game) Settings() http.Handler {
 	return mux
 }
 
-// Start refuses until the match engine task wires g.engine.
+// Start deals prompts and opens the write phase.
 func (g *Game) Start(h games.Helper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.helper = h
-	if g.engine == nil {
-		return errEngineNotReady
-	}
-	g.started = true
-	g.paused = false
-	return nil
+	return g.beginMatchLocked(h)
 }
 
 // Board is the TV document after Start.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board.html", g.pageView("Quick Quips"), http.StatusOK)
+	g.render(w, "board.html", g.boardView(), http.StatusOK)
 }
 
 // BoardButtons publishes Prompt Library on the Lobby rail after Load.
@@ -136,13 +131,17 @@ func (g *Game) BoardButtons() []games.BoardButton {
 
 // Phone is the seated player column after Start.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "phone.html", g.pageView("Quick Quips"), http.StatusOK)
+	g.render(w, "phone.html", g.phoneView(r), http.StatusOK)
 }
 
 // Play mounts prompt library and static assets after Load.
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /picker", g.getPicker)
+	mux.HandleFunc("GET /partials/board", g.getBoardPartial)
+	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
+	mux.HandleFunc("POST /draft", g.postDraft)
+	mux.HandleFunc("POST /lock", g.postLock)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("quips: embedded static directory is missing")
@@ -151,19 +150,28 @@ func (g *Game) Play() http.Handler {
 	return mux
 }
 
-// Pause is a no-op until the engine exists.
+// Pause freezes the write timer and blocks compose POSTs.
 func (g *Game) Pause() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = true
+	if g.engine != nil {
+		g.engine.SetPaused(true, g.clock())
+	}
 	return nil
 }
 
-// Resume clears the paused flag.
+// Resume thaws the write timer and restarts the ticker.
 func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
+	if g.engine != nil {
+		g.engine.SetPaused(false, g.clock())
+	}
+	if g.started {
+		g.startTickerLocked()
+	}
 	return nil
 }
 
@@ -171,6 +179,7 @@ func (g *Game) Resume() error {
 func (g *Game) Stop() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.stopTickerLocked()
 	g.drainJournalsLocked()
 	g.started = false
 	g.paused = false
@@ -182,6 +191,7 @@ func (g *Game) Stop() error {
 func (g *Game) Shutdown() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.stopTickerLocked()
 	g.stopWritersLocked()
 	g.drainJournalsLocked()
 	g.helper = nil
@@ -215,17 +225,6 @@ func (g *Game) randIntn(n int) int {
 	return rand.Intn(n)
 }
 
-func (g *Game) pageView(title string) pageView {
-	view := pageView{
-		Chrome:  ui.Chrome{Title: title, Theme: ui.DefaultTheme},
-		GameCSS: "/play/static/game.css?v=" + assetVersion,
-	}
-	if h := g.helperNow(); h != nil {
-		view.Chrome.Theme = ui.NormalizeTheme(h.Theme())
-	}
-	return view
-}
-
 func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 }
@@ -244,4 +243,23 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 type pageView struct {
 	ui.Chrome
 	GameCSS string
+	GameJS  string
+}
+
+func (g *Game) pageView(title string) pageView {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.pageViewLocked(title)
+}
+
+func (g *Game) pageViewLocked(title string) pageView {
+	view := pageView{
+		Chrome:  ui.Chrome{Title: title, Theme: ui.DefaultTheme},
+		GameCSS: "/play/static/game.css?v=" + assetVersion,
+		GameJS:  "/play/static/game.js?v=" + assetVersion,
+	}
+	if g.helper != nil {
+		view.Chrome.Theme = ui.NormalizeTheme(g.helper.Theme())
+	}
+	return view
 }

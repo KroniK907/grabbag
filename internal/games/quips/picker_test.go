@@ -70,11 +70,9 @@ func TestTogglePackPersistsAndFreezesWhenStarted(t *testing.T) {
 	assertPackCheckbox(t, pickerPage(t, g), "quips", "comedy", false)
 
 	g.mu.Lock()
-	g.engine = &matchEngine{}
+	g.engine = &engine{Phase: phaseWrite}
+	g.started = true
 	g.mu.Unlock()
-	if err := g.Start(h); err != nil {
-		t.Fatal(err)
-	}
 	frozen := postPickerSettings(g, "/pack", url.Values{
 		"library": {"quips"},
 		"pack":    {"comedy"},

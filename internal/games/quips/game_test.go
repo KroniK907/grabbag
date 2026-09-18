@@ -65,17 +65,27 @@ func TestLoadCopiesShippedQuipsOnce(t *testing.T) {
 	}
 }
 
-func TestStartRefusesWithoutEngine(t *testing.T) {
+func TestStartOpensWritePhase(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	h := newFakeHelper(dir)
+	h.seated = []games.Player{
+		{ID: "p1", DisplayName: "One", Seated: true},
+		{ID: "p2", DisplayName: "Two", Seated: true},
+	}
 	g := New()
 	if err := g.Load(h); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = g.Shutdown() })
-	if err := g.Start(h); err == nil {
-		t.Fatal("Start should fail until engine is wired")
+	if err := g.Start(h); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	g.mu.Lock()
+	phase := g.engine.Phase
+	g.mu.Unlock()
+	if phase != phaseWrite {
+		t.Fatalf("phase=%s want write", phase)
 	}
 }
 

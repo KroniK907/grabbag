@@ -128,6 +128,108 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 100%;
-  padding: 12px 0;
+  padding: 12px 0 72px;
   text-align: center;
+}
+
+.quips-phone-scroll {
+  display: grid;
+  gap: 14px;
+  padding: 0 12px 12px;
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+}
+
+.quips-compose-card {
+  text-align: left;
+  padding: 12px;
+  border: 2px solid var(--ui-accent);
+  border-radius: 10px;
+  background: var(--ui-card-bg);
+}
+
+.quips-compose-card.dup-outline textarea {
+  outline: 3px solid #e33;
+}
+
+.quips-compose-card textarea {
+  width: 100%;
+  min-height: 88px;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.quips-cap {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.quips-lock-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 10px 12px;
+  background: var(--ui-board-bg);
+  border-top: 2px solid var(--ui-rail-border);
+}
+
+.quips-lock-bar.gray .ui-btn {
+  opacity: 0.55;
+}
+
+.quips-tv {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.quips-board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.quips-board-center {
+  display: grid;
+  place-content: center;
+  padding: 20px;
+  text-align: center;
+}
+
+.quips-writing-beat {
+  font-size: clamp(24px, 4vw, 48px);
+}
+
+.quips-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px 24px;
+  border-top: 3px solid var(--ui-rail-border);
+}
+
+.quips-player {
+  padding: 8px 12px;
+  border: 2px solid var(--ui-accent);
+  border-radius: 8px;
+}
+
+.quips-player.locked {
+  border-color: #7cff6b;
+}
+
+.quips-locked-mark {
+  margin-left: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.quips-timer {
+  font-size: 14px;
+}
+
+.quips-dim {
+  opacity: 0.7;
+  margin: 0 0 8px;
 }

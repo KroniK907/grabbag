@@ -1,4 +1,60 @@
 <link rel="stylesheet" href="{{.GameCSS}}">
-<div class="quips-phone ui-stack">
-  <p class="quips-placeholder">Phone play wiring lands with the engine task.</p>
+<script defer src="{{.GameJS}}"></script>
+{{template "phone-frame" .}}
+
+{{define "phone-frame"}}
+<div
+  id="quips-phone"
+  class="quips-phone ui-stack{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/phone"
+  hx-trigger="sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{if .Paused}}<p class="quips-dim">Paused</p>{{end}}
+  {{if eq .Role "wait"}}
+  <div class="quips-wait">
+    {{template "quips-timer" .}}
+    <p>{{.WaitCopy}}</p>
+  </div>
+  {{else}}
+  <div class="quips-phone-scroll">
+    {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
+    {{template "quips-timer" .}}
+    {{range .Slots}}
+    <article class="quips-compose-card{{if .DupOutline}} dup-outline{{end}}">
+      <p class="quips-prompt">{{.PromptText}}</p>
+      <textarea
+        name="text"
+        maxlength="{{.Cap}}"
+        {{if .Disabled}}disabled{{end}}
+        hx-post="/play/draft"
+        hx-trigger="input changed delay:300ms"
+        hx-swap="none"
+        hx-include="closest article"
+      >{{.Draft}}</textarea>
+      <input type="hidden" name="slot" value="{{.Index}}">
+      {{if eq .Remain 0}}<p class="quips-cap">0 / {{.Cap}}</p>{{else if gt .Cap 0}}<p class="quips-cap">{{.Remain}} / {{.Cap}}</p>{{end}}
+    </article>
+    {{end}}
+  </div>
+  {{if or (eq .Role "compose") (eq .Role "locked")}}
+  <form
+    class="quips-lock-bar{{if not .LockReady}} gray{{end}}"
+    hx-post="/play/lock"
+    hx-swap="outerHTML"
+    hx-target="#quips-phone"
+  >
+    <button class="ui-btn" type="submit" {{if .Locked}}disabled{{end}}>{{.LockLabel}}</button>
+  </form>
+  {{end}}
+  {{end}}
 </div>
+{{end}}
+
+{{define "quips-timer"}}
+{{if .TimerLabel}}
+<div class="quips-timer" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+  <span>{{.TimerLabel}} <strong data-timer-value>{{.TimerText}}</strong></span>
+</div>
+{{end}}
+{{end}}
