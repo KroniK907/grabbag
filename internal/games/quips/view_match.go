@@ -11,6 +11,8 @@ import (
 type boardView struct {
 	pageView
 	Paused       bool
+	Overlay      bool
+	OverlayCopy  string
 	Phase        string
 	Round        int
 	Multiplier   int
@@ -52,6 +54,13 @@ type rosterView struct {
 type phoneView struct {
 	pageView
 	Paused         bool
+	ClaimedHost    bool
+	BurnFaces      []burnFace
+	BurnErr        string
+	BurnOpen       bool
+	Overlay        bool
+	OverlayCopy    string
+	OverlayYes     bool
 	Role           string
 	Error          string
 	WaitCopy       string
@@ -100,6 +109,13 @@ func (g *Game) boardViewLocked() boardView {
 	view := boardView{
 		pageView: g.pageViewLocked("Quick Quips"),
 		Phase:    "setup",
+	}
+	if g.overlay != "" {
+		view.Overlay = true
+		view.OverlayCopy = overlayTVCopy
+		if g.overlayTooSmall {
+			view.OverlayCopy = overlayFailCopy
+		}
 	}
 	if g.engine == nil {
 		return view
@@ -191,9 +207,17 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 
 func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phoneView {
 	view := phoneView{
-		pageView: g.pageViewLocked("Quick Quips"),
-		Role:     "wait",
-		WaitCopy: "Hang tight.",
+		pageView:     g.pageViewLocked("Quick Quips"),
+		Role:         "wait",
+		WaitCopy:     "Hang tight.",
+		ClaimedHost:  p.ClaimedHost,
+	}
+	if g.overlay != "" {
+		view.Overlay = true
+		copy, yes := overlayCopy(p.ClaimedHost, g.overlayTooSmall)
+		view.OverlayCopy = copy
+		view.OverlayYes = yes
+		return view
 	}
 	if g.engine == nil {
 		return view
@@ -253,7 +277,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 			}
 			view.VoteOptions = append(view.VoteOptions, opt)
 		}
-		return view
+		return g.attachBurnDrawer(view, p)
 	case phaseParadeWait:
 		view.WaitCopy = "Waiting for the host to start the vote parade."
 	case phaseReveal:
@@ -264,6 +288,14 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 		view.WaitCopy = "Final scores are on the board."
 	default:
 		view.WaitCopy = "Waiting for the next beat."
+	}
+	return g.attachBurnDrawer(view, p)
+}
+
+func (g *Game) attachBurnDrawer(view phoneView, p games.Player) phoneView {
+	if p.ClaimedHost && g.started {
+		view.BurnFaces = g.burnDrawerFacesLocked()
+		view.BurnErr = g.burnErr
 	}
 	return view
 }
@@ -291,11 +323,11 @@ func (g *Game) phoneComposeView(view phoneView, eng *engine, p games.Player) pho
 		view.Role = "locked"
 		view.Locked = true
 		view.LockLabel = "Locked"
-		return view
+		return g.attachBurnDrawer(view, p)
 	}
 	view.LockReady = composeReady(eng.Policy, w)
 	view.LockLabel = "Lock"
-	return view
+	return g.attachBurnDrawer(view, p)
 }
 
 func composeReady(p composePolicy, w *writerState) bool {

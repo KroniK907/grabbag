@@ -23,11 +23,15 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 		return fmt.Errorf("Discard list is unreadable")
 	}
 	piles := buildPromptPiles(cat, settings)
-	piles = filterPlayed(piles, g.played)
-	if msg := startShortage(cat, settings, len(seated)); msg != "" {
+	noBurn := filterBurns(piles, g.burns)
+	if msg := startShortagePiles(noBurn, settings, len(seated)); msg != "" {
 		return fmt.Errorf("%s", msg)
 	}
-	pool := append([]playPrompt(nil), piles.Prompts...)
+	if allPromptsSpent(noBurn, g.played) {
+		g.wipeDiscardLocked()
+	}
+	unplayed := filterPlayed(noBurn, g.played)
+	pool := append([]playPrompt(nil), unplayed.Prompts...)
 	g.rngLocked().Shuffle(len(pool), func(i, j int) { pool[i], pool[j] = pool[j], pool[i] })
 
 	rows := make([]rosterRow, 0, len(seated))
@@ -36,6 +40,19 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 	}
 	eng := &engine{}
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, g.engineHooks(), g.rngLocked(), g.clock()); err != nil {
+		if err == errOutOfPrompts {
+			need := promptsNeededForRound(openingRoundKind(settings), len(rows))
+			eng.bootstrap(settings, rows, g.engineHooks(), g.rngLocked(), g.clock())
+			eng.PromptPool = pool
+			if g.discardWouldCover(need, eng) {
+				g.engine = eng
+				g.started = true
+				g.paused = false
+				g.showOverlayLocked(pendingStart)
+				g.startTickerLocked()
+				return nil
+			}
+		}
 		return err
 	}
 	g.engine = eng
@@ -49,16 +66,12 @@ func (g *Game) engineHooks() EngineHooks {
 	return EngineHooks{
 		OnPromptAssigned: func(libraryID, cardID string) {
 			g.recordPlayedLocked(libraryID, cardID)
+			g.enqueueDiscardLocked()
+		},
+		OnSegmentVoteOpen: func(prompt playPrompt) {
+			g.pushBurnDrawerLocked(prompt)
 		},
 	}
-}
-
-func (g *Game) recordPlayedLocked(libraryID, cardID string) {
-	if g.played == nil {
-		g.played = map[string]playedRow{}
-	}
-	key := libraryID + "\x00" + cardID
-	g.played[key] = playedRow{LibraryID: libraryID, CardID: cardID}
 }
 
 func (g *Game) rngLocked() *rand.Rand {
@@ -84,7 +97,10 @@ func (g *Game) syncRosterLocked(h games.Helper) {
 }
 
 func (g *Game) applyOutcomeLocked(out Outcome) {
-	if !out.Changed {
+	if out.DealShortage {
+		g.handleDealShortageLocked()
+	}
+	if !out.Changed && !out.DealShortage {
 		return
 	}
 	for _, ev := range out.Events {

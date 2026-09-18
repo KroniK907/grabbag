@@ -2,10 +2,14 @@ package quips
 
 type settingsView struct {
 	pageView
-	Frozen   bool
-	Shortage []string
-	Settings matchSettings
-	Err      settingsErr
+	Frozen         bool
+	Shortage       []string
+	Settings       matchSettings
+	Err            settingsErr
+	Burns          []burnEntry
+	BurnCorrupt    bool
+	DiscardCorrupt bool
+	DiscardEmpty   bool
 }
 
 type pickerView struct {
@@ -49,13 +53,22 @@ func (g *Game) currentSettings() matchSettings {
 }
 
 func (g *Game) settingsView(rowErr settingsErr) settingsView {
-	return settingsView{
+	view := settingsView{
 		pageView: g.pageView("Quick Quips settings"),
 		Frozen:   g.matchFrozen(),
 		Shortage: g.shortageNow(),
 		Settings: g.currentSettings(),
 		Err:      rowErr,
 	}
+	g.mu.Lock()
+	view.BurnCorrupt = g.burnCorrupt
+	view.DiscardCorrupt = g.discardCorrupt
+	view.DiscardEmpty = len(g.played) == 0
+	if !g.burnCorrupt {
+		view.Burns = g.lastBurns(10)
+	}
+	g.mu.Unlock()
+	return view
 }
 
 func (g *Game) shortageNow() []string {
@@ -65,7 +78,13 @@ func (g *Game) shortageNow() []string {
 	}
 	s := g.currentSettings()
 	cat := scanDataDir(h.DataDir())
-	return shortageLines(cat, s, len(h.Seated()))
+	piles := buildPromptPiles(cat, s)
+	n := len(h.Seated())
+	g.mu.Lock()
+	noBurn := filterBurns(piles, g.burns)
+	help := burnedWouldHelp(piles, noBurn, s, n)
+	g.mu.Unlock()
+	return shortageLines(noBurn, s, n, help)
 }
 
 func (g *Game) pickerView(rowErr pickerErr) pickerView {

@@ -14,6 +14,11 @@
   hx-swap="outerHTML"
 >
   {{if .Paused}}<div class="quips-dim">Paused</div>{{end}}
+  {{if .Overlay}}
+  <div class="quips-reshuffle">
+    <div class="quips-reshuffle-panel">{{.OverlayCopy}}</div>
+  </div>
+  {{else}}
   <header class="quips-board-head">
     <span class="display">Quick Quips</span>
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
@@ -69,5 +74,6 @@
     </div>
     {{end}}
   </div>
+  {{end}}
 </div>
 {{end}}

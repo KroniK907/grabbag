@@ -92,11 +92,12 @@ type voteState struct {
 }
 
 type Outcome struct {
-	Changed  bool
-	PhoneErr map[string]string
-	Finish   bool
-	Pause    bool
-	Events   []string
+	Changed      bool
+	DealShortage bool
+	PhoneErr     map[string]string
+	Finish       bool
+	Pause        bool
+	Events       []string
 }
 
 type engine struct {
@@ -144,7 +145,7 @@ func (e *engine) clock(now time.Time) time.Time {
 	return now
 }
 
-func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal promptDeal, hooks EngineHooks, rng *rand.Rand, now time.Time) error {
+func (e *engine) bootstrap(settings matchSettings, roster []rosterRow, hooks EngineHooks, rng *rand.Rand, now time.Time) {
 	e.Settings = settings
 	e.Policy = composePolicyFrom(settings)
 	e.Hooks = hooks
@@ -157,13 +158,17 @@ func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal promptDe
 	e.PhoneErr = map[string]string{}
 	e.Scores = map[string]int{}
 	e.Multiplier = scoringMultiplier(1, settings.RoundMultiplierIncreaseBy)
-	e.PromptPool = append([]playPrompt(nil), deal.Pool...)
 	e.rng = rng
 	e.now = func() time.Time { return now }
 	e.Writers = map[string]*writerState{}
 	for _, row := range roster {
 		e.Writers[row.ID] = &writerState{ID: row.ID, Name: row.Name}
 	}
+}
+
+func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal promptDeal, hooks EngineHooks, rng *rand.Rand, now time.Time) error {
+	e.bootstrap(settings, roster, hooks, rng, now)
+	e.PromptPool = append([]playPrompt(nil), deal.Pool...)
 	return e.openWriteRoundForIDs(now)
 }
 

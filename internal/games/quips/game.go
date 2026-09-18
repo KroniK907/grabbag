@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "match-parade-1"
+	assetVersion = "burn-journals-1"
 )
 
 //go:embed templates/*.html
@@ -43,6 +43,13 @@ type Game struct {
 	burnCorrupt    bool
 	played         map[string]playedRow
 	discardCorrupt bool
+	burnWriter     *fileWriter
+	discardWriter  *fileWriter
+	burnDrawer     []burnFace
+	burnChecks     map[string]bool
+	burnErr        string
+	overlay        string
+	overlayTooSmall bool
 
 	rng *rand.Rand
 	now func() time.Time
@@ -104,6 +111,9 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /pack", g.postPack)
 	mux.HandleFunc("POST /select-all", g.postSelectAll)
 	mux.HandleFunc("POST /select-none", g.postSelectNone)
+	mux.HandleFunc("POST /unburn", g.postUnburn)
+	mux.HandleFunc("POST /reshuffle-discard", g.postReshuffleDiscard)
+	mux.HandleFunc("POST /reshuffle-on-unload", g.postReshuffleOnUnload)
 	return mux
 }
 
@@ -147,6 +157,9 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /host/next-segment", g.postHostNextSegment)
 	mux.HandleFunc("POST /host/skip-hold", g.postHostSkipHold)
 	mux.HandleFunc("POST /host/end-match", g.postHostEndMatch)
+	mux.HandleFunc("POST /burn", g.postBurn)
+	mux.HandleFunc("POST /reshuffle-yes", g.postReshuffleYes)
+	mux.HandleFunc("POST /end-game", g.postEndGame)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("quips: embedded static directory is missing")
@@ -171,7 +184,7 @@ func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
-	if g.engine != nil {
+	if g.engine != nil && g.overlay == "" {
 		g.engine.SetPaused(false, g.clock())
 	}
 	if g.started {
@@ -189,6 +202,9 @@ func (g *Game) Stop() error {
 	g.started = false
 	g.paused = false
 	g.engine = nil
+	g.overlay = ""
+	g.overlayTooSmall = false
+	g.burnDrawer = nil
 	return nil
 }
 
@@ -197,12 +213,19 @@ func (g *Game) Shutdown() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.stopTickerLocked()
-	g.stopWritersLocked()
+	if g.helper != nil {
+		settings, ok := g.loadSettings(g.helper)
+		if ok && settings.ReshuffleDiscardOnUnload && !g.discardCorrupt {
+			g.wipeDiscardLocked()
+		}
+	}
 	g.drainJournalsLocked()
+	g.stopWritersLocked()
 	g.helper = nil
 	g.started = false
 	g.paused = false
 	g.engine = nil
+	g.overlay = ""
 	g.burns = nil
 	g.played = map[string]playedRow{}
 	g.burnCorrupt = false
