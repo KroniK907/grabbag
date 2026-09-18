@@ -63,6 +63,24 @@ func (rt *runtime) notify(target, typ, message string, seconds int) string {
 	return line
 }
 
+func startFailureNotice(err error) string {
+	if err == nil {
+		return "Could not start."
+	}
+	if err == errStartRefused || err == errNotLoaded {
+		return "Start needs a loaded game and at least one seated player."
+	}
+	msg := strings.TrimSpace(err.Error())
+	switch {
+	case strings.HasPrefix(msg, "Not enough prompts"):
+		return msg
+	case strings.HasPrefix(msg, "Start needs"):
+		return msg
+	default:
+		return "Could not start."
+	}
+}
+
 func (rt *runtime) operatorNotice(w http.ResponseWriter, r *http.Request, message string) {
 	line := rt.notify("host", "error", message, -1)
 	if line != "" {

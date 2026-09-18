@@ -1,0 +1,388 @@
+.quips-board {
+  min-height: 100dvh;
+  padding: 24px 20px 96px;
+}
+
+.quips-board h1 {
+  font-family: var(--ui-font-display);
+  font-size: 56px;
+  margin: 0 0 16px;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-picker {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  padding-bottom: 48px;
+  background: var(--ui-board-bg);
+  color: var(--ui-fg);
+}
+
+.quips-picker aside {
+  padding: 28px 22px;
+  border-right: 4px solid var(--ui-rail-border);
+  background: var(--ui-rail-bg);
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.quips-logo {
+  margin: 0;
+  color: var(--ui-brand);
+  font-size: 42px;
+  line-height: 0.88;
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-path {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  color: var(--ui-url);
+}
+
+.quips-picker main {
+  padding: 26px;
+}
+
+.quips-head h1 {
+  margin: 0 0 18px;
+  color: var(--ui-brand);
+  font-size: clamp(34px, 5vw, 64px);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-cabinets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.quips-pack {
+  min-height: 148px;
+  padding: 18px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 13px;
+  background: var(--ui-card-bg);
+}
+
+.quips-pack.on {
+  border-color: #7cff6b;
+}
+
+.quips-pack.bad {
+  filter: grayscale(0.7);
+  border-color: #777;
+}
+
+.quips-pack h2 {
+  margin: 0 0 7px;
+  color: var(--ui-card-title);
+  font-size: 22px;
+}
+
+.quips-toggle {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+.quips-pack.on .quips-toggle {
+  background: #7cff6b;
+  color: #062;
+}
+
+.quips-error {
+  margin: 8px 0 0;
+  color: var(--ui-danger, #c0392b);
+}
+
+.quips-note {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.quips-license {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ui-url);
+}
+
+.quips-settings-note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.quips-datadir code {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.quips-phone {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 0 72px;
+  text-align: center;
+}
+
+.quips-phone-scroll {
+  display: grid;
+  gap: 14px;
+  padding: 0 12px 12px;
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+}
+
+.quips-compose-card {
+  text-align: left;
+  padding: 12px;
+  border: 2px solid var(--ui-accent);
+  border-radius: 10px;
+  background: var(--ui-card-bg);
+}
+
+.quips-compose-card.dup-outline textarea {
+  outline: 3px solid #e33;
+}
+
+.quips-compose-card textarea {
+  width: 100%;
+  min-height: 88px;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.quips-cap {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.quips-lock-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 10px 12px;
+  background: var(--ui-board-bg);
+  border-top: 2px solid var(--ui-rail-border);
+}
+
+.quips-lock-bar.gray .ui-btn {
+  opacity: 0.55;
+}
+
+.quips-tv {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.quips-board-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.quips-board-center {
+  display: grid;
+  place-content: center;
+  padding: 20px;
+  text-align: center;
+}
+
+.quips-writing-beat {
+  font-size: clamp(24px, 4vw, 48px);
+}
+
+.quips-roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px 24px;
+  border-top: 3px solid var(--ui-rail-border);
+}
+
+.quips-player {
+  padding: 8px 12px;
+  border: 2px solid var(--ui-accent);
+  border-radius: 8px;
+}
+
+.quips-player.locked {
+  border-color: #7cff6b;
+}
+
+.quips-locked-mark {
+  margin-left: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.quips-timer {
+  font-size: 14px;
+}
+
+.quips-dim {
+  opacity: 0.7;
+  margin: 0 0 8px;
+}
+
+.quips-round {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.quips-quip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.quips-quip-card {
+  min-width: 200px;
+  max-width: 360px;
+  padding: 16px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 12px;
+  background: var(--ui-card-bg);
+  text-align: left;
+}
+
+.quips-quip-card.is-empty {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.quips-quip-author {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.quips-quip-text {
+  margin: 0;
+  font-size: clamp(18px, 3vw, 28px);
+}
+
+.quips-quip-empty {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.quips-score {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.quips-host-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-top: 3px solid var(--ui-rail-border);
+  position: sticky;
+  bottom: 0;
+  background: var(--ui-board-bg);
+}
+
+.quips-vote-option.chosen .ui-btn {
+  border-color: #7cff6b;
+}
+
+.quips-reshuffle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+
+.quips-reshuffle-panel {
+  max-width: 520px;
+  padding: 24px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 12px;
+  text-align: center;
+  font-size: clamp(18px, 3vw, 28px);
+}
+
+.quips-reshuffle-sheet {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.quips-reshuffle-sheet form {
+  margin-top: 12px;
+}
+
+.quips-phone:has(.quips-burn-drawer.is-open) .quips-burn-handle {
+  z-index: 30;
+}
+
+.quips-burn-handle {
+  position: fixed;
+  right: 12px;
+  bottom: 72px;
+  z-index: 10;
+}
+
+.quips-burn-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 20;
+}
+
+.quips-phone:has(.quips-burn-drawer.is-open) .quips-burn-scrim {
+  display: block;
+}
+
+.quips-burn-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-board-bg);
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+}
+
+.quips-burn-drawer.is-open {
+  transform: translateY(0);
+}
+
+.quips-burn-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 3px solid var(--ui-rail-border);
+}
+
+.quips-burn-faces {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.quips-burn-faces label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.quips-burn-action {
+  padding: 12px;
+  border-top: 3px solid var(--ui-rail-border);
+}

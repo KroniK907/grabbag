@@ -14,6 +14,7 @@ import (
 
 	"github.com/KroniK907/grabbag/docs"
 	"github.com/KroniK907/grabbag/internal/games"
+	_ "github.com/KroniK907/grabbag/internal/games/quips"
 	_ "github.com/KroniK907/grabbag/internal/games/testing"
 
 	_ "github.com/KroniK907/grabbag/internal/games/apples"

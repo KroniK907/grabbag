@@ -1,0 +1,67 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+{{template "picker-body" .}}
+{{template "ui-end"}}
+
+{{define "picker-body"}}
+<div id="quips-picker" class="quips-picker">
+  <aside>
+    <p class="quips-logo display">Quick Quips</p>
+    <p class="quips-path">Libraries load from {{.DataDir}}</p>
+    <a class="ui-btn" href="/board">Back to board</a>
+    {{if not .Frozen}}
+    <form method="post" action="/settings/game/select-all" hx-post="/settings/game/select-all" hx-target="#quips-picker" hx-swap="outerHTML">
+      <button class="ui-btn" type="submit">Select all</button>
+    </form>
+    <form method="post" action="/settings/game/select-none" hx-post="/settings/game/select-none" hx-target="#quips-picker" hx-swap="outerHTML">
+      <button class="ui-btn" type="submit">Select none</button>
+    </form>
+    {{end}}
+  </aside>
+  <main>
+    <div class="quips-head">
+      <h1 class="display">Prompt Library</h1>
+    </div>
+    {{if .Shortage}}
+    {{range .Shortage}}<p class="quips-error">{{.}}</p>{{end}}
+    {{end}}
+    {{if .Frozen}}
+    <p class="quips-note">Match is running. Pack changes wait until the game ends.</p>
+    {{end}}
+    {{if and .RowError (not .ErrorPack)}}
+    <p class="quips-error">{{.RowError}}</p>
+    {{end}}
+    <div class="quips-cabinets">
+      {{range .Libraries}}
+        {{range .Packs}}
+        <article class="quips-pack{{if .Enabled}} on{{end}}">
+          <h2>{{.Name}}</h2>
+          {{if .Description}}<p>{{.Description}}</p>{{end}}
+          <p>{{.PromptCount}} prompts</p>
+          {{if and $.RowError (eq .LibraryID $.ErrorLibrary) (eq .ID $.ErrorPack)}}
+          <p class="quips-error">{{$.RowError}}</p>
+          {{end}}
+          <form method="post" action="/settings/game/pack" hx-post="/settings/game/pack" hx-target="#quips-picker" hx-swap="outerHTML" hx-trigger="change">
+            <input type="hidden" name="library" value="{{.LibraryID}}">
+            <input type="hidden" name="pack" value="{{.ID}}">
+            <input type="hidden" name="enabled" value="0">
+            <label class="quips-toggle">
+              <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}}>
+              {{if .Enabled}}On{{else}}Off{{end}}
+            </label>
+          </form>
+        </article>
+        {{end}}
+        {{if .License}}<p class="quips-license">{{.License}}</p>{{end}}
+      {{end}}
+      {{range .Failed}}
+        <article class="quips-pack bad">
+          <h2>{{.Filename}}</h2>
+          <p class="quips-error">{{.Reason}}</p>
+        </article>
+      {{end}}
+    </div>
+  </main>
+</div>
+{{end}}

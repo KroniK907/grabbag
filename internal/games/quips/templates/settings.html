@@ -1,0 +1,150 @@
+{{if .Shortage}}
+{{range .Shortage}}<p class="ui-alert" role="alert">{{.}}</p>{{end}}
+{{end}}
+{{if .Frozen}}
+<p class="ui-alert" role="status">This match is running. Setup is locked.</p>
+{{end}}
+
+<h2>Match</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/round-count">
+  <label class="ui-field"><span>Round count</span>
+    <input name="round_count" type="number" min="1" max="20" value="{{.Settings.RoundCount}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "round-count"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row" method="post" action="/settings/game/last-quip">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.LastQuipEnabled}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Last Quip enabled</label>
+</form>
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/round-multiplier-increase">
+  <label class="ui-field"><span>Round multiplier increase by</span>
+    <input name="round_multiplier_increase" type="number" min="0" max="3" value="{{.Settings.RoundMultiplierIncreaseBy}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "round-multiplier-increase"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row" method="post" action="/settings/game/host-controlled-reveals">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.HostControlledReveals}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Host-controlled quip reveals</label>
+</form>
+
+<h2>Timers</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-write">
+  <label class="ui-field"><span>Write clock</span>
+    <input name="write" type="number" min="0" max="300" value="{{.Settings.WriteSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "timer-write"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-vote">
+  <label class="ui-field"><span>Vote clock</span>
+    <input name="vote" type="number" min="0" max="300" value="{{.Settings.VoteSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "timer-vote"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-winner-screen">
+  <label class="ui-field"><span>Winner-screen timer</span>
+    <input name="winner_screen" type="number" min="0" max="300" value="{{.Settings.WinnerScreenSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "timer-winner-screen"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-final-scores">
+  <label class="ui-field"><span>Final-scores timer</span>
+    <input name="final_scores" type="number" min="0" max="300" value="{{.Settings.FinalScoresSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "timer-final-scores"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Voting</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/seated-vote-points">
+  <label class="ui-field"><span>Seated vote points</span>
+    <input name="seated_vote_points" type="number" min="0" max="1000" value="{{.Settings.SeatedVotePoints}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "seated-vote-points"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/audience-vote-points">
+  <label class="ui-field"><span>Audience vote points</span>
+    <input name="audience_vote_points" type="number" min="0" max="1000" value="{{.Settings.AudienceVotePoints}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "audience-vote-points"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row" method="post" action="/settings/game/allow-self-vote">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.AllowSelfVote}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Allow self-vote</label>
+</form>
+
+<form class="ui-row" method="post" action="/settings/game/live-counts">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.LiveVoteCounts}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Live TV vote counts</label>
+</form>
+
+<h2>Compose</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/quip-char-cap">
+  <label class="ui-field"><span>Quip character cap</span>
+    <input name="quip_char_cap" type="number" min="8" max="200" value="{{.Settings.QuipCharCap}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "quip-char-cap"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<details>
+  <summary>Banned words</summary>
+  <form class="ui-row" method="post" action="/settings/game/show-matched-word">
+    <input type="hidden" name="enabled" value="0">
+    <label><input type="checkbox" name="enabled" value="1" {{if .Settings.ShowMatchedWord}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Show the matched word</label>
+  </form>
+  {{if eq .Err.Field "show-matched-word"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+  <form method="post" action="/settings/game/banned-words">
+    <textarea name="banned_words" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">{{.Settings.BannedWords}}</textarea>
+  </form>
+  {{if eq .Err.Field "banned-words"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+</details>
+
+<h2>Burns</h2>
+{{if .BurnCorrupt}}
+<p class="ui-alert" role="alert">Burn list is unreadable</p>
+{{else if not .Burns}}
+<p>Nothing to unburn</p>
+{{else}}
+<details>
+  <summary>Recent burns</summary>
+  {{range .Burns}}
+  <form class="ui-row" method="post" action="/settings/game/unburn">
+    <input type="hidden" name="kind" value="{{.Kind}}">
+    <input type="hidden" name="text" value="{{.Text}}">
+    <span>prompt: {{.Text}}</span>
+    <button class="ui-btn ui-btn-inline" type="submit">Unburn</button>
+  </form>
+  {{end}}
+</details>
+{{end}}
+{{if eq .Err.Field "unburn"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Discard</h2>
+{{if .DiscardCorrupt}}
+<p class="ui-alert" role="alert">Discard list is unreadable</p>
+{{else}}
+<form class="ui-row" method="post" action="/settings/game/reshuffle-on-unload">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.ReshuffleDiscardOnUnload}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Reshuffle discard on unload</label>
+</form>
+<form class="ui-row" method="post" action="/settings/game/reshuffle-discard">
+  <button class="ui-btn" type="submit" {{if or .Frozen .DiscardEmpty}}disabled{{end}}>Reshuffle discard pile</button>
+</form>
+{{end}}
+{{if eq .Err.Field "reshuffle-discard"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Libraries</h2>
+<div class="ui-row">
+  <span>Prompt Library</span>
+  {{if .Frozen}}
+  <span>Open</span>
+  {{else}}
+  <a class="ui-btn ui-btn-inline" href="/play/picker">Open</a>
+  {{end}}
+</div>

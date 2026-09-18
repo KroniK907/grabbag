@@ -1,0 +1,79 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+<link rel="stylesheet" href="{{.GameCSS}}">
+<script defer src="{{.GameJS}}"></script>
+{{template "board-frame" .}}
+{{template "ui-end"}}
+
+{{define "board-frame"}}
+<div
+  id="quips-board"
+  class="quips-board quips-tv{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:quips-lock, sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-swap="outerHTML"
+>
+  {{if .Paused}}<div class="quips-dim">Paused</div>{{end}}
+  {{if .Overlay}}
+  <div class="quips-reshuffle">
+    <div class="quips-reshuffle-panel">{{.OverlayCopy}}</div>
+  </div>
+  {{else}}
+  <header class="quips-board-head">
+    <span class="display">Quick Quips</span>
+    <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
+    {{template "quips-timer" .}}
+  </header>
+  <main class="quips-board-center">
+    {{if .WritingBeat}}
+      {{if .CenterPrompt}}
+        <div class="quips-prompt">{{.CenterPrompt}}</div>
+      {{else}}
+        <p class="quips-writing-beat">Everyone is writing…</p>
+      {{end}}
+    {{else if .ParadeBeat}}
+      {{if .CenterPrompt}}<div class="quips-prompt">{{.CenterPrompt}}</div>{{end}}
+      <div class="quips-quip-row">
+        {{range .Quips}}
+        {{if .Revealed}}
+        <article class="quips-quip-card{{if .Empty}} is-empty{{end}}">
+          <p class="quips-quip-author">{{.Name}}</p>
+          {{if .Empty}}<p class="quips-quip-empty">Empty quip</p>{{else}}<p class="quips-quip-text">{{.Text}}</p>{{end}}
+          {{if gt .Count 0}}<p class="quips-vote-count">{{if eq .Count 1}}1 vote{{else}}{{.Count}} votes{{end}}</p>{{end}}
+        </article>
+        {{end}}
+        {{end}}
+      </div>
+      {{if .HoldAwards}}
+      <div class="quips-hold-awards">
+        {{range .HoldAwards}}
+        <p><strong>{{.Name}}</strong> +{{.Points}}</p>
+        {{end}}
+      </div>
+      {{end}}
+    {{else if eq .Phase "final-scores"}}
+      <div class="quips-final">
+        <h2>Final scores</h2>
+        {{if .Champions}}<p class="quips-champs">Co-champions: {{range $i, $n := .Champions}}{{if $i}}, {{end}}{{$n}}{{end}}</p>{{end}}
+        {{range .Roster}}
+        <p><strong>{{.Name}}</strong> {{.Score}}</p>
+        {{end}}
+      </div>
+    {{else if eq .Phase "parade-wait"}}
+      <p class="quips-writing-beat">Write phase complete. Waiting for host…</p>
+    {{else}}
+      <p class="quips-placeholder">Waiting to start.</p>
+    {{end}}
+  </main>
+  <div class="quips-roster">
+    {{range .Roster}}
+    <div class="quips-player{{if .Locked}} locked{{end}}">
+      <strong>{{.Name}}</strong>
+      <span class="quips-score">{{.Score}}</span>
+      {{if .Locked}}<span class="quips-locked-mark">Locked</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
