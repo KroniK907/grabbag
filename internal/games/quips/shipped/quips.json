@@ -1,0 +1,27 @@
+{
+  "formatVersion": 1,
+  "id": "quips",
+  "name": "Quick Quips",
+  "description": "Starter prompt library for Quick Quips. Pack contents may grow in a later task.",
+  "packs": [
+    {
+      "id": "starter",
+      "name": "Starter",
+      "description": "Placeholder prompts until first-party packs ship.",
+      "prompts": [
+        {
+          "id": "quips-p-001",
+          "text": "The worst thing to find in your lunchbox is _."
+        },
+        {
+          "id": "quips-p-002",
+          "text": "My new catchphrase is _."
+        },
+        {
+          "id": "quips-p-003",
+          "text": "Scientists finally discovered that _ is actually good for you."
+        }
+      ]
+    }
+  ]
+}

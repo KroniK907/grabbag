@@ -1,0 +1,39 @@
+.quips-board,
+.quips-picker {
+  min-height: 100dvh;
+  padding: 24px 20px 96px;
+}
+
+.quips-board h1,
+.quips-picker h1 {
+  font-family: var(--ui-font-display);
+  font-size: 56px;
+  margin: 0 0 16px;
+  color: var(--ui-brand);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-placeholder {
+  margin: 0 0 12px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.quips-settings-note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.quips-datadir code {
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.quips-phone {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 0;
+  text-align: center;
+}
