@@ -21,8 +21,8 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin)
 	body := phone.Body.String()
-	if !strings.Contains(body, `name="game_id"`) || !strings.Contains(body, `>fake<`) || !strings.Contains(body, ">Load<") {
-		t.Fatalf("host drawer missing game pick: %q", body)
+	if !strings.Contains(body, "Game library") || !strings.Contains(body, "game-library-phone") {
+		t.Fatalf("host drawer missing game library: %q", body)
 	}
 	if strings.Contains(body, ">Start<") {
 		t.Fatal("Start shown before Load")
@@ -41,7 +41,7 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	}
 	phone = requestWithCookie(t, handler, http.MethodGet, "/", nil, admin)
 	body = phone.Body.String()
-	if !strings.Contains(body, "Loaded fake") || !strings.Contains(body, ">Start<") {
+	if !strings.Contains(body, ">Start<") || !strings.Contains(body, `value="fake"`) || !strings.Contains(body, "is-loaded") {
 		t.Fatalf("drawer after Load = %q", body)
 	}
 	settings = requestWithCookie(t, handler, http.MethodGet, "/settings", nil, admin).Body.String()

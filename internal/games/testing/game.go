@@ -58,6 +58,10 @@ func (g *Game) ID() string { return id }
 // Name is the player-facing label Testing.
 func (g *Game) Name() string { return "Testing" }
 
+func (g *Game) Description() string {
+	return "Tap flash, latency, and seated list checks for host wiring."
+}
+
 // MinPlayers is 1. Start waits for at least one seated player.
 func (g *Game) MinPlayers() int { return 1 }
 

@@ -1,0 +1,59 @@
+{{define "game-library-open"}}
+<button
+  type="button"
+  class="ui-btn ui-btn-inline"
+  onclick="document.getElementById('{{.LibraryElementID}}').classList.add('is-open')"
+>Game library</button>
+{{end}}
+
+{{define "game-library"}}
+<div id="{{.LibraryElementID}}" class="ui-game-library" aria-hidden="true">
+  <button
+    type="button"
+    class="ui-game-library-scrim"
+    aria-label="Close game library"
+    onclick="document.getElementById('{{.LibraryElementID}}').classList.remove('is-open')"
+  ></button>
+  <div class="ui-game-library-panel" role="dialog" aria-labelledby="{{.LibraryElementID}}-title">
+    <header class="ui-game-library-head">
+      <h2 id="{{.LibraryElementID}}-title">Game library</h2>
+      <button
+        type="button"
+        class="ui-btn"
+        onclick="document.getElementById('{{.LibraryElementID}}').classList.remove('is-open')"
+      >Back</button>
+    </header>
+    {{if not .Catalog}}
+    <p class="ui-muted">No games installed.</p>
+    {{else}}
+    <div class="ui-game-library-grid">
+      {{range .Catalog}}
+      <form method="post" action="/settings/load" class="ui-game-card-form">
+        <input type="hidden" name="game_id" value="{{.ID}}">
+        <input type="hidden" name="return_to" value="{{$.LibraryReturn}}">
+        <button type="submit" class="ui-game-card{{if .Loaded}} is-loaded{{end}}{{if .Warning}} has-warning{{end}}">
+          <span class="ui-game-card-title">{{.Name}}</span>
+          {{if .Description}}<span class="ui-game-card-desc">{{.Description}}</span>{{end}}
+          {{if .PlayerLine}}<span class="ui-game-card-meta">{{.PlayerLine}}</span>{{end}}
+          {{if .Warning}}<span class="ui-game-card-warn">{{.Warning}}</span>{{end}}
+          {{if .Loaded}}<span class="ui-game-card-badge">Loaded</span>{{end}}
+        </button>
+      </form>
+      {{end}}
+    </div>
+    {{if .LoadedGameID}}
+    <footer class="ui-game-library-foot">
+      <form method="post" action="/settings/shutdown" class="ui-game-unload-form">
+        <input type="hidden" name="return_to" value="{{.LibraryReturn}}">
+        <button
+          type="submit"
+          class="ui-btn ui-btn-danger"
+          onclick="return confirm('Unload the current game? Saved game data stays on disk.');"
+        >Unload game</button>
+      </form>
+    </footer>
+    {{end}}
+    {{end}}
+  </div>
+</div>
+{{end}}

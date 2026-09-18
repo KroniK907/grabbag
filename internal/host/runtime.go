@@ -86,39 +86,76 @@ func (rt *runtime) extras(ctx context.Context) lobby.SettingsExtras {
 	return extra
 }
 
-func (rt *runtime) phoneExtras(_ *http.Request, _ lobby.Player) lobby.PhoneExtras {
+func (rt *runtime) phoneExtras(r *http.Request, _ lobby.Player) lobby.PhoneExtras {
 	rt.mu.Lock()
-	defer rt.mu.Unlock()
-	showStart := rt.loadedID != "" && !rt.started
+	loadedID := rt.loadedID
+	started := rt.started
+	rt.mu.Unlock()
+	showStart := loadedID != "" && !started
 	if showStart {
-		n, err := rt.room.SeatedCount(context.Background())
+		n, err := rt.room.SeatedCount(r.Context())
 		if err != nil || n == 0 {
 			showStart = false
 		}
 	}
-	auto, _ := rt.room.AutoStart(context.Background())
-	return lobby.PhoneExtras{
+	auto, _ := rt.room.AutoStart(r.Context())
+	extra := lobby.PhoneExtras{
 		ShowStart:    showStart,
-		Started:      rt.started,
-		Paused:       rt.paused,
+		Started:      started,
+		Paused:       rt.pausedLocked(),
 		AutoStart:    auto,
 		GameIDs:      rt.gameIDs(),
-		LoadedGameID: rt.loadedID,
+		LoadedGameID: loadedID,
 	}
+	if lib, ok := rt.libraryExtras(r.Context(), loadedID, started); ok {
+		extra.ShowGameLibrary = true
+		extra.Catalog = lib
+	}
+	return extra
+}
+
+func (rt *runtime) pausedLocked() bool {
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	return rt.paused
+}
+
+func (rt *runtime) libraryExtras(ctx context.Context, loadedID string, started bool) ([]lobby.CatalogEntry, bool) {
+	if started || rt.room.RestorePending() {
+		return nil, false
+	}
+	cat, err := rt.buildCatalog(ctx, loadedID)
+	if err != nil {
+		return nil, false
+	}
+	return cat, true
 }
 
 func (rt *runtime) boardExtras(r *http.Request) lobby.BoardExtras {
 	rt.mu.Lock()
 	game := rt.game
+	loadedID := rt.loadedID
+	started := rt.started
 	rt.mu.Unlock()
-	if game == nil {
-		return lobby.BoardExtras{}
-	}
-	name := strings.TrimSpace(game.Name())
-	if name == "" {
-		name = game.ID()
+
+	extra := lobby.BoardExtras{LoadedGameID: loadedID}
+	if game != nil {
+		name := strings.TrimSpace(game.Name())
+		if name == "" {
+			name = game.ID()
+		}
+		extra.LoadedGame = name
 	}
 	admin := rt.hasAdmin(r)
+	if admin {
+		if lib, ok := rt.libraryExtras(r.Context(), loadedID, started); ok {
+			extra.ShowGameLibrary = true
+			extra.Catalog = lib
+		}
+	}
+	if game == nil {
+		return extra
+	}
 	var defined []games.BoardButton
 	for _, button := range game.BoardButtons() {
 		label := strings.TrimSpace(button.Label)
@@ -138,7 +175,8 @@ func (rt *runtime) boardExtras(r *http.Request) lobby.BoardExtras {
 		}
 		out = append(out, lobby.BoardButton{Label: button.Label, Path: button.Path})
 	}
-	return lobby.BoardExtras{LoadedGame: name, Buttons: out}
+	extra.Buttons = out
+	return extra
 }
 
 func (rt *runtime) load(ctx context.Context, id string) error {

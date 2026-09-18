@@ -59,12 +59,14 @@ type SettingsExtras struct {
 
 // PhoneExtras is host-owned Start and game-picker chrome for the claim-host drawer.
 type PhoneExtras struct {
-	ShowStart    bool
-	Started      bool
-	Paused       bool
-	AutoStart    bool
-	GameIDs      []string
-	LoadedGameID string
+	ShowStart       bool
+	Started         bool
+	Paused          bool
+	AutoStart       bool
+	GameIDs         []string
+	LoadedGameID    string
+	ShowGameLibrary bool
+	Catalog         []CatalogEntry
 }
 
 // BoardButton is a loaded-game link on the Lobby /board rail.
@@ -73,10 +75,25 @@ type BoardButton struct {
 	Path  string
 }
 
+// CatalogEntry is one compile-time game row for the host game library.
+type CatalogEntry struct {
+	ID          string
+	Name        string
+	Description string
+	MinPlayers  int
+	MaxPlayers  int
+	PlayerLine  string
+	Warning     string
+	Loaded      bool
+}
+
 // BoardExtras is host-owned Lobby /board rail state Lobby cannot import from games.
 type BoardExtras struct {
-	LoadedGame string
-	Buttons    []BoardButton
+	LoadedGame      string
+	LoadedGameID    string
+	Buttons         []BoardButton
+	ShowGameLibrary bool
+	Catalog         []CatalogEntry
 }
 
 // Config supplies host-owned password, cookie, and advertised join-URL policies.
@@ -269,9 +286,14 @@ type boardData struct {
 	AudienceCount  int
 	Seated         []Player
 	Waiting        []Player
-	LoadedGame     string
-	Buttons        []BoardButton
-	RestorePending bool
+	LoadedGame      string
+	LoadedGameID    string
+	Buttons         []BoardButton
+	ShowGameLibrary bool
+	Catalog         []CatalogEntry
+	LibraryReturn     string
+	LibraryElementID  string
+	RestorePending    bool
 	RestoreNames   []string
 	AdminLocked    bool
 }
@@ -325,9 +347,13 @@ type roomView struct {
 	Started        bool
 	Paused         bool
 	AutoStart      bool
-	GameIDs        []string
-	LoadedGameID   string
-	BumpCandidates []Player
+	GameIDs          []string
+	LoadedGameID     string
+	ShowGameLibrary  bool
+	Catalog          []CatalogEntry
+	LibraryReturn      string
+	LibraryElementID   string
+	BumpCandidates     []Player
 	Players        []Player
 	GameBody       template.HTML
 	LiveKick       bool
@@ -372,7 +398,14 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 	if l.boardExtras != nil {
 		extra := l.boardExtras(r)
 		data.LoadedGame = extra.LoadedGame
+		data.LoadedGameID = extra.LoadedGameID
 		data.Buttons = extra.Buttons
+		data.ShowGameLibrary = extra.ShowGameLibrary
+		data.Catalog = extra.Catalog
+		if extra.ShowGameLibrary {
+			data.LibraryReturn = "/board"
+			data.LibraryElementID = "game-library-board"
+		}
 	}
 	if adminOnly && !l.hasAdminCookie(r) {
 		data.AdminLocked = true
@@ -382,6 +415,8 @@ func (l *Lobby) boardView(r *http.Request) (boardData, error) {
 		data.AudienceCount = 0
 		data.RestorePending = false
 		data.RestoreNames = nil
+		data.ShowGameLibrary = false
+		data.Catalog = nil
 		return data, nil
 	}
 	data.RestorePending = l.RestorePending()

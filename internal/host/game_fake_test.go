@@ -16,7 +16,9 @@ type fakeGame struct {
 }
 
 func (f *fakeGame) ID() string      { return "fake" }
-func (f *fakeGame) Name() string    { return "fake" }
+func (f *fakeGame) Name() string { return "fake" }
+
+func (f *fakeGame) Description() string { return "Fake game for host contract tests." }
 func (f *fakeGame) MinPlayers() int { return f.min }
 func (f *fakeGame) MaxPlayers() int { return f.max }
 

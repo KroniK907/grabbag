@@ -80,6 +80,12 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 		view.AutoStart = extra.AutoStart
 		view.GameIDs = extra.GameIDs
 		view.LoadedGameID = extra.LoadedGameID
+		view.ShowGameLibrary = extra.ShowGameLibrary
+		view.Catalog = extra.Catalog
+		if extra.ShowGameLibrary {
+			view.LibraryReturn = "/"
+			view.LibraryElementID = "game-library-phone"
+		}
 	}
 	if l.RestorePending() {
 		view.RestorePending = true

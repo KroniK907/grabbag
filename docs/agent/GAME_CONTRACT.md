@@ -143,6 +143,7 @@ Host calls these on the Game value.
 |--------|------|------------|
 | `ID() string` | catalog, logs, KV namespace, data dir | Stable lowercase key. Testing uses `testing`. |
 | `Name() string` | Lobby rail after Load | Player-facing label. Empty Name falls back to ID. |
+| `Description() string` | Host game library cards | Short blurb under the title. Empty hides the line. |
 | `MinPlayers() int` | Start gate | 0 means no extra floor. |
 | `MaxPlayers() int` | Load gate and Lobby max | 0 means no extra ceiling. |
 | `Load(h Helper) error` | after construct | Store `h`. Read KV if knobs persist. Return nil on success. |

@@ -55,6 +55,8 @@ type Game interface {
 	ID() string
 	// Name is the player-facing label on the Lobby rail. ID stays the catalog key.
 	Name() string
+	// Description is a short blurb for the host game library. Empty hides the line.
+	Description() string
 	MinPlayers() int
 	MaxPlayers() int
 	Load(h Helper) error

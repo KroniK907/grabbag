@@ -31,6 +31,9 @@
       onclick="document.getElementById('host-drawer').classList.add('is-open')"
     >Host</button>
     {{template "host-drawer" .}}
+    {{if .ShowGameLibrary}}
+    {{template "game-library" .}}
+    {{end}}
     {{end}}
   </div>
 </div>
