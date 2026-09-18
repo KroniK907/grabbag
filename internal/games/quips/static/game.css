@@ -1,11 +1,9 @@
-.quips-board,
-.quips-picker {
+.quips-board {
   min-height: 100dvh;
   padding: 24px 20px 96px;
 }
 
-.quips-board h1,
-.quips-picker h1 {
+.quips-board h1 {
   font-family: var(--ui-font-display);
   font-size: 56px;
   margin: 0 0 16px;
@@ -13,10 +11,106 @@
   text-shadow: var(--ui-brand-shadow);
 }
 
-.quips-placeholder {
+.quips-picker {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  padding-bottom: 48px;
+  background: var(--ui-board-bg);
+  color: var(--ui-fg);
+}
+
+.quips-picker aside {
+  padding: 28px 22px;
+  border-right: 4px solid var(--ui-rail-border);
+  background: var(--ui-rail-bg);
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.quips-logo {
+  margin: 0;
+  color: var(--ui-brand);
+  font-size: 42px;
+  line-height: 0.88;
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-path {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  color: var(--ui-url);
+}
+
+.quips-picker main {
+  padding: 26px;
+}
+
+.quips-head h1 {
+  margin: 0 0 18px;
+  color: var(--ui-brand);
+  font-size: clamp(34px, 5vw, 64px);
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-cabinets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.quips-pack {
+  min-height: 148px;
+  padding: 18px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 13px;
+  background: var(--ui-card-bg);
+}
+
+.quips-pack.on {
+  border-color: #7cff6b;
+}
+
+.quips-pack.bad {
+  filter: grayscale(0.7);
+  border-color: #777;
+}
+
+.quips-pack h2 {
+  margin: 0 0 7px;
+  color: var(--ui-card-title);
+  font-size: 22px;
+}
+
+.quips-toggle {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+.quips-pack.on .quips-toggle {
+  background: #7cff6b;
+  color: #062;
+}
+
+.quips-error {
+  margin: 8px 0 0;
+  color: var(--ui-danger, #c0392b);
+}
+
+.quips-note {
   margin: 0 0 12px;
-  font-size: 18px;
-  line-height: 1.4;
+  font-size: 16px;
+}
+
+.quips-license {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ui-url);
 }
 
 .quips-settings-note {

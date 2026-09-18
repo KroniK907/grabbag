@@ -1,3 +1,6 @@
+{{if .Shortage}}
+{{range .Shortage}}<p class="ui-alert" role="alert">{{.}}</p>{{end}}
+{{end}}
 {{if .Frozen}}
 <p class="ui-alert" role="status">This match is running. Setup is locked.</p>
 {{end}}

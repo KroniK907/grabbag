@@ -80,15 +80,17 @@ func TestStartRefusesWithoutEngine(t *testing.T) {
 }
 
 type fakeHelper struct {
-	dir string
-	kv  map[string][]byte
+	dir    string
+	kv     map[string][]byte
+	admin  bool
+	seated []games.Player
 }
 
 func newFakeHelper(dir string) *fakeHelper {
 	return &fakeHelper{dir: dir, kv: map[string][]byte{}}
 }
 
-func (h *fakeHelper) Seated() []games.Player                  { return nil }
+func (h *fakeHelper) Seated() []games.Player                  { return h.seated }
 func (h *fakeHelper) Waiting() []games.Player                 { return nil }
 func (h *fakeHelper) Audience() []games.Player                { return nil }
 func (h *fakeHelper) Player(string) (games.Player, bool)      { return games.Player{}, false }
@@ -105,4 +107,4 @@ func (h *fakeHelper) Publish(string)                          {}
 func (h *fakeHelper) Notify(string, string, string, int)      {}
 func (h *fakeHelper) Log(string)                              {}
 func (h *fakeHelper) Theme() string                           { return "neon-light" }
-func (h *fakeHelper) HasAdmin(*http.Request) bool             { return false }
+func (h *fakeHelper) HasAdmin(*http.Request) bool             { return h.admin }

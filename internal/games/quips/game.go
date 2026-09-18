@@ -18,7 +18,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "scaffold-1"
+	assetVersion = "picker-1"
 )
 
 var errEngineNotReady = errors.New("quick quips match engine is not ready yet")
@@ -101,6 +101,9 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /quip-char-cap", g.postQuipCharCap)
 	mux.HandleFunc("POST /banned-words", g.postBannedWords)
 	mux.HandleFunc("POST /show-matched-word", g.postShowMatchedWord)
+	mux.HandleFunc("POST /pack", g.postPack)
+	mux.HandleFunc("POST /select-all", g.postSelectAll)
+	mux.HandleFunc("POST /select-none", g.postSelectNone)
 	return mux
 }
 
@@ -227,18 +230,6 @@ func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 }
 
-func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	g.render(w, "picker.html", pickerView{
-		pageView: g.pageView("Prompt Library"),
-		DataDir:  h.DataDir(),
-	}, http.StatusOK)
-}
-
 func (g *Game) render(w http.ResponseWriter, name string, data any, status int) {
 	var buf bytes.Buffer
 	if err := pages.ExecuteTemplate(&buf, name, data); err != nil {
@@ -253,9 +244,4 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 type pageView struct {
 	ui.Chrome
 	GameCSS string
-}
-
-type pickerView struct {
-	pageView
-	DataDir string
 }
