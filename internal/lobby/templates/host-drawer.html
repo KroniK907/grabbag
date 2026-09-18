@@ -15,13 +15,7 @@
   {{if and .ShowGameLibrary (not .RestorePending) (not .Started)}}
   {{template "game-library-open" .}}
   {{end}}
-  {{if .RestorePending}}
-  <form method="post" action="/settings/keep">
-    <button class="ui-btn" type="submit">Keep this room</button>
-  </form>
-  <button class="ui-btn ui-btn-danger" type="button" onclick="document.getElementById('clear-room-modal').hidden = false">Clear room</button>
-  {{template "clear-room-modal"}}
-  {{else}}
+  {{if not .RestorePending}}
   {{if .ShowStart}}
   <form method="post" action="/settings/start">
     <button class="ui-btn" type="submit">Start</button>

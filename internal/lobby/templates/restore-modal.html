@@ -1,0 +1,13 @@
+{{define "restore-modal"}}
+<div id="restore-modal" class="ui-modal" role="dialog" aria-modal="true" aria-labelledby="restore-title">
+  <div class="ui-card">
+    <h2 id="restore-title">This room came back</h2>
+    <p>Keep previously connected users, or clear the roster. Settings stay.</p>
+    <form method="post" action="/settings/keep">
+      <button class="ui-btn" type="submit">Keep this room</button>
+    </form>
+    <button class="ui-btn ui-btn-danger" type="button" onclick="document.getElementById('clear-room-modal').hidden = false">Clear room</button>
+  </div>
+</div>
+{{template "clear-room-modal"}}
+{{end}}

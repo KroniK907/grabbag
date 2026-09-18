@@ -18,6 +18,9 @@
     {{if .ShowGameLibrary}}
     {{template "game-library" .}}
     {{end}}
+    {{if .RestorePending}}
+    {{template "restore-modal" .}}
+    {{end}}
     {{end}}
     {{if .TakeHost}}
     <div class="ui-modal">

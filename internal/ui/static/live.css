@@ -286,6 +286,10 @@ button {
   z-index: 20;
 }
 
+.ui-phone > .ui-modal {
+  position: absolute;
+}
+
 .ui-modal[hidden],
 .ui-sheet[hidden] {
   display: none;
