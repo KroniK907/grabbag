@@ -981,6 +981,7 @@ body:has(.ui-leave-control) {
   height: calc(100% - 22px);
   min-height: 0;
   overflow: hidden;
+  padding-top: 0;
 }
 
 .ui-phone:has(.ui-leave-control) .ui-phone-stack {
