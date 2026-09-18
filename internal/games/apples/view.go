@@ -507,6 +507,7 @@ func (g *Game) pickerView(rowErr pickerErr) pickerView {
 		RowError:     rowErr.Msg,
 		ErrorLibrary: rowErr.LibraryID,
 		ErrorPack:    rowErr.PackID,
+		ErrorTag:     rowErr.Tag,
 		Shortage:     g.shortageNow(),
 	}
 	h := g.helperNow()
@@ -523,6 +524,7 @@ func (g *Game) pickerView(rowErr pickerErr) pickerView {
 	cat := scanDataDir(h.DataDir())
 	settings, ok := g.loadSettings(h)
 	settings = reconcileSettings(settings, ok, cat)
+	view.Tags = tagViews(collectCatalogTags(cat), settings)
 	for _, lib := range cat.Libraries {
 		item := libraryView{
 			ID:          lib.ID,
@@ -540,6 +542,7 @@ func (g *Game) pickerView(rowErr pickerErr) pickerView {
 				Enabled:     settings.packOn(lib.ID, pack.ID),
 				PromptCount: len(pack.Prompts),
 				AnswerCount: len(pack.Answers),
+				Dots:        tagViews(packTags(pack), settings),
 			})
 		}
 		view.Libraries = append(view.Libraries, item)

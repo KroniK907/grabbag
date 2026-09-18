@@ -285,6 +285,184 @@ func TestSelectAllAndNone(t *testing.T) {
 	assertCheckbox(t, page, "oranges", "oranges", false)
 }
 
+func TestPickerHidesTagsWhenNoneExist(t *testing.T) {
+	t.Parallel()
+	g := loadedGame(t, newFakeHelper(t.TempDir(), true))
+	page := picker(t, g)
+	if strings.Contains(page, `class="apples-tag-list"`) || strings.Contains(page, `/settings/game/tag`) {
+		t.Fatalf("empty tag list leaked: %s", page)
+	}
+}
+
+func TestPickerShowsGlobalTagsAndPackDots(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+	page := picker(t, g)
+	if !strings.Contains(page, `class="apples-tag-list"`) {
+		t.Fatal(page)
+	}
+	if !strings.Contains(page, `name="tag" value="nsfw"`) || !strings.Contains(page, `name="tag" value="politics"`) {
+		t.Fatalf("missing sidebar tags: %s", page)
+	}
+	if strings.Index(page, `class="apples-tag-list"`) > strings.Index(page, `class="apples-cabinets"`) {
+		t.Fatal("tag list is not in the sidebar")
+	}
+	row := packArticle(page, "tagged", "tagged")
+	if !strings.Contains(row, `title="nsfw"`) || !strings.Contains(row, `title="politics"`) {
+		t.Fatalf("pack dots missing: %s", row)
+	}
+	nsfwColor := tagColor("nsfw")
+	if !strings.Contains(page, "background:"+nsfwColor) {
+		t.Fatalf("nsfw color %s missing: %s", nsfwColor, page)
+	}
+}
+
+func TestToggleTagPersistsUntilStarted(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+
+	rec := postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0"}})
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/play/picker" {
+		t.Fatalf("toggle = %d %q", rec.Code, rec.Header().Get("Location"))
+	}
+	page := picker(t, g)
+	assertTag(t, page, "nsfw", false)
+	assertTag(t, page, "politics", true)
+
+	none := postSettings(g, "/select-none", nil)
+	if none.Code != http.StatusSeeOther {
+		t.Fatal(none.Body.String())
+	}
+	assertTag(t, picker(t, g), "nsfw", false)
+
+	disableShipped(t, g)
+	postSettings(g, "/pack", url.Values{"library": {"tagged"}, "pack": {"tagged"}, "enabled": {"1"}})
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sit("p1", "Pat")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	frozen := postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0", "1"}})
+	if frozen.Code != http.StatusOK {
+		t.Fatalf("started toggle status = %d", frozen.Code)
+	}
+	if !strings.Contains(frozen.Body.String(), "Tag changes wait until the game ends") {
+		t.Fatalf("missing freeze note: %s", frozen.Body.String())
+	}
+	assertTag(t, picker(t, g), "nsfw", false)
+}
+
+func TestExcludedTagsLeaveTheDeal(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir, true)
+	g := loadedGame(t, h)
+	writeLib(t, dir, "tagged.json", taggedLibraryJSON())
+	disableShipped(t, g)
+	postSettings(g, "/pack", url.Values{"library": {"tagged"}, "pack": {"tagged"}, "enabled": {"1"}})
+	postSettings(g, "/tag", url.Values{"tag": {"nsfw"}, "enabled": {"0"}})
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	h.sit("p1", "Pat")
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	ids := map[string]bool{}
+	for _, p := range g.match.Prompts {
+		ids[p.CardID] = true
+	}
+	if g.match.LivePrompt != nil {
+		ids[g.match.LivePrompt.CardID] = true
+	}
+	for _, a := range g.match.Answers {
+		ids[a.CardID] = true
+	}
+	for _, actor := range g.match.Actors {
+		for _, card := range actor.Hand {
+			ids[card.CardID] = true
+		}
+	}
+	if ids["p-nsfw"] || ids["a-nsfw"] || ids["a-both"] {
+		t.Fatalf("excluded cards still in piles: %#v", ids)
+	}
+	if !ids["p-clean"] {
+		t.Fatalf("untagged prompt missing: %#v", ids)
+	}
+	if !ids["a-clean-0"] && !ids["a-clean-1"] && !ids["a-clean-2"] && !ids["a-clean"] {
+		t.Fatalf("untagged answers missing: %#v", ids)
+	}
+}
+
+func TestTagColorIsStable(t *testing.T) {
+	t.Parallel()
+	if tagColor("nsfw") != tagColor("nsfw") {
+		t.Fatal("nsfw color moved")
+	}
+	if tagColor("nsfw") != "#c38fff" {
+		t.Fatalf("nsfw color = %s", tagColor("nsfw"))
+	}
+	if tagColor("politics") != "#4dffd2" {
+		t.Fatalf("politics color = %s", tagColor("politics"))
+	}
+}
+
+func taggedLibraryJSON() string {
+	return `{
+  "formatVersion": 1,
+  "id": "tagged",
+  "name": "Tagged",
+  "packs": [{
+    "id": "tagged",
+    "name": "Tagged",
+    "prompts": [
+      {"id": "p-clean", "text": "Clean _"},
+      {"id": "p-nsfw", "text": "Dirty _", "tags": ["nsfw"]}
+    ],
+    "answers": [
+      {"id": "a-clean-0", "text": "Hello"},
+      {"id": "a-clean-1", "text": "There"},
+      {"id": "a-clean-2", "text": "Friend"},
+      {"id": "a-clean", "text": "Keep me"},
+      {"id": "a-nsfw", "text": "Oops", "tags": ["nsfw"]},
+      {"id": "a-both", "text": "Both", "tags": ["nsfw", "politics"]}
+    ]
+  }]
+}`
+}
+
+func assertTag(t *testing.T, page, tag string, on bool) {
+	t.Helper()
+	block := tagForm(page, tag)
+	if block == "" {
+		t.Fatalf("missing tag form %s in %s", tag, page)
+	}
+	checked := strings.Contains(block, "checked")
+	if checked != on {
+		t.Fatalf("%s checked=%v want %v in %s", tag, checked, on, block)
+	}
+}
+
+func tagForm(page, tag string) string {
+	needle := `name="tag" value="` + tag + `"`
+	start := strings.Index(page, needle)
+	if start < 0 {
+		return ""
+	}
+	formStart := strings.LastIndex(page[:start], "<form")
+	formEnd := strings.Index(page[start:], "</form>")
+	if formStart < 0 || formEnd < 0 {
+		return ""
+	}
+	return page[formStart : start+formEnd]
+}
+
 func TestCorruptMatchSettingsReloadsFactory(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

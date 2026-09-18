@@ -105,6 +105,7 @@ func (g *Game) Settings() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", g.getSettings)
 	mux.HandleFunc("POST /pack", g.postPack)
+	mux.HandleFunc("POST /tag", g.postTag)
 	mux.HandleFunc("POST /select-all", g.postSelectAll)
 	mux.HandleFunc("POST /select-none", g.postSelectNone)
 	mux.HandleFunc("POST /import-official", g.postImportOfficial)
@@ -330,6 +331,45 @@ func formEnabled(r *http.Request) bool {
 	return false
 }
 
+func (g *Game) postTag(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	g.toggleTag(w, r, r.FormValue("tag"), formEnabled(r))
+}
+
+func (g *Game) toggleTag(w http.ResponseWriter, r *http.Request, tag string, on bool) {
+	h := g.helperNow()
+	if h == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if g.matchFrozen() {
+		g.render(w, "picker.html", g.pickerView(pickerErr{
+			Msg: "Tag changes wait until the game ends.", Tag: tag,
+		}), http.StatusOK)
+		return
+	}
+	cat := scanDataDir(h.DataDir())
+	if !catalogHasTag(cat, tag) {
+		g.render(w, "picker.html", g.pickerView(pickerErr{
+			Msg: "That tag is not in the library.", Tag: tag,
+		}), http.StatusOK)
+		return
+	}
+	settings, ok := g.loadSettings(h)
+	settings = reconcileSettings(settings, ok, cat)
+	settings.setTag(tag, on)
+	if err := g.saveSettings(h, settings); err != nil {
+		g.render(w, "picker.html", g.pickerView(pickerErr{
+			Msg: "Could not save tag enablement.", Tag: tag,
+		}), http.StatusOK)
+		return
+	}
+	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
+}
+
 func (g *Game) postSelectAll(w http.ResponseWriter, r *http.Request) {
 	g.selectAll(w, r, true)
 }
@@ -505,6 +545,7 @@ type pickerErr struct {
 	Msg       string
 	LibraryID string
 	PackID    string
+	Tag       string
 }
 
 type pageView struct {
@@ -520,9 +561,17 @@ type pickerView struct {
 	RowError     string
 	ErrorLibrary string
 	ErrorPack    string
+	ErrorTag     string
 	Shortage     []string
+	Tags         []tagView
 	Libraries    []libraryView
 	Failed       []failedFile
+}
+
+type tagView struct {
+	ID      string
+	Color   string
+	Enabled bool
 }
 
 type libraryView struct {
@@ -542,4 +591,5 @@ type packView struct {
 	Enabled     bool
 	PromptCount int
 	AnswerCount int
+	Dots        []tagView
 }

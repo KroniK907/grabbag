@@ -51,6 +51,9 @@ func buildPiles(cat catalog, settings matchSettings) enabledPiles {
 				continue
 			}
 			for _, card := range pack.Prompts {
+				if !settings.cardTagsAllowed(card.Tags) {
+					continue
+				}
 				pick := 1
 				if card.Pick != nil {
 					pick = *card.Pick
@@ -60,6 +63,9 @@ func buildPiles(cat catalog, settings matchSettings) enabledPiles {
 				})
 			}
 			for _, card := range pack.Answers {
+				if !settings.cardTagsAllowed(card.Tags) {
+					continue
+				}
 				out.Answers = append(out.Answers, playCard{
 					LibraryID: lib.ID, CardID: card.ID, Text: card.Text,
 				})

@@ -17,6 +17,26 @@
       <button class="ui-btn" type="submit">Quickly add these CAH official card packs</button>
     </form>
     {{end}}
+    {{if .Tags}}
+    <div class="apples-tag-list">
+      <p class="apples-tag-heading">Tags</p>
+      {{if and $.RowError $.ErrorTag (not $.ErrorPack)}}
+      <p class="apples-error">{{$.RowError}}</p>
+      {{end}}
+      {{range .Tags}}
+      <form method="post" action="/settings/game/tag">
+        <input type="hidden" name="tag" value="{{.ID}}">
+        <input type="hidden" name="enabled" value="0">
+        <label class="apples-tag-chip{{if not .Enabled}} off{{end}}">
+          <span class="apples-tag-dot" style="background:{{.Color}}" title="{{.ID}}"></span>
+          <input type="checkbox" name="enabled" value="1" {{if .Enabled}}checked{{end}} {{if $.Frozen}}disabled{{end}} {{if not $.Frozen}}onchange="this.form.submit()"{{end}}>
+          {{.ID}}
+          {{if .Enabled}}On{{else}}Off{{end}}
+        </label>
+      </form>
+      {{end}}
+    </div>
+    {{end}}
   </aside>
   <main>
     <div class="apples-head">
@@ -26,9 +46,9 @@
     {{range .Shortage}}<p class="apples-error">{{.}}</p>{{end}}
     {{end}}
     {{if .Frozen}}
-    <p class="apples-note">Match is running. Pack changes wait until the game ends.</p>
+    <p class="apples-note">Match is running. Pack and tag changes wait until the game ends.</p>
     {{end}}
-    {{if and .RowError (not .ErrorPack)}}
+    {{if and .RowError (not .ErrorPack) (not .ErrorTag)}}
     <p class="apples-error">{{.RowError}}</p>
     {{end}}
     <div class="apples-cabinets">
@@ -38,6 +58,11 @@
           <h2>{{.Name}}</h2>
           {{if .Description}}<p>{{.Description}}</p>{{end}}
           <p>{{.PromptCount}} prompts · {{.AnswerCount}} answers</p>
+          {{if .Dots}}
+          <p class="apples-pack-dots">
+            {{range .Dots}}<span class="apples-tag-dot" style="background:{{.Color}}" title="{{.ID}}"></span>{{end}}
+          </p>
+          {{end}}
           {{if and $.RowError (eq .LibraryID $.ErrorLibrary) (eq .ID $.ErrorPack)}}
           <p class="apples-error">{{$.RowError}}</p>
           {{end}}

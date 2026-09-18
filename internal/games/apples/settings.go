@@ -28,6 +28,7 @@ const (
 // matchSettings is the game KV document at match-settings.
 type matchSettings struct {
 	Enabled                  map[string]map[string]bool `json:"enabled"`
+	Tags                     map[string]bool            `json:"tags,omitempty"`
 	HandSize                 int                        `json:"handSize"`
 	WinScore                 int                        `json:"winScore"`
 	WinByRounds              bool                       `json:"winByRounds"`
@@ -139,6 +140,7 @@ func reconcileSettings(existing matchSettings, ok bool, cat catalog) matchSettin
 	if ok {
 		out = existing
 		out.Enabled = map[string]map[string]bool{}
+		out.Tags = map[string]bool{}
 	}
 	for _, lib := range cat.Libraries {
 		for _, pack := range lib.Packs {
@@ -154,6 +156,17 @@ func reconcileSettings(existing matchSettings, ok bool, cat catalog) matchSettin
 			}
 			out.setPack(lib.ID, pack.ID, false)
 		}
+	}
+	for _, tag := range collectCatalogTags(cat) {
+		if !ok || existing.Tags == nil {
+			out.setTag(tag, true)
+			continue
+		}
+		if was, known := existing.Tags[tag]; known {
+			out.setTag(tag, was)
+			continue
+		}
+		out.setTag(tag, true)
 	}
 	return out
 }
