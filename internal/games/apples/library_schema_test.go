@@ -1,5 +1,5 @@
-// Package libraries_test checks shipped library JSON against CAH-GAME-GM-007 through GM-011.
-package libraries_test
+// Checks shipped Apples library JSON against CAH-GAME-GM-007 through GM-011.
+package apples_test
 
 import (
 	"encoding/json"
@@ -38,7 +38,7 @@ var greenText = regexp.MustCompile(`^.+ - \([^,]+, [^,]+(?:, [^,]+)?\)$`)
 
 func loadLibrary(t *testing.T, name string) libraryFile {
 	t.Helper()
-	path := filepath.Join(".", name)
+	path := filepath.Join("shipped", name)
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatalf("open %s: %v", name, err)
