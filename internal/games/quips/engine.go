@@ -13,8 +13,19 @@ const (
 type enginePhase string
 
 const (
-	phaseWrite        enginePhase = "write"
-	phaseParadeReady  enginePhase = "parade-ready"
+	phaseWrite       enginePhase = "write"
+	phaseParadeWait  enginePhase = "parade-wait"
+	phaseReveal      enginePhase = "reveal"
+	phaseVote        enginePhase = "vote"
+	phaseHold        enginePhase = "hold"
+	phaseFinalScores enginePhase = "final-scores"
+	phaseOver        enginePhase = "over"
+)
+
+const (
+	timerVote   = "vote"
+	timerWinner = "winner"
+	timerFinal  = "final"
 )
 
 type roundKind int
@@ -58,6 +69,11 @@ type CommandKind int
 const (
 	CmdDraft CommandKind = iota
 	CmdLock
+	CmdVote
+	CmdHostReveal
+	CmdHostNextSegment
+	CmdHostSkipHold
+	CmdHostEndMatch
 )
 
 type Command struct {
@@ -66,6 +82,13 @@ type Command struct {
 	Slot   int
 	Text   string
 	Drafts []string
+	// Vote target is the writer id whose quip was picked.
+	VoteTarget string
+	VoterSeat  bool
+}
+
+type voteState struct {
+	Picks map[string]votePick
 }
 
 type Outcome struct {
@@ -85,9 +108,17 @@ type engine struct {
 	Kind         roundKind
 	Segments     []roundSegment
 	ParadeOrder  []int
+	ParadePos    int
 	Writers      map[string]*writerState
 	PromptPool   []playPrompt
 	PhoneErr     map[string]string
+	Scores       map[string]int
+	Multiplier   int
+	Revealed     int
+	Vote         voteState
+	HoldAwards   map[string]int
+	Champions    []string
+	MatchOver    bool
 	TimerKind    string
 	TimerEnd     time.Time
 	TimerTotal   time.Duration
@@ -124,6 +155,8 @@ func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal promptDe
 		e.Kind = roundLastQuip
 	}
 	e.PhoneErr = map[string]string{}
+	e.Scores = map[string]int{}
+	e.Multiplier = scoringMultiplier(1, settings.RoundMultiplierIncreaseBy)
 	e.PromptPool = append([]playPrompt(nil), deal.Pool...)
 	e.rng = rng
 	e.now = func() time.Time { return now }
@@ -144,7 +177,30 @@ func (e *engine) syncRoster(rows []rosterRow) {
 
 func (e *engine) Do(cmd Command, now time.Time) Outcome {
 	out := Outcome{PhoneErr: map[string]string{}}
-	if e.Phase != phaseWrite || e.Paused {
+	if e.Paused && cmd.Kind != CmdHostEndMatch {
+		out.PhoneErr[cmd.Actor] = "Match is paused."
+		return out
+	}
+	switch cmd.Kind {
+	case CmdDraft, CmdLock:
+		return e.doCompose(cmd, now, out)
+	case CmdVote:
+		return e.doVote(cmd.Actor, cmd.VoteTarget, cmd.VoterSeat, out)
+	case CmdHostReveal:
+		return e.doHostRevealAt(now, out)
+	case CmdHostNextSegment:
+		return e.doHostNextSegment(now, out)
+	case CmdHostSkipHold:
+		return e.doHostSkipHold(now, out)
+	case CmdHostEndMatch:
+		return e.doHostEndMatch(out)
+	default:
+		return out
+	}
+}
+
+func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
+	if e.Phase != phaseWrite {
 		out.PhoneErr[cmd.Actor] = "You cannot compose now."
 		return out
 	}
@@ -169,7 +225,7 @@ func (e *engine) Do(cmd Command, now time.Time) Outcome {
 
 func (e *engine) Advance(now time.Time) Outcome {
 	out := Outcome{PhoneErr: map[string]string{}}
-	if e.Phase != phaseWrite || e.Paused {
+	if e.Paused {
 		return out
 	}
 	if e.TimerKind == "" || e.TimerEnd.IsZero() {
@@ -178,9 +234,26 @@ func (e *engine) Advance(now time.Time) Outcome {
 	if e.clock(now).Before(e.TimerEnd) {
 		return out
 	}
-	e.clearTimer()
-	e.timerSubmitAll()
-	return e.finishWriteIfReady(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	switch e.TimerKind {
+	case "write":
+		e.clearTimer()
+		e.timerSubmitAll()
+		return e.finishWriteIfReady(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerVote:
+		e.clearTimer()
+		return e.closeVote(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerWinner:
+		e.clearTimer()
+		if e.Settings.HostControlledReveals && e.Settings.WinnerScreenSec == 0 {
+			return out
+		}
+		return e.afterHold(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerFinal:
+		e.clearTimer()
+		return e.endMatch(Outcome{Changed: true, Events: []string{eventQuips}})
+	default:
+		return out
+	}
 }
 
 func (e *engine) SetPaused(paused bool, now time.Time) {
@@ -205,13 +278,11 @@ func (e *engine) finishWriteIfReady(now time.Time, base Outcome) Outcome {
 	if !e.writeGateMet() {
 		return base
 	}
-	e.Phase = phaseParadeReady
-	e.clearTimer()
 	if !base.Changed {
 		base.Changed = true
 	}
 	base.Events = appendUniqueEvent(base.Events, eventQuips)
-	return base
+	return e.afterWriteClosed(now, base)
 }
 
 func (e *engine) writeGateMet() bool {
