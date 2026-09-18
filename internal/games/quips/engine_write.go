@@ -2,6 +2,7 @@ package quips
 
 import (
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -100,18 +101,28 @@ func (e *engine) slotsForPlayer(id string) []composeSlot {
 	return slots
 }
 
+func (e *engine) clearComposePhoneErr() {
+	for id := range e.Writers {
+		delete(e.PhoneErr, id)
+	}
+}
+
 func (e *engine) doDraft(w *writerState, cmd Command, out Outcome) Outcome {
 	if cmd.Slot < 0 || cmd.Slot >= len(w.Slots) {
 		out.PhoneErr[cmd.Actor] = "Unknown quip slot."
 		return out
 	}
 	text := trimToCap(cmd.Text, e.Policy.Cap)
-	if !e.Policy.draftOK(text) {
-		out.PhoneErr[cmd.Actor] = "That quip is not allowed."
-		return out
-	}
 	w.Slots[cmd.Slot].Draft = text
+	if strings.TrimSpace(text) != "" {
+		if hit := bannedHit(text, e.Policy.Banned); hit != "" {
+			out.PhoneErr[cmd.Actor] = e.Policy.bannedAlert(hit)
+			out.Changed = true
+			return out
+		}
+	}
 	w.Slots[cmd.Slot].DupOutline = false
+	delete(e.PhoneErr, cmd.Actor)
 	out.Changed = true
 	return out
 }
@@ -160,6 +171,7 @@ func (e *engine) doLock(w *writerState, cmd Command, now time.Time, out Outcome)
 		w.Slots[i].Locked = true
 	}
 	w.Locked = true
+	delete(e.PhoneErr, cmd.Actor)
 	out.Changed = true
 	out.Events = append(out.Events, eventQuipsLock)
 	return e.finishWriteIfReady(now, out)

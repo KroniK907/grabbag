@@ -1,6 +1,38 @@
 (function () {
   "use strict";
 
+  function runeLen(text) {
+    return Array.from(text).length;
+  }
+
+  function bindComposeCards() {
+    document.querySelectorAll(".quips-compose-card textarea").forEach(function (ta) {
+      if (ta.dataset.quipsComposeBound === "1") {
+        return;
+      }
+      ta.dataset.quipsComposeBound = "1";
+      ta.addEventListener("input", function () {
+        var card = ta.closest(".quips-compose-card");
+        if (card) {
+          card.classList.remove("dup-outline");
+        }
+        var cap = card && card.querySelector(".quips-cap");
+        var max = Number(ta.getAttribute("maxlength")) || 0;
+        if (cap && max > 0) {
+          var remain = Math.max(0, max - runeLen(ta.value));
+          cap.textContent = remain + " / " + max;
+        }
+        var scroll = document.querySelector("#quips-phone .quips-phone-scroll");
+        if (scroll && scroll.querySelector(".quips-compose-card")) {
+          var alert = scroll.querySelector(".ui-alert");
+          if (alert) {
+            alert.remove();
+          }
+        }
+      });
+    });
+  }
+
   function paintTimers() {
     document.querySelectorAll("[data-quips-timer]").forEach(function (timer) {
       var total = Number(timer.dataset.timerTotal) || 0;
@@ -23,7 +55,9 @@
     window.grabbagQuipsTimer = window.setInterval(paintTimers, 250);
     document.body.addEventListener("htmx:afterSwap", function () {
       paintTimers();
+      bindComposeCards();
     });
   }
   paintTimers();
+  bindComposeCards();
 })();

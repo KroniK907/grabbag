@@ -39,7 +39,7 @@
         <article class="quips-quip-card{{if .Empty}} is-empty{{end}}">
           <p class="quips-quip-author">{{.Name}}</p>
           {{if .Empty}}<p class="quips-quip-empty">Empty quip</p>{{else}}<p class="quips-quip-text">{{.Text}}</p>{{end}}
-          {{if gt .Count 0}}<p class="quips-vote-count">{{.Count}} votes</p>{{end}}
+          {{if gt .Count 0}}<p class="quips-vote-count">{{if eq .Count 1}}1 vote{{else}}{{.Count}} votes{{end}}</p>{{end}}
         </article>
         {{end}}
         {{end}}

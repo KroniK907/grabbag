@@ -86,11 +86,7 @@ func (rt *runtime) postStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := rt.start(r.Context()); err != nil {
-		msg := "Could not start."
-		if err == errStartRefused || err == errNotLoaded {
-			msg = "Start needs a loaded game and at least one seated player."
-		}
-		rt.operatorNotice(w, r, msg)
+		rt.operatorNotice(w, r, startFailureNotice(err))
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)

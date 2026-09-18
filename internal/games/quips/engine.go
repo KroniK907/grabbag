@@ -159,7 +159,6 @@ func (e *engine) bootstrap(settings matchSettings, roster []rosterRow, hooks Eng
 	e.Scores = map[string]int{}
 	e.Multiplier = scoringMultiplier(1, settings.RoundMultiplierIncreaseBy)
 	e.rng = rng
-	e.now = func() time.Time { return now }
 	e.Writers = map[string]*writerState{}
 	for _, row := range roster {
 		e.Writers[row.ID] = &writerState{ID: row.ID, Name: row.Name}

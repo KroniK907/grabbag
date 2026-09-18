@@ -104,6 +104,16 @@ func (p composePolicy) lockIssues(texts []string, lockedNorms []string) []lockIs
 	return issues
 }
 
+func (p composePolicy) bannedAlert(hit string) string {
+	if hit == "" {
+		return "That quip is not allowed."
+	}
+	if p.ShowMatchedWord {
+		return fmt.Sprintf("Banned: %s", hit)
+	}
+	return "That quip is not allowed."
+}
+
 func (p composePolicy) lockAlert(issues []lockIssue) string {
 	var parts []string
 	for _, iss := range issues {
@@ -111,11 +121,7 @@ func (p composePolicy) lockAlert(issues []lockIssue) string {
 		case iss.Empty:
 			parts = append(parts, "Fill in every quip before locking.")
 		case iss.Banned != "":
-			if p.ShowMatchedWord {
-				parts = append(parts, fmt.Sprintf("Banned: %s", iss.Banned))
-			} else {
-				parts = append(parts, "That quip is not allowed.")
-			}
+			parts = append(parts, p.bannedAlert(iss.Banned))
 		case iss.Dup:
 			parts = append(parts, "That quip was already used.")
 		}

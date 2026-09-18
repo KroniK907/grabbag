@@ -101,13 +101,17 @@ func (g *Game) postDraft(w http.ResponseWriter, r *http.Request) {
 	for id, msg := range out.PhoneErr {
 		if msg != "" {
 			g.engine.PhoneErr[id] = msg
+		} else {
+			delete(g.engine.PhoneErr, id)
 		}
 	}
-	g.mu.Unlock()
 	if out.PhoneErr[p.ID] != "" {
-		http.Error(w, out.PhoneErr[p.ID], http.StatusBadRequest)
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusBadRequest)
 		return
 	}
+	g.mu.Unlock()
 	w.WriteHeader(http.StatusNoContent)
 }
 

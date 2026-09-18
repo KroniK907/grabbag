@@ -21,6 +21,7 @@ func (e *engine) startCurrentSegment(now time.Time, out Outcome) Outcome {
 	if segIdx < 0 {
 		return e.roundComplete(now, out)
 	}
+	e.clearComposePhoneErr()
 	e.Vote = voteState{Picks: map[string]votePick{}}
 	e.HoldAwards = nil
 	if e.Kind == roundLastQuip {
@@ -202,6 +203,7 @@ func (e *engine) doHostEndMatch(out Outcome) Outcome {
 }
 
 func (e *engine) openVoteTimer(now time.Time) {
+	e.clearComposePhoneErr()
 	if e.Hooks.OnSegmentVoteOpen != nil {
 		segIdx := e.activeSegmentIdx()
 		if segIdx >= 0 && segIdx < len(e.Segments) {

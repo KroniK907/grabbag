@@ -12,6 +12,24 @@ import (
 	"time"
 )
 
+func TestStartFailureNotice(t *testing.T) {
+	t.Parallel()
+	if got := startFailureNotice(errStartRefused); got != "Start needs a loaded game and at least one seated player." {
+		t.Fatalf("refused=%q", got)
+	}
+	msg := "Not enough prompts in your library to start the game."
+	if got := startFailureNotice(errString(msg)); got != msg {
+		t.Fatalf("shortage=%q", got)
+	}
+	if got := startFailureNotice(errString("Burn list is unreadable")); got != "Could not start." {
+		t.Fatalf("internal=%q", got)
+	}
+}
+
+type errString string
+
+func (e errString) Error() string { return string(e) }
+
 func TestNotifyPublishesNoticeJSON(t *testing.T) {
 	t.Parallel()
 	_, handler, _, fake := testGameHandler(t, 0, 0)
