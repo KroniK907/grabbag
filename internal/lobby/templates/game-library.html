@@ -15,14 +15,12 @@
     onclick="document.getElementById('{{.LibraryElementID}}').classList.remove('is-open')"
   ></button>
   <div class="ui-game-library-panel" role="dialog" aria-labelledby="{{.LibraryElementID}}-title">
-    <header class="ui-game-library-head">
-      <h2 id="{{.LibraryElementID}}-title">Game library</h2>
-      <button
-        type="button"
-        class="ui-btn"
-        onclick="document.getElementById('{{.LibraryElementID}}').classList.remove('is-open')"
-      >Back</button>
-    </header>
+    <button
+      type="button"
+      class="ui-game-library-back"
+      onclick="document.getElementById('{{.LibraryElementID}}').classList.remove('is-open')"
+    >Back</button>
+    <h2 id="{{.LibraryElementID}}-title" class="ui-game-library-title">Game library</h2>
     {{if not .Catalog}}
     <p class="ui-muted">No games installed.</p>
     {{else}}

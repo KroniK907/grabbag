@@ -47,7 +47,8 @@ func (rt *runtime) buildCatalog(ctx context.Context, loadedID string) ([]lobby.C
 		entry lobby.CatalogEntry
 	}
 	rows := make([]row, 0, len(rt.catalog))
-	for id, factory := range rt.catalog {
+	for _, id := range rt.gameIDs() {
+		factory := rt.catalog[id]
 		game := factory.New()
 		name := strings.TrimSpace(game.Name())
 		if name == "" {
@@ -68,7 +69,12 @@ func (rt *runtime) buildCatalog(ctx context.Context, loadedID string) ([]lobby.C
 		})
 	}
 	sort.Slice(rows, func(i, j int) bool {
-		return strings.EqualFold(rows[i].name, rows[j].name)
+		an := strings.ToLower(rows[i].name)
+		bn := strings.ToLower(rows[j].name)
+		if an != bn {
+			return an < bn
+		}
+		return rows[i].entry.ID < rows[j].entry.ID
 	})
 	out := make([]lobby.CatalogEntry, len(rows))
 	for i := range rows {

@@ -1,6 +1,10 @@
 package host
 
-import "testing"
+import (
+	"sort"
+	"strings"
+	"testing"
+)
 
 func TestFormatPlayerLine(t *testing.T) {
 	t.Parallel()
@@ -15,6 +19,26 @@ func TestFormatPlayerLine(t *testing.T) {
 	}
 	if got := formatPlayerLine(2, 10); got != "Players: at least 2, up to 10" {
 		t.Fatalf("both = %q", got)
+	}
+}
+
+func TestCatalogSortByName(t *testing.T) {
+	t.Parallel()
+	type row struct {
+		name string
+		id   string
+	}
+	rows := []row{{"Zulu", "zebra"}, {"Apples", "alpha"}, {"Middling", "mid"}}
+	sort.Slice(rows, func(i, j int) bool {
+		an := strings.ToLower(rows[i].name)
+		bn := strings.ToLower(rows[j].name)
+		if an != bn {
+			return an < bn
+		}
+		return rows[i].id < rows[j].id
+	})
+	if rows[0].name != "Apples" || rows[1].name != "Middling" || rows[2].name != "Zulu" {
+		t.Fatalf("sort order = %#v", rows)
 	}
 }
 

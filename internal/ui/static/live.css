@@ -1292,20 +1292,26 @@ body:has(.ui-leave-control) {
   border-radius: 16px;
   background: var(--ui-card-bg);
   color: var(--ui-card-fg);
-  box-shadow: 8px 8px 0 var(--ui-shadow);
   overflow: hidden;
 }
 
-.ui-game-library-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+.ui-game-library-back {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  width: auto;
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  border: 2px solid var(--ui-fg);
+  border-radius: 8px;
+  background: var(--ui-btn-bg);
+  color: var(--ui-btn-fg);
+  font: 0.7rem/1.1 var(--ui-font-ui);
 }
 
-.ui-game-library-head h2 {
-  margin: 0;
+.ui-game-library-title {
+  margin: 0 3.5rem 12px 0;
   font-family: var(--ui-font-display);
   font-size: 1.75rem;
   font-weight: 400;
@@ -1344,15 +1350,22 @@ body:has(.ui-leave-control) {
   text-align: left;
   cursor: pointer;
   font: inherit;
+  overflow: hidden;
+  box-shadow: none;
 }
 
 .ui-game-card.is-loaded {
-  border-color: var(--ui-accent-2);
-  box-shadow: inset 0 0 0 2px var(--ui-accent-2);
+  border-color: #ffe14a;
 }
 
 .ui-game-card.has-warning {
   border-color: var(--ui-danger-bg);
+  opacity: 0.78;
+  filter: grayscale(0.25);
+}
+
+.ui-game-card.has-warning:not(.is-loaded) {
+  cursor: not-allowed;
 }
 
 .ui-game-card-title {
