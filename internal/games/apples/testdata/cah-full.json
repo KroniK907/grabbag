@@ -1,0 +1,52 @@
+[
+  {
+    "name": "The Base Set",
+    "description": "Vanilla",
+    "official": true,
+    "white": [{ "text": "A rubber chicken" }],
+    "black": [{ "text": "I never understood _.", "pick": 1 }]
+  },
+  {
+    "name": "Family Edition",
+    "description": "Softer",
+    "official": true,
+    "white": [{ "text": "Grandma's cookies" }],
+    "black": [{ "text": "The family secret is _.", "pick": 1 }]
+  },
+  {
+    "name": "A.I. Pack",
+    "official": true,
+    "white": [{ "text": "A large language model" }],
+    "black": [{ "text": "The robot confessed to _.", "pick": 1 }]
+  },
+  {
+    "name": "Procedurally-Generated Cards",
+    "official": true,
+    "white": [{ "text": "Noise function" }],
+    "black": [{ "text": "Generated _.", "pick": 1 }]
+  },
+  {
+    "name": "PAX East 2014",
+    "official": true,
+    "white": [{ "text": "A badge lanyard" }],
+    "black": [{ "text": "At PAX I saw _.", "pick": 1 }]
+  },
+  {
+    "name": "Retail Exclusive",
+    "official": true,
+    "white": [{ "text": "A blister pack" }],
+    "black": [{ "text": "Only sold with _.", "pick": 1 }]
+  },
+  {
+    "name": "Conversion Kit",
+    "official": true,
+    "white": [{ "text": "A sticker sheet" }],
+    "black": [{ "text": "Convert _.", "pick": 1 }]
+  },
+  {
+    "name": "House Fan Pack",
+    "official": false,
+    "white": [{ "text": "A fan card" }],
+    "black": [{ "text": "Fans love _.", "pick": 1 }]
+  }
+]

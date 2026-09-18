@@ -28,6 +28,7 @@ Operator playbook is `/docs`.
 - [Game hooks](#game-hooks)
 - [Helper hooks](#helper-hooks)
 - [HTTP mounts](#http-mounts)
+- [Extra pages](#extra-pages)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
 - [Examples](#examples)
@@ -77,7 +78,7 @@ sse:
   endpoint: GET /lobby/events
   connect: body hx-ext=sse sse-connect=/lobby/events on ui-start
   helper: Publish(name)  # data payload is always "update"
-  reserved: [roster, round, pause, theme, log]
+  reserved: [roster, round, pause, theme, log, notice]
   pattern: named event then hx-get current HTML, not a delta
   drop: slow pages miss events (non-blocking send, buffer 16)
 ```
@@ -126,7 +127,7 @@ Start needs a loaded game and at least one seated player. If `MinPlayers() > 0` 
 | Stop | `Stop` | Lobby | mounted | GET allowed, POST 404 | kept |
 | Shutdown | `Stop` if started, then `Shutdown` | Lobby | gone | 404 | kept |
 
-Finish on Helper is graceful Stop (`CycleSeats` may run). Operator abort is also Stop. Picking another game or Unload is Shutdown.
+Finish on Helper is Stop. Operator abort is the same Stop. If After a game is Cycle seats, Stop rotates the table. If it is Keep seats, sitters stay and empty seats fill from the wait list. Picking another game or Unload is Shutdown.
 
 Stop wipes run state in the game. It does not unload the package. Start can run again. Shutdown drops the helper and clears the selected game id.
 
@@ -149,7 +150,7 @@ Host calls these on the Game value.
 | `Start(h Helper) error` | operator or auto-start | Store `h` again. Begin ticks or round state. |
 | `Board(w, r)` | GET `/board` after Start | Full HTML document. Stamp theme from `h.Theme()`. |
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
-| `Phone(w, r)` | GET `/` after Start, seated player only | Inner body only. Host wraps gear and the claimed-host drawer. Audience and unknown cookies stay on Lobby phone. |
+| `Phone(w, r)` | GET `/` after Start, any signed-in player | Inner body only. Host wraps Leave and the claimed-host drawer. Unknown cookies stay on Lobby join. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
 | `Pause() error` | operator or auto-pause on seated disconnect | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
@@ -174,6 +175,7 @@ Host implements Helper. Games do not parse cookies, open `host.sqlite`, or write
 | `Pause()` | | Same as operator Pause. |
 | `Resume()` | | Same as operator Resume. |
 | `Publish(name)` | | Named SSE on the room hub. One EventSource per page. A slow page may miss an event. Clients fetch current state. |
+| `Notify(target, typ, message, seconds)` | | Host toast. `target` is `board`, `host`, `seated`, `audience`, or `waiting`. Reserved SSE name `notice` with JSON `target`, `type`, `message`, `duration`. Empty message or unknown target is a no-op. Does not write the log. `seconds`: 0 until close, negative is 3s, above 30 clamps to 30. |
 | `Log(line)` | | Prefixed with `<ID>: ` in the host log ring. No-op if nothing is loaded. |
 | `Theme()` | `string` | `neon-light` or `neon-dark`. Stamp full documents so first paint matches `/settings`. |
 | `HasAdmin(r)` | `bool` | Valid admin session. Use for board End game. Do not read the admin cookie yourself. |
@@ -184,7 +186,7 @@ Public paths stay host-owned. Lobby vs game is a state swap on `/` and `/board`.
 
 | Path | Owner after Load | Owner after Start |
 |------|------------------|-------------------|
-| `/` | Lobby phone | Game `Phone` body inside host chrome, seated only |
+| `/` | Lobby phone | Game `Phone` body inside host chrome, any signed-in player |
 | `/board` | Lobby TV, plus `BoardButtons` | Game `Board` full document |
 | `/settings` | Host operator | Host operator, Game Settings fragment inlined |
 | `/settings/game/*` | `Settings()` mux | same |
@@ -194,11 +196,21 @@ Forms in the settings fragment must post under `/settings/game/...`. Play forms 
 
 After Stop, a GET to `/play` may still hit `Play()`. POST `/play` is 404 until the next Start.
 
+### Extra pages
+
+Full extra documents after Load are `Play()` GET routes (`GET /play/picker`, `GET /play/info`). Mutations that must run before Start POST through `Settings()` at `/settings/game/`. `/settings/game/` stays the inlined settings column. It is not those documents.
+
+Do not add a Game method or host mount for extra pages. Do not open `Play()` POST before Start. v1 leaves the CoreHost mux unchanged.
+
+Operator-only extra GET pages check `HasAdmin` in the game. Signed-out GET is plain `401` text, the same idea as host Settings with no admin session. Host does not make every `Play()` GET admin-only. Public extra pages (Testing `/play/info`) stay unsigned. Hiding a `HostOnly` `BoardButton` does not protect the URL.
+
+Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby `HostOnly` button `Deck Library`, pack enable POSTs to `/settings/game/`. Success is `303` to `/play/picker`. A failed write or a refused-after-Start toggle returns `200` HTML so the checkboxes match stored state. `GET /play/howto` is a public extra document (Lobby `How to play` button, no `HasAdmin`). The in-round phone `?` loads `GET /play/howto-sheet`.
+
 ## Live SSE
 
 One EventSource per page. Host chrome (`ui-start`) sets `hx-ext="sse"` and `sse-connect="/lobby/events"` on `body`. `GET /lobby/events` is the in-process hub. `ui-start-quiet` (setup and `/docs`) does not connect.
 
-`Helper.Publish(name)` writes an SSE event with that name and data `update`. Games cannot set the data line. Host uses `PublishData` only for `theme` (palette id) and `log` (the log line). Put scores and names in a GET partial, not in the event body.
+`Helper.Publish(name)` writes an SSE event with that name and data `update`. Games cannot set the data line. Host uses `PublishData` for `theme` (palette id), `log` (the log line), and `notice` (toast JSON). Put scores and names in a GET partial, not in the event body. Toasts are fire-and-forget. A missed `notice` is not replayed.
 
 The page does not apply a delta from the event. It hears the name, then `hx-get`s current HTML. Include `htmx:sseOpen from:body` on those triggers so a reconnect refetches.
 
@@ -217,6 +229,7 @@ Do not publish these for game ticks. Host already owns them.
 | `pause` | host on Pause and Resume | pause chrome and game partials |
 | `theme` | host | `html[data-theme]` |
 | `log` | host log ring | settings log tail |
+| `notice` | host via `Helper.Notify` | chrome toast; client filters by target |
 
 Publishing `roster` is fine when a settings knob changes a board that also shows Lobby facts. Publishing `round` from a game reloads the whole document. Do not do that for a score tick.
 
@@ -326,7 +339,7 @@ The live package that does this is Testing (`internal/games/testing`).
 
 ### Phone body vs board document
 
-`Phone` writes the inner column. Do not send `<html>`. Host wraps `ui-gear` and the Host drawer.
+`Phone` writes the inner column. Do not send `<html>`. Host wraps Leave and the Host drawer.
 
 `Board` writes a full document. Testing stamps chrome and listens for `sse:pause` plus its own `sse:tap` / `sse:testing` events.
 

@@ -63,7 +63,8 @@ func TestJoinMintsPlayerAndReconnects(t *testing.T) {
 		t.Fatalf("reconnect status = %d, want %d", reconnected.Code, http.StatusOK)
 	}
 	if !strings.Contains(reconnected.Body.String(), "Alice") ||
-		!strings.Contains(reconnected.Body.String(), `action="/lobby/leave"`) {
+		!strings.Contains(reconnected.Body.String(), `action="/lobby/leave"`) ||
+		!strings.Contains(reconnected.Body.String(), `class="ui-leave-button"`) {
 		t.Fatalf("reconnect body = %q", reconnected.Body.String())
 	}
 	if strings.Contains(reconnected.Body.String(), `action="/lobby/join"`) {
@@ -437,6 +438,7 @@ func assertLivePage(t *testing.T, body, partialPath string) {
 		`hx-trigger="sse:roster, htmx:sseOpen from:body"`,
 		`hx-on::sse-error=`,
 		`hx-on::sse-open=`,
+		`window.grabbagLostHost`,
 		`id="connection-overlay" class="connection-overlay"`,
 	} {
 		if !strings.Contains(body, want) {

@@ -28,15 +28,17 @@ func (f *fakeGame) Load(h games.Helper) error {
 }
 
 func (f *fakeGame) Settings() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		f.settingsHits++
-		if r.Method == http.MethodPost {
-			_ = f.helper.KVSet("note", []byte("saved"))
-			http.Redirect(w, r, "/settings", http.StatusSeeOther)
-			return
-		}
 		_, _ = w.Write([]byte(`<p>fake-settings</p><form method="post" action="/settings/game/save"><button>Save knob</button></form>`))
 	})
+	mux.HandleFunc("POST /save", func(w http.ResponseWriter, r *http.Request) {
+		f.settingsHits++
+		_ = f.helper.KVSet("note", []byte("saved"))
+		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	})
+	return mux
 }
 
 func (f *fakeGame) Start(h games.Helper) error {

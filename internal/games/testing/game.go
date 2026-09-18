@@ -103,7 +103,7 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	}}
 }
 
-// Phone is the seated-phone body. Host wraps Lobby gear around it.
+// Phone is the signed-in phone body. Host wraps Leave and the host drawer around it.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
 }

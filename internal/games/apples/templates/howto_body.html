@@ -1,0 +1,70 @@
+{{define "howto-sheet"}}
+<div id="apples-phone" class="apples-phone apples-howto-sheet">
+  <header class="apples-howto-bar">
+    <h1>How to play</h1>
+    <a class="ui-btn" href="/play/partials/phone" hx-get="/play/partials/phone" hx-target="#apples-phone" hx-swap="outerHTML">Close</a>
+  </header>
+  <div class="apples-howto-scroll">
+    {{template "howto-body" .}}
+  </div>
+</div>
+{{end}}
+
+{{define "howto-body"}}
+<section>
+  <h2>Judge</h2>
+  <p>One seated player is the judge each round. The judge draws a prompt and does not submit an answer. After everyone locks, the judge reveals the plays and picks a winner.</p>
+</section>
+<section>
+  <h2>Submit</h2>
+  <p>Everyone else picks cards from their hand to fill the holes under the prompt, then locks. Locked plays stay face down until the judge reveals them.</p>
+</section>
+<section>
+  <h2>Pick holes</h2>
+  <p>Some prompts need more than one card. Fill every hole. Tap a slotted card to put it back. If every hole is full, tap another answer to swap it into the last hole. Lock stays off until the stack is full.</p>
+</section>
+<section>
+  <h2>Reveal</h2>
+  <p>The judge flips one play at a time, then confirms a winner. Names show after that pick.</p>
+</section>
+<section>
+  <h2>How you win</h2>
+	<p>Score points when the judge picks you. Reach the score target, or finish the scheduled rounds, and the highest score wins.</p>
+</section>
+{{if .Skip}}
+<section>
+  <h2>Skip</h2>
+  <p>After the draw, only the judge sees the prompt. Players wait until the judge locks it in or skips. A skip draws another prompt and is not a round.</p>
+</section>
+{{end}}
+{{if .Multi}}
+<section>
+  <h2>Two prompts</h2>
+  <p>The judge sees two prompts and chooses one. The unused prompt goes back in the pile.</p>
+</section>
+{{end}}
+{{if .Voting}}
+<section>
+  <h2>Favorites</h2>
+  <p>After a play is revealed, you may vote for a favorite. Favorite points are separate from the judge winner. You cannot vote for yourself.</p>
+</section>
+{{end}}
+{{if .Wildcard}}
+<section>
+  <h2>Wildcard</h2>
+  <p>You get one blank extra card. Type an answer and slot it like any other card. Bots and the judge do not get a blank.</p>
+</section>
+{{end}}
+{{if .Multiplier}}
+<section>
+  <h2>Last round</h2>
+  <p>When someone hits the score target, one more round may pay extra points. A lead tie after that is sudden death at the same multiplier.</p>
+</section>
+{{end}}
+{{if .Timers}}
+<section>
+  <h2>Timers</h2>
+  <p>A timer may auto-lock a hand or auto-reveal the next play. Opening this page does not pause those timers.</p>
+</section>
+{{end}}
+{{end}}

@@ -70,7 +70,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	if err != nil {
 		return roomView{}, err
 	}
-	view := roomView{Chrome: chrome, Player: player, TakeHost: player.PendingDesignation && !player.ClaimedHost}
+	view := roomView{Chrome: l.stampNotice(r, chrome), Player: player, TakeHost: player.PendingDesignation && !player.ClaimedHost}
 	if l.phoneExtras != nil {
 		extra := l.phoneExtras(r, player)
 		view.ShowStart = extra.ShowStart
@@ -119,7 +119,7 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	return view, nil
 }
 
-// WritePlayPhone wraps a running game body with Lobby gear and the host drawer.
+// WritePlayPhone wraps a running game body with Leave and the host drawer.
 func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body template.HTML) {
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil || !ok {
@@ -142,10 +142,10 @@ func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
 		}
-		l.render(w, "settings-login.html", settingsData{Chrome: chrome}, http.StatusOK)
+		l.render(w, "settings-login.html", settingsData{Chrome: l.stampNotice(r, chrome)}, http.StatusOK)
 		return
 	}
-	data, err := l.settingsView(r.Context(), "")
+	data, err := l.settingsView(r, "")
 	if err != nil {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
@@ -162,7 +162,7 @@ func (l *Lobby) settingsLog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
 	}
-	page := logPage{Chrome: chrome}
+	page := logPage{Chrome: l.stampNotice(r, chrome)}
 	if l.settingsExtras != nil {
 		page.Lines = l.settingsExtras(r.Context()).LogLines
 	}
@@ -249,7 +249,7 @@ func (l *Lobby) setSeatCap(w http.ResponseWriter, r *http.Request) {
 	}
 	cap, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue("seat_cap")))
 	if err != nil || cap < minSeatCap || cap > maxSeatCap {
-		data, viewErr := l.settingsView(r.Context(), "Seat cap must be 1 to 64.")
+		data, viewErr := l.settingsView(r, "Seat cap must be 1 to 64.")
 		if viewErr != nil {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
@@ -259,7 +259,7 @@ func (l *Lobby) setSeatCap(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := l.writeSeatCap(r.Context(), cap); err != nil {
 		if errors.Is(err, errSeatCapTooLow) {
-			data, viewErr := l.settingsView(r.Context(), "")
+			data, viewErr := l.settingsView(r, "")
 			if viewErr != nil {
 				http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 				return
@@ -457,7 +457,7 @@ func (l *Lobby) setIntSetting(w http.ResponseWriter, r *http.Request, field, col
 	}
 	n, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue(field)))
 	if err != nil || n < min || n > max {
-		data, viewErr := l.settingsView(r.Context(), bad)
+		data, viewErr := l.settingsView(r, bad)
 		if viewErr != nil {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
@@ -614,7 +614,8 @@ func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData, error) {
+func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, error) {
+	ctx := r.Context()
 	open, err := l.roomOpen(ctx)
 	if err != nil {
 		return settingsData{}, err
@@ -627,6 +628,7 @@ func (l *Lobby) settingsView(ctx context.Context, seatErr string) (settingsData,
 	if err != nil {
 		return settingsData{}, err
 	}
+	chrome = l.stampNotice(r, chrome)
 	row, err := readRoomSettings(ctx, l.sql)
 	if err != nil {
 		return settingsData{}, err
@@ -686,7 +688,7 @@ func (l *Lobby) writeLogin(w http.ResponseWriter, r *http.Request, message strin
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
 	}
-	l.render(w, "settings-login.html", settingsData{Chrome: chrome, LoginError: message}, status)
+	l.render(w, "settings-login.html", settingsData{Chrome: l.stampNotice(r, chrome), LoginError: message}, status)
 }
 
 func (l *Lobby) hasAdminCookie(r *http.Request) bool {

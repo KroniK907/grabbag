@@ -13,8 +13,9 @@ const DefaultTheme = ThemeNeonLight
 
 // Chrome is the shared document shell. Pages pass it into ui-start templates.
 type Chrome struct {
-	Title string
-	Theme string
+	Title         string
+	Theme         string
+	NoticeTargets string
 }
 
 // Page returns light neon chrome, the default.

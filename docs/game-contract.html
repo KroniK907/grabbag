@@ -328,6 +328,7 @@
             <a href="#helper-pause">Pause</a>
             <a href="#helper-resume">Resume</a>
             <a href="#helper-publish">Publish</a>
+            <a href="#helper-notify">Notify</a>
             <a href="#helper-log">Log</a>
             <a href="#helper-theme">Theme</a>
             <a href="#helper-hasadmin">HasAdmin</a>
@@ -474,7 +475,7 @@ func init() {
           <tr><td><a href="#game-start"><code>Start</code></a></td><td>operator Start or auto-start</td></tr>
           <tr><td><a href="#game-board"><code>Board</code></a></td><td>GET <code>/board</code> after Start</td></tr>
           <tr><td><a href="#game-boardbuttons"><code>BoardButtons</code></a></td><td>Lobby TV rail after Load, before Start</td></tr>
-          <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>GET <code>/</code> after Start, seated only</td></tr>
+          <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>GET <code>/</code> after Start, any signed-in player</td></tr>
           <tr><td><a href="#game-play"><code>Play</code></a></td><td><code>/play/</code> mux</td></tr>
           <tr><td><a href="#game-pause"><code>Pause</code></a></td><td>operator or auto-pause</td></tr>
           <tr><td><a href="#game-resume"><code>Resume</code></a></td><td>operator Resume</td></tr>
@@ -681,20 +682,20 @@ func (g *Game) ID() string { return id }</pre>
       <article class="method" id="game-phone">
         <div class="tags"><span class="tag">Game</span><span class="tag">after Start</span></div>
         <h3>Phone</h3>
-        <p>Writes the inner phone column for a seated player after Start.</p>
+        <p>Writes the inner phone column for a signed-in player after Start. Seated, wait-list, and audience phones all reach this method.</p>
         <h4>Syntax</h4>
         <div class="sig">Phone(w http.ResponseWriter, r *http.Request)</div>
         <h4>Parameters</h4>
         <dl>
           <dt>w</dt>
-          <dd>Host captures these bytes, then wraps Lobby gear and the claimed-host drawer around them.</dd>
+          <dd>Host captures these bytes, then wraps Leave and the claimed-host drawer around them.</dd>
           <dt>r</dt>
           <dd>The phone request. Read the player with <a href="#helper-playerfromrequest">PlayerFromRequest</a>.</dd>
         </dl>
         <h4>Return value</h4>
         <p>None.</p>
         <h4>Description</h4>
-        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, the gear, and maybe the Host drawer. Audience phones and unknown cookies never reach this method. Lobby still renders those.</p>
+        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, Leave, and maybe the Host drawer. Unknown cookies never reach this method. Lobby still renders join.</p>
         <p>A claimed-host phone gets the drawer from host, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
         <h4>Examples</h4>
         <h5>Tap button plus optional End game</h5>
@@ -716,6 +717,7 @@ func (g *Game) ID() string { return id }</pre>
         <p>An <code>http.Handler</code>, or nil. Nil makes every <code>/play</code> request 404.</p>
         <h4>Description</h4>
         <p>Host strips <code>/play</code>. Register <code>POST /tap</code>, not <code>/play/tap</code>. GET is allowed after Load so info pages and CSS can load from a Lobby rail button. POST is 404 until Start, and 404 again after Stop. After Stop the Game value is still loaded, so GET handlers should tolerate a paused or stopped round.</p>
+        <p>Full extra documents after Load are Play GET routes. Mutations that must run before Start POST through <a href="#game-settings">Settings</a> at <code>/settings/game/</code>. Do not add a Game method or host mount for extra pages. Do not open Play POST before Start. Operator-only extra GET pages check <a href="#helper-hasadmin">HasAdmin</a> in the game. Signed-out GET is plain <code>401</code> text. Host does not make every Play GET admin-only. Hiding a <code>HostOnly</code> BoardButton does not protect the URL. Apples for Humanity ships the first extra operator page: <code>GET /play/picker</code>, pack toggles POST to <code>/settings/game/</code>, success is <code>303</code> back to the picker. A failed write or a refused-after-Start toggle returns <code>200</code> HTML so the checkboxes match stored state. <code>GET /play/howto</code> is public. The in-round phone sheet is <code>GET /play/howto-sheet</code>.</p>
         <h4>Examples</h4>
         <h5>Tap, end, partials, and CSS</h5>
         <pre class="ex">func (g *Game) Play() http.Handler {
@@ -1024,7 +1026,7 @@ if err := h.KVSet("hide-latency", value); err != nil {
         <h4>Return value</h4>
         <p>None. Host swallows Stop errors.</p>
         <h4>Description</h4>
-        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a> with graceful true, so CycleSeats may run. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
+        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a>. If After a game is Cycle seats, the table rotates. Empty seats still fill when Keep seats is on. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
         <h4>Examples</h4>
         <h5>End from the phone or the board</h5>
         <pre class="ex">if !g.mayEnd(h, r) {
@@ -1095,12 +1097,38 @@ http.Redirect(w, r, next, http.StatusSeeOther)</pre>
         <p>None.</p>
         <h4>Description</h4>
         <p>One EventSource per page, already opened by host chrome. Do not open another. The name is the only signal games get. The data line is always <code>update</code>. Put the new score in a GET partial. See <a href="#sse">Live SSE</a>.</p>
-        <p>Do not publish <code>round</code> for a score tick. Host uses <code>round</code> to swap Lobby vs game documents. <code>pause</code>, <code>roster</code>, <code>theme</code>, and <code>log</code> are also host names. Publishing <code>roster</code> is reasonable when a knob changes a board that also shows Lobby facts.</p>
+        <p>Do not publish <code>round</code> for a score tick. Host uses <code>round</code> to swap Lobby vs game documents. <code>pause</code>, <code>roster</code>, <code>theme</code>, <code>log</code>, and <code>notice</code> are also host names. Publishing <code>roster</code> is reasonable when a knob changes a board that also shows Lobby facts.</p>
         <h4>Examples</h4>
         <h5>Tick and tap</h5>
         <pre class="ex">h.Publish("testing")
 h.Publish("tap")</pre>
         <p>The Testing list listens with <code>hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"</code>.</p>
+      </article>
+
+      <article class="method" id="helper-notify">
+        <div class="tags"><span class="tag">Helper</span></div>
+        <h3>Notify</h3>
+        <p>Pushes a host-owned toast on the room EventSource.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Notify(target, typ, message string, seconds int)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>target</dt>
+          <dd><code>board</code>, <code>host</code>, <code>seated</code>, <code>audience</code>, or <code>waiting</code>. Anything else is a no-op. <code>host</code> is <code>/settings</code> with an admin session, plus the claimed-host phone. One screen, one queue if it matches several targets.</dd>
+          <dt>typ</dt>
+          <dd>Built-in looks are <code>error</code>, <code>warning</code>, and <code>info</code>. Other strings still deliver, styled as <code>info</code>, and stamp <code>data-notice-type</code> so game CSS can restyle. Empty type becomes <code>info</code>.</dd>
+          <dt>message</dt>
+          <dd>Toast text. Blank after trim is a no-op.</dd>
+          <dt>seconds</dt>
+          <dd><code>0</code> stays until Close. Negative uses 3 seconds. Values above 30 clamp to 30.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p>Host chrome owns the shell: slide-in from the top, type mark, message, Close. Waiting queue caps at 4. This is not <a href="#helper-log">Log</a>. Call both if you want a durable line. Slow pages miss the event. There is no replay.</p>
+        <h4>Examples</h4>
+        <h5>Warn seated players</h5>
+        <pre class="ex">h.Notify("seated", "warning", "Last round of this deck.", 5)</pre>
       </article>
 
       <article class="method" id="helper-log">
@@ -1361,7 +1389,7 @@ graceful=1</div>
             <tr><th>Path</th><th>After Load</th><th>After Start</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>/</code></td><td>Lobby phone</td><td>Game Phone body inside host chrome, seated only</td></tr>
+            <tr><td><code>/</code></td><td>Lobby phone</td><td>Game Phone body inside host chrome, any signed-in player</td></tr>
             <tr><td><code>/board</code></td><td>Lobby TV plus BoardButtons</td><td>Game Board document</td></tr>
             <tr><td><code>/settings</code></td><td>Host operator</td><td>same, Game Settings inlined</td></tr>
             <tr><td><code>/settings/game/*</code></td><td>Settings() mux</td><td>same</td></tr>
@@ -1369,6 +1397,7 @@ graceful=1</div>
           </tbody>
         </table>
         <p>Games must not register <code>/</code>, <code>/board</code>, or <code>/settings</code> as mux roots.</p>
+        <p>Extra documents live under <code>/play/</code> as GET handlers. Forms that change settings before Start post under <code>/settings/game/</code>. The inlined Game Settings column is still <code>GET /settings/game/</code>, not those documents.</p>
       </article>
 
       <h2 id="sse">Live SSE</h2>
@@ -1386,7 +1415,7 @@ graceful=1</div>
         <p><a href="#helper-publish">Helper.Publish</a> sends an SSE frame like this.</p>
         <pre class="ex">event: tap
 data: update</pre>
-        <p>Games cannot change the data line. It is always <code>update</code>. Host itself uses a different helper, <code>PublishData</code>, only for <code>theme</code> (the palette id) and <code>log</code> (the log line). Your scores, names, and tap counts belong in the GET you run after the poke, not in the event body.</p>
+        <p>Host itself uses a different helper, <code>PublishData</code>, for <code>theme</code> (the palette id), <code>log</code> (the log line), and <code>notice</code> (toast JSON from <a href="#helper-notify">Notify</a>). Your scores, names, and tap counts belong in the GET you run after the poke, not in the event body. A missed <code>notice</code> is gone. Do not treat it as a log.</p>
         <p>The hub writes a comment ping every 15 seconds so proxies keep the stream. Those pings are not named events. Nothing in your templates should listen for them.</p>
       </article>
 
@@ -1401,6 +1430,7 @@ data: update</pre>
             <tr><td><code>pause</code></td><td>host on Pause and Resume</td><td>Swap pause chrome and paused game frames</td></tr>
             <tr><td><code>theme</code></td><td>host when the palette flips</td><td>Set <code>html[data-theme]</code></td></tr>
             <tr><td><code>log</code></td><td>host log ring</td><td>Refresh the settings log tail</td></tr>
+            <tr><td><code>notice</code></td><td>host via Helper.Notify</td><td>Toast in host chrome; the page keeps or ignores it from <code>target</code></td></tr>
           </tbody>
         </table>
         <p>If you publish <code>round</code> because a prompt advanced, every open TV and phone reloads as if the round ended. Use your own name.</p>

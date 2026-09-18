@@ -1,0 +1,217 @@
+{{if .Shortage}}
+{{range .Shortage}}<p class="ui-alert" role="alert">{{.}}</p>{{end}}
+{{end}}
+{{if .Frozen}}
+<p class="ui-alert" role="status">This match is running. Setup is locked.</p>
+{{end}}
+
+<h2>Match</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/hand-size">
+  <label class="ui-field"><span>Hand size</span>
+    <input name="hand_size" type="number" min="3" max="12" value="{{.Settings.HandSize}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "hand-size"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/win-score">
+  <label class="ui-field"><span>Score to win</span>
+    <input name="win_score" type="number" min="100" max="10000" value="{{.Settings.WinScore}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "win-score"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row" method="post" action="/settings/game/win-by-rounds">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.WinByRounds}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Win by rounds</label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/round-limit">
+  <label class="ui-field"><span>Rounds</span>
+    <input name="round_limit" type="number" min="1" max="20" value="{{.Settings.RoundLimit}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "round-limit"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/winner-points">
+  <label class="ui-field"><span>Winner points</span>
+    <input name="winner_points" type="number" min="0" max="1000" value="{{.Settings.WinnerPoints}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "winner-points"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/multiplier">
+  <label class="ui-field"><span>Last-round multiplier</span>
+    <input name="multiplier" type="number" min="1" max="5" value="{{.Settings.LastRoundMultiplier}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "multiplier"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row ui-row-field" method="post" action="/settings/game/prompt-mode">
+  <label class="ui-field"><span>Prompt mode</span>
+    <select name="prompt_mode" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+      <option value="single" {{if eq .Settings.PromptMode "single"}}selected{{end}}>Single</option>
+      <option value="skip" {{if eq .Settings.PromptMode "skip"}}selected{{end}}>Skip</option>
+      <option value="multi" {{if eq .Settings.PromptMode "multi"}}selected{{end}}>Multi</option>
+    </select>
+  </label>
+</form>
+{{if eq .Err.Field "prompt-mode"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Bots</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/bot-count">
+  <label class="ui-field"><span>Bot count</span>
+    <input name="bot_count" type="number" min="0" max="10" value="{{.Settings.BotCount}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "bot-count"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Libraries</h2>
+<div class="ui-row">
+  <span>Deck Library</span>
+  {{if .Frozen}}
+  <span>Open</span>
+  {{else}}
+  <a class="ui-btn ui-btn-inline" href="/play/picker">Open</a>
+  {{end}}
+</div>
+
+<h2>Voting</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/voting">
+  <label class="ui-field"><span>Favorite voting</span>
+    <select name="voting" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+      <option value="off" {{if eq .Settings.Voting "off"}}selected{{end}}>Off</option>
+      <option value="audience" {{if eq .Settings.Voting "audience"}}selected{{end}}>Audience only</option>
+      <option value="seated" {{if eq .Settings.Voting "seated"}}selected{{end}}>Seated only</option>
+      <option value="both" {{if eq .Settings.Voting "both"}}selected{{end}}>Both</option>
+    </select>
+  </label>
+</form>
+{{if eq .Err.Field "voting"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<form class="ui-row" method="post" action="/settings/game/live-counts">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.LiveVoteCounts}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Live TV vote counts</label>
+</form>
+{{if not .VotingOff}}
+<form class="ui-row ui-row-field" method="post" action="/settings/game/fav-1">
+  <label class="ui-field"><span>Favorite 1st</span>
+    <input name="fav_1" type="number" min="0" max="1000" value="{{.Settings.Fav1}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/fav-2">
+  <label class="ui-field"><span>Favorite 2nd</span>
+    <input name="fav_2" type="number" min="0" max="1000" value="{{.Settings.Fav2}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/fav-3">
+  <label class="ui-field"><span>Favorite 3rd</span>
+    <input name="fav_3" type="number" min="0" max="1000" value="{{.Settings.Fav3}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{end}}
+
+<h2>Timers</h2>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-auto-draw">
+  <label class="ui-field"><span>Auto-draw</span>
+    <input name="auto_draw" type="number" min="0" max="300" value="{{.Settings.AutoDrawSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-submit">
+  <label class="ui-field"><span>Submit</span>
+    <input name="submit" type="number" min="0" max="300" value="{{.Settings.SubmitSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-between">
+  <label class="ui-field"><span>Between reveals</span>
+    <input name="between" type="number" min="0" max="300" value="{{.Settings.BetweenRevealSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/timer-judge-pick">
+  <label class="ui-field"><span>Judge pick</span>
+    <input name="judge_pick" type="number" min="0" max="300" value="{{.Settings.JudgePickSec}}" {{if .Frozen}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+{{if eq .Err.Field "timer-submit"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+{{if .WildcardEnabled}}
+<h2>Wildcard</h2>
+<form class="ui-row" method="post" action="/settings/game/wildcard-deal-previous">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.WildcardDealPrevious}}checked{{end}} {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()"> Deal previous</label>
+</form>
+<form class="ui-row ui-row-field" method="post" action="/settings/game/wildcard-save">
+  <label class="ui-field"><span>Save</span>
+    <select name="wildcard_save" {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()">
+      <option value="winners" {{if eq .Settings.WildcardSave "winners"}}selected{{end}}>Judge winners</option>
+      <option value="all" {{if eq .Settings.WildcardSave "all"}}selected{{end}}>Save all</option>
+    </select>
+  </label>
+</form>
+{{if not .VotingOff}}
+<form class="ui-row ui-row-field" method="post" action="/settings/game/wildcard-favorites">
+  <label class="ui-field"><span>Favorites keep</span>
+    <select name="wildcard_favorites" {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()">
+      <option value="off" {{if eq .Settings.WildcardFavoritesKeep "off"}}selected{{end}}>Off</option>
+      <option value="top" {{if eq .Settings.WildcardFavoritesKeep "top"}}selected{{end}}>Top only</option>
+      <option value="all" {{if eq .Settings.WildcardFavoritesKeep "all"}}selected{{end}}>All three</option>
+    </select>
+  </label>
+</form>
+{{end}}
+<form class="ui-row ui-row-field" method="post" action="/settings/game/wildcard-cap">
+  <label class="ui-field"><span>Character cap</span>
+    <input name="wildcard_cap" type="number" min="8" max="200" value="{{.Settings.WildcardCap}}" {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()">
+  </label>
+</form>
+<form class="ui-row" method="post" action="/settings/game/wildcard-duplicate">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.WildcardDuplicateBlock}}checked{{end}} {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()"> Duplicate-block</label>
+</form>
+<form class="ui-row" method="post" action="/settings/game/wildcard-journal-delay">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.WildcardJournalDelay}}checked{{end}} {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()"> Delay journal until played</label>
+</form>
+<details>
+  <summary>Banned list</summary>
+  <form class="ui-row" method="post" action="/settings/game/wildcard-show-word">
+    <input type="hidden" name="enabled" value="0">
+    <label><input type="checkbox" name="enabled" value="1" {{if .Settings.WildcardShowMatchedWord}}checked{{end}} {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()"> Show the matched word</label>
+  </form>
+  <form method="post" action="/settings/game/wildcard-banned">
+    <textarea name="wildcard_banned" {{if and .Frozen (not .WildcardAtStart)}}disabled{{end}} onchange="this.form.submit()">{{.Settings.WildcardBanned}}</textarea>
+  </form>
+</details>
+{{end}}
+
+<h2>Burns</h2>
+{{if .BurnCorrupt}}
+<p class="ui-alert" role="alert">Burn list is unreadable</p>
+{{else if not .Burns}}
+<p>Nothing to unburn</p>
+{{else}}
+<details>
+  <summary>Recent burns</summary>
+  {{range .Burns}}
+  <form class="ui-row" method="post" action="/settings/game/unburn">
+    <input type="hidden" name="kind" value="{{.Kind}}">
+    <input type="hidden" name="text" value="{{.Text}}">
+    <span>{{.Kind}}: {{.Text}}</span>
+    <button class="ui-btn ui-btn-inline" type="submit">Unburn</button>
+  </form>
+  {{end}}
+</details>
+{{end}}
+{{if eq .Err.Field "unburn"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+
+<h2>Discard</h2>
+{{if .DiscardCorrupt}}
+<p class="ui-alert" role="alert">Discard list is unreadable</p>
+{{else}}
+<form class="ui-row" method="post" action="/settings/game/reshuffle-on-unload">
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.ReshuffleDiscardOnUnload}}checked{{end}} {{if .Frozen}}disabled{{end}} onchange="this.form.submit()"> Reshuffle discard on unload</label>
+</form>
+<form class="ui-row" method="post" action="/settings/game/reshuffle-discard">
+  <button class="ui-btn" type="submit" {{if or .Frozen .DiscardEmpty}}disabled{{end}}>Reshuffle discard pile</button>
+</form>
+{{end}}
+{{if eq .Err.Field "reshuffle-discard"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}

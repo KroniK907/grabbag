@@ -76,7 +76,8 @@ func (rt *runtime) extras(ctx context.Context) lobby.SettingsExtras {
 	if rt.game != nil && rt.game.Settings() != nil {
 		var buf bytes.Buffer
 		rec := &capture{buf: &buf, header: make(http.Header)}
-		req := httptestGET("/settings/game/")
+		// Settings returns the handler mounted after /settings/game is stripped.
+		req := httptestGET("/")
 		rt.game.Settings().ServeHTTP(rec, req)
 		if rec.status == 0 || rec.status == http.StatusOK {
 			extra.GameSettings = template.HTML(buf.String())
@@ -235,13 +236,9 @@ func (rt *runtime) stop(ctx context.Context, graceful bool) error {
 	}
 	rt.started = false
 	rt.paused = false
-	cycle := false
-	if graceful {
-		var err error
-		cycle, err = rt.room.CycleSeats(ctx)
-		if err != nil {
-			return err
-		}
+	cycle, err := rt.room.CycleSeats(ctx)
+	if err != nil {
+		return err
 	}
 	if err := rt.room.EndRound(ctx, cycle); err != nil {
 		return err
