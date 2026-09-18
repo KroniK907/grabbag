@@ -38,6 +38,41 @@ func (p playPrompt) dealable(handSize int) bool {
 	return p.Pick >= 1 && p.Pick <= handSize
 }
 
+func expandBlanks(s string) string {
+	if !strings.Contains(s, "_") {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 8)
+	for i := 0; i < len(s); {
+		if s[i] != '_' {
+			b.WriteByte(s[i])
+			i++
+			continue
+		}
+		j := i + 1
+		for j < len(s) && s[j] == '_' {
+			j++
+		}
+		if j-i == 1 {
+			b.WriteString("____")
+		} else {
+			b.WriteString(s[i:j])
+		}
+		i = j
+	}
+	return b.String()
+}
+
+func displayPrompt(p *playPrompt) *playPrompt {
+	if p == nil {
+		return nil
+	}
+	out := *p
+	out.Text = expandBlanks(p.Text)
+	return &out
+}
+
 type enabledPiles struct {
 	Prompts []playPrompt
 	Answers []playCard

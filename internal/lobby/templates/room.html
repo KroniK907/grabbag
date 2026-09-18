@@ -6,6 +6,9 @@
     <div class="ui-phone-body">
       {{template "room-inner" .}}
     </div>
+    {{if .HelpPath}}
+    <a class="ui-help" href="{{.HelpPath}}" aria-label="How to play">?</a>
+    {{end}}
     {{if .HostPanel}}
     {{/* Drawer sits outside #phone-inner so roster and later game swaps keep Host. */}}
     <button

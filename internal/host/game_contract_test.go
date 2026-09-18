@@ -188,6 +188,28 @@ func TestLobbyBoardShowsGameRailButtons(t *testing.T) {
 	}
 }
 
+func TestLobbyShowsHowtoHelp(t *testing.T) {
+	t.Parallel()
+	_, handler, _, fake := testGameHandler(t, 0, 0)
+	fake.buttons = []games.BoardButton{
+		{Label: "How to play", Path: "/play/howto"},
+		{Label: "Deck Library", Path: "/play/picker", HostOnly: true},
+	}
+	admin := finishAndJoinHost(t, handler)
+	load := requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	if load.Code != http.StatusSeeOther {
+		t.Fatalf("Load status = %d", load.Code)
+	}
+	tv := requestWithCookie(t, handler, http.MethodGet, "/board", nil, admin).Body.String()
+	if !strings.Contains(tv, `class="ui-help"`) || !strings.Contains(tv, `href="/play/howto"`) {
+		t.Fatalf("lobby board missing help: %q", tv)
+	}
+	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
+	if !strings.Contains(phone, `class="ui-help"`) || !strings.Contains(phone, `href="/play/howto"`) {
+		t.Fatalf("lobby phone missing help: %q", phone)
+	}
+}
+
 func TestStopFillsInRoundWaiterWhenRoomIsOpen(t *testing.T) {
 	t.Parallel()
 	_, handler, _, _ := testGameHandler(t, 0, 0)

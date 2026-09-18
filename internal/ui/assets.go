@@ -8,7 +8,7 @@ import (
 )
 
 // AssetVersion is the ?v= query on /static/ links. Bump it when embedded CSS or JS changes.
-const AssetVersion = "neon-40"
+const AssetVersion = "neon-41"
 
 //go:embed static/*
 var staticFiles embed.FS

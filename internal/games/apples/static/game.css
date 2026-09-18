@@ -175,7 +175,9 @@
 }
 
 .apples-tv {
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   background:
@@ -206,6 +208,8 @@
 .apples-prompt {
   margin: 20px auto 12px;
   width: min(980px, calc(100% - 32px));
+  max-height: 22dvh;
+  overflow-y: auto;
   padding: 18px 22px;
   border: 4px solid var(--ui-accent-2);
   border-radius: 16px;
@@ -271,6 +275,7 @@
 
 .apples-roster {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
   padding: 10px 16px;
   overflow-x: auto;
@@ -930,5 +935,22 @@
 
   .apples-phone-scroll {
     scrollbar-gutter: auto;
+  }
+}
+
+@media (min-width: 700px) {
+  .apples-packet-list,
+  .apples-hand {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .apples-card-button,
+  .apples-hole-card {
+    min-height: 72px;
+    font-size: 18px;
+  }
+
+  .apples-phone .apples-prompt {
+    font-size: clamp(20px, 3vw, 28px);
   }
 }

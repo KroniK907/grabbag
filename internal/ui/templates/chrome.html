@@ -3,7 +3,20 @@
 <html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+  (function () {
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta || !window.screen || !window.screen.width) {
+      return;
+    }
+    var screenW = window.screen.width;
+    var layoutW = document.documentElement.clientWidth;
+    if (layoutW > screenW * 1.15) {
+      meta.setAttribute("content", "width=" + screenW + ", initial-scale=1, viewport-fit=cover");
+    }
+  })();
+  </script>
   <title>{{.Title}}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,7 +67,20 @@
 <html lang="en" data-theme="{{.Theme}}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+  (function () {
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta || !window.screen || !window.screen.width) {
+      return;
+    }
+    var screenW = window.screen.width;
+    var layoutW = document.documentElement.clientWidth;
+    if (layoutW > screenW * 1.15) {
+      meta.setAttribute("content", "width=" + screenW + ", initial-scale=1, viewport-fit=cover");
+    }
+  })();
+  </script>
   <title>{{.Title}}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
