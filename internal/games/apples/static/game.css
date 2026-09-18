@@ -242,6 +242,18 @@
   outline: 3px solid var(--ui-brand);
 }
 
+.apples-player.locked {
+  outline: 3px solid var(--ui-accent-2);
+}
+
+.apples-locked-mark {
+  color: var(--ui-accent-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .apples-player strong,
 .apples-player span {
   display: block;

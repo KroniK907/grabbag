@@ -201,6 +201,53 @@ func TestRoundLockRevealConfirm(t *testing.T) {
 	}
 }
 
+func TestBoardRosterMarksLocked(t *testing.T) {
+	t.Parallel()
+	h, g := tinyGame(t, 6, 40, 1)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	postSettings(g, "/voting", url.Values{"voting": {"off"}})
+	postSettings(g, "/timer-submit", url.Values{"submit": {"0"}})
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	seedRNG(g)
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	judge := currentJudge(g)
+	other := "p1"
+	if other == judge {
+		other = "p2"
+	}
+	playPOST(g, "/draw", judge, nil)
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if strings.Contains(board.Body.String(), `apples-locked-mark`) {
+		t.Fatalf("lock mark before submit: %s", board.Body.String())
+	}
+	playPOST(g, "/keep-prompt", judge, nil)
+	board = httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	body := board.Body.String()
+	otherName := g.match.Actors[other].Name
+	judgeName := g.match.Actors[judge].Name
+	if !playerTileLocked(body, "Bot 1") {
+		t.Fatalf("bot missing lock mark: %s", body)
+	}
+	if playerTileLocked(body, otherName) {
+		t.Fatalf("picker already marked locked: %s", playerTile(body, otherName))
+	}
+	if playerTileLocked(body, judgeName) {
+		t.Fatalf("judge marked locked: %s", playerTile(body, judgeName))
+	}
+	playPOST(g, "/slot", other, url.Values{"card": {firstHandCard(g, other)}})
+	playPOST(g, "/lock", other, nil)
+	board = httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if strings.Contains(board.Body.String(), `apples-locked-mark`) {
+		t.Fatalf("lock marks lingered after reveal: %s", board.Body.String())
+	}
+}
+
 func TestPickNHolesStayPut(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 40, 2)
@@ -861,6 +908,28 @@ func firstPacket(g *Game) string {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.match.Packets[0].ActorID
+}
+
+func playerTile(body, name string) string {
+	needle := "<strong>" + name + "</strong>"
+	i := strings.Index(body, needle)
+	if i < 0 {
+		return ""
+	}
+	start := strings.LastIndex(body[:i], `<div class="apples-player`)
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(body[i:], "</div>")
+	if end < 0 {
+		return body[start:]
+	}
+	return body[start : i+end+len("</div>")]
+}
+
+func playerTileLocked(body, name string) bool {
+	tile := playerTile(body, name)
+	return strings.Contains(tile, " locked") && strings.Contains(tile, "apples-locked-mark")
 }
 
 func settingsMode(g *Game) string {

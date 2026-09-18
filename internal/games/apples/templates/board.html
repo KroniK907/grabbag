@@ -61,10 +61,11 @@
   {{end}}
   <div class="apples-roster">
     {{range .Roster}}
-    <div class="apples-player{{if .Judge}} judge{{end}}">
+    <div class="apples-player{{if .Judge}} judge{{end}}{{if .Locked}} locked{{end}}">
       <strong>{{.Name}}</strong>
       <span>{{.Score}}</span>
       {{if .Judge}}<span>Judge</span>{{end}}
+      {{if .Locked}}<span class="apples-locked-mark">Locked</span>{{end}}
     </div>
     {{end}}
   </div>

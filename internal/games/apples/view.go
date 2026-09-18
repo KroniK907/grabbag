@@ -46,11 +46,12 @@ type packetView struct {
 }
 
 type rosterView struct {
-	ID    string
-	Name  string
-	Score int
-	Judge bool
-	Bot   bool
+	ID     string
+	Name   string
+	Score  int
+	Judge  bool
+	Bot    bool
+	Locked bool
 }
 
 type boardView struct {
@@ -220,7 +221,12 @@ func (g *Game) boardViewLocked() boardView {
 	view.Packets = g.packetViewsLocked(m, "", true)
 	for _, a := range m.Actors {
 		view.Roster = append(view.Roster, rosterView{
-			ID: a.ID, Name: a.Name, Score: a.Score, Judge: a.ID == m.JudgeID, Bot: a.Bot,
+			ID:     a.ID,
+			Name:   a.Name,
+			Score:  a.Score,
+			Judge:  a.ID == m.JudgeID,
+			Bot:    a.Bot,
+			Locked: m.Phase == phaseSubmit && a.Locked && a.ID != m.JudgeID,
 		})
 	}
 	return view
