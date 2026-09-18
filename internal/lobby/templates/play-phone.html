@@ -14,8 +14,13 @@
       <div class="ui-phone-stack">
         {{.GameBody}}
       </div>
-      <form method="post" action="/lobby/leave">
-        <button class="ui-btn ui-btn-danger" type="submit">Leave</button>
+      <form class="ui-leave-control" method="post" action="/lobby/leave">
+        <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room" onclick="return confirm('Leave this room?')">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
+          </svg>
+          <span class="ui-sr-only">Leave</span>
+        </button>
       </form>
     </div>
     {{if .HostPanel}}
