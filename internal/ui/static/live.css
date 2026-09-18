@@ -294,7 +294,7 @@ button {
 .ui-drawer-handle {
   position: absolute;
   left: 0;
-  bottom: 28px;
+  bottom: var(--ui-side-tab-bottom);
   z-index: 5;
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -873,6 +873,9 @@ button {
 }
 
 .ui-phone {
+  --ui-side-tab-bottom: 28px;
+  --ui-side-tab-span: 8rem;
+  --ui-side-tab-gap: 10px;
   width: min(390px, 92vw);
   min-height: 720px;
   border-radius: 36px;
@@ -896,7 +899,7 @@ button {
 }
 
 .ui-phone-body {
-  padding: 20px 18px 28px;
+  padding: 20px 36px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -914,6 +917,75 @@ button {
   min-height: 0;
   width: 100%;
   text-align: center;
+}
+
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ui-leave-control {
+  position: absolute;
+  top: 30px;
+  right: 10px;
+  z-index: 8;
+  width: auto !important;
+}
+
+.ui-leave-button {
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ui-danger-bg);
+  border-radius: 9px;
+  background: var(--ui-phone-bg);
+  color: var(--ui-danger-bg);
+}
+
+.ui-leave-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body:has(.ui-leave-control) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.ui-phone-wrap:has(.ui-leave-control) {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui-phone:has(.ui-leave-control) {
+  height: min(720px, calc(100dvh - 48px));
+  min-height: 0;
+}
+
+.ui-phone:has(.ui-leave-control) .ui-phone-body {
+  height: calc(100% - 22px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui-phone:has(.ui-leave-control) .ui-phone-stack {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .ui-phone-body form,
@@ -1067,6 +1139,16 @@ button {
 
   .ui-phone-body {
     min-height: calc(100dvh - 22px);
+  }
+
+  .ui-phone:has(.ui-leave-control) {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .ui-phone:has(.ui-leave-control) .ui-phone-body {
+    height: calc(100dvh - 22px);
+    min-height: 0;
   }
 
   .ui-seat,

@@ -16,8 +16,8 @@
   class="ui-app"
   hx-ext="sse"
   sse-connect="/lobby/events"
-  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false"
-  hx-on::sse-open="document.getElementById('connection-overlay').hidden = true"
+  hx-on::sse-error="document.getElementById('connection-overlay').hidden = false; window.grabbagLostHost = true"
+  hx-on::sse-open="if (window.grabbagLostHost) { location.reload(); } else { document.getElementById('connection-overlay').hidden = true }"
 >
 {{template "ui-overlay"}}
 {{template "notice-root" .}}
