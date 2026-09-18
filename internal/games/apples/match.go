@@ -500,8 +500,12 @@ func (g *Game) slotLocked(m *matchState, id, cardID string) error {
 		a.Holes = make([]*playCard, pick)
 	}
 	slot := firstEmptyHole(a.Holes)
-	if slot < 0 {
-		return fmt.Errorf("Every hole is filled.")
+	swapLast := slot < 0
+	if swapLast {
+		if len(a.Holes) == 0 {
+			return fmt.Errorf("Every hole is filled.")
+		}
+		slot = len(a.Holes) - 1
 	}
 	card, handIdx, ok := takeCard(a, cardID)
 	if !ok {
@@ -521,6 +525,9 @@ func (g *Game) slotLocked(m *matchState, id, cardID string) error {
 		card.Blank = false
 		card.CardID = wildcardID(card.Text)
 		a.Draft = ""
+	}
+	if swapLast {
+		returnHole(a, slot)
 	}
 	c := card
 	a.Holes[slot] = &c
@@ -562,16 +569,23 @@ func (g *Game) unslotLocked(m *matchState, id string, hole int) error {
 	if hole < 0 || hole >= len(a.Holes) || a.Holes[hole] == nil {
 		return fmt.Errorf("That hole is empty.")
 	}
+	returnHole(a, hole)
+	return nil
+}
+
+func returnHole(a *actor, hole int) {
+	if hole < 0 || hole >= len(a.Holes) || a.Holes[hole] == nil {
+		return
+	}
 	card := *a.Holes[hole]
 	a.Holes[hole] = nil
 	if card.Wildcard {
 		a.Draft = card.Text
 		blank := playCard{LibraryID: wildcardLibraryID, CardID: blankCardID, Blank: true, Wildcard: true}
 		a.Blank = &blank
-		return nil
+		return
 	}
 	a.Hand = append(a.Hand, card)
-	return nil
 }
 
 func (g *Game) markDiscardLocked(m *matchState, id, cardID string) error {

@@ -236,6 +236,94 @@ func TestPickNHolesStayPut(t *testing.T) {
 	}
 }
 
+func TestSlotSwapsLastHoleWhenFull(t *testing.T) {
+	t.Parallel()
+	h, g := tinyGame(t, 4, 40, 2)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	postSettings(g, "/prompt-mode", url.Values{"prompt_mode": {"single"}})
+	postSettings(g, "/voting", url.Values{"voting": {"off"}})
+	postSettings(g, "/timer-submit", url.Values{"submit": {"0"}})
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	seedRNG(g)
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	judge := currentJudge(g)
+	other := "p1"
+	if other == judge {
+		other = "p2"
+	}
+	playPOST(g, "/draw", judge, nil)
+	if promptPick(g.match.LivePrompt) != 2 {
+		t.Fatalf("pick = %d", promptPick(g.match.LivePrompt))
+	}
+	c1 := g.match.Actors[other].Hand[0].CardID
+	c2 := g.match.Actors[other].Hand[1].CardID
+	c3 := g.match.Actors[other].Hand[2].CardID
+	playPOST(g, "/slot", other, url.Values{"card": {c1}})
+	playPOST(g, "/slot", other, url.Values{"card": {c2}})
+	swap := playPOST(g, "/slot", other, url.Values{"card": {c3}})
+	if strings.Contains(swap.Body.String(), "Every hole is filled.") {
+		t.Fatalf("full slot rejected: %s", swap.Body.String())
+	}
+	holes := g.match.Actors[other].Holes
+	if holes[0] == nil || holes[0].CardID != c1 || holes[1] == nil || holes[1].CardID != c3 {
+		t.Fatalf("swap last hole = %#v", holes)
+	}
+	hand := g.match.Actors[other].Hand
+	foundOld := false
+	for _, c := range hand {
+		if c.CardID == c2 {
+			foundOld = true
+		}
+		if c.CardID == c3 {
+			t.Fatalf("new card still in hand: %#v", hand)
+		}
+	}
+	if !foundOld {
+		t.Fatalf("displaced card missing from hand: %#v", hand)
+	}
+}
+
+func TestSlotReplacesSingleHoleWhenFull(t *testing.T) {
+	t.Parallel()
+	h, g := tinyGame(t, 6, 40, 1)
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	postSettings(g, "/prompt-mode", url.Values{"prompt_mode": {"single"}})
+	postSettings(g, "/voting", url.Values{"voting": {"off"}})
+	postSettings(g, "/timer-submit", url.Values{"submit": {"0"}})
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	seedRNG(g)
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	judge := currentJudge(g)
+	other := "p1"
+	if other == judge {
+		other = "p2"
+	}
+	playPOST(g, "/draw", judge, nil)
+	c1 := g.match.Actors[other].Hand[0].CardID
+	c2 := g.match.Actors[other].Hand[1].CardID
+	playPOST(g, "/slot", other, url.Values{"card": {c1}})
+	playPOST(g, "/slot", other, url.Values{"card": {c2}})
+	hole := g.match.Actors[other].Holes
+	if len(hole) != 1 || hole[0] == nil || hole[0].CardID != c2 {
+		t.Fatalf("single swap = %#v", hole)
+	}
+	foundOld := false
+	for _, c := range g.match.Actors[other].Hand {
+		if c.CardID == c1 {
+			foundOld = true
+		}
+	}
+	if !foundOld {
+		t.Fatalf("replaced card missing from hand: %#v", g.match.Actors[other].Hand)
+	}
+}
+
 func TestWildcardDuplicateAndEmpty(t *testing.T) {
 	t.Parallel()
 	if err := wildcardReject("   ", factorySettings(), nil); err == nil || err.Error() != "Type an answer" {
