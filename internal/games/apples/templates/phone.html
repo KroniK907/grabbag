@@ -27,7 +27,7 @@
   </div>
   {{else}}
   {{if .Paused}}<p class="apples-dim">Paused</p>{{end}}
-  <div class="apples-phone-scroll">
+  <div class="apples-phone-scroll{{if or (eq .Role "submit") (eq .Role "locked")}} apples-phone-play{{end}}">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
     {{template "apples-timer" .}}
     {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
@@ -91,23 +91,26 @@
       {{end}}
       </div>
     {{else if or (eq .Role "submit") (eq .Role "locked")}}
-      {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{end}}
-      <div class="apples-holes">
-        {{range .Holes}}
-        <div class="apples-slot apples-hole">
-          {{if .Number}}<span class="apples-hole-number">{{.Number}}</span>{{end}}
-          {{if .Card}}
-            <form hx-post="/play/unslot" hx-swap="outerHTML" hx-target="#apples-phone">
-              <input type="hidden" name="hole" value="{{.Index}}">
-              <button class="apples-hole-card" type="submit" {{if eq $.Role "locked"}}disabled{{end}}>{{.Card.Text}}</button>
-            </form>
-          {{else}}
-            <span class="apples-empty">Tap a card</span>
+      <div class="apples-play-dock">
+        {{if .Prompt}}<p class="apples-prompt">{{.Prompt.Text}}</p>{{end}}
+        <div class="apples-holes">
+          {{range .Holes}}
+          <div class="apples-slot apples-hole">
+            {{if .Number}}<span class="apples-hole-number">{{.Number}}</span>{{end}}
+            {{if .Card}}
+              <form hx-post="/play/unslot" hx-swap="outerHTML" hx-target="#apples-phone">
+                <input type="hidden" name="hole" value="{{.Index}}">
+                <button class="apples-hole-card" type="submit" {{if eq $.Role "locked"}}disabled{{end}}>{{.Card.Text}}</button>
+              </form>
+            {{else}}
+              <span class="apples-empty">Tap a card</span>
+            {{end}}
+          </div>
           {{end}}
         </div>
-        {{end}}
       </div>
       {{if eq .Role "submit"}}
+      <div class="apples-hand-scroll">
       <div class="apples-hand">
         {{range .Hand}}
         <div class="apples-hand-card">
@@ -137,6 +140,7 @@
         </form>
         {{end}}
         {{end}}
+      </div>
       </div>
       {{end}}
     {{else}}

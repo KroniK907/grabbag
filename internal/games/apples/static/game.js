@@ -29,7 +29,7 @@
       if (!target || target.id !== "apples-phone") {
         return;
       }
-      var scroll = target.querySelector(".apples-phone-scroll");
+      var scroll = target.querySelector(".apples-hand-scroll") || target.querySelector(".apples-phone-scroll");
       if (scroll) {
         savedScroll = scroll.scrollTop;
       }
@@ -39,7 +39,7 @@
       if (!el || el.id !== "apples-phone") {
         return;
       }
-      var scroll = el.querySelector(".apples-phone-scroll");
+      var scroll = el.querySelector(".apples-hand-scroll") || el.querySelector(".apples-phone-scroll");
       if (scroll) {
         scroll.scrollTop = savedScroll;
       }

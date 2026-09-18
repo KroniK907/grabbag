@@ -354,6 +354,31 @@
   scrollbar-gutter: stable;
 }
 
+.apples-phone-play {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.apples-play-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+  background: var(--ui-phone-bg);
+  z-index: 3;
+}
+
+.apples-hand-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+}
+
 .apples-phone .apples-prompt {
   position: sticky;
   top: 0;
@@ -364,6 +389,10 @@
   border-width: 3px;
   font-size: clamp(17px, 5.5vw, 23px);
   line-height: 1.2;
+}
+
+.apples-play-dock .apples-prompt {
+  position: static;
 }
 
 .apples-step {
