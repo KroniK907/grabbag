@@ -203,6 +203,48 @@ func TestHideLatencyKVSurvivesClearAndStop(t *testing.T) {
 	}
 }
 
+func TestHideLatencyUsesHTMX(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
+	g := New()
+	if err := g.Load(h); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = g.Shutdown() })
+
+	page := httptest.NewRecorder()
+	g.Settings().ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := page.Body.String()
+	for _, want := range []string{
+		`id="game-settings"`,
+		`hx-post="/settings/game/hide-latency"`,
+		`hx-target="#game-settings"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("settings missing %s in %s", want, body)
+		}
+	}
+	if strings.Contains(body, `onchange="this.form.submit()"`) {
+		t.Fatal("settings still submits with a full navigation")
+	}
+
+	post := httptest.NewRequest(http.MethodPost, "/hide-latency", strings.NewReader(url.Values{"hide": {"1"}}.Encode()))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	post.Header.Set("HX-Request", "true")
+	rec := httptest.NewRecorder()
+	g.Settings().ServeHTTP(rec, post)
+	out := rec.Body.String()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("htmx hide-latency = %d %s", rec.Code, out)
+	}
+	if strings.Contains(out, "<!doctype html>") || strings.Contains(out, "<html") {
+		t.Fatal("htmx hide-latency returned a full document")
+	}
+	if !strings.Contains(out, `id="game-settings"`) || !strings.Contains(out, "checked") {
+		t.Fatalf("htmx hide-latency missing updated checkbox: %s", out)
+	}
+}
+
 func TestInfoPageAndBoardButton(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})

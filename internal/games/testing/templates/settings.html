@@ -1,7 +1,9 @@
-<form class="ui-row" method="post" action="/settings/game/hide-latency">
+<div id="game-settings">
+<form class="ui-row" method="post" action="/settings/game/hide-latency" hx-post="/settings/game/hide-latency" hx-target="#game-settings" hx-swap="outerHTML" hx-trigger="change, submit">
   <label>
     <input type="hidden" name="hide" value="0">
-    <input type="checkbox" name="hide" value="1" {{if .HideLatency}}checked{{end}} onchange="this.form.submit()">
+    <input type="checkbox" name="hide" value="1" {{if .HideLatency}}checked{{end}}>
     Hide latency
   </label>
 </form>
+</div>

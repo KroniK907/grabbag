@@ -768,7 +768,7 @@ func (l *Lobby) openRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
@@ -783,7 +783,7 @@ func (l *Lobby) closeRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) toggleTheme(w http.ResponseWriter, r *http.Request) {
@@ -881,7 +881,11 @@ func (l *Lobby) kick(w http.ResponseWriter, r *http.Request) {
 	}
 	l.emit("kick")
 	l.events.Publish("roster")
-	if r.Header.Get("HX-Request") == "true" {
+	if hxRequest(r) {
+		if strings.TrimPrefix(r.Header.Get("HX-Target"), "#") == "settings-knobs" {
+			l.writeSettingsOK(w, r)
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}

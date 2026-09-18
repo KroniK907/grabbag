@@ -52,6 +52,8 @@
   --ui-check-shadow: 0 4px 0 #2a8a20;
   --ui-btn-bg: #0ab8d4;
   --ui-btn-fg: #042;
+  --ui-btn-toggle-bg: #086a7a;
+  --ui-btn-toggle-fg: #f4feff;
   --ui-danger-bg: #ff3b5c;
   --ui-danger-fg: #fff;
   --ui-overlay: rgba(0, 0, 0, 0.55);
@@ -108,6 +110,8 @@
   --ui-check-shadow: 0 0 16px #7cff6b;
   --ui-btn-bg: #19e3ff;
   --ui-btn-fg: #042;
+  --ui-btn-toggle-bg: #0ab8d4;
+  --ui-btn-toggle-fg: #042;
   --ui-danger-bg: #ff3b5c;
   --ui-danger-fg: #fff;
   --ui-overlay: rgba(0, 0, 0, 0.55);
@@ -586,6 +590,11 @@ button {
 .ui-btn-danger {
   background: var(--ui-danger-bg);
   color: var(--ui-danger-fg);
+}
+
+.ui-btn-toggle {
+  background: var(--ui-btn-toggle-bg);
+  color: var(--ui-btn-toggle-fg);
 }
 
 .ui-list {

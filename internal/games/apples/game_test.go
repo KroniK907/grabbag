@@ -304,6 +304,38 @@ func TestPickerTogglesUseHTMX(t *testing.T) {
 	assertCheckbox(t, body, "wildcard", "wildcard", true)
 }
 
+func TestGameSettingsUseHTMX(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	g := loadedGame(t, h)
+	page := settingsPage(t, g)
+	for _, want := range []string{
+		`id="game-settings"`,
+		`hx-post="/settings/game/hand-size"`,
+		`hx-target="#game-settings"`,
+		`hx-swap="outerHTML"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("settings missing %s", want)
+		}
+	}
+	if strings.Contains(page, `onchange="this.form.submit()"`) {
+		t.Fatal("settings still submits with a full navigation")
+	}
+
+	rec := postSettingsHX(g, "/hand-size", url.Values{"hand_size": {"8"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("htmx hand-size = %d %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "<!doctype html>") || strings.Contains(body, "<html") {
+		t.Fatal("htmx hand-size returned a full document")
+	}
+	if !strings.Contains(body, `id="game-settings"`) || !strings.Contains(body, `value="8"`) {
+		t.Fatalf("htmx hand-size missing settings body: %s", body)
+	}
+}
+
 func TestSelectAllAndNone(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)

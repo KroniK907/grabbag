@@ -229,6 +229,10 @@ func (g *Game) postHideLatency(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.Publish("roster")
+	if r.Header.Get("HX-Request") != "" {
+		g.render(w, "settings.html", settingsView{HideLatency: g.hideLatency()}, http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 

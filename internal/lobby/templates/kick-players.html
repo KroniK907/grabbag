@@ -17,7 +17,7 @@
     {{range .Players}}
     <form
       class="ui-accordion-row"
-      {{if $.LiveKick}}hx-post="/settings/kick" hx-swap="none"{{else}}method="post" action="/settings/kick"{{end}}
+      {{if $.LiveKick}}hx-post="/settings/kick" hx-swap="none"{{else}}{{template "settings-live" "/settings/kick"}}{{end}}
     >
       <span>{{.DisplayName}}{{if .ClaimedHost}} (host){{end}}</span>
       <input type="hidden" name="player_id" value="{{.ID}}">

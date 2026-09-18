@@ -26,10 +26,10 @@
     <span>Auto-start</span>
     {{if .AutoStart}}
     <input type="hidden" name="enabled" value="0">
-    <button class="ui-btn" type="submit">On</button>
+    <button class="ui-btn ui-btn-toggle" type="submit">On</button>
     {{else}}
     <input type="hidden" name="enabled" value="1">
-    <button class="ui-btn" type="submit">Off</button>
+    <button class="ui-btn ui-btn-toggle" type="submit">Off</button>
     {{end}}
   </form>
   {{end}}

@@ -12,6 +12,10 @@ type settingsErr struct {
 }
 
 func (g *Game) writeSettingsOK(w http.ResponseWriter, r *http.Request) {
+	if hxRequest(r) {
+		g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 

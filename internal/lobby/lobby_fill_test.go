@@ -272,8 +272,9 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	openAt := strings.Index(settings, `action="/settings/open"`)
 	kickAt := strings.Index(settings, "Kick Players")
 	if openAt < 0 || kickAt < 0 || kickAt < openAt ||
-		!strings.Contains(settings, `action="/settings/kick"`) ||
-		strings.Contains(settings, `hx-post="/settings/kick"`) ||
+		!strings.Contains(settings, `hx-post="/settings/kick"`) ||
+		!strings.Contains(settings, `hx-target="#settings-knobs"`) ||
+		strings.Contains(settings, `hx-swap="none"`) ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}

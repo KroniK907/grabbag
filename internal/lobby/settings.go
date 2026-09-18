@@ -255,31 +255,20 @@ func (l *Lobby) setSeatCap(w http.ResponseWriter, r *http.Request) {
 	}
 	cap, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue("seat_cap")))
 	if err != nil || cap < minSeatCap || cap > maxSeatCap {
-		data, viewErr := l.settingsView(r, "Seat cap must be 1 to 64.")
-		if viewErr != nil {
-			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-			return
-		}
-		l.render(w, "settings.html", data, http.StatusBadRequest)
+		l.writeSettingsError(w, r, "Seat cap must be 1 to 64.", http.StatusBadRequest)
 		return
 	}
 	if err := l.writeSeatCap(r.Context(), cap); err != nil {
 		if errors.Is(err, errSeatCapTooLow) {
-			data, viewErr := l.settingsView(r, "")
-			if viewErr != nil {
-				http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-				return
-			}
 			seated, _ := seatedCountDB(r.Context(), l.sql)
-			data.SeatCapError = fmt.Sprintf("Seat cap cannot go below the %d seated players.", seated)
-			l.render(w, "settings.html", data, http.StatusBadRequest)
+			l.writeSettingsError(w, r, fmt.Sprintf("Seat cap cannot go below the %d seated players.", seated), http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "Could not save the seat cap.", http.StatusInternalServerError)
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setHostname(w http.ResponseWriter, r *http.Request) {
@@ -295,7 +284,7 @@ func (l *Lobby) setHostname(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setCycleMode(w http.ResponseWriter, r *http.Request) {
@@ -311,7 +300,7 @@ func (l *Lobby) setCycleMode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save keep vs cycle.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) cycleSeated(w http.ResponseWriter, r *http.Request) {
@@ -326,7 +315,7 @@ func (l *Lobby) cycleSeated(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setFillEmpty(w http.ResponseWriter, r *http.Request) {
@@ -342,7 +331,7 @@ func (l *Lobby) setFillEmpty(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save fill empty seats.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setLogStdout(w http.ResponseWriter, r *http.Request) {
@@ -376,7 +365,7 @@ func (l *Lobby) setLogFlag(w http.ResponseWriter, r *http.Request, column string
 			l.logSinksChanged(row.logStdout, row.logFile)
 		}
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setAutoPause(w http.ResponseWriter, r *http.Request) {
@@ -392,7 +381,7 @@ func (l *Lobby) setAutoPause(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save auto-pause.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setAutoStart(w http.ResponseWriter, r *http.Request) {
@@ -408,7 +397,7 @@ func (l *Lobby) setAutoStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save auto-start.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
+	l.writeSettingsOKTo(w, r, settingsReturn(r))
 }
 
 func (l *Lobby) setDisconnectAfter(w http.ResponseWriter, r *http.Request) {
@@ -450,7 +439,7 @@ func (l *Lobby) setResetReady(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save Reset Player Ready State.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setIntSetting(w http.ResponseWriter, r *http.Request, field, column string, min, max int, bad string) {
@@ -463,19 +452,14 @@ func (l *Lobby) setIntSetting(w http.ResponseWriter, r *http.Request, field, col
 	}
 	n, err := strconv.Atoi(strings.TrimSpace(r.PostFormValue(field)))
 	if err != nil || n < min || n > max {
-		data, viewErr := l.settingsView(r, bad)
-		if viewErr != nil {
-			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
-			return
-		}
-		l.render(w, "settings.html", data, http.StatusBadRequest)
+		l.writeSettingsError(w, r, bad, http.StatusBadRequest)
 		return
 	}
 	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET `+column+` = ? WHERE id = 1`, n); err != nil {
 		http.Error(w, "Could not save the setting.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, fail string) {
@@ -491,7 +475,7 @@ func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, f
 		http.Error(w, fail, http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func settingsReturn(r *http.Request) string {
@@ -499,6 +483,40 @@ func settingsReturn(r *http.Request) string {
 		return "/settings"
 	}
 	return "/"
+}
+
+func hxRequest(r *http.Request) bool {
+	return r.Header.Get("HX-Request") != ""
+}
+
+func (l *Lobby) writeSettingsOK(w http.ResponseWriter, r *http.Request) {
+	l.writeSettingsOKTo(w, r, "/settings")
+}
+
+func (l *Lobby) writeSettingsOKTo(w http.ResponseWriter, r *http.Request, fallback string) {
+	if !hxRequest(r) {
+		http.Redirect(w, r, fallback, http.StatusSeeOther)
+		return
+	}
+	data, err := l.settingsView(r, "")
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	l.render(w, "settings-knobs", data, http.StatusOK)
+}
+
+func (l *Lobby) writeSettingsError(w http.ResponseWriter, r *http.Request, seatErr string, status int) {
+	data, err := l.settingsView(r, seatErr)
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	if hxRequest(r) {
+		l.render(w, "settings-knobs", data, http.StatusOK)
+		return
+	}
+	l.render(w, "settings.html", data, status)
 }
 
 func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
@@ -582,7 +600,7 @@ func (l *Lobby) makeHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	l.writeSettingsOK(w, r)
 }
 
 func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {

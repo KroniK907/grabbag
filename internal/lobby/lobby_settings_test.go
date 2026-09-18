@@ -2,6 +2,7 @@ package lobby_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -260,5 +261,55 @@ func TestCycleSeatedPlayersLeavesAudienceWaitersFirst(t *testing.T) {
 	waitPlayer = playerFromCookie(t, room, waiter)
 	if !waitPlayer.Seated {
 		t.Fatalf("existing waiter should refill first: %#v", waitPlayer)
+	}
+}
+
+func TestSettingsKnobsUseHTMX(t *testing.T) {
+	t.Parallel()
+	_, handler, _ := testLobby(t)
+
+	page := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
+	for _, want := range []string{
+		`id="settings-knobs"`,
+		`hx-post="/settings/protect-host"`,
+		`hx-target="#settings-knobs"`,
+		`hx-swap="outerHTML"`,
+		`ui-btn-toggle`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("settings missing %s in %q", want, page)
+		}
+	}
+	if strings.Contains(page, `onchange="this.form.submit()"`) {
+		t.Fatal("settings still submits with a full navigation")
+	}
+
+	rec := httptest.NewRecorder()
+	form := strings.NewReader(url.Values{"enabled": {"0"}}.Encode())
+	req := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/protect-host", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req.AddCookie(operatorCookie())
+	handler.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("htmx protect-host = %d %q", rec.Code, body)
+	}
+	if strings.Contains(body, "<!doctype html>") || strings.Contains(body, "<html") {
+		t.Fatal("htmx protect-host returned a full document")
+	}
+	if !strings.Contains(body, `id="settings-knobs"`) || !strings.Contains(body, ">Off</button>") {
+		t.Fatalf("htmx protect-host missing updated knobs: %s", body)
+	}
+
+	bad := httptest.NewRecorder()
+	capForm := strings.NewReader(url.Values{"seat_cap": {"0"}}.Encode())
+	capReq := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/seat-cap", capForm)
+	capReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	capReq.Header.Set("HX-Request", "true")
+	capReq.AddCookie(operatorCookie())
+	handler.ServeHTTP(bad, capReq)
+	if bad.Code != http.StatusOK || !strings.Contains(bad.Body.String(), "Seat cap must be 1 to 64.") {
+		t.Fatalf("htmx seat-cap refuse = %d %q", bad.Code, bad.Body.String())
 	}
 }

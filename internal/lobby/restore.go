@@ -38,7 +38,7 @@ func (l *Lobby) keepRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.finishRestore(r.Context(), true)
-	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
+	l.writeSettingsOKTo(w, r, settingsReturn(r))
 }
 
 func (l *Lobby) clearRoom(w http.ResponseWriter, r *http.Request) {
