@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "match-write-1"
+	assetVersion = "match-parade-1"
 )
 
 //go:embed templates/*.html
@@ -142,6 +142,11 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
 	mux.HandleFunc("POST /draft", g.postDraft)
 	mux.HandleFunc("POST /lock", g.postLock)
+	mux.HandleFunc("POST /vote", g.postVote)
+	mux.HandleFunc("POST /host/reveal", g.postHostReveal)
+	mux.HandleFunc("POST /host/next-segment", g.postHostNextSegment)
+	mux.HandleFunc("POST /host/skip-hold", g.postHostSkipHold)
+	mux.HandleFunc("POST /host/end-match", g.postHostEndMatch)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("quips: embedded static directory is missing")

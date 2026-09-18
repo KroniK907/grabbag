@@ -42,7 +42,7 @@ sawLock:
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 0, Text: "alpha"}, clock)
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 1, Text: "beta"}, clock)
 	out = eng.Do(Command{Kind: CmdLock, Actor: "p2", Drafts: []string{"alpha", "beta"}}, clock)
-	if eng.Phase != phaseParadeReady {
+	if eng.Phase != phaseVote {
 		t.Fatalf("phase after all locks=%s", eng.Phase)
 	}
 	if len(out.Events) == 0 {
@@ -59,7 +59,7 @@ sawLock:
 	future := clock.Add(2 * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
-	if eng2.Phase != phaseParadeReady {
+	if eng2.Phase != phaseVote {
 		t.Fatalf("timer phase=%s", eng2.Phase)
 	}
 	if !out.Changed {
