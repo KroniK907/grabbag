@@ -52,7 +52,7 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	dir := t.TempDir()
 	db, handler, _ := openTestLobby(t, dir, nil)
 	host := joinNamed(t, handler, "Ada", "correct horse")
-	joinNamed(t, handler, "Bea", "")
+	guestCookie := joinNamed(t, handler, "Bea", "")
 	_ = db.Close()
 
 	_, handler, room := openTestLobby(t, dir, nil)
@@ -75,11 +75,32 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	if !strings.Contains(phone, "keep this room") || strings.Contains(phone, `action="/lobby/ready"`) {
 		t.Fatalf("restored phone = %q", phone)
 	}
-	if !strings.Contains(phone, `action="/settings/keep"`) || !strings.Contains(phone, `action="/settings/clear-room"`) {
-		t.Fatalf("host drawer missing Keep/Clear: %q", phone)
+	if !strings.Contains(phone, `id="restore-modal"`) ||
+		!strings.Contains(phone, `action="/settings/keep"`) ||
+		!strings.Contains(phone, `action="/settings/clear-room"`) {
+		t.Fatalf("host phone missing Keep/Clear modal: %q", phone)
+	}
+	drawerAt := strings.Index(phone, `id="host-drawer"`)
+	if drawerAt < 0 {
+		t.Fatal("host phone missing drawer")
+	}
+	drawerEnd := strings.Index(phone[drawerAt:], "</aside>")
+	if drawerEnd < 0 {
+		t.Fatal("host drawer missing close tag")
+	}
+	drawer := phone[drawerAt : drawerAt+drawerEnd]
+	if strings.Contains(drawer, `action="/settings/keep"`) || strings.Contains(drawer, `action="/settings/clear-room"`) {
+		t.Fatalf("host drawer still has Keep/Clear: %q", drawer)
 	}
 	if strings.Contains(phone, `action="/settings/start"`) || strings.Contains(phone, `action="/settings/sit"`) {
 		t.Fatalf("Start/sit shown while pending: %q", phone)
+	}
+
+	guestPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
+	if strings.Contains(guestPhone, `id="restore-modal"`) ||
+		strings.Contains(guestPhone, `action="/settings/keep"`) ||
+		strings.Contains(guestPhone, `action="/settings/clear-room"`) {
+		t.Fatalf("guest phone has Keep/Clear: %q", guestPhone)
 	}
 
 	guest := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil).Body.String()
