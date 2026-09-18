@@ -131,7 +131,7 @@
           <label>Wildcard <span>{{.Remain}} left</span>
             <textarea name="text" maxlength="{{.Cap}}">{{.Draft}}</textarea>
           </label>
-          <button class="ui-btn ui-btn-inline" type="submit">Done</button>
+          <button class="ui-btn" type="submit">Done</button>
         </form>
         {{if .Draft}}
         <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
