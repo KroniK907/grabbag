@@ -10,6 +10,19 @@
   hx-trigger="sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
+  {{if .Overlay}}
+  <div class="quips-reshuffle-sheet">
+    <p>{{.OverlayCopy}}</p>
+    {{if .OverlayYes}}
+    <form hx-post="/play/reshuffle-yes" hx-swap="outerHTML" hx-target="#quips-phone">
+      <button class="ui-btn" type="submit">Yes</button>
+    </form>
+    <form hx-post="/play/end-game" hx-swap="outerHTML" hx-target="#quips-phone">
+      <button class="ui-btn" type="submit">End game</button>
+    </form>
+    {{end}}
+  </div>
+  {{else}}
   {{if .Paused}}<p class="quips-dim">Paused</p>{{end}}
   {{if eq .Role "wait"}}
   <div class="quips-wait">
@@ -64,6 +77,31 @@
   </form>
   {{end}}
   {{end}}
+  {{if .ClaimedHost}}
+  <button class="ui-btn quips-burn-handle" type="button" aria-controls="quips-burn-drawer" onclick="document.getElementById('quips-burn-drawer').classList.add('is-open')">Burn</button>
+  <button class="quips-burn-scrim" type="button" aria-label="Close Burn drawer" onclick="document.getElementById('quips-burn-drawer').classList.remove('is-open')"></button>
+  <aside id="quips-burn-drawer" class="quips-burn-drawer{{if .BurnOpen}} is-open{{end}}">
+    <div class="quips-burn-head">
+      <button class="ui-btn ui-btn-inline" type="button" onclick="document.getElementById('quips-burn-drawer').classList.remove('is-open')">Back</button>
+      <h2>Burn</h2>
+    </div>
+    <form hx-post="/play/burn" hx-swap="outerHTML" hx-target="#quips-phone">
+      {{if .BurnErr}}<p class="ui-alert" role="alert">{{.BurnErr}}</p>{{end}}
+      {{if not .BurnFaces}}<p>Nothing to burn yet</p>{{end}}
+      <div class="quips-burn-faces">
+        {{range .BurnFaces}}
+        <label>
+          <input type="checkbox" name="face" value="{{.Kind}}	{{.Text}}" {{if or .Burned .Checked}}checked{{end}} {{if .Burned}}disabled{{end}}>
+          <span>{{.Text}}</span>
+        </label>
+        {{end}}
+      </div>
+      <div class="quips-burn-action">
+        <button class="ui-btn" type="submit" {{if not .BurnFaces}}disabled{{end}}>Burn</button>
+      </div>
+    </form>
+  </aside>
+  {{end}}
   {{if .HostBar}}
   <div class="quips-host-bar">
     {{if .HostReveal}}
@@ -79,6 +117,7 @@
     <form hx-post="/play/host/end-match" hx-swap="outerHTML" hx-target="#quips-phone"><button class="ui-btn" type="submit">End match</button></form>
     {{end}}
   </div>
+  {{end}}
   {{end}}
 </div>
 {{end}}

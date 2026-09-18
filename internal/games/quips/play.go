@@ -3,6 +3,7 @@ package quips
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/KroniK907/grabbag/internal/games"
 )
@@ -34,6 +35,13 @@ func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, fn func(*engin
 	if g.engine == nil || !g.started {
 		g.mu.Unlock()
 		http.NotFound(w, r)
+		return
+	}
+	if g.overlayActive() {
+		g.engine.PhoneErr[p.ID] = overlayWaitCopy
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	if g.paused {
@@ -171,6 +179,116 @@ func (g *Game) getBoardPartial(w http.ResponseWriter, r *http.Request) {
 
 func (g *Game) getPhonePartial(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone-frame", g.phoneView(r), http.StatusOK)
+}
+
+func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
+	p, ok := g.playerOr401(w, r)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	g.mu.Lock()
+	if g.engine == nil || !g.started {
+		g.mu.Unlock()
+		http.NotFound(w, r)
+		return
+	}
+	if g.overlayActive() {
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	if !p.ClaimedHost {
+		g.burnErr = "Only the claimed host can burn cards."
+		view := g.phoneViewLockedWithRequest(p, r)
+		view.BurnOpen = true
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	if g.burnCorrupt {
+		g.burnErr = "Burn list is unreadable"
+		view := g.phoneViewLockedWithRequest(p, r)
+		view.BurnOpen = true
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	g.burnChecks = map[string]bool{}
+	for _, face := range r.Form["face"] {
+		kind, text, ok := strings.Cut(face, "\t")
+		if !ok {
+			continue
+		}
+		g.burnChecks[kind+"\x00"+text] = true
+		g.burnPairLocked(kind, text)
+	}
+	g.stripBurnedFromPoolLocked()
+	g.burnErr = ""
+	view := g.phoneViewLockedWithRequest(p, r)
+	view.BurnOpen = true
+	g.mu.Unlock()
+	g.render(w, "phone.html", view, http.StatusOK)
+}
+
+func (g *Game) postReshuffleYes(w http.ResponseWriter, r *http.Request) {
+	p, ok := g.playerOr401(w, r)
+	if !ok {
+		return
+	}
+	g.mu.Lock()
+	if g.engine == nil || !g.started {
+		g.mu.Unlock()
+		http.NotFound(w, r)
+		return
+	}
+	if !p.ClaimedHost {
+		g.engine.PhoneErr[p.ID] = overlayWaitCopy
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	if g.overlay == "" || g.overlayTooSmall {
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	_ = g.fulfillOverlayLocked()
+	view := g.phoneViewLockedWithRequest(p, r)
+	g.flushHostLocked()
+	g.mu.Unlock()
+	g.render(w, "phone.html", view, http.StatusOK)
+}
+
+func (g *Game) postEndGame(w http.ResponseWriter, r *http.Request) {
+	p, ok := g.playerOr401(w, r)
+	if !ok {
+		return
+	}
+	g.mu.Lock()
+	if g.engine == nil || !g.started {
+		g.mu.Unlock()
+		http.NotFound(w, r)
+		return
+	}
+	if !p.ClaimedHost || g.overlay == "" {
+		view := g.phoneViewLockedWithRequest(p, r)
+		g.mu.Unlock()
+		g.render(w, "phone.html", view, http.StatusOK)
+		return
+	}
+	g.needFinish = true
+	g.publishLocked()
+	view := g.phoneViewLockedWithRequest(p, r)
+	g.flushHostLocked()
+	g.mu.Unlock()
+	g.render(w, "phone.html", view, http.StatusOK)
 }
 
 func (g *Game) flushHostLocked() {

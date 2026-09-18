@@ -225,6 +225,71 @@ func (g *Game) postShowMatchedWord(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (g *Game) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	h := g.helperNow()
+	if h == nil {
+		http.NotFound(w, r)
+		return false
+	}
+	if !h.HasAdmin(r) {
+		http.Error(w, "Admin session required.", http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
+func (g *Game) postUnburn(w http.ResponseWriter, r *http.Request) {
+	if !g.requireAdmin(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not read the form.", http.StatusBadRequest)
+		return
+	}
+	g.mu.Lock()
+	if g.burnCorrupt {
+		g.mu.Unlock()
+		g.writeSettingsRefuse(w, "unburn", "Burn list is unreadable")
+		return
+	}
+	g.unburnPairLocked(r.FormValue("kind"), r.FormValue("text"))
+	g.stripBurnedFromPoolLocked()
+	g.mu.Unlock()
+	g.writeSettingsOK(w, r)
+}
+
+func (g *Game) postReshuffleOnUnload(w http.ResponseWriter, r *http.Request) {
+	g.mutateSettings(w, r, "reshuffle-on-unload", func(s *matchSettings) error {
+		s.ReshuffleDiscardOnUnload = formEnabled(r)
+		return nil
+	})
+}
+
+func (g *Game) postReshuffleDiscard(w http.ResponseWriter, r *http.Request) {
+	if !g.requireAdmin(w, r) {
+		return
+	}
+	if g.matchFrozen() {
+		g.writeSettingsRefuse(w, "reshuffle-discard", "This match is running. Setup is locked.")
+		return
+	}
+	g.mu.Lock()
+	if g.discardCorrupt {
+		g.mu.Unlock()
+		g.writeSettingsRefuse(w, "reshuffle-discard", "Discard list is unreadable")
+		return
+	}
+	if len(g.played) == 0 {
+		g.mu.Unlock()
+		g.writeSettingsRefuse(w, "reshuffle-discard", "")
+		return
+	}
+	g.wipeDiscardLocked()
+	g.drainJournalsLocked()
+	g.mu.Unlock()
+	g.writeSettingsOK(w, r)
+}
+
 func atoiForm(r *http.Request, name string) (int, error) {
 	return strconv.Atoi(r.FormValue(name))
 }

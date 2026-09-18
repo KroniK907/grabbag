@@ -94,6 +94,7 @@ type fakeHelper struct {
 	kv     map[string][]byte
 	admin  bool
 	seated []games.Player
+	logs   []string
 }
 
 func newFakeHelper(dir string) *fakeHelper {
@@ -115,6 +116,6 @@ func (h *fakeHelper) Pause()                                  {}
 func (h *fakeHelper) Resume()                                 {}
 func (h *fakeHelper) Publish(string)                          {}
 func (h *fakeHelper) Notify(string, string, string, int)      {}
-func (h *fakeHelper) Log(string)                              {}
+func (h *fakeHelper) Log(line string)                         { h.logs = append(h.logs, line) }
 func (h *fakeHelper) Theme() string                           { return "neon-light" }
 func (h *fakeHelper) HasAdmin(*http.Request) bool             { return h.admin }

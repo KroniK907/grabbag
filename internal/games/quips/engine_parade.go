@@ -268,7 +268,8 @@ func (e *engine) roundComplete(now time.Time, out Outcome) Outcome {
 		w.Locked = false
 	}
 	if err := e.openWriteRoundForIDs(now); err != nil {
-		out.PhoneErr["host"] = err.Error()
+		out.DealShortage = true
+		out.Changed = true
 		return out
 	}
 	out.Changed = true

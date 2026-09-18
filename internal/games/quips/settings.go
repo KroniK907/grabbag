@@ -24,6 +24,7 @@ type matchSettings struct {
 	QuipCharCap               int                        `json:"quipCharCap"`
 	BannedWords               string                     `json:"bannedWords"`
 	ShowMatchedWord           bool                       `json:"showMatchedWord"`
+	ReshuffleDiscardOnUnload  bool                       `json:"reshuffleDiscardOnUnload"`
 }
 
 func factorySettings() matchSettings {

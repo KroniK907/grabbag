@@ -1,6 +1,9 @@
 package quips
 
-const startRefuseMsg = "Not enough prompts in your library to start the game."
+const (
+	startRefuseMsg  = "Not enough prompts in your library to start the game."
+	startUnburnMsg  = "You may need to unburn some prompts or get more libraries to continue."
+)
 
 func promptDemand(settings matchSettings, seatedHumans int) int {
 	if seatedHumans < 1 {
@@ -25,20 +28,33 @@ func enabledPromptCount(cat catalog, settings matchSettings) int {
 	return n
 }
 
-func startShortage(cat catalog, settings matchSettings, seatedHumans int) string {
+func startShortagePiles(piles promptPiles, settings matchSettings, seatedHumans int) string {
 	if seatedHumans < 1 {
 		return ""
 	}
 	need := promptDemand(settings, seatedHumans)
-	if enabledPromptCount(cat, settings) < need {
+	if len(piles.Prompts) < need {
 		return startRefuseMsg
 	}
 	return ""
 }
 
-func shortageLines(cat catalog, settings matchSettings, seatedHumans int) []string {
-	if startShortage(cat, settings, seatedHumans) == "" {
+func startShortage(cat catalog, settings matchSettings, seatedHumans int) string {
+	piles := buildPromptPiles(cat, settings)
+	return startShortagePiles(piles, settings, seatedHumans)
+}
+
+func burnedWouldHelp(raw, burned promptPiles, settings matchSettings, seatedHumans int) bool {
+	return startShortagePiles(burned, settings, seatedHumans) != "" && startShortagePiles(raw, settings, seatedHumans) == ""
+}
+
+func shortageLines(piles promptPiles, settings matchSettings, seatedHumans int, burnedWouldHelp bool) []string {
+	if startShortagePiles(piles, settings, seatedHumans) == "" {
 		return nil
 	}
-	return []string{startRefuseMsg}
+	lines := []string{startRefuseMsg}
+	if burnedWouldHelp {
+		lines = append(lines, startUnburnMsg)
+	}
+	return lines
 }
