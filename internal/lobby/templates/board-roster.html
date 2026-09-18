@@ -15,6 +15,9 @@
         <span class="ui-now-playing-name">{{.LoadedGame}}</span>
       </div>
       {{end}}
+      {{if .ShowGameLibrary}}
+      {{template "game-library-open" .}}
+      {{end}}
       <div class="ui-qr">{{qr .JoinURL}}</div>
       {{with .JoinURL}}<div class="ui-url">{{.}}</div>{{end}}
       <div class="ui-pills">
@@ -66,5 +69,8 @@
   </div>
   {{end}}
   <a class="ui-gear" href="/settings" target="_blank" rel="noopener" title="Settings">⚙</a>
+  {{if .ShowGameLibrary}}
+  {{template "game-library" .}}
+  {{end}}
 </div>
 {{end}}

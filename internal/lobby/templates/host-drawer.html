@@ -12,6 +12,9 @@
     class="ui-btn"
     onclick="document.getElementById('host-drawer').classList.remove('is-open')"
   >Back</button>
+  {{if and .ShowGameLibrary (not .RestorePending) (not .Started)}}
+  {{template "game-library-open" .}}
+  {{end}}
   {{if .RestorePending}}
   <form method="post" action="/settings/keep">
     <button class="ui-btn" type="submit">Keep this room</button>
@@ -58,8 +61,6 @@
     <button class="ui-btn" type="submit">Stop</button>
   </form>
   </div>
-  {{else}}
-  {{template "host-game-pick" .}}
   {{end}}
   {{if .Seated}}
   <form method="post" action="/settings/stand">
@@ -82,25 +83,4 @@
   {{end}}
   <a class="ui-btn" href="/settings" target="_blank" rel="noopener">Room settings</a>
 </aside>
-{{end}}
-
-{{define "host-game-pick"}}
-{{if .LoadedGameID}}
-<p class="ui-muted">Loaded {{.LoadedGameID}}</p>
-<form method="post" action="/settings/shutdown">
-  <button class="ui-btn" type="submit">Unload</button>
-</form>
-{{else if .GameIDs}}
-<form class="ui-stack" method="post" action="/settings/load">
-  <label class="ui-field">
-    <span>Game</span>
-    <select name="game_id">
-      {{range .GameIDs}}<option value="{{.}}">{{.}}</option>{{end}}
-    </select>
-  </label>
-  <button class="ui-btn" type="submit">Load</button>
-</form>
-{{else}}
-<p class="ui-muted">No games registered.</p>
-{{end}}
 {{end}}

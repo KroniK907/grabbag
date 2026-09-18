@@ -71,11 +71,27 @@ func (rt *runtime) postLoad(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
 	}
-	if err := rt.load(r.Context(), strings.TrimSpace(r.PostFormValue("game_id"))); err != nil {
-		rt.operatorNotice(w, r, "Could not load that game.")
+	id := strings.TrimSpace(r.PostFormValue("game_id"))
+	factory, ok := rt.lookupFactory(id)
+	if !ok {
+		rt.loadFailureNotice(w, r, "Could not load that game.")
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	game := factory.New()
+	seated, err := rt.room.SeatedCount(r.Context())
+	if err != nil {
+		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	if msg := loadBlockedMessage(game.MinPlayers(), game.MaxPlayers(), seated); msg != "" {
+		rt.loadFailureNotice(w, r, msg)
+		return
+	}
+	if err := rt.load(r.Context(), id); err != nil {
+		rt.loadFailureNotice(w, r, "Could not load that game.")
+		return
+	}
+	rt.redirectReturn(w, r, "/")
 }
 
 func (rt *runtime) postStart(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +133,7 @@ func (rt *runtime) postShutdown(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not unload the game.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	rt.redirectReturn(w, r, "/")
 }
 
 func (rt *runtime) postPause(w http.ResponseWriter, r *http.Request) {

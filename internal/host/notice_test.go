@@ -130,7 +130,7 @@ func TestLoadRefusedAboveMaxToasts(t *testing.T) {
 	if load.Code != http.StatusSeeOther {
 		t.Fatalf("Load above max = %d %q", load.Code, load.Body.String())
 	}
-	if !noticeCookieHas(t, load, "host", "Could not load that game.") {
+	if !noticeCookieHas(t, load, "host", "Too many seated players (max 1).") {
 		t.Fatalf("Load above max missing toast cookie")
 	}
 }

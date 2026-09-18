@@ -79,6 +79,10 @@ func (g *Game) ID() string { return id }
 // Name is the player-facing label Apples for Humanity.
 func (g *Game) Name() string { return "Apples for Humanity" }
 
+func (g *Game) Description() string {
+	return "Pick prompts and answers from your deck libraries, then judge the funniest match."
+}
+
 // MinPlayers is 1. Host still needs one seated player to Start.
 func (g *Game) MinPlayers() int { return 1 }
 

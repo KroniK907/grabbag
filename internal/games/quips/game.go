@@ -68,6 +68,10 @@ func (g *Game) ID() string { return id }
 // Name is the player-facing label Quick Quips.
 func (g *Game) Name() string { return "Quick Quips" }
 
+func (g *Game) Description() string {
+	return "Write quick answers to rotating prompts and vote on the best lines."
+}
+
 // MinPlayers is 2. Quick Quips needs at least two seated writers.
 func (g *Game) MinPlayers() int { return 2 }
 
