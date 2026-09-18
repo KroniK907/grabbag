@@ -447,6 +447,53 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 	}
 }
 
+func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	g := loadedGame(t, h)
+	g.mu.Lock()
+	g.started = true
+	g.match = &matchState{
+		Settings: factorySettings(),
+		Phase:    phaseReveal,
+		JudgeID:  "p2",
+		Actors: map[string]*actor{
+			"p1": {ID: "p1", Name: "Pat", Locked: true, Holes: []*playCard{{Text: "Mine"}}},
+			"p2": {ID: "p2", Name: "Sam"},
+		},
+		LivePrompt: &playPrompt{Text: "Prompt _"},
+		Packets: []packet{
+			{ActorID: "p1", Cards: []playCard{{Text: "Mine"}}, Revealed: true},
+			{ActorID: "bot:1", Cards: []playCard{{Text: "Bot"}}, Revealed: true},
+		},
+		Votes:    map[string]string{},
+		PhoneErr: map[string]string{},
+	}
+	g.mu.Unlock()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-Player", "p1")
+	g.Phone(rec, req)
+	body := rec.Body.String()
+	if !strings.Contains(body, `hx-post="/play/vote"`) || !strings.Contains(body, "Tap one answer to choose your favorite.") {
+		t.Fatalf("seated reveal phone missing vote: %s", body)
+	}
+	if strings.Contains(body, ">Lock<") || strings.Contains(body, ">Locked<") {
+		t.Fatalf("seated reveal phone still on lock: %s", body)
+	}
+
+	vote := playPOST(g, "/vote", "p1", url.Values{"target": {"bot:1"}})
+	if vote.Code != http.StatusOK {
+		t.Fatal(vote.Body.String())
+	}
+	if g.match.Votes["p1"] != "bot:1" {
+		t.Fatalf("vote = %#v", g.match.Votes)
+	}
+}
+
 func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)

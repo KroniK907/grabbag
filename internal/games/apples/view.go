@@ -323,7 +323,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 			view.Holes = append(view.Holes, hv)
 		}
 		filled := filledCount(a.Holes)
-		if a.Locked && view.Role != "judge" {
+		if a.Locked && view.Role != "judge" && m.Phase == phaseSubmit {
 			view.LockLabel = "Locked"
 			view.LockReady = false
 			view.Role = "locked"
