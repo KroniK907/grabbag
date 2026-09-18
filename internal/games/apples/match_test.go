@@ -492,6 +492,13 @@ func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
 	if g.match.Votes["p1"] != "bot:1" {
 		t.Fatalf("vote = %#v", g.match.Votes)
 	}
+	again := playPOST(g, "/vote", "p1", url.Values{"target": {"bot:1"}})
+	if again.Code != http.StatusOK {
+		t.Fatal(again.Body.String())
+	}
+	if _, ok := g.match.Votes["p1"]; ok {
+		t.Fatalf("retap kept vote = %#v", g.match.Votes)
+	}
 }
 
 func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {

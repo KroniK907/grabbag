@@ -133,6 +133,10 @@ func (g *Game) voteLocked(m *matchState, voterID, targetID string) error {
 	if !found {
 		return fmt.Errorf("That answer is still face down.")
 	}
+	if m.Votes[voterID] == targetID {
+		delete(m.Votes, voterID)
+		return nil
+	}
 	m.Votes[voterID] = targetID
 	return nil
 }
