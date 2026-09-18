@@ -501,6 +501,10 @@
   position: relative;
 }
 
+.apples-hand-card.is-discarded .apples-card-button {
+  opacity: 0.45;
+}
+
 .apples-discard {
   display: flex;
   justify-content: flex-end;

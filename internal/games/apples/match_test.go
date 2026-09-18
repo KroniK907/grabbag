@@ -371,6 +371,63 @@ func TestSlotReplacesSingleHoleWhenFull(t *testing.T) {
 	}
 }
 
+func TestWildcardDoneSlotsAndHidesBox(t *testing.T) {
+	t.Parallel()
+	g, other := startWildcardSubmit(t)
+	rec := playPOST(g, "/wildcard-draft", other, url.Values{"text": {"A rubber chicken"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("done = %d %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, `class="apples-wildcard"`) {
+		t.Fatal("wildcard box still on the phone after Done")
+	}
+	if !strings.Contains(body, "A rubber chicken") {
+		t.Fatalf("slotted text missing: %s", body)
+	}
+	g.mu.Lock()
+	a := g.match.Actors[other]
+	if a.Blank != nil {
+		t.Fatal("blank still in the hand after Done")
+	}
+	if len(a.Holes) == 0 || a.Holes[0] == nil || a.Holes[0].Text != "A rubber chicken" {
+		t.Fatalf("holes = %#v", a.Holes)
+	}
+	g.mu.Unlock()
+}
+
+func TestWildcardDiscardOnlyOneLeftover(t *testing.T) {
+	t.Parallel()
+	g, other := startWildcardSubmit(t)
+	playPOST(g, "/wildcard-draft", other, url.Values{"text": {"A rubber chicken"}})
+	g.mu.Lock()
+	first := g.match.Actors[other].Hand[0].CardID
+	second := g.match.Actors[other].Hand[1].CardID
+	g.mu.Unlock()
+	slotted := playPOST(g, "/discard", other, url.Values{"card": {first}})
+	if strings.Count(slotted.Body.String(), ">Discard</button>") != 0 {
+		t.Fatalf("leftover discard chips still on the hand: %s", slotted.Body.String())
+	}
+	if !strings.Contains(slotted.Body.String(), ">Undo</button>") {
+		t.Fatalf("missing undo on discarded card: %s", slotted.Body.String())
+	}
+	again := playPOST(g, "/discard", other, url.Values{"card": {second}})
+	if !strings.Contains(again.Body.String(), "already discarded") {
+		t.Fatalf("second discard = %s", again.Body.String())
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	a := g.match.Actors[other]
+	if a.Discard == nil || a.Discard.CardID != first {
+		t.Fatalf("discard = %#v", a.Discard)
+	}
+	for _, c := range a.Hand {
+		if c.CardID == first {
+			t.Fatal("discarded card returned to hand")
+		}
+	}
+}
+
 func TestWildcardDuplicateAndEmpty(t *testing.T) {
 	t.Parallel()
 	if err := wildcardReject("   ", factorySettings(), nil); err == nil || err.Error() != "Type an answer" {
@@ -797,6 +854,37 @@ func tinyGame(t *testing.T, prompts, answers, pick int) (*fakeHelper, *Game) {
 		t.Fatal(rec.Body.String())
 	}
 	return h, g
+}
+
+func startWildcardSubmit(t *testing.T) (*Game, string) {
+	t.Helper()
+	h, g := tinyGame(t, 6, 40, 1)
+	if rec := postSettings(g, "/pack", url.Values{"library": {"wildcard"}, "pack": {"wildcard"}, "enabled": {"1"}}); rec.Code != http.StatusSeeOther {
+		t.Fatal(rec.Body.String())
+	}
+	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
+	postSettings(g, "/prompt-mode", url.Values{"prompt_mode": {"single"}})
+	postSettings(g, "/voting", url.Values{"voting": {"off"}})
+	postSettings(g, "/timer-submit", url.Values{"submit": {"0"}})
+	h.sit("p1", "Pat")
+	h.sit("p2", "Sam")
+	seedRNG(g)
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	judge := currentJudge(g)
+	other := "p1"
+	if other == judge {
+		other = "p2"
+	}
+	playPOST(g, "/draw", judge, nil)
+	g.mu.Lock()
+	blank := g.match.Actors[other].Blank
+	g.mu.Unlock()
+	if blank == nil {
+		t.Fatal("submitter has no wildcard blank")
+	}
+	return g, other
 }
 
 func disableShipped(t *testing.T, g *Game) {
