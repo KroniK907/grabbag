@@ -295,6 +295,26 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 	_, _ = w.Write(buf.Bytes())
 }
 
+func hxRequest(r *http.Request) bool {
+	return r.Header.Get("HX-Request") != ""
+}
+
+func (g *Game) writePicker(w http.ResponseWriter, r *http.Request, rowErr pickerErr) {
+	name := "picker.html"
+	if hxRequest(r) {
+		name = "picker-body"
+	}
+	g.render(w, name, g.pickerView(rowErr), http.StatusOK)
+}
+
+func (g *Game) writePickerOK(w http.ResponseWriter, r *http.Request) {
+	if hxRequest(r) {
+		g.writePicker(w, r, pickerErr{})
+		return
+	}
+	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
+}
+
 func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
 	h := g.helperNow()
 	if h == nil {
@@ -346,28 +366,28 @@ func (g *Game) toggleTag(w http.ResponseWriter, r *http.Request, tag string, on 
 		return
 	}
 	if g.matchFrozen() {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "Tag changes wait until the game ends.", Tag: tag,
-		}), http.StatusOK)
+		})
 		return
 	}
 	cat := scanDataDir(h.DataDir())
 	if !catalogHasTag(cat, tag) {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "That tag is not in the library.", Tag: tag,
-		}), http.StatusOK)
+		})
 		return
 	}
 	settings, ok := g.loadSettings(h)
 	settings = reconcileSettings(settings, ok, cat)
 	settings.setTag(tag, on)
 	if err := g.saveSettings(h, settings); err != nil {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "Could not save tag enablement.", Tag: tag,
-		}), http.StatusOK)
+		})
 		return
 	}
-	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
+	g.writePickerOK(w, r)
 }
 
 func (g *Game) postSelectAll(w http.ResponseWriter, r *http.Request) {
@@ -385,28 +405,28 @@ func (g *Game) togglePack(w http.ResponseWriter, r *http.Request, libraryID, pac
 		return
 	}
 	if g.matchFrozen() {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "Pack changes wait until the game ends.", LibraryID: libraryID, PackID: packID,
-		}), http.StatusOK)
+		})
 		return
 	}
 	cat := scanDataDir(h.DataDir())
 	if !packExists(cat, libraryID, packID) {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "That pack is not in the library.", LibraryID: libraryID, PackID: packID,
-		}), http.StatusOK)
+		})
 		return
 	}
 	settings, ok := g.loadSettings(h)
 	settings = reconcileSettings(settings, ok, cat)
 	settings.setPack(libraryID, packID, on)
 	if err := g.saveSettings(h, settings); err != nil {
-		g.render(w, "picker.html", g.pickerView(pickerErr{
+		g.writePicker(w, r, pickerErr{
 			Msg: "Could not save pack enablement.", LibraryID: libraryID, PackID: packID,
-		}), http.StatusOK)
+		})
 		return
 	}
-	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
+	g.writePickerOK(w, r)
 }
 
 func (g *Game) selectAll(w http.ResponseWriter, r *http.Request, on bool) {
@@ -416,7 +436,7 @@ func (g *Game) selectAll(w http.ResponseWriter, r *http.Request, on bool) {
 		return
 	}
 	if g.matchFrozen() {
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: "Pack changes wait until the game ends."}), http.StatusOK)
+		g.writePicker(w, r, pickerErr{Msg: "Pack changes wait until the game ends."})
 		return
 	}
 	cat := scanDataDir(h.DataDir())
@@ -424,10 +444,10 @@ func (g *Game) selectAll(w http.ResponseWriter, r *http.Request, on bool) {
 	settings = reconcileSettings(settings, ok, cat)
 	settings.setAllEnabled(cat, on)
 	if err := g.saveSettings(h, settings); err != nil {
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: "Could not save pack enablement."}), http.StatusOK)
+		g.writePicker(w, r, pickerErr{Msg: "Could not save pack enablement."})
 		return
 	}
-	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
+	g.writePickerOK(w, r)
 }
 
 func (g *Game) postImportOfficial(w http.ResponseWriter, r *http.Request) {
@@ -570,6 +590,7 @@ type pickerView struct {
 
 type tagView struct {
 	ID      string
+	Label   string
 	Color   string
 	Enabled bool
 }

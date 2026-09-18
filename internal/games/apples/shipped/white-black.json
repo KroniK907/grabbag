@@ -11,7 +11,10 @@
       "prompts": [
         {
           "id": "white-black-p-what-s-my-secret-superpower",
-          "text": "What's my secret superpower?"
+          "text": "What's my secret superpower?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-new-diet-craze-involves-eating-nothing-but",
@@ -23,7 +26,10 @@
         },
         {
           "id": "white-black-p-what-s-hiding-under-my-bed",
-          "text": "What's hiding under my bed?"
+          "text": "What's hiding under my bed?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-worst-thing-to-announce-at-a-wedding-is",
@@ -31,11 +37,17 @@
         },
         {
           "id": "white-black-p-the-tooth-fairy-now-leaves-bad-kids",
-          "text": "The tooth fairy now leaves bad kids _."
+          "text": "The tooth fairy now leaves bad kids _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-what-s-the-next-big-tech-innovation",
-          "text": "What's the next big tech innovation?"
+          "text": "What's the next big tech innovation?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-i-got-fired-for-bringing-to-the-office-potluck",
@@ -47,15 +59,24 @@
         },
         {
           "id": "white-black-p-the-new-olympic-sport-is-just",
-          "text": "The new Olympic sport is just _."
+          "text": "The new Olympic sport is just _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-what-ruined-my-childhood",
-          "text": "What ruined my childhood?"
+          "text": "What ruined my childhood?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-my-safe-word-is",
-          "text": "My safe word is _."
+          "text": "My safe word is _.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-the-only-thing-keeping-me-going-is",
@@ -63,7 +84,10 @@
         },
         {
           "id": "white-black-p-what-s-that-sticky-stuff-on-the-floor",
-          "text": "What's that sticky stuff on the floor?"
+          "text": "What's that sticky stuff on the floor?",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-the-secret-ingredient-in-my-chili-is",
@@ -75,19 +99,31 @@
         },
         {
           "id": "white-black-p-what-did-i-forget-at-the-grocery-store",
-          "text": "What did I forget at the grocery store?"
+          "text": "What did I forget at the grocery store?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-my-dying-wish-is-to-be-buried-with",
-          "text": "My dying wish is to be buried with _."
+          "text": "My dying wish is to be buried with _.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-p-the-new-tinder-update-matches-you-based-on",
-          "text": "The new Tinder update matches you based on _."
+          "text": "The new Tinder update matches you based on _.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-what-is-the-government-hiding-from-us",
-          "text": "What is the government hiding from us?"
+          "text": "What is the government hiding from us?",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-p-i-finally-found-peace-through",
@@ -99,7 +135,10 @@
         },
         {
           "id": "white-black-p-what-s-my-excuse-for-being-late",
-          "text": "What's my excuse for being late?"
+          "text": "What's my excuse for being late?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-i-m-writing-a-self-help-book-about",
@@ -115,7 +154,10 @@
         },
         {
           "id": "white-black-p-my-patronus-is",
-          "text": "My patronus is _."
+          "text": "My patronus is _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-only-thing-worse-than-mondays-is",
@@ -123,7 +165,10 @@
         },
         {
           "id": "white-black-p-what-s-my-hidden-talent",
-          "text": "What's my hidden talent?"
+          "text": "What's my hidden talent?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-i-m-starting-a-podcast-about",
@@ -135,19 +180,31 @@
         },
         {
           "id": "white-black-p-what-s-the-worst-gift-to-give-a-toddler",
-          "text": "What's the worst gift to give a toddler?"
+          "text": "What's the worst gift to give a toddler?",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-my-biggest-fear-is",
-          "text": "My biggest fear is _."
+          "text": "My biggest fear is _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-new-school-curriculum-replaces-math-with",
-          "text": "The new school curriculum replaces math with _."
+          "text": "The new school curriculum replaces math with _.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-p-what-s-the-worst-thing-to-say-on-a-first-date",
-          "text": "What's the worst thing to say on a first date?"
+          "text": "What's the worst thing to say on a first date?",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-i-m-allergic-to",
@@ -155,7 +212,10 @@
         },
         {
           "id": "white-black-p-the-new-superhero-s-weakness-is",
-          "text": "The new superhero's weakness is _."
+          "text": "The new superhero's weakness is _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-what-s-the-worst-thing-to-find-in-your-hotel-roo",
@@ -163,7 +223,10 @@
         },
         {
           "id": "white-black-p-my-last-words-will-probably-be-about",
-          "text": "My last words will probably be about _."
+          "text": "My last words will probably be about _.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-p-the-new-fashion-trend-is-wearing",
@@ -179,15 +242,24 @@
         },
         {
           "id": "white-black-p-the-new-theme-park-ride-is-based-on",
-          "text": "The new theme park ride is based on _."
+          "text": "The new theme park ride is based on _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-what-s-the-worst-thing-to-say-to-a-cop",
-          "text": "What's the worst thing to say to a cop?"
+          "text": "What's the worst thing to say to a cop?",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-p-my-spirit-animal-is",
-          "text": "My spirit animal is _."
+          "text": "My spirit animal is _.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-new-diet-pill-side-effects-include",
@@ -221,7 +293,10 @@
         {
           "id": "white-black-p-the-perfect-date-starts-with-and-ends-with",
           "text": "The perfect date starts with _ and ends with _.",
-          "pick": 2
+          "pick": 2,
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-they-said-it-was-impossible-to-combine-and",
@@ -246,7 +321,10 @@
         {
           "id": "white-black-p-the-recipe-calls-for-but-i-substitute-it-with",
           "text": "The recipe calls for _, but I substitute it with _.",
-          "pick": 2
+          "pick": 2,
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-if-you-liked-you-ll-love",
@@ -266,12 +344,18 @@
         {
           "id": "white-black-p-in-a-world-ravaged-by-our-only-hope-is",
           "text": "In a world ravaged by _, our only hope is _.",
-          "pick": 2
+          "pick": 2,
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-p-step-one-step-two",
           "text": "Step one: _. Step two: _.",
-          "pick": 2
+          "pick": 2,
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-p-the-holy-trinity-of-my-weekend-and",
@@ -281,12 +365,18 @@
         {
           "id": "white-black-p-to-unlock-the-ancient-tomb-you-must-sacrifice",
           "text": "To unlock the ancient tomb, you must sacrifice _, _, and _.",
-          "pick": 3
+          "pick": 3,
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-p-my-dating-profile-says-i-love-and",
           "text": "My dating profile says I love _, _, and _.",
-          "pick": 3
+          "pick": 3,
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-p-the-new-blockbuster-movie-features-and",
@@ -296,13 +386,19 @@
         {
           "id": "white-black-p-the-three-stages-of-grief-and",
           "text": "The three stages of grief: _, _, and _.",
-          "pick": 3
+          "pick": 3,
+          "tags": [
+            "violence"
+          ]
         }
       ],
       "answers": [
         {
           "id": "white-black-a-a-sentient-pile-of-laundry",
-          "text": "A sentient pile of laundry."
+          "text": "A sentient pile of laundry.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-accidentally-liking-an-ex-s-post-from-2014",
@@ -318,15 +414,24 @@
         },
         {
           "id": "white-black-a-getting-aggressively-audited-by-the-irs",
-          "text": "Getting aggressively audited by the IRS."
+          "text": "Getting aggressively audited by the IRS.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-raccoon-with-a-switchblade",
-          "text": "A raccoon with a switchblade."
+          "text": "A raccoon with a switchblade.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-weaponized-incompetence",
-          "text": "Weaponized incompetence."
+          "text": "Weaponized incompetence.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-explaining-crypto-to-your-grandmother",
@@ -334,11 +439,17 @@
         },
         {
           "id": "white-black-a-a-lukewarm-hot-pocket",
-          "text": "A lukewarm Hot Pocket."
+          "text": "A lukewarm Hot Pocket.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-nap-that-lasts-until-thursday",
-          "text": "A nap that lasts until Thursday."
+          "text": "A nap that lasts until Thursday.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-an-unsolicited-picture-of-a-rash",
@@ -350,11 +461,17 @@
         },
         {
           "id": "white-black-a-a-cult-led-by-a-golden-retriever",
-          "text": "A cult led by a golden retriever."
+          "text": "A cult led by a golden retriever.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-sticky-floor-of-a-movie-theater",
-          "text": "The sticky floor of a movie theater."
+          "text": "The sticky floor of a movie theater.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-a-moderately-successful-pyramid-scheme",
@@ -362,7 +479,10 @@
         },
         {
           "id": "white-black-a-binge-watching-conspiracy-theories-at-3-am",
-          "text": "Binge-watching conspiracy theories at 3 AM."
+          "text": "Binge-watching conspiracy theories at 3 AM.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-polite-but-firm-rejection",
@@ -370,7 +490,10 @@
         },
         {
           "id": "white-black-a-the-ghost-of-a-victorian-child",
-          "text": "The ghost of a Victorian child."
+          "text": "The ghost of a Victorian child.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-a-cursed-amulet-bought-on-craigslist",
@@ -378,15 +501,24 @@
         },
         {
           "id": "white-black-a-aggressive-eye-contact-during-a-prostate-exam",
-          "text": "Aggressive eye contact during a prostate exam."
+          "text": "Aggressive eye contact during a prostate exam.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-faking-a-seizure-to-get-out-of-a-conversation",
-          "text": "Faking a seizure to get out of a conversation."
+          "text": "Faking a seizure to get out of a conversation.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-a-heavily-armed-toddler",
-          "text": "A heavily armed toddler."
+          "text": "A heavily armed toddler.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-sobbing-uncontrollably-in-a-denny-s-parking-lot",
@@ -402,7 +534,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-local-politician",
-          "text": "A completely unhinged local politician."
+          "text": "A completely unhinged local politician.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-trying-to-explain-memes-to-your-parents",
@@ -410,7 +545,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-aggressive-goose",
-          "text": "A surprisingly aggressive goose."
+          "text": "A surprisingly aggressive goose.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-lingering-smell-of-cheap-cologne",
@@ -430,19 +568,31 @@
         },
         {
           "id": "white-black-a-the-inevitable-heat-death-of-the-universe",
-          "text": "The inevitable heat death of the universe."
+          "text": "The inevitable heat death of the universe.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-a-suspiciously-sticky-doorknob",
-          "text": "A suspiciously sticky doorknob."
+          "text": "A suspiciously sticky doorknob.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-getting-into-a-fistfight-with-a-mime",
-          "text": "Getting into a fistfight with a mime."
+          "text": "Getting into a fistfight with a mime.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-a-dangerously-cheesy-pickup-line",
-          "text": "A dangerously cheesy pickup line."
+          "text": "A dangerously cheesy pickup line.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-the-awkward-silence-after-a-bad-pun",
@@ -450,7 +600,10 @@
         },
         {
           "id": "white-black-a-a-slightly-used-coffin",
-          "text": "A slightly used coffin."
+          "text": "A slightly used coffin.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-trying-to-outrun-your-responsibilities",
@@ -458,7 +611,10 @@
         },
         {
           "id": "white-black-a-a-very-angry-badger",
-          "text": "A very angry badger."
+          "text": "A very angry badger.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-overwhelming-urge-to-scream",
@@ -470,11 +626,17 @@
         },
         {
           "id": "white-black-a-accidentally-sending-a-nude-to-your-boss",
-          "text": "Accidentally sending a nude to your boss."
+          "text": "Accidentally sending a nude to your boss.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-a-flock-of-pigeons-plotting-your-demise",
-          "text": "A flock of pigeons plotting your demise."
+          "text": "A flock of pigeons plotting your demise.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-the-sudden-realization-that-you-re-an-adult",
@@ -502,7 +664,10 @@
         },
         {
           "id": "white-black-a-a-group-project-where-you-did-all-the-work",
-          "text": "A group project where you did all the work."
+          "text": "A group project where you did all the work.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-drinking-tap-water-in-a-foreign-country",
@@ -510,7 +675,10 @@
         },
         {
           "id": "white-black-a-a-sudden-and-violent-bowel-movement",
-          "text": "A sudden and violent bowel movement."
+          "text": "A sudden and violent bowel movement.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-the-dark-web",
@@ -518,15 +686,24 @@
         },
         {
           "id": "white-black-a-a-fully-functional-guillotine",
-          "text": "A fully functional guillotine."
+          "text": "A fully functional guillotine.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-getting-cancelled-on-twitter",
-          "text": "Getting cancelled on Twitter."
+          "text": "Getting cancelled on Twitter.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-5g-microchip-implanted-in-your-brain",
-          "text": "A 5G microchip implanted in your brain."
+          "text": "A 5G microchip implanted in your brain.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-the-existential-terror-of-a-tuesday-afternoon",
@@ -534,7 +711,10 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-high-five",
-          "text": "A poorly executed high five."
+          "text": "A poorly executed high five.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-ghosted-by-your-therapist",
@@ -542,7 +722,10 @@
         },
         {
           "id": "white-black-a-a-suspiciously-warm-toilet-seat",
-          "text": "A suspiciously warm toilet seat."
+          "text": "A suspiciously warm toilet seat.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-the-illusion-of-free-will",
@@ -554,15 +737,24 @@
         },
         {
           "id": "white-black-a-getting-catfished-by-a-russian-bot",
-          "text": "Getting catfished by a Russian bot."
+          "text": "Getting catfished by a Russian bot.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-spontaneous-musical-number",
-          "text": "A spontaneous musical number."
+          "text": "A spontaneous musical number.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-sweet-sweet-embrace-of-capitalism",
-          "text": "The sweet, sweet embrace of capitalism."
+          "text": "The sweet, sweet embrace of capitalism.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-crippling-addiction-to-iced-coffee",
@@ -590,7 +782,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-deep-puddle",
-          "text": "A surprisingly deep puddle."
+          "text": "A surprisingly deep puddle.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-lingering-taste-of-regret",
@@ -598,7 +793,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-conspiracy-theory",
-          "text": "A completely unhinged conspiracy theory."
+          "text": "A completely unhinged conspiracy theory.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-getting-trapped-in-a-group-chat",
@@ -610,15 +808,24 @@
         },
         {
           "id": "white-black-a-the-slow-decay-of-western-civilization",
-          "text": "The slow decay of western civilization."
+          "text": "The slow decay of western civilization.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-poorly-timed-sneeze",
-          "text": "A poorly timed sneeze."
+          "text": "A poorly timed sneeze.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-dog",
-          "text": "Getting rejected by a dog."
+          "text": "Getting rejected by a dog.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-accurate-tarot-reading",
@@ -646,11 +853,17 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-magic-trick",
-          "text": "A poorly executed magic trick."
+          "text": "A poorly executed magic trick.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-an-ikea",
-          "text": "Getting lost in an IKEA."
+          "text": "Getting lost in an IKEA.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-emotional-commercial",
@@ -686,7 +899,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-aggressive-squirrel",
-          "text": "A surprisingly aggressive squirrel."
+          "text": "A surprisingly aggressive squirrel.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-crushing-weight-of-societal-expectations",
@@ -714,7 +930,10 @@
         },
         {
           "id": "white-black-a-getting-lost-in-a-corn-maze",
-          "text": "Getting lost in a corn maze."
+          "text": "Getting lost in a corn maze.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-emotional-breakdown",
@@ -742,7 +961,10 @@
         },
         {
           "id": "white-black-a-a-poorly-timed-fart",
-          "text": "A poorly timed fart."
+          "text": "A poorly timed fart.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-bouncer",
@@ -750,7 +972,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-aggressive-seagull",
-          "text": "A surprisingly aggressive seagull."
+          "text": "A surprisingly aggressive seagull.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-crushing-weight-of-your-own-ego",
@@ -758,7 +983,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-conspiracy-theorist",
-          "text": "A completely unhinged conspiracy theorist."
+          "text": "A completely unhinged conspiracy theorist.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-getting-stuck-in-a-conversation-about-veganism",
@@ -806,7 +1034,10 @@
         },
         {
           "id": "white-black-a-a-poorly-timed-yawn",
-          "text": "A poorly timed yawn."
+          "text": "A poorly timed yawn.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-job",
@@ -814,7 +1045,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-aggressive-pigeon",
-          "text": "A surprisingly aggressive pigeon."
+          "text": "A surprisingly aggressive pigeon.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-crushing-weight-of-your-own-insecurities",
@@ -826,7 +1060,10 @@
         },
         {
           "id": "white-black-a-getting-stuck-in-a-conversation-about-politics",
-          "text": "Getting stuck in a conversation about politics."
+          "text": "Getting stuck in a conversation about politics.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-a-suspiciously-cheap-haircut",
@@ -838,11 +1075,17 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-cartwheel",
-          "text": "A poorly executed cartwheel."
+          "text": "A poorly executed cartwheel.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-a-forest",
-          "text": "Getting lost in a forest."
+          "text": "Getting lost in a forest.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-emotional-song",
@@ -870,7 +1113,10 @@
         },
         {
           "id": "white-black-a-a-poorly-timed-hiccup",
-          "text": "A poorly timed hiccup."
+          "text": "A poorly timed hiccup.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-crush",
@@ -878,7 +1124,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-aggressive-duck",
-          "text": "A surprisingly aggressive duck."
+          "text": "A surprisingly aggressive duck.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-crushing-weight-of-your-own-mistakes",
@@ -906,7 +1155,10 @@
         },
         {
           "id": "white-black-a-getting-lost-in-a-museum",
-          "text": "Getting lost in a museum."
+          "text": "Getting lost in a museum.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-emotional-book",
@@ -934,7 +1186,10 @@
         },
         {
           "id": "white-black-a-a-poorly-timed-burp",
-          "text": "A poorly timed burp."
+          "text": "A poorly timed burp.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-publisher",
@@ -942,11 +1197,17 @@
         },
         {
           "id": "white-black-a-a-gentle-caress-from-a-stranger",
-          "text": "A gentle caress from a stranger."
+          "text": "A gentle caress from a stranger.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-violently-defending-a-minor-grammatical-error",
-          "text": "Violently defending a minor grammatical error."
+          "text": "Violently defending a minor grammatical error.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-screaming-into-the-void",
@@ -954,11 +1215,17 @@
         },
         {
           "id": "white-black-a-a-suspiciously-moist-handshake",
-          "text": "A suspiciously moist handshake."
+          "text": "A suspiciously moist handshake.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-unleashing-a-horde-of-angry-badgers",
-          "text": "Unleashing a horde of angry badgers."
+          "text": "Unleashing a horde of angry badgers.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-the-undeniable-allure-of-a-discount-bin",
@@ -966,7 +1233,10 @@
         },
         {
           "id": "white-black-a-a-poorly-constructed-papier-mâché-volcano",
-          "text": "A poorly constructed papier-mâché volcano."
+          "text": "A poorly constructed papier-mâché volcano.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-trapped-in-a-revolving-door-with-your-nemesis",
@@ -974,7 +1244,10 @@
         },
         {
           "id": "white-black-a-a-surprisingly-articulate-parrot",
-          "text": "A surprisingly articulate parrot."
+          "text": "A surprisingly articulate parrot.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-the-crushing-weight-of-a-thousand-unread-emails",
@@ -998,7 +1271,10 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-high-five-2",
-          "text": "A poorly executed high-five."
+          "text": "A poorly executed high-five.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-a-spreadsheet",
@@ -1030,7 +1306,10 @@
         },
         {
           "id": "white-black-a-a-poorly-timed-cough",
-          "text": "A poorly timed cough."
+          "text": "A poorly timed cough.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-rejected-by-a-self-checkout-machine",
@@ -1126,7 +1405,10 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-photobomb",
-          "text": "A poorly executed photobomb."
+          "text": "A poorly executed photobomb.",
+          "tags": [
+            "kid friendly"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-a-daydream",
@@ -1142,7 +1424,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-conspiracy-theory-about-the-moon",
-          "text": "A completely unhinged conspiracy theory about the moon."
+          "text": "A completely unhinged conspiracy theory about the moon.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-getting-stuck-in-an-endless-loop-of-overthinking",
@@ -1174,7 +1459,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-rant-about-the-state-of-the-world",
-          "text": "A completely unhinged rant about the state of the world."
+          "text": "A completely unhinged rant about the state of the world.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-getting-stuck-in-a-conversation-about-someone-s-pet",
@@ -1190,7 +1478,10 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-magic-trick-that-ends-in-disaster",
-          "text": "A poorly executed magic trick that ends in disaster."
+          "text": "A poorly executed magic trick that ends in disaster.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-a-maze-of-your-own-thoughts",
@@ -1206,7 +1497,10 @@
         },
         {
           "id": "white-black-a-a-lukewarm-cup-of-revenge",
-          "text": "A lukewarm cup of revenge."
+          "text": "A lukewarm cup of revenge.",
+          "tags": [
+            "violence"
+          ]
         },
         {
           "id": "white-black-a-getting-emotionally-attached-to-a-roomba",
@@ -1222,7 +1516,10 @@
         },
         {
           "id": "white-black-a-a-completely-unhinged-conspiracy-theory-about-pigeons",
-          "text": "A completely unhinged conspiracy theory about pigeons."
+          "text": "A completely unhinged conspiracy theory about pigeons.",
+          "tags": [
+            "politics"
+          ]
         },
         {
           "id": "white-black-a-getting-stuck-in-an-elevator-with-a-mime",
@@ -1238,11 +1535,17 @@
         },
         {
           "id": "white-black-a-a-poorly-executed-attempt-at-flirting",
-          "text": "A poorly executed attempt at flirting."
+          "text": "A poorly executed attempt at flirting.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-getting-lost-in-the-sauce",
-          "text": "Getting lost in the sauce."
+          "text": "Getting lost in the sauce.",
+          "tags": [
+            "sex"
+          ]
         },
         {
           "id": "white-black-a-a-surprisingly-emotional-infomercial",

@@ -7,11 +7,15 @@
     {
       "id": "wildcard",
       "name": "Wildcard",
+      "description": "",
       "prompts": [],
       "answers": [
         {
           "id": "wildcard-a-three-raccoons-in-a-trench-coat-trying-to-buy-a-movie-ticket",
-          "text": "Three raccoons in a trench coat trying to buy a movie ticket"
+          "text": "Three raccoons in a trench coat trying to buy a movie ticket",
+          "tags": [
+            "kid friendly"
+          ]
         }
       ]
     }

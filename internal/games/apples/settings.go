@@ -157,7 +157,7 @@ func reconcileSettings(existing matchSettings, ok bool, cat catalog) matchSettin
 			out.setPack(lib.ID, pack.ID, false)
 		}
 	}
-	for _, tag := range collectCatalogTags(cat) {
+	for _, tag := range pickerTagIDs(cat) {
 		if !ok || existing.Tags == nil {
 			out.setTag(tag, true)
 			continue

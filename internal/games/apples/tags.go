@@ -5,6 +5,10 @@ import (
 	"sort"
 )
 
+// untaggedFilterID is the match-settings key for cards with no tags.
+// It is not a library JSON tag.
+const untaggedFilterID = "__untagged__"
+
 var tagPalette = []string{
 	"#ff5ec8",
 	"#7cff6b",
@@ -28,6 +32,14 @@ func collectCatalogTags(cat catalog) []string {
 	return sortedKeys(seen)
 }
 
+func pickerTagIDs(cat catalog) []string {
+	tags := collectCatalogTags(cat)
+	if catalogHasUntagged(cat) {
+		return append([]string{untaggedFilterID}, tags...)
+	}
+	return tags
+}
+
 func packTags(pack packFile) []string {
 	seen := map[string]struct{}{}
 	for _, card := range pack.Prompts {
@@ -47,6 +59,48 @@ func packTags(pack packFile) []string {
 	return sortedKeys(seen)
 }
 
+func packDotIDs(pack packFile) []string {
+	tags := packTags(pack)
+	if packHasUntagged(pack) {
+		return append([]string{untaggedFilterID}, tags...)
+	}
+	return tags
+}
+
+func cardHasTags(tags []string) bool {
+	for _, tag := range tags {
+		if tag != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func packHasUntagged(pack packFile) bool {
+	for _, card := range pack.Prompts {
+		if !cardHasTags(card.Tags) {
+			return true
+		}
+	}
+	for _, card := range pack.Answers {
+		if !cardHasTags(card.Tags) {
+			return true
+		}
+	}
+	return false
+}
+
+func catalogHasUntagged(cat catalog) bool {
+	for _, lib := range cat.Libraries {
+		for _, pack := range lib.Packs {
+			if packHasUntagged(pack) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func sortedKeys(seen map[string]struct{}) []string {
 	out := make([]string, 0, len(seen))
 	for tag := range seen {
@@ -59,6 +113,9 @@ func sortedKeys(seen map[string]struct{}) []string {
 func catalogHasTag(cat catalog, tag string) bool {
 	if tag == "" {
 		return false
+	}
+	if tag == untaggedFilterID {
+		return catalogHasUntagged(cat)
 	}
 	for _, have := range collectCatalogTags(cat) {
 		if have == tag {
@@ -93,6 +150,9 @@ func (s *matchSettings) setTag(tag string, on bool) {
 }
 
 func (s matchSettings) cardTagsAllowed(tags []string) bool {
+	if !cardHasTags(tags) {
+		return s.tagOn(untaggedFilterID)
+	}
 	for _, tag := range tags {
 		if tag == "" {
 			continue
@@ -104,10 +164,22 @@ func (s matchSettings) cardTagsAllowed(tags []string) bool {
 	return true
 }
 
+func tagLabel(id string) string {
+	if id == untaggedFilterID {
+		return "Untagged"
+	}
+	return id
+}
+
 func tagViews(ids []string, settings matchSettings) []tagView {
 	out := make([]tagView, 0, len(ids))
 	for _, id := range ids {
-		out = append(out, tagView{ID: id, Color: tagColor(id), Enabled: settings.tagOn(id)})
+		out = append(out, tagView{
+			ID:      id,
+			Label:   tagLabel(id),
+			Color:   tagColor(id),
+			Enabled: settings.tagOn(id),
+		})
 	}
 	return out
 }
