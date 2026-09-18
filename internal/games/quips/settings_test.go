@@ -67,6 +67,44 @@ func TestSettingsDefaultsAndRangeRejects(t *testing.T) {
 	}
 }
 
+func TestGameSettingsUseHTMX(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	h := newFakeHelper(dir)
+	g := New()
+	if err := g.Load(h); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = g.Shutdown() })
+
+	page := settingsPage(t, g)
+	for _, want := range []string{
+		`id="game-settings"`,
+		`hx-post="/settings/game/round-count"`,
+		`hx-target="#game-settings"`,
+		`hx-swap="outerHTML"`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("settings missing %s", want)
+		}
+	}
+	if strings.Contains(page, `onchange="this.form.submit()"`) {
+		t.Fatal("settings still submits with a full navigation")
+	}
+
+	rec := postSettingsHX(g, "/round-count", url.Values{"round_count": {"5"}})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("htmx round-count = %d %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "<!doctype html>") || strings.Contains(body, "<html") {
+		t.Fatal("htmx round-count returned a full document")
+	}
+	if !strings.Contains(body, `id="game-settings"`) || !strings.Contains(body, `value="5"`) {
+		t.Fatalf("htmx round-count missing settings body: %s", body)
+	}
+}
+
 func TestSettingsFreezeAfterStart(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -125,9 +163,22 @@ func settingsPage(t *testing.T, g *Game) string {
 }
 
 func postSettings(g *Game, path string, vals url.Values) *httptest.ResponseRecorder {
+	return postSettingsHeader(g, path, vals, nil)
+}
+
+func postSettingsHX(g *Game, path string, vals url.Values) *httptest.ResponseRecorder {
+	return postSettingsHeader(g, path, vals, http.Header{"HX-Request": {"true"}})
+}
+
+func postSettingsHeader(g *Game, path string, vals url.Values, extra http.Header) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(vals.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	for k, vs := range extra {
+		for _, v := range vs {
+			req.Header.Add(k, v)
+		}
+	}
 	g.Settings().ServeHTTP(rec, req)
 	return rec
 }
