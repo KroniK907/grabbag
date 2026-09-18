@@ -62,7 +62,7 @@ func (e *engine) openWriteRoundForIDs(now time.Time) error {
 	}
 
 	if e.Settings.WriteSec > 0 {
-		e.armWriteTimer(now, e.Settings.WriteSec)
+		e.armTimer(now, "write", e.Settings.WriteSec)
 	} else {
 		e.clearTimer()
 	}
@@ -210,19 +210,19 @@ func (e *engine) timerSubmitAll() {
 	}
 }
 
-func (e *engine) armWriteTimer(now time.Time, sec int) {
+func (e *engine) armTimer(now time.Time, kind string, sec int) {
 	if sec <= 0 {
 		e.clearTimer()
 		return
 	}
 	if e.Paused {
-		e.TimerKind = "write"
+		e.TimerKind = kind
 		e.TimerTotal = time.Duration(sec) * time.Second
 		e.FrozenLeft = e.TimerTotal
 		e.TimerEnd = time.Time{}
 		return
 	}
-	e.TimerKind = "write"
+	e.TimerKind = kind
 	e.TimerTotal = time.Duration(sec) * time.Second
 	e.TimerEnd = e.clock(now).Add(e.TimerTotal)
 	e.FrozenLeft = 0

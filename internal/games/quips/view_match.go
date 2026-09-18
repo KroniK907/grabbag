@@ -12,14 +12,35 @@ type boardView struct {
 	pageView
 	Paused       bool
 	Phase        string
+	Round        int
+	Multiplier   int
 	CenterPrompt string
 	WritingBeat  bool
+	ParadeBeat   bool
+	Quips        []quipBoardView
+	HoldAwards   []holdAwardView
+	Champions    []string
 	Roster       []rosterView
 	TimerLabel   string
 	TimerText    string
 	TimerSeconds int
 	TimerTotal   int
 	TimerEndUnix int64
+	LiveCounts   map[string]int
+}
+
+type quipBoardView struct {
+	WriterID string
+	Name     string
+	Text     string
+	Empty    bool
+	Revealed bool
+	Count    int
+}
+
+type holdAwardView struct {
+	Name   string
+	Points int
 }
 
 type rosterView struct {
@@ -35,15 +56,28 @@ type phoneView struct {
 	Error          string
 	WaitCopy       string
 	Slots          []slotView
+	VoteOptions    []voteOptionView
 	LockLabel      string
 	LockReady      bool
 	Locked         bool
 	Policy         composePolicy
+	HostBar        bool
+	HostReveal     bool
+	HostNext       bool
+	HostSkipHold   bool
+	HostEndMatch   bool
 	TimerLabel     string
 	TimerText      string
 	TimerSeconds   int
 	TimerTotal     int
 	TimerEndUnix   int64
+}
+
+type voteOptionView struct {
+	Target string
+	Label  string
+	Count  int
+	Chosen bool
 }
 
 type slotView struct {
@@ -73,12 +107,67 @@ func (g *Game) boardViewLocked() boardView {
 	eng := g.engine
 	view.Paused = g.paused
 	view.Phase = string(eng.Phase)
+	view.Round = eng.Round
+	view.Multiplier = eng.Multiplier
 	view.WritingBeat = eng.Phase == phaseWrite
-	if eng.Kind == roundLastQuip && len(eng.Segments) == 1 {
-		view.CenterPrompt = eng.Segments[0].Prompt.Text
-	}
+	view.ParadeBeat = eng.Phase == phaseReveal || eng.Phase == phaseVote || eng.Phase == phaseHold
 	view.Roster = g.rosterViewsLocked(eng)
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
+	view.LiveCounts = eng.liveVoteCounts()
+
+	segIdx := eng.activeSegmentIdx()
+	if segIdx >= 0 && segIdx < len(eng.Segments) {
+		view.CenterPrompt = eng.Segments[segIdx].Prompt.Text
+	}
+	revealed := eng.revealedWriterIDs(segIdx)
+	revealedSet := map[string]struct{}{}
+	for _, id := range revealed {
+		revealedSet[id] = struct{}{}
+	}
+	writers := eng.segmentWriters(segIdx)
+	for _, id := range writers {
+		w := eng.Writers[id]
+		name := id
+		if w != nil {
+			name = w.Name
+		}
+		text := eng.quipForWriter(segIdx, id)
+		_, isRev := revealedSet[id]
+		show := isRev || eng.Phase == phaseVote || eng.Phase == phaseHold || eng.Phase == phaseFinalScores
+		if eng.Kind == roundLastQuip && !eng.Settings.HostControlledReveals && eng.Phase != phaseWrite {
+			show = true
+		}
+		if !eng.Settings.HostControlledReveals && eng.Phase == phaseReveal {
+			show = true
+		}
+		q := quipBoardView{
+			WriterID: id,
+			Name:     name,
+			Text:     text,
+			Empty:    text == "",
+			Revealed: show,
+		}
+		if view.LiveCounts != nil {
+			q.Count = view.LiveCounts[id]
+		}
+		view.Quips = append(view.Quips, q)
+	}
+	if eng.Phase == phaseHold {
+		for id, pts := range eng.HoldAwards {
+			name := id
+			if w := eng.Writers[id]; w != nil {
+				name = w.Name
+			}
+			view.HoldAwards = append(view.HoldAwards, holdAwardView{Name: name, Points: pts})
+		}
+	}
+	if eng.Phase == phaseFinalScores || eng.Phase == phaseOver {
+		for _, id := range eng.Champions {
+			if w := eng.Writers[id]; w != nil {
+				view.Champions = append(view.Champions, w.Name)
+			}
+		}
+	}
 	return view
 }
 
@@ -93,14 +182,18 @@ func (g *Game) phoneView(r *http.Request) phoneView {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return g.phoneViewLocked(p)
+	return g.phoneViewLockedWithRequest(p, r)
 }
 
 func (g *Game) phoneViewLocked(p games.Player) phoneView {
+	return g.phoneViewLockedWithRequest(p, nil)
+}
+
+func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phoneView {
 	view := phoneView{
 		pageView: g.pageViewLocked("Quick Quips"),
 		Role:     "wait",
-		WaitCopy: "Writers are working on their quips.",
+		WaitCopy: "Hang tight.",
 	}
 	if g.engine == nil {
 		return view
@@ -111,14 +204,74 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	if msg := eng.PhoneErr[p.ID]; msg != "" {
 		view.Error = msg
 	}
-	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
-	if eng.Phase != phaseWrite {
-		view.Role = "wait"
-		view.WaitCopy = "Vote parade wiring lands in the next task."
-		return view
+	if msg := eng.PhoneErr["host"]; msg != "" && r != nil && g.helper != nil && g.helper.HasAdmin(r) {
+		view.Error = msg
 	}
+	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
+
+	if r != nil && g.helper != nil && g.helper.HasAdmin(r) && eng.Settings.HostControlledReveals {
+		view.HostBar = true
+		switch eng.Phase {
+		case phaseReveal:
+			view.HostReveal = true
+		case phaseParadeWait:
+			view.HostNext = true
+		case phaseHold:
+			view.HostSkipHold = true
+			if eng.Settings.WinnerScreenSec == 0 {
+				view.HostNext = true
+			}
+		case phaseFinalScores:
+			view.HostEndMatch = true
+		}
+	}
+
+	switch eng.Phase {
+	case phaseWrite:
+		return g.phoneComposeView(view, eng, p)
+	case phaseVote:
+		view.Role = "vote"
+		counts := eng.liveVoteCounts()
+		pick := ""
+		if eng.Vote.Picks != nil {
+			pick = eng.Vote.Picks[p.ID].Target
+		}
+		for _, id := range eng.voteTargets(p.ID) {
+			label := id
+			if w := eng.Writers[id]; w != nil {
+				label = w.Name
+			}
+			text := eng.quipForWriter(eng.activeSegmentIdx(), id)
+			if text != "" {
+				label = text
+			} else if text == "" {
+				label = "Empty quip"
+			}
+			opt := voteOptionView{Target: id, Label: label, Chosen: id == pick}
+			if counts != nil {
+				opt.Count = counts[id]
+			}
+			view.VoteOptions = append(view.VoteOptions, opt)
+		}
+		return view
+	case phaseParadeWait:
+		view.WaitCopy = "Waiting for the host to start the vote parade."
+	case phaseReveal:
+		view.WaitCopy = "Quips are being revealed."
+	case phaseHold:
+		view.WaitCopy = "Segment scores are on the board."
+	case phaseFinalScores:
+		view.WaitCopy = "Final scores are on the board."
+	default:
+		view.WaitCopy = "Waiting for the next beat."
+	}
+	return view
+}
+
+func (g *Game) phoneComposeView(view phoneView, eng *engine, p games.Player) phoneView {
 	w := eng.Writers[p.ID]
 	if w == nil {
+		view.WaitCopy = "You are watching this round."
 		return view
 	}
 	view.Role = "compose"
@@ -141,11 +294,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		return view
 	}
 	view.LockReady = composeReady(eng.Policy, w)
-	if view.LockReady {
-		view.LockLabel = "Lock"
-	} else {
-		view.LockLabel = "Lock"
-	}
+	view.LockLabel = "Lock"
 	return view
 }
 
@@ -181,7 +330,7 @@ func (g *Game) rosterViewsLocked(eng *engine) []rosterView {
 		if w == nil {
 			continue
 		}
-		out = append(out, rosterView{Name: w.Name, Locked: w.Locked})
+		out = append(out, rosterView{Name: w.Name, Locked: w.Locked, Score: eng.Scores[id]})
 	}
 	return out
 }
@@ -190,7 +339,18 @@ func (g *Game) timerViewLocked(eng *engine) (label, text string, seconds, total 
 	if eng.TimerKind == "" {
 		return "", "", 0, 0, 0
 	}
-	label = "Write"
+	switch eng.TimerKind {
+	case "write":
+		label = "Write"
+	case timerVote:
+		label = "Vote"
+	case timerWinner:
+		label = "Scores"
+	case timerFinal:
+		label = "Final"
+	default:
+		label = "Timer"
+	}
 	total = int(eng.TimerTotal.Seconds())
 	if eng.Paused || g.paused {
 		left := eng.FrozenLeft

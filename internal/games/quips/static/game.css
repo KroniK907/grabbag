@@ -233,3 +233,68 @@
   opacity: 0.7;
   margin: 0 0 8px;
 }
+
+.quips-round {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.quips-quip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.quips-quip-card {
+  min-width: 200px;
+  max-width: 360px;
+  padding: 16px;
+  border: 3px solid var(--ui-accent);
+  border-radius: 12px;
+  background: var(--ui-card-bg);
+  text-align: left;
+}
+
+.quips-quip-card.is-empty {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.quips-quip-author {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.quips-quip-text {
+  margin: 0;
+  font-size: clamp(18px, 3vw, 28px);
+}
+
+.quips-quip-empty {
+  margin: 0;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.quips-score {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.quips-host-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-top: 3px solid var(--ui-rail-border);
+  position: sticky;
+  bottom: 0;
+  background: var(--ui-board-bg);
+}
+
+.quips-vote-option.chosen .ui-btn {
+  border-color: #7cff6b;
+}

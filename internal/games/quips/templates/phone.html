@@ -16,6 +16,22 @@
     {{template "quips-timer" .}}
     <p>{{.WaitCopy}}</p>
   </div>
+  {{else if eq .Role "vote"}}
+  <div class="quips-phone-scroll">
+    {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
+    {{template "quips-timer" .}}
+    {{range .VoteOptions}}
+    <form
+      class="quips-vote-option{{if .Chosen}} chosen{{end}}"
+      hx-post="/play/vote"
+      hx-swap="outerHTML"
+      hx-target="#quips-phone"
+    >
+      <input type="hidden" name="target" value="{{.Target}}">
+      <button class="ui-btn" type="submit">{{.Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
+    </form>
+    {{end}}
+  </div>
   {{else}}
   <div class="quips-phone-scroll">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
@@ -47,6 +63,22 @@
     <button class="ui-btn" type="submit" {{if .Locked}}disabled{{end}}>{{.LockLabel}}</button>
   </form>
   {{end}}
+  {{end}}
+  {{if .HostBar}}
+  <div class="quips-host-bar">
+    {{if .HostReveal}}
+    <form hx-post="/play/host/reveal" hx-swap="outerHTML" hx-target="#quips-phone"><button class="ui-btn" type="submit">Reveal quip</button></form>
+    {{end}}
+    {{if .HostNext}}
+    <form hx-post="/play/host/next-segment" hx-swap="outerHTML" hx-target="#quips-phone"><button class="ui-btn" type="submit">Next segment</button></form>
+    {{end}}
+    {{if .HostSkipHold}}
+    <form hx-post="/play/host/skip-hold" hx-swap="outerHTML" hx-target="#quips-phone"><button class="ui-btn" type="submit">Skip hold</button></form>
+    {{end}}
+    {{if .HostEndMatch}}
+    <form hx-post="/play/host/end-match" hx-swap="outerHTML" hx-target="#quips-phone"><button class="ui-btn" type="submit">End match</button></form>
+    {{end}}
+  </div>
   {{end}}
 </div>
 {{end}}
