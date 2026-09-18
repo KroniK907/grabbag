@@ -3,6 +3,16 @@
 
   var savedScroll = 0;
 
+  function syncVisualViewport() {
+    var viewport = window.visualViewport;
+    var height = viewport ? viewport.height : window.innerHeight;
+    if (!height) {
+      return;
+    }
+    document.documentElement.style.setProperty("--apples-visual-height", Math.round(height) + "px");
+    document.documentElement.classList.toggle("apples-compact-height", height < 760);
+  }
+
   function paintTimers() {
     document.querySelectorAll("[data-apples-timer]").forEach(function (timer) {
       var total = Number(timer.dataset.timerTotal) || 0;
@@ -46,5 +56,14 @@
       paintTimers();
     });
   }
+  if (!window.grabbagApplesViewport) {
+    window.grabbagApplesViewport = true;
+    window.addEventListener("resize", syncVisualViewport);
+    window.addEventListener("orientationchange", syncVisualViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncVisualViewport);
+    }
+  }
+  syncVisualViewport();
   paintTimers();
 })();

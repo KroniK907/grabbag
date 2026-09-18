@@ -21,7 +21,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "match-11"
+	assetVersion = "match-12"
 	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
 	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )

@@ -256,6 +256,29 @@ func TestSettingsShowNewTimers(t *testing.T) {
 	}
 }
 
+func TestPhoneUsesCompactVisualViewportLayout(t *testing.T) {
+	t.Parallel()
+	g := loadedGame(t, newFakeHelper(t.TempDir(), true))
+	for _, tt := range []struct {
+		path string
+		want []string
+	}{
+		{path: "/static/game.js", want: []string{"visualViewport", "--apples-visual-height", "apples-compact-height", "height < 760"}},
+		{path: "/static/game.css", want: []string{".apples-lock-bar .ui-btn", "min-height: 44px", "var(--apples-visual-height, 100dvh)"}},
+	} {
+		rec := httptest.NewRecorder()
+		g.Play().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s = %d", tt.path, rec.Code)
+		}
+		for _, want := range tt.want {
+			if !strings.Contains(rec.Body.String(), want) {
+				t.Fatalf("%s missing %q", tt.path, want)
+			}
+		}
+	}
+}
+
 func boardRosterNames(t *testing.T, g *Game) []string {
 	t.Helper()
 	rec := httptest.NewRecorder()
