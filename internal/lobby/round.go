@@ -15,7 +15,7 @@ func (l *Lobby) SeatedCount(ctx context.Context) (int, error) {
 	return seatedCountDB(ctx, l.sql)
 }
 
-// CycleSeats reports the After a game setting. Stop no longer rotates a full table.
+// CycleSeats reports whether Stop should rotate the table.
 func (l *Lobby) CycleSeats(ctx context.Context) (bool, error) {
 	row, err := readRoomSettings(ctx, l.sql)
 	if err != nil {
@@ -115,17 +115,20 @@ func (l *Lobby) AutoPause(ctx context.Context) (bool, error) {
 	return on != 0, nil
 }
 
-// EndRound returns Lobby after Stop.
-// cycle is ignored for a full table. Stop never dumps sitters onto the wait list.
-// Open seats fill from the wait list. Disconnected seated rows are dropped.
-// A queued host sit or stand is applied.
+// EndRound returns Lobby after Stop. cycle sends sitters to the wait list and
+// pulls the next people in line. Open seats still fill when cycle is off.
+// Disconnected seated rows are dropped. A queued host sit or stand is applied.
 func (l *Lobby) EndRound(ctx context.Context, cycle bool) error {
-	_ = cycle
 	if err := l.SetRoundActive(ctx, false); err != nil {
 		return err
 	}
 	if err := l.dropDisconnectedSeated(ctx); err != nil {
 		return err
+	}
+	if cycle {
+		if err := l.rotateSeated(ctx); err != nil {
+			return err
+		}
 	}
 	if err := l.applyHostQueue(ctx); err != nil {
 		return err

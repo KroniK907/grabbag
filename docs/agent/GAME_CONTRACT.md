@@ -127,7 +127,7 @@ Start needs a loaded game and at least one seated player. If `MinPlayers() > 0` 
 | Stop | `Stop` | Lobby | mounted | GET allowed, POST 404 | kept |
 | Shutdown | `Stop` if started, then `Shutdown` | Lobby | gone | 404 | kept |
 
-Finish on Helper is graceful Stop. Empty seats fill from the wait list. A full table does not rotate. Operator abort is also Stop. Picking another game or Unload is Shutdown.
+Finish on Helper is Stop. Operator abort is the same Stop. If After a game is Cycle seats, Stop rotates the table. If it is Keep seats, sitters stay and empty seats fill from the wait list. Picking another game or Unload is Shutdown.
 
 Stop wipes run state in the game. It does not unload the package. Start can run again. Shutdown drops the helper and clears the selected game id.
 

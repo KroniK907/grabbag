@@ -1026,7 +1026,7 @@ if err := h.KVSet("hide-latency", value); err != nil {
         <h4>Return value</h4>
         <p>None. Host swallows Stop errors.</p>
         <h4>Description</h4>
-        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a> with graceful true. Empty seats fill from the wait list. A full table does not rotate. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
+        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a>. If After a game is Cycle seats, the table rotates. Empty seats still fill when Keep seats is on. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
         <h4>Examples</h4>
         <h5>End from the phone or the board</h5>
         <pre class="ex">if !g.mayEnd(h, r) {
