@@ -58,6 +58,9 @@ func convertOfficial(raw []byte) (libraryFile, error) {
 		Source:        officialFileName,
 	}
 	used := map[string]int{}
+	// Official dumps repeat some cards and differ others only by case.
+	// IDs hash normalized text, so keep the first copy of each id.
+	seenCards := map[string]struct{}{}
 	for _, src := range packs {
 		if !src.Official || omitOfficialPack(src.Name) {
 			continue
@@ -70,10 +73,18 @@ func convertOfficial(raw []byte) (libraryFile, error) {
 				pick = 1
 			}
 			id := officialCardID(packID, "p", card.Text)
+			if _, dup := seenCards[id]; dup {
+				continue
+			}
+			seenCards[id] = struct{}{}
 			pack.Prompts = append(pack.Prompts, promptCard{ID: id, Text: card.Text, Pick: &pick})
 		}
 		for _, card := range src.White {
 			id := officialCardID(packID, "a", card.Text)
+			if _, dup := seenCards[id]; dup {
+				continue
+			}
+			seenCards[id] = struct{}{}
 			pack.Answers = append(pack.Answers, answerCard{ID: id, Text: card.Text})
 		}
 		lib.Packs = append(lib.Packs, pack)
