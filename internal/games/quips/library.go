@@ -10,6 +10,16 @@ import (
 
 const libraryFormatVersion = 1
 
+type failedFile struct {
+	Filename string
+	Reason   string
+}
+
+type catalog struct {
+	Libraries []libraryFile
+	Failed    []failedFile
+}
+
 type libraryFile struct {
 	FormatVersion int        `json:"formatVersion"`
 	ID            string     `json:"id"`
@@ -117,4 +127,73 @@ func ValidatePromptOnlyFile(path string) error {
 	name := filepath.Base(path)
 	_, err = ParsePromptOnlyLibrary(name, raw)
 	return err
+}
+
+func scanDataDir(dir string) catalog {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return catalog{}
+	}
+	type parsed struct {
+		lib  libraryFile
+		err  error
+		name string
+	}
+	var rows []parsed
+	byID := map[string][]string{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".json") {
+			continue
+		}
+		raw, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			rows = append(rows, parsed{name: entry.Name(), err: fmt.Errorf("%s: unreadable JSON", entry.Name())})
+			continue
+		}
+		lib, err := ParsePromptOnlyLibrary(entry.Name(), raw)
+		if err != nil {
+			rows = append(rows, parsed{name: entry.Name(), err: err})
+			continue
+		}
+		rows = append(rows, parsed{name: entry.Name(), lib: lib})
+		byID[lib.ID] = append(byID[lib.ID], entry.Name())
+	}
+	clashed := map[string]struct{}{}
+	for _, files := range byID {
+		if len(files) > 1 {
+			for _, name := range files {
+				clashed[name] = struct{}{}
+			}
+		}
+	}
+	out := catalog{}
+	for _, row := range rows {
+		if row.err != nil {
+			out.Failed = append(out.Failed, failedFile{Filename: row.name, Reason: row.err.Error()})
+			continue
+		}
+		if _, clash := clashed[row.name]; clash {
+			out.Failed = append(out.Failed, failedFile{
+				Filename: row.name,
+				Reason:   fmt.Sprintf("%s: duplicate library id %q", row.name, row.lib.ID),
+			})
+			continue
+		}
+		out.Libraries = append(out.Libraries, row.lib)
+	}
+	return out
+}
+
+func packExists(cat catalog, libraryID, packID string) bool {
+	for _, lib := range cat.Libraries {
+		if lib.ID != libraryID {
+			continue
+		}
+		for _, pack := range lib.Packs {
+			if pack.ID == packID {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -79,13 +79,28 @@ func (g *Game) Load(h games.Helper) error {
 	if err := copyShippedLibraries(h.DataDir()); err != nil {
 		return err
 	}
-	return nil
+	return g.persistSettings()
 }
 
-// Settings is a stub game-settings page after Load.
+// Settings is match knobs and library link after Load.
 func (g *Game) Settings() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", g.getSettings)
+	mux.HandleFunc("POST /round-count", g.postRoundCount)
+	mux.HandleFunc("POST /last-quip", g.postLastQuip)
+	mux.HandleFunc("POST /round-multiplier-increase", g.postRoundMultiplierIncrease)
+	mux.HandleFunc("POST /seated-vote-points", g.postSeatedVotePoints)
+	mux.HandleFunc("POST /audience-vote-points", g.postAudienceVotePoints)
+	mux.HandleFunc("POST /timer-write", g.postTimerWrite)
+	mux.HandleFunc("POST /timer-vote", g.postTimerVote)
+	mux.HandleFunc("POST /timer-winner-screen", g.postTimerWinnerScreen)
+	mux.HandleFunc("POST /timer-final-scores", g.postTimerFinalScores)
+	mux.HandleFunc("POST /host-controlled-reveals", g.postHostControlledReveals)
+	mux.HandleFunc("POST /allow-self-vote", g.postAllowSelfVote)
+	mux.HandleFunc("POST /live-counts", g.postLiveCounts)
+	mux.HandleFunc("POST /quip-char-cap", g.postQuipCharCap)
+	mux.HandleFunc("POST /banned-words", g.postBannedWords)
+	mux.HandleFunc("POST /show-matched-word", g.postShowMatchedWord)
 	return mux
 }
 
@@ -209,10 +224,7 @@ func (g *Game) pageView(title string) pageView {
 }
 
 func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "settings.html", settingsView{
-		Chrome:  g.pageView("Quick Quips settings").Chrome,
-		Message: "Match settings will appear here in a follow-up task.",
-	}, http.StatusOK)
+	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 }
 
 func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
@@ -241,11 +253,6 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 type pageView struct {
 	ui.Chrome
 	GameCSS string
-}
-
-type settingsView struct {
-	ui.Chrome
-	Message string
 }
 
 type pickerView struct {
