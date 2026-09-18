@@ -1,6 +1,7 @@
 package apples
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -409,6 +410,30 @@ func TestOfficialImportConvertsFixture(t *testing.T) {
 	}
 	assertCheckbox(t, picker(t, g), "official", "the-base-set", true)
 	assertCheckbox(t, picker(t, g), "official", "family-edition", false)
+}
+
+func TestWildcardDraftFormLayout(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	err := pages.ExecuteTemplate(&buf, "phone-frame", phoneView{
+		Role:   "submit",
+		Blank:  &playCard{CardID: blankCardID, Blank: true, Wildcard: true},
+		Cap:    80,
+		Remain: 80,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, `class="apples-wildcard"`) {
+		t.Fatal(body)
+	}
+	if strings.Contains(body, `class="ui-btn ui-btn-inline" type="submit">Done`) {
+		t.Fatal("Done is still beside the field")
+	}
+	if !strings.Contains(body, `class="ui-btn" type="submit">Done</button>`) {
+		t.Fatal(body)
+	}
 }
 
 func loadedGame(t *testing.T, h *fakeHelper) *Game {
