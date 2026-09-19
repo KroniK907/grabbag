@@ -48,6 +48,8 @@ grabbag/
       applog/                 # in-memory log ring + optional host.log
     games/                    # compile-time loader + Game/Helper contract
       game.go
+      apples/                 # Apples for Humanity; package apples
+      quips/                  # Quick Quips; package quips
       testing/                # Testing diagnostics; package testinggame
         templates/
         static/

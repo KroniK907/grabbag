@@ -34,7 +34,7 @@ var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 // NewHandler returns the host routes wrapped in Go's cross-origin protection.
 // lanJoinURL is the fallback join address shown on /board when the request
 // host is loopback. It may be empty when no usable LAN IPv4 exists. A public
-// hostname such as a Cloudflare tunnel replaces that fallback.
+// URL such as a Tailscale Funnel or named Cloudflare tunnel replaces that fallback.
 func NewHandler(db *store.DB, lanJoinURL string) (http.Handler, error) {
 	handler, _, err := newHandler(db, lanJoinURL, games.Catalog())
 	return handler, err

@@ -218,9 +218,11 @@
         <li><a href="#setup">First-time setup</a></li>
         <li><a href="#tv">Put it on the TV</a></li>
         <li><a href="#join">Join from a phone</a></li>
+        <li><a href="#games">The games</a></li>
         <li><a href="#round">Play a round</a></li>
         <li><a href="#host-phone">The Host button</a></li>
         <li><a href="#settings">Settings</a></li>
+        <li><a href="#hosting">Hosting on the internet</a></li>
         <li><a href="#restart">If you quit and come back</a></li>
         <li><a href="#phones-stuck">Phones cannot join</a></li>
         <li><a href="#stop">Stop Grab Bag</a></li>
@@ -236,7 +238,7 @@
       <ul>
         <li>A Windows computer that stays on for the whole party. That machine runs Grab Bag. Closing the window ends the room.</li>
         <li>A TV, projector, or a second window for the board. That is the screen the room watches.</li>
-        <li>Phones or tablets on the <strong>same Wi-Fi</strong> as the computer. Guest Wi-Fi often blocks this. Use the house network.</li>
+        <li>Phones or tablets. For a living-room night they must be on the <strong>same Wi-Fi</strong> as the computer. Guest Wi-Fi often blocks this. Use the house network. People who are not in the house follow <a href="#hosting">Hosting on the internet</a>.</li>
         <li>An admin password you are about to pick. You will type it on setup, and once more on the first phone that should run the room.</li>
       </ul>
 
@@ -256,7 +258,7 @@
       <ol>
         <li>Pick a password of at least 8 characters. This is not a player nickname. It unlocks Room settings and lets a phone claim host. There is no "forgot password" in the binary yet. Write it down.</li>
         <li>Type it again to confirm.</li>
-        <li>Leave the other boxes on their defaults for a living-room night. Seat cap 8 is plenty. Advertised hostname should stay blank unless you are putting the room on the public internet through a tunnel. Logging can stay off.</li>
+        <li>Leave the other boxes on their defaults for a living-room night. Seat cap 8 is plenty. Advertised hostname should stay blank unless you follow <a href="#hosting">Hosting on the internet</a>. Logging can stay off.</li>
         <li>Tap Finish.</li>
       </ol>
       <div class="result"><strong>You should see</strong> the board. This browser stays signed in for 30 days.</div>
@@ -281,13 +283,24 @@
       <p>If the board says Closed, new people cannot Join. Open the room from settings or from the Host panel. Closed locks the door. It does not kick people who are already in.</p>
       <p>When every seat is taken, new joiners still arrive. They land in the audience and can get in line on the wait list. They watch. They do not take a seat until one frees up or you raise the seat cap.</p>
       <p>To hand the room to someone else later, use Make host in settings. That person's phone then shows Take host and asks for the admin password.</p>
+      <p>On LAN the QR is the house IP. After you set a tunnel URL, the same QR is the public <code>https://</code> address. See <a href="#hosting">Hosting on the internet</a>.</p>
+
+      <h2 id="games">The games</h2>
+      <p>Open Host, pick one package, then Load. The TV stays on the lobby until Start.</p>
+      <h3>Apples for Humanity</h3>
+      <p>One seated player is the judge each round. Everyone else fills the prompt with cards from a hand. The judge reveals the plays and picks a winner. After Load, Deck Library is on the board rail. Turn on the packs you want before Start.</p>
+      <p>White and Black is fill-in-the-blank. Oranges to Oranges is adjective and noun. Wildcard is a tiny typed-answer set. The picker can import the JSON Against Humanity dump if you want those cards. Bots can sit in empty chairs. How to play is on the rail after Load, and on phones during a round.</p>
+      <h3>Quick Quips</h3>
+      <p>Two or more seated people write lines into rotating prompts, then vote. Audience can vote if you leave those points on. After Load, Prompt Library is on the board rail. Comedy ships in the binary.</p>
+      <h3>Testing</h3>
+      <p>A seated list, a plunger, and latency. Use it when the host looks broken. It is not a scored party game.</p>
 
       <h2 id="round">Play a round</h2>
       <p>Do this from the claimed-host phone. The TV stays on the board so the room can watch.</p>
       <ol>
         <li>Confirm the board is up and the room says Open.</li>
         <li>Wait until faces are in seats. Each seated player taps Ready when they are looking at the TV.</li>
-        <li>Open Host. Pick a game, then tap <strong>Load</strong>. This build ships Testing. Load mounts that package. The TV stays on the lobby. Testing is a wiring check, not a scored party game.</li>
+        <li>Open Host. Pick a game, then tap <strong>Load</strong>. Load mounts that package. The TV stays on the lobby. Apples for Humanity and Quick Quips are the party games. Testing is a wiring check.</li>
         <li>Tap <strong>Start</strong>. Start needs at least one seated player. Some games also want a minimum table size and will refuse until enough seats are filled.</li>
         <li>Play. If you need a break, tap <strong>Pause</strong>. The round stays in memory. <strong>Resume</strong> continues it.</li>
         <li>When the round is over, tap <strong>Stop</strong>. The lobby comes back on the TV. The same game stays selected, so you can Start again without Load.</li>
@@ -369,7 +382,7 @@
           </tr>
           <tr>
             <td>Advertised hostname</td>
-            <td>Leave blank for a LAN party. The board then shows the IPv4 Grab Bag found at start. Fill this in only when you publish the room through a tunnel. A Cloudflare hostname is the usual case. Phones must be able to reach that name on port 8654.</td>
+            <td>Leave blank for a LAN party. The board then shows the IPv4 Grab Bag found at start. Fill this in only for a tunnel. Paste the full public URL, including <code>https://</code>. Do not add port 8654. The public side of a tunnel is HTTPS on 443. See <a href="#hosting">Hosting on the internet</a>.</td>
           </tr>
           <tr>
             <td>Log to stdout / host.log</td>
@@ -394,6 +407,28 @@
         </tbody>
       </table>
 
+      <h2 id="hosting">Hosting on the internet</h2>
+      <p>Default night is LAN. Phones and the PC share Wi-Fi. You do not buy a domain. You do not open a router port.</p>
+      <p>People off that network need a tunnel on the same PC as Grab Bag. The tunnel makes an outbound connection. Guests hit a public HTTPS URL. Traffic comes back to <code>localhost:8654</code>. The PC has to stay awake. Sleep or a closed console ends the room.</p>
+
+      <h3>Tailscale Funnel</h3>
+      <p>This is the path that does not require a purchased domain. Cost is $0. The URL is a <code>.ts.net</code> name. Guests do not install Tailscale.</p>
+      <ol>
+        <li>Install <a href="https://tailscale.com/download/windows">Tailscale for Windows</a> on the Grab Bag PC. Sign in with Google, GitHub, or Microsoft.</li>
+        <li>Start Grab Bag. Leave the console open.</li>
+        <li>In PowerShell, run <code>tailscale funnel 8654</code>. The first time, Tailscale may open a page to turn Funnel on for your account. Approve it.</li>
+        <li>Copy the printed URL. It looks like <code>https://something.ts.net</code>.</li>
+        <li>In Grab Bag settings, paste that full URL into advertised hostname. Include <code>https://</code>. Save.</li>
+        <li>Check the board QR. It should show the <code>https://</code> address, not the LAN IP and not port 8654.</li>
+      </ol>
+      <div class="result"><strong>You should see</strong> phones on cellular open the same QR and land on Join.</div>
+      <div class="note">Anyone who finds that URL can hit the same login page the TV does. Keep the admin password off the join link. Home upload speed is the real limit.</div>
+      <p>Stop Funnel when the night is over with <code>tailscale funnel off</code>, or quit Tailscale. Clear advertised hostname before the next LAN party so the QR goes back to the house IP.</p>
+
+      <h3>Cloudflare</h3>
+      <p>If you already have a domain on Cloudflare, a named Cloudflare Tunnel is a stable hostname you control. That product supports the live SSE Grab Bag uses. You still do not open a router port.</p>
+      <p>Do not use Cloudflare Quick Tunnels (<code>trycloudflare.com</code>, the one-command no-account URL). Cloudflare documents that those tunnels do not support SSE. The lobby and board would load, then stall.</p>
+
       <h2 id="restart">If you quit and come back</h2>
       <p>Closing Grab Bag does not forget the room. The next start reloads names and seats from disk.</p>
       <ol>
@@ -407,11 +442,12 @@
       <h2 id="phones-stuck">Phones cannot join</h2>
       <p>Work down the list. Most nights it is Wi-Fi or the wrong URL.</p>
       <ol>
-        <li>Confirm the phone and PC are on the same Wi-Fi. Not a guest network. Not cellular.</li>
+        <li>On LAN, confirm the phone and PC are on the same Wi-Fi. Not a guest network. Not cellular. Remote phones skip this and use the tunnel URL from <a href="#hosting">Hosting on the internet</a>.</li>
         <li>Confirm Windows Firewall allowed Grab Bag on that private network.</li>
         <li>On the phone, use the URL or QR on the board. Do not type <code>127.0.0.1</code>. That address means "this device," so the phone would look for Grab Bag inside itself.</li>
         <li>Confirm the board says Open.</li>
-        <li>If you set advertised hostname, that name has to reach this PC on port 8654 from the phone.</li>
+        <li>If advertised hostname is set, it must be the full public <code>https://</code> URL the tunnel printed. The QR should not show port 8654.</li>
+        <li>If you used Tailscale Funnel, confirm <code>tailscale funnel 8654</code> is still running and the PC is not asleep.</li>
       </ol>
 
       <h2 id="stop">Stop Grab Bag</h2>
