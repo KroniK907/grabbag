@@ -57,6 +57,8 @@ type matchSettings struct {
 	WildcardShowMatchedWord  bool                       `json:"wildcardShowMatchedWord"`
 	WildcardJournalDelay     bool                       `json:"wildcardJournalDelay"`
 	ReshuffleDiscardOnUnload bool                       `json:"reshuffleDiscardOnUnload"`
+	HostJudge                bool                       `json:"hostJudge"`
+	HostReveals              bool                       `json:"hostReveals"`
 }
 
 func factorySettings() matchSettings {

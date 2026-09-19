@@ -154,7 +154,10 @@ func (g *Game) postWildcardDraft(w http.ResponseWriter, r *http.Request) {
 
 func (g *Game) postReveal(w http.ResponseWriter, r *http.Request) {
 	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
+		if !m.playerReveals(p) {
+			if m.Settings.HostReveals {
+				return fmt.Errorf("Only the host can reveal.")
+			}
 			return fmt.Errorf("Only the judge can reveal.")
 		}
 		return g.revealNextLocked(m)

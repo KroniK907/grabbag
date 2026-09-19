@@ -204,6 +204,20 @@ func (g *Game) postLiveCounts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (g *Game) postHostJudge(w http.ResponseWriter, r *http.Request) {
+	g.mutateSettings(w, r, "host-judge", func(s *matchSettings) error {
+		s.HostJudge = formEnabled(r)
+		return nil
+	})
+}
+
+func (g *Game) postHostReveals(w http.ResponseWriter, r *http.Request) {
+	g.mutateSettings(w, r, "host-reveals", func(s *matchSettings) error {
+		s.HostReveals = formEnabled(r)
+		return nil
+	})
+}
+
 func (g *Game) postAutoDraw(w http.ResponseWriter, r *http.Request) {
 	g.postTimer(w, r, "timer-auto-draw", "auto_draw")
 }
