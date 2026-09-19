@@ -171,6 +171,7 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 	m.JudgeCycle = ids
 	m.JudgeIdx = 0
 	m.JudgeID = ids[0]
+	g.applyHostJudgeLocked(m, seated)
 
 	needBots := settings.BotCount
 	if len(seated)+needBots < 3 {
@@ -305,6 +306,14 @@ func (g *Game) syncRosterLocked(h games.Helper) {
 }
 
 func (g *Game) advanceJudgeLocked(m *matchState, live map[string]games.Player) {
+	if m.Settings.HostJudge {
+		if host, ok := claimedHostInLive(live); ok {
+			if _, actorOK := m.Actors[host.ID]; actorOK {
+				m.JudgeID = host.ID
+				return
+			}
+		}
+	}
 	if len(m.JudgeCycle) == 0 {
 		return
 	}

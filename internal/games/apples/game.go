@@ -126,6 +126,8 @@ func (g *Game) Settings() http.Handler {
 	mux.HandleFunc("POST /bot-count", g.postBotCount)
 	mux.HandleFunc("POST /voting", g.postVoting)
 	mux.HandleFunc("POST /live-counts", g.postLiveCounts)
+	mux.HandleFunc("POST /host-judge", g.postHostJudge)
+	mux.HandleFunc("POST /host-reveals", g.postHostReveals)
 	mux.HandleFunc("POST /timer-auto-draw", g.postAutoDraw)
 	mux.HandleFunc("POST /timer-submit", g.postSubmitSec)
 	mux.HandleFunc("POST /timer-between", g.postBetweenSec)

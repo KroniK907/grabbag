@@ -312,7 +312,6 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	case p.ID == m.JudgeID:
 		view.Role = "judge"
 		view.CanDraw = m.Phase == phaseDrawWait || m.Phase == phaseSudden
-		view.CanReveal = m.Phase == phaseReveal
 		view.CanConfirm = m.Phase == phaseReveal
 		view.Skip = m.Settings.PromptMode == modeSkip && m.Phase == phaseHold
 		view.Keep = view.Skip
@@ -374,16 +373,13 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		view.Packets = g.packetViewsLocked(m, p.ID, false)
 	}
 	view.CanVote = g.playerMayVote(m, p)
-	view.CanReveal = false
+	view.CanReveal = m.playerReveals(p) && m.hasUnrevealedPacket()
 	if m.TimerKind == "favorite-vote" {
 		view.CanConfirm = false
 	}
 	for _, pk := range view.Packets {
 		if !pk.Revealed {
 			view.CanConfirm = false
-			if view.Role == "judge" && m.Phase == phaseReveal {
-				view.CanReveal = true
-			}
 		}
 	}
 	return view

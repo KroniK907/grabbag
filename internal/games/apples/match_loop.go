@@ -305,6 +305,14 @@ func (g *Game) enterSuddenLocked(h games.Helper, m *matchState) {
 	m.Phase = phaseSudden
 	m.InMultiplier = true
 	live := g.seatedLiveLocked(h)
+	if m.Settings.HostJudge {
+		if host, ok := claimedHostInLive(live); ok && !slices.Contains(ties, host.ID) {
+			if _, actorOK := m.Actors[host.ID]; actorOK {
+				m.JudgeID = host.ID
+				return
+			}
+		}
+	}
 	var pool []string
 	for id := range live {
 		if !slices.Contains(ties, id) {
@@ -524,7 +532,9 @@ func (g *Game) fireTimerLocked() {
 	case "submit":
 		g.timerSubmitLocked(m)
 	case "between-reveals":
-		_ = g.revealNextLocked(m)
+		if !m.Settings.HostReveals {
+			_ = g.revealNextLocked(m)
+		}
 	case "favorite-vote":
 		g.armTimerLocked(m, "judge-pick", m.Settings.JudgePickSec)
 	case "judge-pick":
