@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Grab Bag puts party games on your stream overlay and phones in chat's hands. Alpha software for streamers who want a living-room game night with the audience.">
-  <title>Grab Bag — party games for streamers and chat</title>
+  <meta name="description" content="Free party games for streamers. Put the game on stream, chat scans a QR code, and their phones become the controllers. No app, no account. Great on the couch too.">
+  <title>GrabBag.gg — free party games your chat plays from their phones</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&amp;family=Russo+One&amp;family=Source+Sans+3:wght@400;600;700&amp;display=swap" rel="stylesheet">
@@ -352,6 +352,83 @@
     }
     .get-started p { color: var(--muted); margin: 0 0 1.25rem; }
 
+    .example {
+      background: var(--bg-2);
+      border: 1px dashed var(--card-border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin: 0 0 1rem;
+    }
+    .game-card .example p { margin: 0; }
+    .example-prompt {
+      font-family: "Russo One", sans-serif;
+      color: var(--fg) !important;
+      margin-bottom: 0.6rem !important;
+    }
+    .example-answers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.6rem !important;
+    }
+    .example-answers span {
+      background: var(--card);
+      border: 1px solid var(--accent-2);
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      color: var(--accent-2);
+      font-size: 0.9rem;
+    }
+    .example-note {
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+
+    .import-callout {
+      margin-top: 1.1rem;
+      padding: 0.9rem 1rem;
+      border: 2px solid var(--brand);
+      border-radius: 10px;
+      background: rgba(255, 225, 74, 0.06);
+    }
+    .game-card .import-callout p { margin: 0; font-size: 0.92rem; }
+    .import-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      margin-bottom: 0.5rem !important;
+      font-family: "Russo One", sans-serif;
+      font-size: 0.85rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--fg) !important;
+    }
+    .import-stats strong {
+      font-family: Bangers, Impact, sans-serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: var(--brand);
+      text-shadow: var(--brand-glow);
+      margin-right: 0.3rem;
+    }
+
+    .fine {
+      max-width: 40rem;
+      margin: 1.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .get-started .fine { margin: 1.25rem auto 0; font-size: 0.85rem; }
+    .get-started h2 {
+      font-family: Bangers, Impact, sans-serif;
+      font-size: 2rem;
+      letter-spacing: 0.04em;
+      margin: 0 0 0.75rem;
+      color: var(--brand);
+      text-shadow: var(--brand-glow);
+    }
+    #couch .section-head { margin-bottom: 0; }
+
     footer.site-footer {
       border-top: 2px solid var(--accent);
       background: var(--bg-2);
@@ -372,22 +449,22 @@
 </head>
 <body>
   <div class="alpha-bar" role="status">
-    <strong>Alpha.</strong> Grab Bag is early software. Interfaces change, rough edges show, and it is not production-ready. Run it for co-stream experiments, not as your only show format.
+    <strong>Early days.</strong> GrabBag.gg is in alpha. It works, and some parts are still being put together.
   </div>
 
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="logo" href="./">Grab Bag</a>
+      <a class="logo" href="./">GrabBag.gg</a>
       <nav class="site-nav" aria-label="Page sections">
-        <a href="#features">Features</a>
-        <a href="#customize">Customize</a>
+        <a href="#why">Why it's fun</a>
         <a href="#games">Games</a>
-        <a href="#stream">On stream</a>
-        <a href="#start">Get started</a>
-        <a href="docs/index.html">How to run</a>
-        <a href="docs/game-contract.html">Game API</a>
+        <a href="#rules">Your rules</a>
+        <a href="#how">How it works</a>
+        <a href="#start">Get it free</a>
+        <a href="docs/index.html">Setup guide</a>
+        <a href="docs/game-contract.html">Make a game</a>
       </nav>
     </div>
   </header>
@@ -395,167 +472,187 @@
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <div>
-        <span class="eyebrow">Built for streamers</span>
-        <h1 id="hero-title">Your TV is the board. Chat holds the cards.</h1>
+        <span class="eyebrow">Free party games for streamers (and couches)</span>
+        <h1 id="hero-title">Your stream is the game. Chat holds the cards.</h1>
         <p class="lead">
-          <strong>Grab Bag</strong> is a self-hosted party host. Put the game on a browser source or second monitor, drop the join QR on screen, and let viewers on their phones play with you—not just watch.
+          <strong>GrabBag.gg</strong> puts a party game on your stream. Viewers scan a code, pick a name, and play along on their phones. It's free. No app, no account, and nobody has to dig a controller out from behind the couch.
         </p>
         <div class="cta-row">
-          <a class="btn" href="https://github.com/KroniK907/grabbag">View on GitHub</a>
-          <a class="btn btn-ghost" href="#start">Run a room</a>
+          <a class="btn" href="#start">Get GrabBag.gg free</a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
         </div>
       </div>
       <figure class="hero-shot">
-        <img src="assets/board.png" width="1280" height="720" alt="Grab Bag TV board with player seats, join QR code, and neon game chrome">
-        <figcaption class="shot-caption">Fullscreen <code>/board</code> in OBS or on a capture PC. Phones scan the QR—no app store, no room code on someone else's site.</figcaption>
+        <img src="assets/board.png" width="1280" height="720" alt="The GrabBag.gg game screen, showing player faces and a QR code to join">
+        <figcaption class="shot-caption">This is what goes on stream. The QR code is how people get in. That's most of the explanation.</figcaption>
       </figure>
     </section>
 
-    <section id="features" aria-labelledby="features-title">
+    <section id="why" aria-labelledby="why-title">
       <div class="section-head">
-        <h2 id="features-title">Made for live audiences</h2>
-        <p>Everything is built around one room you control on your machine. You run the host, you pick the game, chat joins from the link you show.</p>
+        <h2 id="why-title">Made for "wait, rewind that" moments</h2>
+        <p>The best part of a party game isn't the rules. It's the answer nobody saw coming, the long pause while the judge decides, and chat typing "LMAOOO" forty times in a row. GrabBag.gg is built to put those moments on your stream.</p>
       </div>
       <div class="feature-grid">
         <article class="card">
-          <h3>Browser source ready</h3>
-          <p>The board is a clean web page at <code>/board</code>. Capture it like any other overlay. Neon dark mode reads well on stream without extra styling.</p>
+          <h3>Chat plays, not just watches</h3>
+          <p>Your viewers write the answers on their phones, and those answers show up big on your stream. You just get to react.</p>
         </article>
         <article class="card">
-          <h3>Phones are controllers</h3>
-          <p>Viewers join with a face, a name, and one tap. No install friction while you're live. Mods can sit in empty seats or you can invite co-hosts into chairs.</p>
+          <h3>Lurkers get a job</h3>
+          <p>Not in the game this round? Vote anyway. Everyone watching can pick their favorite from their phone, so the quiet folks get a say too.</p>
         </article>
         <article class="card">
-          <h3>You own the room</h3>
-          <p>No cloud account and no matchmaking service. The PC on your desk is the server. When you close it, the room ends—good for controlled subscriber nights.</p>
+          <h3>Join with a phone</h3>
+          <p>Scan the code on screen, pick a face, type a name, tap Join. Nothing to download and no account to make.</p>
         </article>
         <article class="card">
-          <h3>LAN-first, tunnel when you need it</h3>
-          <p>Same Wi‑Fi is the happy path for collab streams in one house. Off-network viewers can join through a tunnel you run; you choose when to expose it.</p>
+          <h3>Drops right into OBS</h3>
+          <p>The game screen is a web page. Add it to OBS like any other browser source, or put it on a TV. It looks good on stream without any fiddling.</p>
         </article>
         <article class="card">
-          <h3>Host phone in your pocket</h3>
-          <p>Claim host with your admin password, then Load, Start, Pause, and Stop from your phone while you keep talking to chat.</p>
+          <h3>Run the show from your phone</h3>
+          <p>Pick a game, start, pause, stop. All from the phone in your hand, so you stay on camera and keep talking to chat.</p>
         </article>
         <article class="card">
-          <h3>Party games that scale with chat</h3>
-          <p>Rotate judges, run voting rounds, and let audience points matter in Quick Quips when you want lurkers in on the bit—not just the people on cam.</p>
+          <h3>Small chat? Perfect.</h3>
+          <p>You don't need a huge audience. Three regulars is a game. In Apples for Humanity, bots can fill the empty spots.</p>
         </article>
       </div>
-    </section>
-
-    <section id="customize" aria-labelledby="customize-title">
-      <div class="section-head">
-        <h2 id="customize-title">Tune the room to your stream</h2>
-        <p>Grab Bag is not one fixed ruleset. After you load a game, settings and libraries live on the board rail and on your host phone—so you can match pacing, tone, and who gets a vote before you go live with chat.</p>
-      </div>
-      <div class="feature-grid">
-        <article class="card">
-          <h3>Pick your content</h3>
-          <p>Apples opens a deck library (white/black, oranges, wildcards, and optional imports). Quick Quips opens a prompt library. Turn packs on or off so the night fits your community standards and bit.</p>
-        </article>
-        <article class="card">
-          <h3>Control the clock</h3>
-          <p>Set write, submit, reveal, and vote timers—or leave phases manual when you want long riffing on cam. Faster clocks keep sub-only segments tight; slower ones suit collab streams.</p>
-        </article>
-        <article class="card">
-          <h3>Who scores, who votes</h3>
-          <p>Route audience votes, seated votes, or both. Weight points for lurkers vs people in chairs. In Apples, rotate the judge; in Quips, cap quip length and filter banned words if chat gets spicy.</p>
-        </article>
-        <article class="card">
-          <h3>Round shape and win conditions</h3>
-          <p>Hand size, round limits, win-by-score vs win-by-rounds, multipliers on the last round—dial intensity up for a one-hour sub goal or down for a casual between-games filler.</p>
-        </article>
-        <article class="card">
-          <h3>Fill seats your way</h3>
-          <p>Bots can occupy empty chairs so you never dead-air while waiting for the next viewer. Swap judges, cycle seats between games, and pause from your phone without leaving the mic hot.</p>
-        </article>
-        <article class="card">
-          <h3>Same host, different shows</h3>
-          <p>Save a harsh-competitive config for rivalry streams and a loose party config for charity nights. Settings stick with the loaded game in your room until you change them—no separate cloud dashboard.</p>
-        </article>
-      </div>
-      <p style="max-width:40rem;margin:1.5rem 0 0;color:var(--muted);font-size:0.95rem;">Alpha caveat: menus and defaults still move. If a knob matters for your format, write it down until the host stabilizes.</p>
     </section>
 
     <section id="games" aria-labelledby="games-title">
       <div class="section-head">
-        <h2 id="games-title">Games in the bag</h2>
-        <p>Two party formats ship today. More can land as the host stabilizes. Pick one, load it from your host phone, and read the on-board how-to while chat fills seats.</p>
+        <h2 id="games-title">What's in the bag</h2>
+        <p>Two games so far, with more on the way. If you've played Jackbox, you'll pick these up in about one round.</p>
       </div>
       <div class="game-grid">
         <article class="game-card">
           <h3>Apples for Humanity</h3>
-          <p>Cards Against Humanity-style rounds built for a loud stream. One seated player judges; everyone else fills the prompt from their hand.</p>
+          <p>One player is the judge and reads a prompt card out loud. Everyone else plays the funniest card from their hand. The judge picks a winner. Then someone else is the judge, and the grudges begin.</p>
+          <div class="example" aria-label="Example round">
+            <p class="example-prompt">The real reason I was late today: ____.</p>
+            <p class="example-answers"><span>A very confident goose.</span><span>My grandma's group chat.</span><span>I got stuck in a staring contest.</span></p>
+            <p class="example-note">The judge sees the goose and loses it. Goose wins.</p>
+          </div>
           <ul>
-            <li>Reveal plays on the TV for reaction moments</li>
-            <li>Deck library on the board rail—white/black, oranges, wildcards</li>
-            <li>Bots can fill empty chairs so you never stall mid-bit</li>
-            <li>Great when subs rotate into the hot seat each round</li>
+            <li>A new judge every round, so everyone gets a turn in the hot seat</li>
+            <li>Three kinds of cards: classic fill-in-the-blank, a gentler describe-it set, and wildcards players write themselves</li>
+            <li>Every card flips up on the big screen, so the whole stream sees the reveal</li>
+            <li>Bots can fill empty spots when you're short on players</li>
           </ul>
+          <div class="import-callout">
+            <p class="import-stats"><span><strong>55</strong> packs</span><span><strong>4,983</strong> cards</span><span><strong>1</strong> button</span></p>
+            <p>Want the real thing? One button pulls in every official Cards Against Humanity pack from the fan-run <a href="https://github.com/crhallberg/json-against-humanity">JSON Against Humanity</a> collection: 971 prompt cards and 4,012 answer cards. Then switch packs on and off like any other.</p>
+          </div>
         </article>
         <article class="game-card">
           <h3>Quick Quips</h3>
-          <p>Mad-libs energy with voting. Writers fill rotating prompts; the room picks favorites. Built for collaborative comedy on cam.</p>
+          <p>Everyone gets a prompt and writes their funniest answer. Two answers go head to head on screen, and the room votes for the winner.</p>
+          <div class="example" aria-label="Example matchup">
+            <p class="example-prompt">A terrible name for a pet goldfish.</p>
+            <p class="example-answers"><span>Lunch</span><span>Mr. Blub Blub, Esquire</span></p>
+            <p class="example-note">Chat votes. It is not close.</p>
+          </div>
           <ul>
-            <li>Audience voting when you leave those points on</li>
-            <li>Prompt library on the board rail; comedy ships in the binary</li>
-            <li>Works with two seated players or a full couch of co-streamers</li>
-            <li>Strong fit for "chat writes, we perform" segments</li>
+            <li>Comes with a pack of prompts, ready to go</li>
+            <li>Viewers who aren't playing can still vote on every matchup</li>
+            <li>Block words you don't want on screen and keep answers short</li>
+            <li>Great with a couple of friends or a whole chat</li>
           </ul>
         </article>
       </div>
     </section>
 
-    <section id="stream" aria-labelledby="stream-title">
+    <section id="rules" aria-labelledby="rules-title">
       <div class="section-head">
-        <h2 id="stream-title">Typical stream setup</h2>
-        <p>You need a Windows PC that stays on, a capture path for the board, and phones (or a tunnel) for players. This is the same flow as a living-room night—just pointed at your audience.</p>
+        <h2 id="rules-title">Your stream, your rules</h2>
+        <p>The obvious worry: some stranger joins and types something unhinged. Fair. Here's what you can actually do about it, and how to make each game fit your stream.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="card">
+          <h3>Kick anyone, anytime</h3>
+          <p>If someone's being a problem, remove them from the game from your phone. The round keeps going without them.</p>
+        </article>
+        <article class="card">
+          <h3>Block the words you don't want</h3>
+          <p>Quick Quips has a banned-words list and a limit on answer length. You probably already have the list.</p>
+        </article>
+        <article class="card">
+          <h3>Pick the cards</h3>
+          <p>Turn card and prompt packs on or off before you play, including all 55 official Cards Against Humanity packs. Keep the edgy ones for late night and leave them out for the family-friendly stream.</p>
+        </article>
+        <article class="card">
+          <h3>Set the pace</h3>
+          <p>Make timers longer so viewers on stream delay can keep up. Or turn them off and move to the next round yourself when you're done laughing.</p>
+        </article>
+        <article class="card">
+          <h3>Decide how much the crowd counts</h3>
+          <p>Choose how many points audience votes are worth. Make chat the kingmaker, or just a fun little bonus.</p>
+        </article>
+        <article class="card">
+          <h3>A line for the next player</h3>
+          <p>When the game is full, extra viewers wait in line and hop in when a spot opens. Until then, they can still vote.</p>
+        </article>
+      </div>
+      <p class="fine">GrabBag.gg is still early, so some of these settings may move around between versions.</p>
+    </section>
+
+    <section id="how" aria-labelledby="how-title">
+      <div class="section-head">
+        <h2 id="how-title">Game night in three steps</h2>
+        <p>You'll need a Windows PC that stays on while you play. The first setup takes a few minutes. After that, it's quick.</p>
       </div>
       <div class="stream-flow">
-        <ol class="steps">
-          <li>
-            <strong>Run the host on your stream PC</strong>
-            Grab Bag binds port 8654. Leave the console open for the whole segment.
-          </li>
-          <li>
-            <strong>Fullscreen the board</strong>
-            Open <code>/board</code> on the machine you capture. Add it as a browser source or push it to a side monitor for IRL co-streams.
-          </li>
-          <li>
-            <strong>Show the QR and join URL</strong>
-            Chat scans from stream or you read a short link if you've tunneled. Never send them to <code>127.0.0.1</code>—that only works on your PC.
-          </li>
-          <li>
-            <strong>Claim host and load a game</strong>
-            First person with the admin password is host. Load Apples or Quips, seat players (or bots), then Start when the room feels full enough for the bit.
-          </li>
-        </ol>
+        <div>
+          <ol class="steps">
+            <li>
+              <strong>Start GrabBag.gg on your PC</strong>
+              Grab it from GitHub and start it on your streaming PC. The setup guide walks you through it. Leave it running while you play.
+            </li>
+            <li>
+              <strong>Put the game on stream</strong>
+              Add the game screen to OBS as a browser source, or put it on a TV or second monitor.
+            </li>
+            <li>
+              <strong>Let chat scan in</strong>
+              Viewers scan the QR code on screen with their phones. You pick a game on your phone and hit Start.
+            </li>
+          </ol>
+          <p class="fine">Anyone on your Wi-Fi can join right away. For viewers joining from anywhere else, there's a one-time setup with a free tool. You won't need to touch your router, and the <a href="docs/index.html#hosting">setup guide</a> walks you through it step by step.</p>
+        </div>
         <figure class="hero-shot">
-          <img src="assets/phone-join.png" width="720" height="1280" alt="Phone join screen with avatar picker and name field">
-          <figcaption class="shot-caption">Join is one screen: pick a face, type a name, tap Join. Low friction while you're mid-stream.</figcaption>
+          <img src="assets/phone-join.png" width="720" height="1280" alt="The phone join screen: pick a face, type a name, tap Join">
+          <figcaption class="shot-caption">The entire joining process. Pick a face, type a name, tap Join. Choosing the face takes the longest.</figcaption>
         </figure>
+      </div>
+    </section>
+
+    <section id="couch" aria-labelledby="couch-title">
+      <div class="section-head">
+        <h2 id="couch-title">Not streaming? It's great on the couch too.</h2>
+        <p>Put the game on your TV, and friends play from whatever phones they already have. No extra controllers, no passing the remote around. Just a room full of people yelling "WHO WROTE THAT?"</p>
       </div>
     </section>
 
     <section id="start" class="get-started" aria-labelledby="start-title">
       <div class="card">
-        <h2 id="start-title" style="font-family:Bangers,Impact,sans-serif;font-size:2rem;margin:0 0 0.75rem;color:var(--brand);text-shadow:var(--brand-glow);">Get the host</h2>
-        <p>Clone the repo, run with Go 1.26+, or build <code>grabbag.exe</code> on Windows. How-to and Game API docs are static pages on this site—no Grab Bag process required to read them.</p>
+        <h2 id="start-title">Give your chat something to do</h2>
+        <p>GrabBag.gg is free and open source. It lives on GitHub, and the setup guide takes you from nothing to your first game night, including how to let viewers join from anywhere. Want to build your own game? The developer docs are for you.</p>
         <div class="cta-row" style="justify-content:center;">
-          <a class="btn" href="https://github.com/KroniK907/grabbag">github.com/KroniK907/grabbag</a>
-          <a class="btn btn-ghost" href="docs/index.html">How to run</a>
-          <a class="btn btn-ghost" href="docs/game-contract.html">Game API</a>
+          <a class="btn" href="https://github.com/KroniK907/grabbag">Get it on GitHub</a>
+          <a class="btn btn-ghost" href="docs/index.html">Setup guide</a>
+          <a class="btn btn-ghost" href="docs/game-contract.html">Make a game</a>
         </div>
-        <p style="margin-top:1.25rem;font-size:0.85rem;">Again: alpha software. Expect breakage, missing polish, and API movement. Back up your admin password—there is no reset in the binary yet.</p>
+        <p class="fine">Heads up: GrabBag.gg is in alpha, so things will change and you might hit a bug or two. There's no way to reset your host password yet, so write it down somewhere safe.</p>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="logo-sm">Grab Bag</div>
-    <p>Self-hosted party games · <a href="https://grabbag.gg">grabbag.gg</a></p>
-    <p>MIT licensed · Not affiliated with any card-game publisher</p>
+    <div class="logo-sm">GrabBag.gg</div>
+    <p>Free party games for streams and couches · <a href="https://grabbag.gg">grabbag.gg</a></p>
+    <p>Free and open source (GPLv3) · Not affiliated with Jackbox or any card-game publisher</p>
   </footer>
 </body>
 </html>

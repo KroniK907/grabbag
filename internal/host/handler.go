@@ -293,7 +293,7 @@ func loadSetupPage(ctx context.Context, db *store.DB, lanJoinURL, message string
 		seatCap = lobby.DefaultSeatCap
 	}
 	return setupPage{
-		Chrome:             ui.Chrome{Title: "Set up Grab Bag", Theme: ui.NormalizeTheme(theme)},
+		Chrome:             ui.Chrome{Title: "Set up GrabBag.gg", Theme: ui.NormalizeTheme(theme)},
 		Error:              message,
 		AdvertisedHostname: hostname,
 		HostnameHint:       strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(lanJoinURL, "http://"), "https://"), "/"),

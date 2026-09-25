@@ -1,4 +1,4 @@
-// Package main starts the Grab Bag host process.
+// Package main starts the GrabBag.gg host process.
 package main
 
 import "github.com/KroniK907/grabbag/internal/host"

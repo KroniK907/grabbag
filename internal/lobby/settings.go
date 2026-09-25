@@ -66,7 +66,7 @@ func WriteSetupSettings(ctx context.Context, tx *sql.Tx, settings SetupSettings)
 }
 
 func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
-	chrome, err := l.chrome(r.Context(), "Grab Bag room")
+	chrome, err := l.chrome(r.Context(), "GrabBag.gg room")
 	if err != nil {
 		return roomView{}, err
 	}
@@ -146,7 +146,7 @@ func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body temp
 
 func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
 	if !l.hasAdminCookie(r) {
-		chrome, err := l.chrome(r.Context(), "Grab Bag settings")
+		chrome, err := l.chrome(r.Context(), "GrabBag.gg settings")
 		if err != nil {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
@@ -651,7 +651,7 @@ func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, err
 	if err != nil {
 		return settingsData{}, err
 	}
-	chrome, err := l.chrome(ctx, "Grab Bag settings")
+	chrome, err := l.chrome(ctx, "GrabBag.gg settings")
 	if err != nil {
 		return settingsData{}, err
 	}
@@ -710,7 +710,7 @@ func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, err
 }
 
 func (l *Lobby) writeLogin(w http.ResponseWriter, r *http.Request, message string, status int) {
-	chrome, err := l.chrome(r.Context(), "Grab Bag settings")
+	chrome, err := l.chrome(r.Context(), "GrabBag.gg settings")
 	if err != nil {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
