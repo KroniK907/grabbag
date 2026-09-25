@@ -384,6 +384,34 @@
       font-style: italic;
     }
 
+    .import-callout {
+      margin-top: 1.1rem;
+      padding: 0.9rem 1rem;
+      border: 2px solid var(--brand);
+      border-radius: 10px;
+      background: rgba(255, 225, 74, 0.06);
+    }
+    .game-card .import-callout p { margin: 0; font-size: 0.92rem; }
+    .import-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      margin-bottom: 0.5rem !important;
+      font-family: "Russo One", sans-serif;
+      font-size: 0.85rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--fg) !important;
+    }
+    .import-stats strong {
+      font-family: Bangers, Impact, sans-serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      color: var(--brand);
+      text-shadow: var(--brand-glow);
+      margin-right: 0.3rem;
+    }
+
     .fine {
       max-width: 40rem;
       margin: 1.25rem 0 0;
@@ -513,6 +541,10 @@
             <li>Every card flips up on the big screen, so the whole stream sees the reveal</li>
             <li>Bots can fill empty spots when you're short on players</li>
           </ul>
+          <div class="import-callout">
+            <p class="import-stats"><span><strong>55</strong> packs</span><span><strong>4,983</strong> cards</span><span><strong>1</strong> button</span></p>
+            <p>Want the real thing? One button pulls in every official Cards Against Humanity pack from the fan-run <a href="https://github.com/crhallberg/json-against-humanity">JSON Against Humanity</a> collection: 971 prompt cards and 4,012 answer cards. Then switch packs on and off like any other.</p>
+          </div>
         </article>
         <article class="game-card">
           <h3>Quick Quips</h3>
@@ -548,7 +580,7 @@
         </article>
         <article class="card">
           <h3>Pick the cards</h3>
-          <p>Turn card and prompt packs on or off before you play. Keep the edgy set for late night and leave it out for the family-friendly stream.</p>
+          <p>Turn card and prompt packs on or off before you play, including all 55 official Cards Against Humanity packs. Keep the edgy ones for late night and leave them out for the family-friendly stream.</p>
         </article>
         <article class="card">
           <h3>Set the pace</h3>
@@ -620,7 +652,7 @@
   <footer class="site-footer">
     <div class="logo-sm">GrabBag.gg</div>
     <p>Free party games for streams and couches · <a href="https://grabbag.gg">grabbag.gg</a></p>
-    <p>Free and open source (MIT) · Not affiliated with Jackbox or any card-game publisher</p>
+    <p>Free and open source (GPLv3) · Not affiliated with Jackbox or any card-game publisher</p>
   </footer>
 </body>
 </html>
