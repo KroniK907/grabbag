@@ -24,7 +24,7 @@ func TestSetupLifecycle(t *testing.T) {
 	if docs.Header().Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Fatalf("GET /docs Content-Type = %q", docs.Header().Get("Content-Type"))
 	}
-	if !strings.Contains(docs.Body.String(), "downloaded Grab Bag binary") ||
+	if !strings.Contains(docs.Body.String(), "downloaded GrabBag.gg binary") ||
 		!strings.Contains(docs.Body.String(), "<style>") ||
 		!strings.Contains(docs.Body.String(), "http://127.0.0.1:8654") {
 		t.Fatalf("docs before setup = %q", docs.Body.String())

@@ -1,6 +1,6 @@
-# Grab Bag
+# GrabBag.gg
 
-A room, a TV, and a pile of phones. Grab Bag is a Go host that puts the game on the big screen and the buttons in everyone's pocket. The public name is [grabbag.gg](https://grabbag.gg).
+A room, a TV, and a pile of phones. GrabBag.gg is a Go host that puts the game on the big screen and the buttons in everyone's pocket. Site: [grabbag.gg](https://grabbag.gg).
 
 One process. Browser only. No app store, no cloud account, no room code on someone else's website. Default night is the same Wi-Fi. Remote phones can join through a tunnel you run on the PC.
 
@@ -73,29 +73,29 @@ go build -o grabbag.exe ./cmd/grabbag
 .\grabbag.exe
 ```
 
-Leave the console window open. Grab Bag always binds port **8654**. If another copy is already running, this one prints an error and exits.
+Leave the console window open. GrabBag.gg always binds port **8654**. If another copy is already running, this one prints an error and exits.
 
 On the host machine, open `http://127.0.0.1:8654`. First visit is setup. Pick an admin password (at least 8 characters), tap Finish, fullscreen `/board` on the TV.
 
-Phones use the URL or QR on the board. They must not use `127.0.0.1`. That address is this device, so a phone would look for Grab Bag inside itself.
+Phones use the URL or QR on the board. They must not use `127.0.0.1`. That address is this device, so a phone would look for GrabBag.gg inside itself.
 
-The step-by-step operator guide is [How to run Grab Bag](docs/index.html). After the process starts it is also `http://127.0.0.1:8654/docs`. Hosting remote phones is in that same page.
+The step-by-step operator guide is [How to run GrabBag.gg](docs/index.html). After the process starts it is also `http://127.0.0.1:8654/docs`. Hosting remote phones is in that same page.
 
 Room files live under `%LOCALAPPDATA%\grabbag` (`host.sqlite`, optional `host.log`, a `games` folder per game id).
 
 ## Hosting
 
-Leave advertised hostname blank on LAN. The board then shows the IPv4 Grab Bag found at start.
+Leave advertised hostname blank on LAN. The board then shows the IPv4 GrabBag.gg found at start.
 
-To let phones on the public internet join without buying a domain or opening a router port, run [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel) on the same PC. Install Tailscale, sign in, start Grab Bag, then:
+To let phones on the public internet join without buying a domain or opening a router port, run [Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel) on the same PC. Install Tailscale, sign in, start GrabBag.gg, then:
 
 ```text
 tailscale funnel 8654
 ```
 
-Paste the printed `https://something.ts.net` URL into advertised hostname. Include `https://`. Guests do not install Tailscale. The PC has to stay awake. Grab Bag still listens on 8654 locally. The public URL is HTTPS on 443.
+Paste the printed `https://something.ts.net` URL into advertised hostname. Include `https://`. Guests do not install Tailscale. The PC has to stay awake. GrabBag.gg still listens on 8654 locally. The public URL is HTTPS on 443.
 
-Do not use Cloudflare Quick Tunnels (`trycloudflare.com`). Those tunnels do not carry SSE, and Grab Bag's lobby and board live on SSE.
+Do not use Cloudflare Quick Tunnels (`trycloudflare.com`). Those tunnels do not carry SSE, and GrabBag.gg's lobby and board live on SSE.
 
 If you already have a domain on Cloudflare, a named Cloudflare Tunnel is a stable hostname you control. That is a different product from Quick Tunnels. Details are in the operator guide.
 

@@ -1,4 +1,4 @@
-# Grab Bag codebase
+# GrabBag.gg codebase
 
 Layout and coding standards. Binding. Source: [CORE-HOST-GM-001 through GM-005](https://github.com/KroniK907/grabbag/issues/1) from [Grill: code layout and standards](https://github.com/KroniK907/grabbag/issues/4).
 

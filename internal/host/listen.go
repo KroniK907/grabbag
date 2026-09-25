@@ -1,4 +1,4 @@
-// Package host composes Grab Bag storage and HTTP handling.
+// Package host composes GrabBag.gg storage and HTTP handling.
 package host
 
 import (
@@ -51,7 +51,7 @@ func run() error {
 	}
 	defer func() { _ = listener.Close() }()
 
-	log.Printf("Grab Bag listening on http://127.0.0.1:%s", listenPort)
+	log.Printf("GrabBag.gg listening on http://127.0.0.1:%s", listenPort)
 	log.Printf("Setup guide http://127.0.0.1:%s/docs", listenPort)
 	if joinURL != "" {
 		log.Printf("LAN join URL %s", joinURL)

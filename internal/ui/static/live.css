@@ -1,4 +1,4 @@
-/* Grab Bag chrome. Widget classes are theme-agnostic. Palettes live on html[data-theme]. */
+/* GrabBag.gg chrome. Widget classes are theme-agnostic. Palettes live on html[data-theme]. */
 
 :root,
 [data-theme="neon-light"] {
@@ -933,7 +933,6 @@ button {
   justify-content: center;
   font-size: 10px;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   background: var(--ui-notch-bg);
   color: var(--ui-notch-fg);
 }
