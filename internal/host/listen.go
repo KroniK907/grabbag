@@ -3,10 +3,14 @@ package host
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/KroniK907/grabbag/internal/store"
 )
@@ -18,12 +22,32 @@ const listenPort = "8654"
 // that host is public, and the first usable LAN IPv4 otherwise. That
 // advertised URL does not change the listen address.
 func Main() {
-	if err := run(); err != nil {
+	port, err := parseListenPort(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := run(port); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
+// parseListenPort reads -port. The default is listenPort. The value must be
+// a TCP port from 1 through 65535.
+func parseListenPort(args []string) (string, error) {
+	fs := flag.NewFlagSet("grabbag", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	port := fs.String("port", listenPort, "TCP port to listen on")
+	if err := fs.Parse(args); err != nil {
+		return "", err
+	}
+	n, err := strconv.Atoi(*port)
+	if err != nil || n < 1 || n > 65535 {
+		return "", fmt.Errorf("host: -port must be 1 through 65535, got %q", *port)
+	}
+	return strconv.Itoa(n), nil
+}
+
+func run(port string) error {
 	dataDir, err := store.DefaultDataDir()
 	if err != nil {
 		return err
@@ -42,17 +66,17 @@ func run() error {
 	if ip, err := firstNonLoopbackIPv4(addrs); err != nil {
 		log.Print(err)
 	} else {
-		joinURL = advertisedJoinURL(ip)
+		joinURL = advertisedJoinURL(ip, port)
 	}
 
-	listener, err := listenOn("", listenPort)
+	listener, err := listenOn("", port)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = listener.Close() }()
 
-	log.Printf("GrabBag.gg listening on http://127.0.0.1:%s", listenPort)
-	log.Printf("Setup guide http://127.0.0.1:%s/docs", listenPort)
+	log.Printf("GrabBag.gg listening on http://127.0.0.1:%s", port)
+	log.Printf("Setup guide http://127.0.0.1:%s/docs", port)
 	if joinURL != "" {
 		log.Printf("LAN join URL %s", joinURL)
 	}
@@ -66,8 +90,8 @@ func run() error {
 	return nil
 }
 
-func advertisedJoinURL(ip net.IP) string {
-	return "http://" + net.JoinHostPort(ip.String(), listenPort) + "/"
+func advertisedJoinURL(ip net.IP, port string) string {
+	return "http://" + net.JoinHostPort(ip.String(), port) + "/"
 }
 
 // listenOn binds TCP on host:port. Production uses host "" (all interfaces)

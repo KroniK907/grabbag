@@ -73,7 +73,11 @@ go build -o grabbag.exe ./cmd/grabbag
 .\grabbag.exe
 ```
 
-Leave the console window open. GrabBag.gg always binds port **8654**. If another copy is already running, this one prints an error and exits.
+Leave the console window open. GrabBag.gg binds port **8654** unless you pass `-port`. If that port is already taken, the process prints an error and exits.
+
+```text
+go run ./cmd/grabbag -port 9000
+```
 
 On the host machine, open `http://127.0.0.1:8654`. First visit is setup. Pick an admin password (at least 8 characters), tap Finish, fullscreen `/board` on the TV.
 

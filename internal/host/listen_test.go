@@ -24,7 +24,7 @@ func TestFirstNonLoopbackIPv4(t *testing.T) {
 	if want := "192.168.10.24"; got.String() != want {
 		t.Fatalf("address = %s, want %s", got, want)
 	}
-	if join := advertisedJoinURL(got); join != "http://192.168.10.24:8654/" {
+	if join := advertisedJoinURL(got, listenPort); join != "http://192.168.10.24:8654/" {
 		t.Fatalf("join URL = %q", join)
 	}
 }
@@ -39,6 +39,32 @@ func TestFirstNonLoopbackIPv4RefusesMissingAddress(t *testing.T) {
 
 	if _, err := firstNonLoopbackIPv4(addrs); err == nil {
 		t.Fatal("expected an error without a non-loopback IPv4 address")
+	}
+}
+
+func TestParseListenPort(t *testing.T) {
+	t.Parallel()
+	got, err := parseListenPort(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != listenPort {
+		t.Fatalf("default port = %q, want %s", got, listenPort)
+	}
+
+	got, err = parseListenPort([]string{"-port", "9000"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "9000" {
+		t.Fatalf("port = %q, want 9000", got)
+	}
+
+	if _, err := parseListenPort([]string{"-port", "0"}); err == nil {
+		t.Fatal("expected an error for port 0")
+	}
+	if _, err := parseListenPort([]string{"-port", "nope"}); err == nil {
+		t.Fatal("expected an error for a non-numeric port")
 	}
 }
 
