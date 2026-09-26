@@ -24,12 +24,12 @@ func (g *Game) howtoView(sheet bool) howtoView {
 		Timers:     s.AutoDrawSec > 0 || s.SubmitSec > 0 || s.BetweenRevealSec > 0 || s.JudgePickSec > 0 || s.FavoriteVoteSec > 0 || s.FinishHoldSec > 0,
 	}
 	g.mu.Lock()
-	if g.match != nil {
-		ms := g.match.Settings
+	if g.engine != nil {
+		ms := g.engine.Settings
 		view.Skip = ms.PromptMode == modeSkip
 		view.Multi = ms.PromptMode == modeMulti
 		view.Voting = ms.Voting != voteOff
-		view.Wildcard = g.match.WildcardAtStart
+		view.Wildcard = g.engine.WildcardAtStart
 		view.Multiplier = ms.LastRoundMultiplier > 1
 		view.Timers = ms.AutoDrawSec > 0 || ms.SubmitSec > 0 || ms.BetweenRevealSec > 0 || ms.JudgePickSec > 0 || ms.FavoriteVoteSec > 0 || ms.FinishHoldSec > 0
 	}

@@ -10,21 +10,6 @@ import (
 	"github.com/KroniK907/grabbag/internal/games"
 )
 
-type settingsView struct {
-	pageView
-	Frozen          bool
-	Shortage        []string
-	Settings        matchSettings
-	WildcardEnabled bool
-	WildcardAtStart bool
-	Err             settingsErr
-	VotingOff       bool
-	Burns           []burnEntry
-	BurnCorrupt     bool
-	DiscardCorrupt  bool
-	DiscardEmpty    bool
-}
-
 type holeView struct {
 	Index  int
 	Number int
@@ -125,58 +110,6 @@ type phoneView struct {
 	CanFinish    bool
 }
 
-func (g *Game) currentSettings() matchSettings {
-	h := g.helperNow()
-	if h == nil {
-		return factorySettings()
-	}
-	cat := scanDataDir(h.DataDir())
-	s, ok := g.loadSettings(h)
-	return reconcileSettings(s, ok, cat)
-}
-
-func (g *Game) shortageNow() []string {
-	h := g.helperNow()
-	if h == nil {
-		return nil
-	}
-	s := g.currentSettings()
-	cat := scanDataDir(h.DataDir())
-	piles := buildPiles(cat, s)
-	n := len(h.Seated())
-	g.mu.Lock()
-	noBurn := filterBurns(piles, g.burns)
-	help := burnedWouldHelp(piles, noBurn, s, n)
-	g.mu.Unlock()
-	return shortageLines(noBurn, s, n, help)
-}
-
-func (g *Game) settingsView(rowErr settingsErr) settingsView {
-	s := g.currentSettings()
-	view := settingsView{
-		pageView:        g.chromeView("Apples for Humanity"),
-		Frozen:          g.matchFrozen(),
-		Shortage:        g.shortageNow(),
-		Settings:        s,
-		WildcardEnabled: s.wildcardLibraryOn(),
-		Err:             rowErr,
-		VotingOff:       s.Voting == voteOff,
-	}
-	g.mu.Lock()
-	view.BurnCorrupt = g.burnCorrupt
-	view.DiscardCorrupt = g.discardCorrupt
-	view.DiscardEmpty = len(g.played) == 0
-	if !g.burnCorrupt {
-		view.Burns = g.lastBurns(10)
-	}
-	if g.match != nil {
-		view.WildcardAtStart = g.match.WildcardAtStart
-		view.WildcardEnabled = view.WildcardEnabled || g.match.WildcardAtStart
-	}
-	g.mu.Unlock()
-	return view
-}
-
 func (g *Game) boardView(r *http.Request) boardView {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -195,7 +128,7 @@ func (g *Game) boardViewLocked() boardView {
 		pageView: g.chromeView("Apples for Humanity"),
 		Paused:   g.paused,
 	}
-	m := g.match
+	m := g.engine
 	if m == nil {
 		return view
 	}
@@ -266,7 +199,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		pageView: g.chromeView("Apples for Humanity"),
 		Paused:   g.paused,
 	}
-	m := g.match
+	m := g.engine
 	if m == nil {
 		view.Role = "wait"
 		return view
@@ -316,7 +249,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		view.CanConfirm = m.Phase == phaseReveal
 		view.Skip = m.Settings.PromptMode == modeSkip && m.Phase == phaseHold
 		view.Keep = view.Skip
-	case g.canSubmit(m, p.ID):
+	case m.canSubmit(p.ID):
 		view.Role = "submit"
 	case p.Seated && (m.Phase == phaseChoose || m.Phase == phaseHold):
 		view.Role = "preview"
@@ -373,7 +306,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	} else {
 		view.Packets = g.packetViewsLocked(m, p.ID, false)
 	}
-	view.CanVote = g.playerMayVote(m, p)
+	view.CanVote = playerMayVote(m, p)
 	view.CanReveal = false
 	if m.TimerKind == "favorite-vote" {
 		view.CanConfirm = false
@@ -389,7 +322,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	return view
 }
 
-func (g *Game) packetViewsLocked(m *matchState, viewer string, tv bool) []packetView {
+func (g *Game) packetViewsLocked(m *engine, viewer string, tv bool) []packetView {
 	counts := map[string]int{}
 	for _, t := range m.Votes {
 		counts[t]++
@@ -463,7 +396,7 @@ func containsID(ids []string, target string) bool {
 	return false
 }
 
-func (g *Game) timerViewLocked(m *matchState) (string, string, int, int, int64) {
+func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
 	if m == nil || m.TimerKind == "" {
 		return "", "", 0, 0, 0
 	}
@@ -530,7 +463,7 @@ func favoriteMarks(counts map[string]int) map[string]string {
 	return marks
 }
 
-func (g *Game) rosterIDsLocked(m *matchState) []string {
+func (g *Game) rosterIDsLocked(m *engine) []string {
 	seen := map[string]bool{}
 	var ids []string
 	for _, id := range m.SeatOrder {
@@ -549,54 +482,4 @@ func (g *Game) rosterIDsLocked(m *matchState) []string {
 	}
 	sort.Strings(extra)
 	return append(ids, extra...)
-}
-
-func (g *Game) pickerView(rowErr pickerErr) pickerView {
-	view := pickerView{
-		pageView:     g.chromeView("Deck Library"),
-		RowError:     rowErr.Msg,
-		ErrorLibrary: rowErr.LibraryID,
-		ErrorPack:    rowErr.PackID,
-		ErrorTag:     rowErr.Tag,
-		Shortage:     g.shortageNow(),
-	}
-	h := g.helperNow()
-	if h == nil {
-		return view
-	}
-	view.DataDir = h.DataDir()
-	view.Frozen = g.matchFrozen()
-	g.mu.Lock()
-	if view.RowError == "" {
-		view.RowError = g.importErr
-	}
-	g.mu.Unlock()
-	cat := scanDataDir(h.DataDir())
-	settings, ok := g.loadSettings(h)
-	settings = reconcileSettings(settings, ok, cat)
-	view.Tags = tagViews(pickerTagIDs(cat), settings)
-	for _, lib := range cat.Libraries {
-		item := libraryView{
-			ID:          lib.ID,
-			Name:        lib.Name,
-			Description: lib.Description,
-			License:     lib.License,
-			Filename:    lib.Source,
-		}
-		for _, pack := range lib.Packs {
-			item.Packs = append(item.Packs, packView{
-				LibraryID:   lib.ID,
-				ID:          pack.ID,
-				Name:        pack.Name,
-				Description: pack.Description,
-				Enabled:     settings.packOn(lib.ID, pack.ID),
-				PromptCount: len(pack.Prompts),
-				AnswerCount: len(pack.Answers),
-				Dots:        tagViews(packDotIDs(pack), settings),
-			})
-		}
-		view.Libraries = append(view.Libraries, item)
-	}
-	view.Failed = cat.Failed
-	return view
 }

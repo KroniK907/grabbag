@@ -457,16 +457,16 @@ func TestExcludedTagsLeaveTheDeal(t *testing.T) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	ids := map[string]bool{}
-	for _, p := range g.match.Prompts {
+	for _, p := range g.engine.Prompts {
 		ids[p.CardID] = true
 	}
-	if g.match.LivePrompt != nil {
-		ids[g.match.LivePrompt.CardID] = true
+	if g.engine.LivePrompt != nil {
+		ids[g.engine.LivePrompt.CardID] = true
 	}
-	for _, a := range g.match.Answers {
+	for _, a := range g.engine.Answers {
 		ids[a.CardID] = true
 	}
-	for _, actor := range g.match.Actors {
+	for _, actor := range g.engine.Actors {
 		for _, card := range actor.Hand {
 			ids[card.CardID] = true
 		}
@@ -503,16 +503,16 @@ func TestExcludedUntaggedLeaveTheDeal(t *testing.T) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	ids := map[string]bool{}
-	for _, p := range g.match.Prompts {
+	for _, p := range g.engine.Prompts {
 		ids[p.CardID] = true
 	}
-	if g.match.LivePrompt != nil {
-		ids[g.match.LivePrompt.CardID] = true
+	if g.engine.LivePrompt != nil {
+		ids[g.engine.LivePrompt.CardID] = true
 	}
-	for _, a := range g.match.Answers {
+	for _, a := range g.engine.Answers {
 		ids[a.CardID] = true
 	}
-	for _, actor := range g.match.Actors {
+	for _, actor := range g.engine.Actors {
 		for _, card := range actor.Hand {
 			ids[card.CardID] = true
 		}

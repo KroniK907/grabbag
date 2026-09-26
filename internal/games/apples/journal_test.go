@@ -79,7 +79,7 @@ func TestBurnNormalizesAndHidesAcrossLibraries(t *testing.T) {
 		t.Fatal(err)
 	}
 	g.mu.Lock()
-	for _, c := range g.match.Answers {
+	for _, c := range g.engine.Answers {
 		if normalizeCardText(c.Text) == "answer 0" {
 			g.mu.Unlock()
 			t.Fatal("burned answer stayed in the pile")

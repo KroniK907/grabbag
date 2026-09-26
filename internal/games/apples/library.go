@@ -192,3 +192,17 @@ func isFamilyLibrary(id string) bool {
 	}
 	return id == "oranges" || id == "white-black"
 }
+
+func packExists(cat catalog, libraryID, packID string) bool {
+	for _, lib := range cat.Libraries {
+		if lib.ID != libraryID {
+			continue
+		}
+		for _, pack := range lib.Packs {
+			if pack.ID == packID {
+				return true
+			}
+		}
+	}
+	return false
+}

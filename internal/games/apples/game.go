@@ -4,14 +4,9 @@ package apples
 import (
 	"bytes"
 	"embed"
-	"encoding/json"
-	"fmt"
-	"io"
 	"io/fs"
 	"math/rand"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -22,8 +17,6 @@ import (
 const (
 	id           = "apples"
 	assetVersion = "match-12"
-	// officialDumpURL is the JSON Against Humanity full dump. Tests replace Game.fetchURL.
-	officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 )
 
 //go:embed templates/*.html
@@ -43,7 +36,7 @@ type Game struct {
 	importErr  string
 	fetchURL   string
 	httpClient *http.Client
-	match      *matchState
+	engine     *engine
 	stopTick   chan struct{}
 	rng        *rand.Rand
 	now        func() time.Time
@@ -184,18 +177,18 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /burn", g.postBurn)
 	mux.HandleFunc("POST /reshuffle-yes", g.postReshuffleYes)
 	mux.HandleFunc("POST /end-game", g.postEndGame)
-	mux.HandleFunc("POST /draw", g.postDraw)
-	mux.HandleFunc("POST /skip", g.postSkip)
-	mux.HandleFunc("POST /keep-prompt", g.postKeepPrompt)
-	mux.HandleFunc("POST /choose-prompt", g.postChoosePrompt)
-	mux.HandleFunc("POST /slot", g.postSlot)
+	mux.HandleFunc("POST /draw", g.post(cmdDraw))
+	mux.HandleFunc("POST /skip", g.post(cmdSkip))
+	mux.HandleFunc("POST /keep-prompt", g.post(cmdKeepPrompt))
+	mux.HandleFunc("POST /choose-prompt", g.post(cmdChoosePrompt))
+	mux.HandleFunc("POST /slot", g.post(cmdSlot))
 	mux.HandleFunc("POST /unslot", g.postUnslot)
-	mux.HandleFunc("POST /discard", g.postDiscard)
-	mux.HandleFunc("POST /lock", g.postLock)
-	mux.HandleFunc("POST /wildcard-draft", g.postWildcardDraft)
-	mux.HandleFunc("POST /reveal", g.postReveal)
+	mux.HandleFunc("POST /discard", g.post(cmdDiscard))
+	mux.HandleFunc("POST /lock", g.post(cmdLock))
+	mux.HandleFunc("POST /wildcard-draft", g.post(cmdDraft))
+	mux.HandleFunc("POST /reveal", g.post(cmdReveal))
 	mux.HandleFunc("POST /vote", g.postVote)
-	mux.HandleFunc("POST /confirm", g.postConfirm)
+	mux.HandleFunc("POST /confirm", g.post(cmdConfirm))
 	mux.HandleFunc("POST /finish", g.postFinish)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
@@ -210,9 +203,7 @@ func (g *Game) Pause() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = true
-	if g.match != nil {
-		g.freezeTimerLocked(g.match)
-	}
+	g.holdLocked()
 	return nil
 }
 
@@ -221,9 +212,7 @@ func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
-	if g.match != nil && g.overlay == "" {
-		g.thawTimerLocked(g.match)
-	}
+	g.holdLocked()
 	if g.started {
 		g.startTickerLocked()
 	}
@@ -238,7 +227,7 @@ func (g *Game) Stop() error {
 	g.drainJournalsLocked()
 	g.started = false
 	g.paused = false
-	g.match = nil
+	g.engine = nil
 	g.overlay = ""
 	g.overlayTooSmall = false
 	g.burnSnap = nil
@@ -262,7 +251,7 @@ func (g *Game) Shutdown() error {
 	g.started = false
 	g.paused = false
 	g.importErr = ""
-	g.match = nil
+	g.engine = nil
 	g.overlay = ""
 	return nil
 }
@@ -302,322 +291,8 @@ func (g *Game) render(w http.ResponseWriter, name string, data any, status int) 
 	_, _ = w.Write(buf.Bytes())
 }
 
-func hxRequest(r *http.Request) bool {
-	return r.Header.Get("HX-Request") != ""
-}
-
-func (g *Game) writePicker(w http.ResponseWriter, r *http.Request, rowErr pickerErr) {
-	name := "picker.html"
-	if hxRequest(r) {
-		name = "picker-body"
-	}
-	g.render(w, name, g.pickerView(rowErr), http.StatusOK)
-}
-
-func (g *Game) writePickerOK(w http.ResponseWriter, r *http.Request) {
-	if hxRequest(r) {
-		g.writePicker(w, r, pickerErr{})
-		return
-	}
-	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
-}
-
-func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if !h.HasAdmin(r) {
-		http.Error(w, "Admin session required.", http.StatusUnauthorized)
-		return
-	}
-	g.render(w, "picker.html", g.pickerView(pickerErr{}), http.StatusOK)
-}
-
-func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
-}
-
-func (g *Game) postPack(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Could not read the form.", http.StatusBadRequest)
-		return
-	}
-	libraryID := r.FormValue("library")
-	packID := r.FormValue("pack")
-	g.togglePack(w, r, libraryID, packID, formEnabled(r))
-}
-
-func formEnabled(r *http.Request) bool {
-	for _, v := range r.Form["enabled"] {
-		if v == "1" {
-			return true
-		}
-	}
-	return false
-}
-
-func (g *Game) postTag(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Could not read the form.", http.StatusBadRequest)
-		return
-	}
-	g.toggleTag(w, r, r.FormValue("tag"), formEnabled(r))
-}
-
-func (g *Game) toggleTag(w http.ResponseWriter, r *http.Request, tag string, on bool) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if g.matchFrozen() {
-		g.writePicker(w, r, pickerErr{
-			Msg: "Tag changes wait until the game ends.", Tag: tag,
-		})
-		return
-	}
-	cat := scanDataDir(h.DataDir())
-	if !catalogHasTag(cat, tag) {
-		g.writePicker(w, r, pickerErr{
-			Msg: "That tag is not in the library.", Tag: tag,
-		})
-		return
-	}
-	settings, ok := g.loadSettings(h)
-	settings = reconcileSettings(settings, ok, cat)
-	settings.setTag(tag, on)
-	if err := g.saveSettings(h, settings); err != nil {
-		g.writePicker(w, r, pickerErr{
-			Msg: "Could not save tag enablement.", Tag: tag,
-		})
-		return
-	}
-	g.writePickerOK(w, r)
-}
-
-func (g *Game) postSelectAll(w http.ResponseWriter, r *http.Request) {
-	g.selectAll(w, r, true)
-}
-
-func (g *Game) postSelectNone(w http.ResponseWriter, r *http.Request) {
-	g.selectAll(w, r, false)
-}
-
-func (g *Game) togglePack(w http.ResponseWriter, r *http.Request, libraryID, packID string, on bool) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if g.matchFrozen() {
-		g.writePicker(w, r, pickerErr{
-			Msg: "Pack changes wait until the game ends.", LibraryID: libraryID, PackID: packID,
-		})
-		return
-	}
-	cat := scanDataDir(h.DataDir())
-	if !packExists(cat, libraryID, packID) {
-		g.writePicker(w, r, pickerErr{
-			Msg: "That pack is not in the library.", LibraryID: libraryID, PackID: packID,
-		})
-		return
-	}
-	settings, ok := g.loadSettings(h)
-	settings = reconcileSettings(settings, ok, cat)
-	settings.setPack(libraryID, packID, on)
-	if err := g.saveSettings(h, settings); err != nil {
-		g.writePicker(w, r, pickerErr{
-			Msg: "Could not save pack enablement.", LibraryID: libraryID, PackID: packID,
-		})
-		return
-	}
-	g.writePickerOK(w, r)
-}
-
-func (g *Game) selectAll(w http.ResponseWriter, r *http.Request, on bool) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if g.matchFrozen() {
-		g.writePicker(w, r, pickerErr{Msg: "Pack changes wait until the game ends."})
-		return
-	}
-	cat := scanDataDir(h.DataDir())
-	settings, ok := g.loadSettings(h)
-	settings = reconcileSettings(settings, ok, cat)
-	settings.setAllEnabled(cat, on)
-	if err := g.saveSettings(h, settings); err != nil {
-		g.writePicker(w, r, pickerErr{Msg: "Could not save pack enablement."})
-		return
-	}
-	g.writePickerOK(w, r)
-}
-
-func (g *Game) postImportOfficial(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	if g.matchFrozen() {
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: "Pack changes wait until the game ends."}), http.StatusOK)
-		return
-	}
-	if err := g.importOfficial(h); err != nil {
-		g.mu.Lock()
-		g.importErr = err.Error()
-		g.mu.Unlock()
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: err.Error()}), http.StatusOK)
-		return
-	}
-	g.mu.Lock()
-	g.importErr = ""
-	g.mu.Unlock()
-	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
-}
-
-func (g *Game) importOfficial(h games.Helper) error {
-	client := g.httpClient
-	url := g.fetchURL
-	if client == nil {
-		client = http.DefaultClient
-	}
-	if url == "" {
-		url = officialDumpURL
-	}
-	resp, err := client.Get(url)
-	if err != nil {
-		return fmt.Errorf("Could not download official packs.")
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Could not download official packs.")
-	}
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, 32<<20))
-	if err != nil {
-		return fmt.Errorf("Could not download official packs.")
-	}
-	cahDir := filepath.Join(h.DataDir(), "cah")
-	if err := os.MkdirAll(cahDir, 0o700); err != nil {
-		return fmt.Errorf("Could not download official packs.")
-	}
-	if err := os.WriteFile(filepath.Join(cahDir, "json-against-humanity.json"), raw, 0o600); err != nil {
-		return fmt.Errorf("Could not download official packs.")
-	}
-	lib, err := convertOfficial(raw)
-	if err != nil {
-		return fmt.Errorf("Could not convert official packs.")
-	}
-	encoded, err := json.MarshalIndent(lib, "", "  ")
-	if err != nil {
-		return fmt.Errorf("Could not convert official packs.")
-	}
-	tmp := filepath.Join(h.DataDir(), officialFileName+".tmp")
-	dest := filepath.Join(h.DataDir(), officialFileName)
-	if err := os.WriteFile(tmp, encoded, 0o600); err != nil {
-		return fmt.Errorf("Could not convert official packs.")
-	}
-	if err := os.Rename(tmp, dest); err != nil {
-		return fmt.Errorf("Could not convert official packs.")
-	}
-	return g.persistSettings()
-}
-
-func (g *Game) persistSettings() error {
-	h := g.helperNow()
-	if h == nil {
-		return fmt.Errorf("game is not loaded")
-	}
-	cat := scanDataDir(h.DataDir())
-	existing, ok := g.loadSettings(h)
-	next := reconcileSettings(existing, ok, cat)
-	return g.saveSettings(h, next)
-}
-
-func (g *Game) loadSettings(h games.Helper) (matchSettings, bool) {
-	raw, found, err := h.KVGet(kvMatchSettings)
-	if err != nil || !found {
-		return matchSettings{}, false
-	}
-	return parseMatchSettings(raw)
-}
-
-func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
-	raw, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	return h.KVSet(kvMatchSettings, raw)
-}
-
-func packExists(cat catalog, libraryID, packID string) bool {
-	for _, lib := range cat.Libraries {
-		if lib.ID != libraryID {
-			continue
-		}
-		for _, pack := range lib.Packs {
-			if pack.ID == packID {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-type pickerErr struct {
-	Msg       string
-	LibraryID string
-	PackID    string
-	Tag       string
-}
-
 type pageView struct {
 	ui.Chrome
 	GameCSS string
 	GameJS  string
-}
-
-type pickerView struct {
-	pageView
-	DataDir      string
-	Frozen       bool
-	RowError     string
-	ErrorLibrary string
-	ErrorPack    string
-	ErrorTag     string
-	Shortage     []string
-	Tags         []tagView
-	Libraries    []libraryView
-	Failed       []failedFile
-}
-
-type tagView struct {
-	ID      string
-	Label   string
-	Color   string
-	Enabled bool
-}
-
-type libraryView struct {
-	ID          string
-	Name        string
-	Description string
-	License     string
-	Filename    string
-	Packs       []packView
-}
-
-type packView struct {
-	LibraryID   string
-	ID          string
-	Name        string
-	Description string
-	Enabled     bool
-	PromptCount int
-	AnswerCount int
-	Dots        []tagView
 }

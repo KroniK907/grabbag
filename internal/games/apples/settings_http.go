@@ -1,9 +1,12 @@
 package apples
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/KroniK907/grabbag/internal/games"
 )
 
 type settingsErr struct {
@@ -34,7 +37,7 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 		return
 	}
 	g.mu.Lock()
-	wildcardLive := g.match != nil && g.match.WildcardAtStart
+	wildcardLive := g.engine != nil && g.engine.WildcardAtStart
 	g.mu.Unlock()
 	if g.matchFrozen() && wildcardPolicyField(field) && !wildcardLive {
 		g.writeSettingsRefuse(w, field, "This match is running. Setup is locked.")
@@ -57,8 +60,8 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 	}
 	if wildcardPolicyField(field) {
 		g.mu.Lock()
-		if g.match != nil {
-			g.match.Settings = settings
+		if g.engine != nil {
+			g.engine.Settings = settings
 		}
 		g.mu.Unlock()
 	}
@@ -68,7 +71,7 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 func (g *Game) wildcardPolicyLive() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return g.match != nil && g.match.WildcardAtStart
+	return g.engine != nil && g.engine.WildcardAtStart
 }
 
 func wildcardPolicyField(field string) bool {
@@ -343,9 +346,8 @@ func (g *Game) postUnburn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.unburnPairLocked(r.FormValue("kind"), r.FormValue("text"))
-	if g.match != nil {
-		g.stripBurnedFromPilesLocked(g.match)
-		g.rebuildUnplayedLocked(g.match)
+	if g.engine != nil {
+		g.engine.Refill()
 	}
 	g.mu.Unlock()
 	g.writeSettingsOK(w, r)
@@ -385,4 +387,35 @@ func (g *Game) postReshuffleDiscard(w http.ResponseWriter, r *http.Request) {
 
 func atoiForm(r *http.Request, name string) (int, error) {
 	return strconv.Atoi(r.FormValue(name))
+}
+
+func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+}
+
+func (g *Game) persistSettings() error {
+	h := g.helperNow()
+	if h == nil {
+		return fmt.Errorf("game is not loaded")
+	}
+	cat := scanDataDir(h.DataDir())
+	existing, ok := g.loadSettings(h)
+	next := reconcileSettings(existing, ok, cat)
+	return g.saveSettings(h, next)
+}
+
+func (g *Game) loadSettings(h games.Helper) (matchSettings, bool) {
+	raw, found, err := h.KVGet(kvMatchSettings)
+	if err != nil || !found {
+		return matchSettings{}, false
+	}
+	return parseMatchSettings(raw)
+}
+
+func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
+	raw, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return h.KVSet(kvMatchSettings, raw)
 }
