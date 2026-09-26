@@ -105,11 +105,11 @@ Godoc on every exported type, func, and const. Package comment on each package (
 
 ## Tests
 
-`_test.go` next to the code it covers. No top-level `tests/` tree. Prefer `package foo_test` unless the test must see unexported details. Focused unit and integration tests. No broad smoke suites. Automated tray UI tests are out of scope. CI is not a gate.
+`_test.go` next to the code it covers. No top-level `tests/` tree. Prefer `package foo_test` unless the test must see unexported details. Focused unit and integration tests. No broad smoke suites. Automated tray UI tests are out of scope. GitHub Actions runs `go test ./...` on every pull request and on pushes to `main`. That `go test` check must pass before a pull request can merge.
 
 ## gofmt
 
-All Go files must be `gofmt`'d. Extra linters are optional locally. They are not required until CI exists.
+All Go files must be `gofmt`'d. Extra linters are optional locally. The required check is the test suite, not a linter.
 
 ## Changing this file
 
