@@ -37,7 +37,7 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 		return
 	}
 	g.mu.Lock()
-	wildcardLive := g.match != nil && g.match.WildcardAtStart
+	wildcardLive := g.engine != nil && g.engine.WildcardAtStart
 	g.mu.Unlock()
 	if g.matchFrozen() && wildcardPolicyField(field) && !wildcardLive {
 		g.writeSettingsRefuse(w, field, "This match is running. Setup is locked.")
@@ -60,8 +60,8 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 	}
 	if wildcardPolicyField(field) {
 		g.mu.Lock()
-		if g.match != nil {
-			g.match.Settings = settings
+		if g.engine != nil {
+			g.engine.Settings = settings
 		}
 		g.mu.Unlock()
 	}
@@ -71,7 +71,7 @@ func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field stri
 func (g *Game) wildcardPolicyLive() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return g.match != nil && g.match.WildcardAtStart
+	return g.engine != nil && g.engine.WildcardAtStart
 }
 
 func wildcardPolicyField(field string) bool {
@@ -346,9 +346,8 @@ func (g *Game) postUnburn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.unburnPairLocked(r.FormValue("kind"), r.FormValue("text"))
-	if g.match != nil {
-		g.stripBurnedFromPilesLocked(g.match)
-		g.rebuildUnplayedLocked(g.match)
+	if g.engine != nil {
+		g.engine.Refill()
 	}
 	g.mu.Unlock()
 	g.writeSettingsOK(w, r)

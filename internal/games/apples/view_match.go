@@ -128,7 +128,7 @@ func (g *Game) boardViewLocked() boardView {
 		pageView: g.chromeView("Apples for Humanity"),
 		Paused:   g.paused,
 	}
-	m := g.match
+	m := g.engine
 	if m == nil {
 		return view
 	}
@@ -199,7 +199,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		pageView: g.chromeView("Apples for Humanity"),
 		Paused:   g.paused,
 	}
-	m := g.match
+	m := g.engine
 	if m == nil {
 		view.Role = "wait"
 		return view
@@ -249,7 +249,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 		view.CanConfirm = m.Phase == phaseReveal
 		view.Skip = m.Settings.PromptMode == modeSkip && m.Phase == phaseHold
 		view.Keep = view.Skip
-	case g.canSubmit(m, p.ID):
+	case m.canSubmit(p.ID):
 		view.Role = "submit"
 	case p.Seated && (m.Phase == phaseChoose || m.Phase == phaseHold):
 		view.Role = "preview"
@@ -306,7 +306,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	} else {
 		view.Packets = g.packetViewsLocked(m, p.ID, false)
 	}
-	view.CanVote = g.playerMayVote(m, p)
+	view.CanVote = playerMayVote(m, p)
 	view.CanReveal = false
 	if m.TimerKind == "favorite-vote" {
 		view.CanConfirm = false
@@ -322,7 +322,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	return view
 }
 
-func (g *Game) packetViewsLocked(m *matchState, viewer string, tv bool) []packetView {
+func (g *Game) packetViewsLocked(m *engine, viewer string, tv bool) []packetView {
 	counts := map[string]int{}
 	for _, t := range m.Votes {
 		counts[t]++
@@ -396,7 +396,7 @@ func containsID(ids []string, target string) bool {
 	return false
 }
 
-func (g *Game) timerViewLocked(m *matchState) (string, string, int, int, int64) {
+func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
 	if m == nil || m.TimerKind == "" {
 		return "", "", 0, 0, 0
 	}
@@ -463,7 +463,7 @@ func favoriteMarks(counts map[string]int) map[string]string {
 	return marks
 }
 
-func (g *Game) rosterIDsLocked(m *matchState) []string {
+func (g *Game) rosterIDsLocked(m *engine) []string {
 	seen := map[string]bool{}
 	var ids []string
 	for _, id := range m.SeatOrder {

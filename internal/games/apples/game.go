@@ -36,7 +36,7 @@ type Game struct {
 	importErr  string
 	fetchURL   string
 	httpClient *http.Client
-	match      *matchState
+	engine     *engine
 	stopTick   chan struct{}
 	rng        *rand.Rand
 	now        func() time.Time
@@ -177,18 +177,18 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /burn", g.postBurn)
 	mux.HandleFunc("POST /reshuffle-yes", g.postReshuffleYes)
 	mux.HandleFunc("POST /end-game", g.postEndGame)
-	mux.HandleFunc("POST /draw", g.postDraw)
-	mux.HandleFunc("POST /skip", g.postSkip)
-	mux.HandleFunc("POST /keep-prompt", g.postKeepPrompt)
-	mux.HandleFunc("POST /choose-prompt", g.postChoosePrompt)
-	mux.HandleFunc("POST /slot", g.postSlot)
+	mux.HandleFunc("POST /draw", g.post(cmdDraw))
+	mux.HandleFunc("POST /skip", g.post(cmdSkip))
+	mux.HandleFunc("POST /keep-prompt", g.post(cmdKeepPrompt))
+	mux.HandleFunc("POST /choose-prompt", g.post(cmdChoosePrompt))
+	mux.HandleFunc("POST /slot", g.post(cmdSlot))
 	mux.HandleFunc("POST /unslot", g.postUnslot)
-	mux.HandleFunc("POST /discard", g.postDiscard)
-	mux.HandleFunc("POST /lock", g.postLock)
-	mux.HandleFunc("POST /wildcard-draft", g.postWildcardDraft)
-	mux.HandleFunc("POST /reveal", g.postReveal)
+	mux.HandleFunc("POST /discard", g.post(cmdDiscard))
+	mux.HandleFunc("POST /lock", g.post(cmdLock))
+	mux.HandleFunc("POST /wildcard-draft", g.post(cmdDraft))
+	mux.HandleFunc("POST /reveal", g.post(cmdReveal))
 	mux.HandleFunc("POST /vote", g.postVote)
-	mux.HandleFunc("POST /confirm", g.postConfirm)
+	mux.HandleFunc("POST /confirm", g.post(cmdConfirm))
 	mux.HandleFunc("POST /finish", g.postFinish)
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
@@ -203,9 +203,7 @@ func (g *Game) Pause() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = true
-	if g.match != nil {
-		g.freezeTimerLocked(g.match)
-	}
+	g.holdLocked()
 	return nil
 }
 
@@ -214,9 +212,7 @@ func (g *Game) Resume() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.paused = false
-	if g.match != nil && g.overlay == "" {
-		g.thawTimerLocked(g.match)
-	}
+	g.holdLocked()
 	if g.started {
 		g.startTickerLocked()
 	}
@@ -231,7 +227,7 @@ func (g *Game) Stop() error {
 	g.drainJournalsLocked()
 	g.started = false
 	g.paused = false
-	g.match = nil
+	g.engine = nil
 	g.overlay = ""
 	g.overlayTooSmall = false
 	g.burnSnap = nil
@@ -255,7 +251,7 @@ func (g *Game) Shutdown() error {
 	g.started = false
 	g.paused = false
 	g.importErr = ""
-	g.match = nil
+	g.engine = nil
 	g.overlay = ""
 	return nil
 }

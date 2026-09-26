@@ -23,7 +23,9 @@ func (g *Game) playerOr401(w http.ResponseWriter, r *http.Request) (games.Player
 	return p, true
 }
 
-func (g *Game) withMatch(w http.ResponseWriter, r *http.Request, fn func(*matchState, games.Player) error) {
+// withEngine runs one engine command for the signed-in player and renders
+// their phone.
+func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, build func(games.Player) (command, error)) {
 	p, ok := g.playerOr401(w, r)
 	if !ok {
 		return
@@ -33,13 +35,13 @@ func (g *Game) withMatch(w http.ResponseWriter, r *http.Request, fn func(*matchS
 		return
 	}
 	g.mu.Lock()
-	if g.match == nil || !g.started {
+	if g.engine == nil || !g.started {
 		g.mu.Unlock()
 		http.NotFound(w, r)
 		return
 	}
 	if g.overlayActive() {
-		g.match.PhoneErr[p.ID] = overlayWaitCopy
+		g.engine.PhoneErr[p.ID] = overlayWaitCopy
 		view := g.phoneViewLocked(p)
 		g.mu.Unlock()
 		g.render(w, "phone.html", view, http.StatusOK)
@@ -48,17 +50,41 @@ func (g *Game) withMatch(w http.ResponseWriter, r *http.Request, fn func(*matchS
 	if g.helper != nil {
 		g.syncRosterLocked(g.helper)
 	}
-	err := fn(g.match, p)
+	cmd, err := build(p)
+	if err == nil {
+		cmd.Actor = p.ID
+		out := g.engine.Do(cmd, g.clock())
+		err = out.Err
+		g.applyOutcomeLocked(out)
+	}
 	if err != nil {
-		g.match.PhoneErr[p.ID] = err.Error()
+		g.engine.PhoneErr[p.ID] = err.Error()
 	} else {
-		delete(g.match.PhoneErr, p.ID)
+		delete(g.engine.PhoneErr, p.ID)
 		g.publishLocked()
 	}
 	view := g.phoneViewLocked(p)
 	g.flushHostLocked()
 	g.mu.Unlock()
 	g.render(w, "phone.html", view, http.StatusOK)
+}
+
+// post returns a handler for a command that needs no form parsing beyond
+// the card field.
+func (g *Game) post(kind commandKind) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		g.withEngine(w, r, func(games.Player) (command, error) {
+			return command{Kind: kind, Card: r.FormValue(cardField[kind]), Text: r.FormValue("text")}, nil
+		})
+	}
+}
+
+// cardField is the form field each command reads into command.Card.
+var cardField = map[commandKind]string{
+	cmdChoosePrompt: "prompt",
+	cmdSlot:         "card",
+	cmdDiscard:      "card",
+	cmdConfirm:      "winner",
 }
 
 func (g *Game) flushHostLocked() {
@@ -82,100 +108,22 @@ func (g *Game) flushHostLocked() {
 	}
 }
 
-func (g *Game) postDraw(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can draw.")
-		}
-		return g.drawLocked(m)
-	})
-}
-
-func (g *Game) postSkip(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can skip.")
-		}
-		return g.skipLocked(m)
-	})
-}
-
-func (g *Game) postKeepPrompt(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can lock in the prompt.")
-		}
-		return g.keepPromptLocked(m)
-	})
-}
-
-func (g *Game) postChoosePrompt(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can choose.")
-		}
-		return g.choosePromptLocked(m, r.FormValue("prompt"))
-	})
-}
-
-func (g *Game) postSlot(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		return g.slotLocked(m, p.ID, r.FormValue("card"))
-	})
-}
-
 func (g *Game) postUnslot(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
+	g.withEngine(w, r, func(games.Player) (command, error) {
 		n, err := strconv.Atoi(r.FormValue("hole"))
 		if err != nil {
-			return fmt.Errorf("That hole is empty.")
+			n = -1
 		}
-		return g.unslotLocked(m, p.ID, n)
-	})
-}
-
-func (g *Game) postDiscard(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		return g.markDiscardLocked(m, p.ID, r.FormValue("card"))
-	})
-}
-
-func (g *Game) postLock(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		return g.lockLocked(m, p.ID)
-	})
-}
-
-func (g *Game) postWildcardDraft(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		return g.setDraftLocked(m, p.ID, r.FormValue("text"))
-	})
-}
-
-func (g *Game) postReveal(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can reveal.")
-		}
-		return g.revealNextLocked(m)
+		return command{Kind: cmdUnslot, Hole: n}, nil
 	})
 }
 
 func (g *Game) postVote(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if !g.playerMayVote(m, p) {
-			return fmt.Errorf("You cannot vote now.")
+	g.withEngine(w, r, func(p games.Player) (command, error) {
+		if !playerMayVote(g.engine, p) {
+			return command{}, fmt.Errorf("You cannot vote now.")
 		}
-		return g.voteLocked(m, p.ID, r.FormValue("target"))
-	})
-}
-
-func (g *Game) postConfirm(w http.ResponseWriter, r *http.Request) {
-	g.withMatch(w, r, func(m *matchState, p games.Player) error {
-		if p.ID != m.JudgeID {
-			return fmt.Errorf("Only the judge can confirm.")
-		}
-		return g.confirmLocked(g.helper, m, r.FormValue("winner"))
+		return command{Kind: cmdVote, Card: r.FormValue("target")}, nil
 	})
 }
 
@@ -213,7 +161,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.mu.Lock()
-	if g.match == nil || !g.started {
+	if g.engine == nil || !g.started {
 		g.mu.Unlock()
 		http.NotFound(w, r)
 		return
@@ -249,7 +197,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 		g.burnChecks[kind+"\x00"+text] = true
 		g.burnPairLocked(kind, text)
 	}
-	g.stripBurnedFromPilesLocked(g.match)
+	g.engine.StripBurned(g.isBurned)
 	for i := range g.burnSnap {
 		g.burnSnap[i].Burned = g.isBurned(g.burnSnap[i].Kind, g.burnSnap[i].Text)
 		g.burnSnap[i].Checked = g.burnChecks[g.burnSnap[i].Kind+"\x00"+g.burnSnap[i].Text]
@@ -267,13 +215,13 @@ func (g *Game) postReshuffleYes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.mu.Lock()
-	if g.match == nil || !g.started {
+	if g.engine == nil || !g.started {
 		g.mu.Unlock()
 		http.NotFound(w, r)
 		return
 	}
 	if !p.ClaimedHost {
-		g.match.PhoneErr[p.ID] = overlayWaitCopy
+		g.engine.PhoneErr[p.ID] = overlayWaitCopy
 		view := g.phoneViewLocked(p)
 		g.mu.Unlock()
 		g.render(w, "phone.html", view, http.StatusOK)
@@ -285,7 +233,7 @@ func (g *Game) postReshuffleYes(w http.ResponseWriter, r *http.Request) {
 		g.render(w, "phone.html", view, http.StatusOK)
 		return
 	}
-	_ = g.fulfillOverlayLocked(g.match)
+	g.fulfillOverlayLocked()
 	g.publishLocked()
 	view := g.phoneViewLocked(p)
 	g.flushHostLocked()
@@ -299,7 +247,7 @@ func (g *Game) postEndGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.mu.Lock()
-	if g.match == nil || !g.started {
+	if g.engine == nil || !g.started {
 		g.mu.Unlock()
 		http.NotFound(w, r)
 		return
@@ -332,7 +280,7 @@ func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.mu.Lock()
-	if g.match == nil || !g.started || g.match.Phase != phaseOver {
+	if g.engine == nil || !g.started || g.engine.Phase != phaseOver {
 		g.mu.Unlock()
 		http.NotFound(w, r)
 		return
@@ -345,4 +293,24 @@ func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
 		next = "/board"
 	}
 	http.Redirect(w, r, next, http.StatusSeeOther)
+}
+
+// playerMayVote reports whether p's Lobby role may cast a favorite vote now.
+func playerMayVote(m *engine, p games.Player) bool {
+	if m == nil || m.Settings.Voting == voteOff || m.Phase != phaseReveal || m.NamesShown {
+		return false
+	}
+	if p.ID == m.JudgeID {
+		return false
+	}
+	switch m.Settings.Voting {
+	case voteAudience:
+		return p.Audience || p.Waiting
+	case voteSeated:
+		return p.Seated
+	case voteBoth:
+		return p.Seated || p.Audience || p.Waiting
+	default:
+		return false
+	}
 }

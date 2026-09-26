@@ -163,3 +163,57 @@ func promptPick(p *playPrompt) int {
 	}
 	return p.Pick
 }
+
+func filterBurns(piles enabledPiles, burns []burnEntry) enabledPiles {
+	hit := map[string]bool{}
+	for _, e := range burns {
+		hit[e.Kind+"\x00"+e.Text] = true
+	}
+	var out enabledPiles
+	for _, p := range piles.Prompts {
+		if !hit[kindPrompt+"\x00"+normalizeCardText(p.Text)] {
+			out.Prompts = append(out.Prompts, p)
+		}
+	}
+	for _, a := range piles.Answers {
+		if !hit[kindAnswer+"\x00"+normalizeCardText(a.Text)] {
+			out.Answers = append(out.Answers, a)
+		}
+	}
+	return out
+}
+
+func filterPlayed(piles enabledPiles, played map[string]playedRow) enabledPiles {
+	var out enabledPiles
+	for _, p := range piles.Prompts {
+		if _, ok := played[p.key()]; !ok {
+			out.Prompts = append(out.Prompts, p)
+		}
+	}
+	for _, a := range piles.Answers {
+		if _, ok := played[a.key()]; !ok {
+			out.Answers = append(out.Answers, a)
+		}
+	}
+	return out
+}
+
+func allDealableSpent(piles enabledPiles, handSize int, played map[string]playedRow) bool {
+	any := false
+	for _, p := range piles.Prompts {
+		if !p.dealable(handSize) {
+			continue
+		}
+		any = true
+		if _, ok := played[p.key()]; !ok {
+			return false
+		}
+	}
+	for _, a := range piles.Answers {
+		any = true
+		if _, ok := played[a.key()]; !ok {
+			return false
+		}
+	}
+	return any
+}

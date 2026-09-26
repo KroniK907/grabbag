@@ -53,7 +53,7 @@ func TestDrawWaitHidesOldPrompt(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	prompt := g.match.LivePrompt.Text
+	prompt := g.engine.LivePrompt.Text
 	playPOST(g, "/slot", other, url.Values{"card": {firstHandCard(g, other)}})
 	playPOST(g, "/lock", other, nil)
 	for !allRevealed(g) {
@@ -105,7 +105,7 @@ func TestPhoneShowsHandWhileJudgeChooses(t *testing.T) {
 		t.Fatalf("missing blank prompt: %s", body)
 	}
 	card := firstHandCard(g, other)
-	if !strings.Contains(body, g.match.Actors[other].Hand[0].Text) {
+	if !strings.Contains(body, g.engine.Actors[other].Hand[0].Text) {
 		t.Fatalf("missing hand card: %s", body)
 	}
 	if strings.Contains(body, `hx-post="/play/slot"`) {
@@ -143,8 +143,8 @@ func TestPromptBlanksRenderAsFourUnderscores(t *testing.T) {
 	if !strings.Contains(body, "____") {
 		t.Fatalf("board missing four-underscore blank: %s", body)
 	}
-	if strings.Contains(body, expandBlanks(g.match.LivePrompt.Text)) {
-		lib := g.match.LivePrompt.Text
+	if strings.Contains(body, expandBlanks(g.engine.LivePrompt.Text)) {
+		lib := g.engine.LivePrompt.Text
 		if strings.Contains(lib, "_") && strings.Contains(body, ">"+lib+"<") {
 			t.Fatalf("board still shows library blank %q: %s", lib, body)
 		}
@@ -178,8 +178,8 @@ func TestFavoriteVoteBlocksJudgeConfirm(t *testing.T) {
 	for !allRevealed(g) {
 		playPOST(g, "/reveal", judge, nil)
 	}
-	if g.match.TimerKind != "favorite-vote" {
-		t.Fatalf("timer = %s", g.match.TimerKind)
+	if g.engine.TimerKind != "favorite-vote" {
+		t.Fatalf("timer = %s", g.engine.TimerKind)
 	}
 	conf := playPOST(g, "/confirm", judge, url.Values{"winner": {firstPacket(g)}})
 	if !strings.Contains(conf.Body.String(), "Favorites are still open.") {
@@ -189,14 +189,14 @@ func TestFavoriteVoteBlocksJudgeConfirm(t *testing.T) {
 	g.mu.Lock()
 	g.fireTimerLocked()
 	g.mu.Unlock()
-	if g.match.TimerKind != "" && g.match.TimerKind != "judge-pick" {
-		t.Fatalf("after favorites timer = %s", g.match.TimerKind)
+	if g.engine.TimerKind != "" && g.engine.TimerKind != "judge-pick" {
+		t.Fatalf("after favorites timer = %s", g.engine.TimerKind)
 	}
 	conf = playPOST(g, "/confirm", judge, url.Values{"winner": {firstPacket(g)}})
 	if strings.Contains(conf.Body.String(), "Favorites are still open.") {
 		t.Fatalf("confirm after favorites = %s", conf.Body.String())
 	}
-	if g.match.WinnerID == "" {
+	if g.engine.WinnerID == "" {
 		t.Fatal("winner was not set")
 	}
 }
@@ -206,7 +206,7 @@ func TestWinnerHoldZeroWaitsForHost(t *testing.T) {
 	h := newFakeHelper(t.TempDir(), true)
 	h.sitHost("p1", "Pat")
 	g := loadedGame(t, h)
-	m := &matchState{
+	m := &engine{
 		Settings: factorySettings(),
 		Actors:   map[string]*actor{"p1": {ID: "p1", Name: "Pat"}},
 		WinnerID: "p1",
@@ -214,8 +214,9 @@ func TestWinnerHoldZeroWaitsForHost(t *testing.T) {
 	}
 	g.mu.Lock()
 	g.started = true
-	g.match = m
-	g.finishLocked(h, m)
+	g.engine = m
+	m.at = g.clock()
+	m.finish()
 	g.mu.Unlock()
 	if m.TimerKind != "" {
 		t.Fatalf("zero hold armed %s", m.TimerKind)

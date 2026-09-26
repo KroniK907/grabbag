@@ -100,9 +100,9 @@ func (g *Game) settingsView(rowErr settingsErr) settingsView {
 	if !g.burnCorrupt {
 		view.Burns = g.lastBurns(10)
 	}
-	if g.match != nil {
-		view.WildcardAtStart = g.match.WildcardAtStart
-		view.WildcardEnabled = view.WildcardEnabled || g.match.WildcardAtStart
+	if g.engine != nil {
+		view.WildcardAtStart = g.engine.WildcardAtStart
+		view.WildcardEnabled = view.WildcardEnabled || g.engine.WildcardAtStart
 	}
 	g.mu.Unlock()
 	return view
