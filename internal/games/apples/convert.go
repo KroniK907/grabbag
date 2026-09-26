@@ -1,7 +1,6 @@
 package apples
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -45,6 +44,16 @@ type cahCompactPack struct {
 }
 
 func convertOfficial(raw []byte) (libraryFile, error) {
+	tags, err := loadOfficialTags()
+	if err != nil {
+		return libraryFile{}, err
+	}
+	return convertOfficialTagged(raw, tags)
+}
+
+// convertOfficialTagged converts a dump and tags cards from the overlay.
+// Cards missing from the overlay stay untagged.
+func convertOfficialTagged(raw []byte, tags map[string][]string) (libraryFile, error) {
 	packs, err := decodeCAHDump(raw)
 	if err != nil {
 		return libraryFile{}, err
@@ -77,7 +86,7 @@ func convertOfficial(raw []byte) (libraryFile, error) {
 				continue
 			}
 			seenCards[id] = struct{}{}
-			pack.Prompts = append(pack.Prompts, promptCard{ID: id, Text: card.Text, Pick: &pick})
+			pack.Prompts = append(pack.Prompts, promptCard{ID: id, Text: card.Text, Pick: &pick, Tags: officialTagsFor(tags, card.Text)})
 		}
 		for _, card := range src.White {
 			id := officialCardID(packID, "a", card.Text)
@@ -85,7 +94,7 @@ func convertOfficial(raw []byte) (libraryFile, error) {
 				continue
 			}
 			seenCards[id] = struct{}{}
-			pack.Answers = append(pack.Answers, answerCard{ID: id, Text: card.Text})
+			pack.Answers = append(pack.Answers, answerCard{ID: id, Text: card.Text, Tags: officialTagsFor(tags, card.Text)})
 		}
 		lib.Packs = append(lib.Packs, pack)
 	}
@@ -182,8 +191,7 @@ func slugify(name string) string {
 }
 
 func officialCardID(packID, kind, text string) string {
-	sum := sha256.Sum256([]byte(normalizeCardText(text)))
-	return fmt.Sprintf("%s-%s-%x", packID, kind, sum[:8])
+	return fmt.Sprintf("%s-%s-%s", packID, kind, officialTagKey(text))
 }
 
 func normalizeCardText(text string) string {

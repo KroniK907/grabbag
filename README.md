@@ -44,7 +44,7 @@ What it is not:
 
 ## Games
 
-**Apples for Humanity.** One seated player is the judge each round. Everyone else fills the prompt with cards from a hand. The judge reveals the plays and picks a winner. After Load, Deck Library is on the board rail. White and Black is fill-in-the-blank. Oranges to Oranges is adjective and noun. Wildcard is a tiny typed-answer set. The picker can also pull the JSON Against Humanity dump if you want those cards. Bots can sit in empty chairs. How to play is on the rail after Load, and on phones during a round.
+**Apples for Humanity.** One seated player is the judge each round. Everyone else fills the prompt with cards from a hand. The judge reveals the plays and picks a winner. After Load, Deck Library is on the board rail. White and Black is fill-in-the-blank. Oranges to Oranges is adjective and noun. Wildcard is a tiny typed-answer set. The picker can also pull the JSON Against Humanity dump if you want those cards. Imported cards arrive tagged sex, violence, politics, or kid friendly, so the tag filters work on them too. Bots can sit in empty chairs. How to play is on the rail after Load, and on phones during a round.
 
 **Quick Quips.** Two or more seated people write lines into rotating prompts, then vote. Audience can vote if you leave those points on. After Load, Prompt Library is on the board rail. Comedy ships in the binary.
 
