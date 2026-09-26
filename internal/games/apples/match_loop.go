@@ -607,17 +607,6 @@ func (g *Game) setDraftLocked(m *matchState, id, text string) error {
 	return g.slotLocked(m, id, blankCardID)
 }
 
-func remainingCap(draft string, cap int) int {
-	if cap <= 0 {
-		return 0
-	}
-	n := cap - len([]rune(draft))
-	if n < 0 {
-		return 0
-	}
-	return n
-}
-
 func (g *Game) playerMayVote(m *matchState, p games.Player) bool {
 	if m == nil || m.Settings.Voting == voteOff || m.Phase != phaseReveal || m.NamesShown {
 		return false

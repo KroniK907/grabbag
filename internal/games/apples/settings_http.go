@@ -1,9 +1,12 @@
 package apples
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/KroniK907/grabbag/internal/games"
 )
 
 type settingsErr struct {
@@ -385,4 +388,35 @@ func (g *Game) postReshuffleDiscard(w http.ResponseWriter, r *http.Request) {
 
 func atoiForm(r *http.Request, name string) (int, error) {
 	return strconv.Atoi(r.FormValue(name))
+}
+
+func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+}
+
+func (g *Game) persistSettings() error {
+	h := g.helperNow()
+	if h == nil {
+		return fmt.Errorf("game is not loaded")
+	}
+	cat := scanDataDir(h.DataDir())
+	existing, ok := g.loadSettings(h)
+	next := reconcileSettings(existing, ok, cat)
+	return g.saveSettings(h, next)
+}
+
+func (g *Game) loadSettings(h games.Helper) (matchSettings, bool) {
+	raw, found, err := h.KVGet(kvMatchSettings)
+	if err != nil || !found {
+		return matchSettings{}, false
+	}
+	return parseMatchSettings(raw)
+}
+
+func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
+	raw, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return h.KVSet(kvMatchSettings, raw)
 }
