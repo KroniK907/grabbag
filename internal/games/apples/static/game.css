@@ -302,6 +302,7 @@
 
 .apples-roster {
   display: flex;
+  align-items: flex-start;
   flex: 0 0 auto;
   gap: 8px;
   padding: 10px 16px;
@@ -345,9 +346,10 @@
 }
 
 .apples-win {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   place-items: center;
-  min-height: 0;
 }
 
 .apples-win-card {
