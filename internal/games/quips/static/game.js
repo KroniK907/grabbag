@@ -75,6 +75,22 @@
     clock.classList.add("is-arriving");
   }
 
+  function markVoteClock() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var clock = document.querySelector(".quips-board-clock[data-vote-clock]");
+    if (!clock) {
+      return;
+    }
+    var key = clock.getAttribute("data-vote-clock") || "";
+    if (window.grabbagQuipsVoteClock === key) {
+      return;
+    }
+    window.grabbagQuipsVoteClock = key;
+    clock.classList.add("is-fading");
+  }
+
   function markMatchup() {
     if (window.grabbagStatic) {
       return;
@@ -115,6 +131,7 @@
       paintTimers();
       bindComposeCards();
       markMatchup();
+      markVoteClock();
       markLastClock();
       markWinner();
     });
@@ -131,6 +148,7 @@
   paintTimers();
   bindComposeCards();
   markMatchup();
+  markVoteClock();
   markLastClock();
   markWinner();
 })();

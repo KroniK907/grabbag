@@ -29,7 +29,7 @@ const (
 	timerLastIntro   = "last-quip-intro"
 	lastQuipIntroSec = 3
 	timerVersusIntro = "versus-intro"
-	versusIntroSec   = 1
+	versusIntroSec   = 2
 )
 
 type roundKind int

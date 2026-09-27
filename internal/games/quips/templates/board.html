@@ -37,8 +37,10 @@
       <span>Set</span>
       <span>Go</span>
     </p>
+    {{else if and .Matchup (not .TimerText)}}
+    <div class="quips-board-clock is-pending" aria-hidden="true"><strong>0:00</strong></div>
     {{else if and .TimerText (or (not .LastQuip) (not .LastIntro))}}
-    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}>
+    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}{{if .Matchup}} data-vote-clock="{{.MatchupKey}}"{{end}}>
       <strong data-timer-value>{{.TimerText}}</strong>
     </div>
     {{end}}
@@ -47,6 +49,7 @@
         <p class="quips-write-title">Write your quips</p>
       </div>
     {{else if .ParadeBeat}}
+    <div class="quips-parade-stage">
       {{if .CenterPrompt}}<div class="quips-prompt">{{.CenterPrompt}}</div>{{end}}
       <div class="quips-quip-row{{if .Matchup}} is-matchup{{end}}"{{if .Matchup}} data-matchup="{{.MatchupKey}}"{{end}}>
         {{$shown := 0}}
@@ -69,6 +72,7 @@
         {{end}}
       </div>
       {{end}}
+    </div>
     {{else if eq .Phase "final-scores"}}
       <div class="quips-final" data-winner="{{range .Champions}}{{.}} {{end}}">
         {{if .Champions}}
