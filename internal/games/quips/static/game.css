@@ -235,21 +235,69 @@
   text-shadow: var(--ui-brand-shadow);
 }
 
-.quips-write-clock {
-  min-width: min(420px, 80%);
-  padding: 12px 36px 18px;
-  border: 6px solid var(--ui-accent);
-  border-radius: 28px;
+.quips-board-clock {
+  align-self: center;
+  flex: 0 0 auto;
+  min-width: min(280px, 70%);
+  margin: 0 0 8px;
+  padding: 4px 28px 8px;
+  border: 5px solid var(--ui-accent);
+  border-radius: 22px;
   background: var(--ui-card-bg);
-  box-shadow: 0 0 40px var(--ui-glow), 0 14px 0 #6d0854;
+  box-shadow: 0 0 28px var(--ui-glow);
 }
 
-.quips-write-clock strong {
+.quips-board-clock strong {
   color: var(--ui-accent-2);
   font-family: var(--ui-font-display);
-  font-size: clamp(4.5rem, 14vw, 10rem);
+  font-size: clamp(3.25rem, 8vw, 6.5rem);
   font-variant-numeric: tabular-nums;
   line-height: 0.9;
+}
+
+.quips-quip-row.is-matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px 20px;
+  width: 100%;
+}
+
+.quips-versus {
+  margin: 0;
+  color: var(--ui-brand);
+  font-family: var(--ui-font-display);
+  font-size: clamp(2.75rem, 7vw, 6rem);
+  line-height: 0.85;
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-quip-row.is-arriving .quips-quip-card:first-of-type {
+  animation: quips-from-left 0.45s ease;
+}
+
+.quips-quip-row.is-arriving .quips-versus {
+  animation: quips-versus-in 0.55s ease;
+}
+
+.quips-quip-row.is-arriving .quips-quip-card:last-of-type {
+  animation: quips-from-right 0.45s ease;
+}
+
+@keyframes quips-from-left {
+  from { opacity: 0; transform: translateX(-36px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes quips-from-right {
+  from { opacity: 0; transform: translateX(36px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes quips-versus-in {
+  0% { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  70% { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: none; }
 }
 
 .quips-board-head {
@@ -263,7 +311,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 20px;
   overflow: hidden;
   text-align: center;
@@ -313,7 +361,11 @@
 }
 
 .quips-timer {
-  font-size: 0.875rem;
+  font-family: var(--ui-font-display);
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 0.9;
+  text-align: center;
+  color: var(--ui-accent-2);
 }
 
 .quips-dim {

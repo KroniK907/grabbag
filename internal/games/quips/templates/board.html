@@ -22,28 +22,30 @@
   <header class="quips-board-head">
     <span class="display">Quick Quips</span>
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
-    {{if not .WritingBeat}}{{template "quips-timer" .}}{{end}}
   </header>
   <main class="quips-board-center">
+    {{if .TimerText}}
+    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+      <strong data-timer-value>{{.TimerText}}</strong>
+    </div>
+    {{end}}
     {{if .WritingBeat}}
       <div class="quips-write-stage">
         <p class="quips-write-title">Write your quips</p>
-        {{if .TimerText}}
-        <div class="quips-write-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
-          <strong data-timer-value>{{.TimerText}}</strong>
-        </div>
-        {{end}}
       </div>
     {{else if .ParadeBeat}}
       {{if .CenterPrompt}}<div class="quips-prompt">{{.CenterPrompt}}</div>{{end}}
-      <div class="quips-quip-row">
+      <div class="quips-quip-row{{if .Matchup}} is-matchup{{end}}"{{if .Matchup}} data-matchup="{{.MatchupKey}}"{{end}}>
+        {{$shown := 0}}
         {{range .Quips}}
         {{if .Revealed}}
+        {{if and $.Matchup (eq $shown 1)}}<p class="quips-versus">versus</p>{{end}}
         <article class="quips-quip-card{{if .Empty}} is-empty{{end}}">
           <p class="quips-quip-author">{{.Name}}</p>
           {{if .Empty}}<p class="quips-quip-empty">Empty quip</p>{{else}}<p class="quips-quip-text">{{shy .Text}}</p>{{end}}
           {{if gt .Count 0}}<p class="quips-vote-count">{{if eq .Count 1}}1 vote{{else}}{{.Count}} votes{{end}}</p>{{end}}
         </article>
+        {{$shown = 1}}
         {{end}}
         {{end}}
       </div>

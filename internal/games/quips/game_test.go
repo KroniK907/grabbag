@@ -153,7 +153,7 @@ func TestStartOpensWritePhase(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	body := board.Body.String()
-	if !strings.Contains(body, "Write your quips") || !strings.Contains(body, "quips-write-clock") {
+	if !strings.Contains(body, "Write your quips") || !strings.Contains(body, "quips-board-clock") {
 		t.Fatalf("write board = %s", body)
 	}
 	g.mu.Lock()

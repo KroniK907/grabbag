@@ -43,6 +43,22 @@
     });
   }
 
+  function markMatchup() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var row = document.querySelector(".quips-quip-row.is-matchup");
+    if (!row) {
+      return;
+    }
+    var key = row.getAttribute("data-matchup") || "";
+    if (window.grabbagQuipsMatchup === key) {
+      return;
+    }
+    window.grabbagQuipsMatchup = key;
+    row.classList.add("is-arriving");
+  }
+
   function paintTimers() {
     document.querySelectorAll("[data-quips-timer]").forEach(function (timer) {
       var total = Number(timer.dataset.timerTotal) || 0;
@@ -66,6 +82,7 @@
     document.body.addEventListener("htmx:afterSwap", function () {
       paintTimers();
       bindComposeCards();
+      markMatchup();
     });
   }
   if (!window.grabbagQuipsViewport) {
@@ -79,4 +96,5 @@
   syncVisualViewport();
   paintTimers();
   bindComposeCards();
+  markMatchup();
 })();

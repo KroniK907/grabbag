@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 
 	"github.com/KroniK907/grabbag/internal/games"
 )
@@ -19,6 +20,8 @@ type boardView struct {
 	CenterPrompt string
 	WritingBeat  bool
 	ParadeBeat   bool
+	Matchup      bool
+	MatchupKey   string
 	Quips        []quipBoardView
 	HoldAwards   []holdAwardView
 	Champions    []string
@@ -167,6 +170,18 @@ func (g *Game) boardViewLocked() boardView {
 			q.Count = view.LiveCounts[id]
 		}
 		view.Quips = append(view.Quips, q)
+	}
+	if view.ParadeBeat {
+		var ids []string
+		for _, q := range view.Quips {
+			if q.Revealed {
+				ids = append(ids, q.WriterID)
+			}
+		}
+		if len(ids) == 2 {
+			view.Matchup = true
+			view.MatchupKey = strings.Join(ids, "|")
+		}
 	}
 	if eng.Phase == phaseHold {
 		for id, pts := range eng.HoldAwards {
