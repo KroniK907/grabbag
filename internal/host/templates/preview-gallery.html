@@ -15,6 +15,8 @@
   nav button.on { background: #1b1b24; color: #fff; }
   nav small { color: #8a8fa0; }
   nav button.on small { color: #c8cbd6; }
+  #bench-link { display: block; margin: 2px 0 6px; padding: 5px 8px; border: 1px solid #c9ccd6; border-radius: 4px; color: inherit; text-decoration: none; text-align: center; }
+  #bench-link[hidden] { display: none; }
   #filter, #game { width: 100%; padding: 6px 8px; margin-top: 4px; border: 1px solid #c9ccd6; border-radius: 4px; font: inherit; background: #fff; }
   main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
   .bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; padding: 10px 14px; background: #fff; border-bottom: 1px solid #d4d7e0; }
@@ -31,6 +33,7 @@
 </head>
 <body>
 <nav>
+  <a id="bench-link" href="/dev/bench/" hidden>Test bench</a>
   <input id="filter" type="search" placeholder="Filter scenarios">
   <select id="game" aria-label="Game"><option value="">All games</option></select>
   <div id="list"></div>
@@ -55,6 +58,8 @@
   "use strict";
   var index, current;
   var $ = function (id) { return document.getElementById(id); };
+  // The bench exists only under -dev-bench, so show its link only when it answers.
+  fetch("/dev/bench/", { method: "HEAD" }).then(function (r) { $("bench-link").hidden = !r.ok; }).catch(function () {});
   var controls = ["theme", "players", "device", "orient", "text", "fit", "open", "patch"];
 
   function option(sel, value, label) {

@@ -69,6 +69,8 @@ Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-f
 
 Each package that draws pages lists `ui.Scenario` values in a `preview.go` next to its views: `lobby.Scenarios()`, and `Scenarios()` on each Game (`games.Previewer`). A scenario renders the real template from fixed data, with `ui.Chrome.Static` set so the page loads no htmx, SSE, or heartbeat. Host mounts the gallery at `/dev/ui/` only with `-dev-preview`. `cmd/grabbag-uishots` serves the same handler in-process and screenshots it. It is the only package that imports chromedp. The full rules are in [GAME_CONTRACT.md](GAME_CONTRACT.md#ui-previews).
 
+`-dev-bench` (`internal/host/bench.go`) runs a throwaway room in its own data dir with password `devbench`. `/dev/bench/` shows the board, `/settings`, and 3 to 6 live phones on one page. Seat 1 joins as host. Each phone gets its own port (`-port`+1 through +6), and the host renames `grabbag_` cookies per seat port so one browser can hold every player.
+
 ## Import rules
 
 `cmd/grabbag` imports only `internal/host`. Host is the composition root. It may import lobby, games, ui, store, platform, and `docs`.
