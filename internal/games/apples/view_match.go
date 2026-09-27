@@ -439,10 +439,7 @@ func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
 }
 
 func favoriteVoteLabel(votes int) string {
-	if votes == 1 {
-		return "1 favorite vote"
-	}
-	return fmt.Sprintf("%d favorite votes", votes)
+	return fmt.Sprintf("Favorite: %d", votes)
 }
 
 func favoriteMarks(counts map[string]int) map[string]string {

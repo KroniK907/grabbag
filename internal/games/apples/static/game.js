@@ -64,12 +64,25 @@
       window.visualViewport.addEventListener("resize", syncVisualViewport);
     }
   }
-  function boardColumnCount(count) {
-    if (count <= 7) {
-      return count;
+  function boardGrid(count) {
+    if (count < 6) {
+      return { cols: count, rows: 1 };
     }
     var cols = Math.ceil(count / 2);
-    return cols > 7 ? 7 : cols;
+    if (cols > 7) {
+      cols = 7;
+    }
+    return { cols: cols, rows: 2 };
+  }
+
+  function twoRowCardHeight(slots) {
+    var style = getComputedStyle(slots);
+    var pad = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    var gap = parseFloat(style.rowGap);
+    if (!gap) {
+      gap = parseFloat(style.gap) || 0;
+    }
+    return Math.max(0, Math.floor((slots.clientHeight - pad - gap) / 2));
   }
 
   function slotOverflows(slot) {
@@ -114,8 +127,9 @@
     if (!count) {
       return;
     }
-    var cols = boardColumnCount(count);
-    var rows = Math.ceil(count / cols);
+    var grid = boardGrid(count);
+    var cols = grid.cols;
+    var rows = grid.rows;
     var avail = slots.clientWidth;
     var cap = 0;
     if (count === 1) {
@@ -130,7 +144,13 @@
     } else {
       slots.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
     }
-    slots.style.gridTemplateRows = "repeat(" + rows + ", minmax(0, 1fr))";
+    if (rows === 1) {
+      slots.style.alignContent = "center";
+      slots.style.gridTemplateRows = twoRowCardHeight(slots) + "px";
+    } else {
+      slots.style.alignContent = "stretch";
+      slots.style.gridTemplateRows = "repeat(2, minmax(0, 1fr))";
+    }
     cards.forEach(fitBoardSlot);
   }
 

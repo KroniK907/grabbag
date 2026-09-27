@@ -16,7 +16,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "match-14"
+	assetVersion = "match-15"
 )
 
 //go:embed templates/*.html
