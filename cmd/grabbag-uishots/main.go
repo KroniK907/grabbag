@@ -71,7 +71,7 @@ func parseFlags(args []string) (config, error) {
 	out := fs.String("out", "shots", "output directory")
 	sets := fs.String("set", "scenarios,sweep,devices", "comma list of sets: scenarios, sweep, devices")
 	only := fs.String("only", "", "comma list of package/surface/name globs, such as apples/phone/* or lobby/*/*")
-	themes := fs.String("themes", "neon-light,neon-dark", "themes for the scenarios set; sweep and devices use the first")
+	themes := fs.String("themes", "neon-dark,neon-light", "themes for the scenarios set; sweep and devices use the first")
 	chrome := fs.String("chrome", "", "Chromium or Chrome binary; empty finds chromium-browser, chromium, or google-chrome")
 	workers := fs.Int("workers", 4, "parallel browser tabs")
 	maxDPR := fs.Float64("max-dpr", 2, "cap on device pixel ratio, to keep PNGs small; 0 uses each device's own")
