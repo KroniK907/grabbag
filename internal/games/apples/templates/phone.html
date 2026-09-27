@@ -56,7 +56,7 @@
         {{if .}}
         <form hx-post="/play/choose-prompt" hx-swap="outerHTML" hx-target="#apples-phone">
           <input type="hidden" name="prompt" value="{{.CardID}}">
-          <button class="apples-card-button" type="submit">{{.Text}}</button>
+          <button class="apples-card-button" type="submit">{{shy .Text}}</button>
         </form>
         {{end}}
         {{end}}
@@ -88,7 +88,7 @@
         {{if .Revealed}}
         <form hx-post="/play/confirm" hx-swap="outerHTML" hx-target="#apples-phone">
           <input type="hidden" name="winner" value="{{.ActorID}}">
-          <button class="apples-card-button" type="submit" {{if not $.CanConfirm}}disabled{{end}}>{{range .Cards}}<span>{{.Text}}</span>{{end}}</button>
+          <button class="apples-card-button" type="submit" {{if not $.CanConfirm}}disabled{{end}}>{{range .Cards}}<span>{{shy .Text}}</span>{{end}}</button>
         </form>
         {{else}}
         <div class="apples-slot down">?</div>
@@ -106,7 +106,7 @@
             {{if .Card}}
               <form hx-post="/play/unslot" hx-swap="outerHTML" hx-target="#apples-phone">
                 <input type="hidden" name="hole" value="{{.Index}}">
-                <button class="apples-hole-card" type="submit" {{if eq $.Role "locked"}}disabled{{end}}>{{.Card.Text}}</button>
+                <button class="apples-hole-card" type="submit" {{if eq $.Role "locked"}}disabled{{end}}>{{shy .Card.Text}}</button>
               </form>
             {{else}}
               <span class="apples-empty">Tap a card</span>
@@ -122,11 +122,11 @@
         {{range .Hand}}
         <div class="apples-hand-card">
           {{if eq $.Role "preview"}}
-          <button class="apples-card-button" type="button" disabled>{{.Text}}</button>
+          <button class="apples-card-button" type="button" disabled>{{shy .Text}}</button>
           {{else}}
           <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
             <input type="hidden" name="card" value="{{.CardID}}">
-            <button class="apples-card-button" type="submit">{{.Text}}</button>
+            <button class="apples-card-button" type="submit">{{shy .Text}}</button>
           </form>
           {{if and $.HasWildSlot (not $.Discard)}}
           <form class="apples-discard" hx-post="/play/discard" hx-swap="outerHTML" hx-target="#apples-phone">
@@ -139,7 +139,7 @@
         {{end}}
         {{if .Discard}}
         <div class="apples-hand-card is-discarded">
-          <button class="apples-card-button" type="button" disabled>{{.Discard.Text}}</button>
+          <button class="apples-card-button" type="button" disabled>{{shy .Discard.Text}}</button>
           <form class="apples-discard" hx-post="/play/discard" hx-swap="outerHTML" hx-target="#apples-phone">
             <input type="hidden" name="card" value="{{.Discard.CardID}}">
             <button type="submit">Undo</button>
@@ -156,7 +156,7 @@
         {{if .Draft}}
         <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">
           <input type="hidden" name="card" value="{{.Blank.CardID}}">
-          <button class="apples-card-button wildcard" type="submit">{{.Draft}}</button>
+          <button class="apples-card-button wildcard" type="submit">{{shy .Draft}}</button>
         </form>
         {{end}}
         {{end}}
@@ -185,13 +185,13 @@
           <form class="{{if .Voted}}is-voted{{end}}" hx-post="/play/vote" hx-swap="outerHTML" hx-target="#apples-phone">
             <input type="hidden" name="target" value="{{.ActorID}}">
             <button class="apples-card-button apples-vote-card" type="submit" {{if .Own}}disabled{{end}}>
-              {{range .Cards}}<span>{{.Text}}</span>{{end}}
+              {{range .Cards}}<span>{{shy .Text}}</span>{{end}}
               {{if .Voted}}<small>Your favorite</small>{{end}}
             </button>
           </form>
           {{else}}
           <article class="apples-slot apples-result-card{{if .Own}} own{{end}}{{if .Voted}} is-voted{{end}}">
-            {{range .Cards}}<p>{{.Text}}</p>{{end}}
+            {{range .Cards}}<p>{{shy .Text}}</p>{{end}}
             {{if .Winner}}<p class="apples-chip">Judge's pick</p>{{end}}
             {{if .FavoriteMark}}<p class="apples-chip favorite">{{.FavoriteMark}}</p>{{end}}
             {{if .Voted}}<p class="apples-vote-count">Your favorite</p>{{end}}
@@ -225,7 +225,7 @@
         {{range .BurnFaces}}
         <label>
           <input type="checkbox" name="face" value="{{.Kind}}	{{.Text}}" {{if or .Burned .Checked}}checked{{end}} {{if .Burned}}disabled{{end}}>
-          <span><small>{{.Kind}}</small>{{.Text}}</span>
+          <span><small>{{.Kind}}</small>{{shy .Text}}</span>
         </label>
         {{end}}
       </div>

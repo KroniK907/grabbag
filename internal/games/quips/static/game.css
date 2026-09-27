@@ -145,7 +145,8 @@
   flex: 1 1 auto;
   gap: 14px;
   padding: 0 12px 12px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .quips-compose-card {
@@ -282,8 +283,10 @@
 }
 
 .quips-quip-card {
-  min-width: 200px;
+  min-width: min(200px, 100%);
   max-width: 360px;
+  hyphens: manual;
+  overflow-wrap: break-word;
   padding: 16px;
   border: 3px solid var(--ui-accent);
   border-radius: 12px;
@@ -305,6 +308,8 @@
 .quips-quip-text {
   margin: 0;
   font-size: clamp(18px, 3vw, 28px);
+  hyphens: manual;
+  overflow-wrap: break-word;
 }
 
 .quips-quip-empty {
@@ -327,6 +332,16 @@
   position: sticky;
   bottom: 0;
   background: var(--ui-board-bg);
+}
+
+.quips-vote-option {
+  min-width: 0;
+}
+
+.quips-vote-option .ui-btn {
+  hyphens: manual;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .quips-vote-option.chosen .ui-btn {
