@@ -52,9 +52,12 @@ var PreviewDevices = []PreviewDevice{
 var PreviewTextScales = []float64{1, 1.15, 1.3, 1.5, 2}
 
 // PreviewFrames are the reference viewports per ui.Frame*.
+// tv-720 and tv-480 are extra gallery sizes. Scenarios still use FrameTV (1080p).
 var PreviewFrames = map[string]PreviewDevice{
 	ui.FramePhone: {ID: "phone", Label: "Phone", Width: 393, Height: 852, Scale: 3, Mobile: true, UA: "ios"},
 	ui.FrameTV:    {ID: "tv", Label: "TV 1080p", Width: 1920, Height: 1080, Scale: 1},
+	"tv-720":      {ID: "tv-720", Label: "TV 720p", Width: 1280, Height: 720, Scale: 1},
+	"tv-480":      {ID: "tv-480", Label: "TV 480p", Width: 854, Height: 480, Scale: 1},
 	ui.FramePage:  {ID: "page", Label: "Laptop", Width: 1280, Height: 800, Scale: 1},
 }
 
