@@ -7,7 +7,7 @@
 
 .quips-board h1 {
   font-family: var(--ui-font-display);
-  font-size: 56px;
+  font-size: 3.5rem;
   margin: 0 0 16px;
   color: var(--ui-brand);
   text-shadow: var(--ui-brand-shadow);
@@ -34,13 +34,13 @@
 .quips-logo {
   margin: 0;
   color: var(--ui-brand);
-  font-size: 42px;
+  font-size: 2.625rem;
   line-height: 0.88;
   text-shadow: var(--ui-brand-shadow);
 }
 
 .quips-path {
-  font-size: 13px;
+  font-size: 0.8125rem;
   overflow-wrap: anywhere;
   color: var(--ui-url);
 }
@@ -52,7 +52,7 @@
 .quips-head h1 {
   margin: 0 0 18px;
   color: var(--ui-brand);
-  font-size: clamp(34px, 5vw, 64px);
+  font-size: clamp(2.125rem, 5vw, 4rem);
   text-shadow: var(--ui-brand-shadow);
 }
 
@@ -82,7 +82,7 @@
 .quips-pack h2 {
   margin: 0 0 7px;
   color: var(--ui-card-title);
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 
 .quips-toggle {
@@ -106,23 +106,23 @@
 
 .quips-note {
   margin: 0 0 12px;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .quips-license {
   grid-column: 1 / -1;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ui-url);
 }
 
 .quips-settings-note {
   margin: 0;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.4;
 }
 
 .quips-datadir code {
-  font-size: 14px;
+  font-size: 0.875rem;
   word-break: break-all;
 }
 
@@ -170,7 +170,7 @@
 
 .quips-cap {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   opacity: 0.85;
 }
 
@@ -185,7 +185,7 @@
   min-height: 48px;
   padding: 10px 12px;
   border-radius: 12px;
-  font-size: 19px;
+  font-size: 1.1875rem;
   line-height: 1.1;
 }
 
@@ -224,11 +224,11 @@
   border: 3px solid var(--ui-accent);
   border-radius: 12px;
   background: var(--ui-card-bg);
-  font-size: clamp(20px, 3vw, 36px);
+  font-size: clamp(1.25rem, 3vw, 2.25rem);
 }
 
 .quips-writing-beat {
-  font-size: clamp(24px, 4vw, 48px);
+  font-size: clamp(1.5rem, 4vw, 3rem);
 }
 
 .quips-roster {
@@ -254,12 +254,12 @@
 
 .quips-locked-mark {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   text-transform: uppercase;
 }
 
 .quips-timer {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .quips-dim {
@@ -268,7 +268,7 @@
 }
 
 .quips-round {
-  font-size: 14px;
+  font-size: 0.875rem;
   opacity: 0.85;
 }
 
@@ -301,13 +301,13 @@
 
 .quips-quip-author {
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-transform: uppercase;
 }
 
 .quips-quip-text {
   margin: 0;
-  font-size: clamp(18px, 3vw, 28px);
+  font-size: clamp(1.125rem, 3vw, 1.75rem);
   hyphens: manual;
   overflow-wrap: break-word;
 }
@@ -361,7 +361,7 @@
   border: 3px solid var(--ui-accent);
   border-radius: 12px;
   text-align: center;
-  font-size: clamp(18px, 3vw, 28px);
+  font-size: clamp(1.125rem, 3vw, 1.75rem);
 }
 
 .quips-reshuffle-sheet {
@@ -472,7 +472,7 @@
   flex: 1 0 100%;
   margin: 0;
   color: var(--ui-brand);
-  font-size: clamp(40px, 8vw, 72px);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
 }
 
 @media (max-width: 520px), (hover: none) and (pointer: coarse) {
@@ -529,5 +529,5 @@ html.quips-compact-height .quips-lock-bar {
 html.quips-compact-height .quips-lock-bar .ui-btn {
   min-height: 44px;
   padding: 7px 10px;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
