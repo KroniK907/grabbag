@@ -79,8 +79,12 @@ func (g *Game) Description() string {
 // MinPlayers is 1. Host still needs one seated player to Start.
 func (g *Game) MinPlayers() int { return 1 }
 
-// MaxPlayers is 0. The host seat cap is the ceiling.
-func (g *Game) MaxPlayers() int { return 0 }
+// maxPlayers is the largest table whose board still fits a 1080p TV.
+// The roster scrolls sideways at 15, so the game stops at 14.
+const maxPlayers = 14
+
+// MaxPlayers is 14. Above that the TV roster runs off the screen.
+func (g *Game) MaxPlayers() int { return maxPlayers }
 
 // Load stores the helper, copies missing shipped libraries, and seeds match-settings.
 func (g *Game) Load(h games.Helper) error {

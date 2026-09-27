@@ -28,7 +28,7 @@ func TestCatalogRegistersApples(t *testing.T) {
 		t.Fatal("apples is not in the catalog")
 	}
 	g := got.New()
-	if g.ID() != "apples" || g.Name() != "Apples for Humanity" || g.MinPlayers() != 1 || g.MaxPlayers() != 0 {
+	if g.ID() != "apples" || g.Name() != "Apples for Humanity" || g.MinPlayers() != 1 || g.MaxPlayers() != 14 {
 		t.Fatalf("id=%s name=%s min=%d max=%d", g.ID(), g.Name(), g.MinPlayers(), g.MaxPlayers())
 	}
 	buttons := g.BoardButtons()
