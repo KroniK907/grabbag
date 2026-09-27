@@ -26,7 +26,17 @@
   </div>
   {{else}}
   {{if .Paused}}<p class="quips-dim">Paused</p>{{end}}
-  {{if eq .Role "wait"}}
+  {{if .VoteIntro}}
+  <div class="quips-vote-ready">
+    <p class="quips-vote-ready-copy">Get ready to vote for your favorite quips</p>
+    <p class="quips-countdown is-vote">
+      <span>3</span>
+      <span>2</span>
+      <span>1</span>
+      <span>Go</span>
+    </p>
+  </div>
+  {{else if eq .Role "wait"}}
   <div class="quips-wait">
     {{template "quips-timer" .}}
     <p>{{.WaitCopy}}</p>

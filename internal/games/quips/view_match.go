@@ -71,6 +71,7 @@ type phoneView struct {
 	OverlayCopy  string
 	OverlayYes   bool
 	Role         string
+	VoteIntro    bool
 	Error        string
 	WaitCopy     string
 	Slots        []slotView
@@ -343,7 +344,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 		}
 		return g.attachBurnDrawer(view, p)
 	case phaseVoteIntro:
-		view.WaitCopy = "Get ready to vote for your favorite quips."
+		view.VoteIntro = true
 	case phaseParadeWait:
 		view.WaitCopy = "Waiting for the host to start the vote parade."
 	case phaseReveal:
