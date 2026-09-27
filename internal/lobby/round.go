@@ -89,7 +89,7 @@ func (l *Lobby) SetAutoPause(ctx context.Context, on bool) error {
 	return nil
 }
 
-// SetAutoStart stores the claim-host auto-start switch. Default off.
+// SetAutoStart stores the claim-host auto-start switch. New rooms start on.
 func (l *Lobby) SetAutoStart(ctx context.Context, on bool) error {
 	if _, err := l.sql.ExecContext(ctx, `UPDATE room_state SET auto_start = ? WHERE id = 1`, boolToInt(on)); err != nil {
 		return fmt.Errorf("lobby: set auto-start: %w", err)

@@ -1409,7 +1409,7 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE room_state ADD COLUMN selected_game_id TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE room_state ADD COLUMN game_max_players INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN auto_pause INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE room_state ADD COLUMN auto_start INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN auto_start INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE room_state ADD COLUMN disconnect_after INTEGER NOT NULL DEFAULT 5`,
 		`ALTER TABLE room_state ADD COLUMN kick_timeout INTEGER NOT NULL DEFAULT 60`,
 		`ALTER TABLE room_state ADD COLUMN protect_host INTEGER NOT NULL DEFAULT 1`,
