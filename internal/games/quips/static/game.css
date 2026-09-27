@@ -298,6 +298,18 @@
   animation-fill-mode: both;
 }
 
+.quips-countdown.is-play span:nth-child(3) {
+  animation-name: quips-count-word;
+  animation-delay: 2s;
+  animation-fill-mode: both;
+}
+
+.quips-countdown.is-play span:nth-child(4) {
+  animation-name: quips-count-hold;
+  animation-delay: 3s;
+  animation-fill-mode: forwards;
+}
+
 .quips-countdown.is-vote span:nth-child(4) {
   animation-name: quips-count-hold;
   animation-delay: 4.5s;
@@ -315,7 +327,7 @@
 
 .quips-vote-ready-copy {
   margin: 0;
-  max-width: 14ch;
+  max-width: 18ch;
   color: var(--ui-brand);
   font-family: var(--ui-font-display);
   font-size: clamp(2rem, 7vw, 6.5rem);

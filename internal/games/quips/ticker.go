@@ -12,7 +12,7 @@ func (g *Game) startTickerLocked() {
 		for {
 			select {
 			case <-stop:
-			 return
+				return
 			case <-tick.C:
 				g.mu.Lock()
 				g.fireEngineLocked()

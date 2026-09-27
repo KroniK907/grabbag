@@ -62,7 +62,9 @@ func (e *engine) openWriteRoundForIDs(now time.Time) error {
 		}
 	}
 
-	if e.Kind == roundLastQuip {
+	if e.Round == 1 && e.Kind != roundLastQuip {
+		e.armTimer(now, timerPlayIntro, playIntroSec)
+	} else if e.Kind == roundLastQuip {
 		e.armTimer(now, timerLastIntro, lastQuipIntroSec)
 	} else if e.Settings.WriteSec > 0 {
 		e.armTimer(now, "write", e.Settings.WriteSec)

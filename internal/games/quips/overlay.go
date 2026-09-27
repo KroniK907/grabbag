@@ -157,4 +157,3 @@ func overlayCopy(claimedHost bool, tooSmall bool) (title string, showYes bool) {
 	}
 	return overlayWaitCopy, false
 }
-

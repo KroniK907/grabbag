@@ -33,6 +33,8 @@ const (
 	versusIntroSec   = 2
 	timerVoteIntro   = "vote-intro"
 	voteIntroSec     = 6
+	timerPlayIntro   = "play-intro"
+	playIntroSec     = 4
 )
 
 type roundKind int
@@ -219,6 +221,10 @@ func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
 		out.PhoneErr[cmd.Actor] = "Ready, set, go."
 		return out
 	}
+	if e.TimerKind == timerPlayIntro {
+		out.PhoneErr[cmd.Actor] = "Get ready to play Quick Quips."
+		return out
+	}
 	w := e.Writers[cmd.Actor]
 	if w == nil {
 		out.PhoneErr[cmd.Actor] = "You are not in this match."
@@ -254,6 +260,12 @@ func (e *engine) Advance(now time.Time) Outcome {
 		e.clearTimer()
 		e.timerSubmitAll()
 		return e.finishWriteIfReady(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerPlayIntro:
+		e.clearTimer()
+		if e.Settings.WriteSec > 0 {
+			e.armTimer(now, "write", e.Settings.WriteSec)
+		}
+		return Outcome{Changed: true, Events: []string{eventQuips}}
 	case timerLastIntro:
 		e.clearTimer()
 		if e.Settings.WriteSec > 0 {

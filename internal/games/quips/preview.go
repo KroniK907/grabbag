@@ -193,7 +193,7 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 	if err := e.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(7)), previewNow); err != nil {
 		return nil, cast, fmt.Errorf("quips preview: begin: %w", err)
 	}
-	if e.TimerKind == timerLastIntro {
+	if e.TimerKind == timerPlayIntro || e.TimerKind == timerLastIntro {
 		e.clearTimer()
 		if e.Settings.WriteSec > 0 {
 			e.armTimer(previewNow, "write", e.Settings.WriteSec)

@@ -198,6 +198,7 @@ func TestVoteClosesWhenEveryWriterHasVoted(t *testing.T) {
 
 func lockPair(t *testing.T, eng *engine, id string, texts []string, now time.Time) {
 	t.Helper()
+	now = skipPlayIntro(eng, now)
 	for i, text := range texts {
 		eng.Do(Command{Kind: CmdDraft, Actor: id, Slot: i, Text: text}, now)
 	}

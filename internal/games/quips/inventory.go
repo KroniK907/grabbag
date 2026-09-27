@@ -1,8 +1,8 @@
 package quips
 
 const (
-	startRefuseMsg  = "Not enough prompts in your library to start the game."
-	startUnburnMsg  = "You may need to unburn some prompts or get more libraries to continue."
+	startRefuseMsg = "Not enough prompts in your library to start the game."
+	startUnburnMsg = "You may need to unburn some prompts or get more libraries to continue."
 )
 
 func promptDemand(settings matchSettings, seatedHumans int) int {

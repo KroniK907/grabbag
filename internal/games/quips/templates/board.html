@@ -25,7 +25,17 @@
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
   </header>
   <main class="quips-board-center">
-    {{if .VoteIntro}}
+    {{if .PlayIntro}}
+      <div class="quips-vote-ready">
+        <p class="quips-vote-ready-copy">Get ready to play Quick Quips. Write your quips in...</p>
+        <p class="quips-countdown is-play">
+          <span>3</span>
+          <span>2</span>
+          <span>1</span>
+          <span>Go!</span>
+        </p>
+      </div>
+    {{else if .VoteIntro}}
       <div class="quips-vote-ready">
         <p class="quips-vote-ready-copy">Get ready to vote for your favorite quips</p>
         <p class="quips-countdown is-vote">
@@ -54,10 +64,11 @@
       <strong data-timer-value>{{.TimerText}}</strong>
     </div>
     {{end}}
-    {{if and .WritingBeat (not .LastQuip)}}
+    {{if and .WritingBeat (not .LastQuip) (not .PlayIntro)}}
       <div class="quips-write-stage">
         <p class="quips-write-title">Write your quips</p>
       </div>
+    {{else if .PlayIntro}}
     {{else if .ParadeBeat}}
     <div class="quips-parade-stage">
       {{if .CenterPrompt}}<div class="quips-prompt">{{.CenterPrompt}}</div>{{end}}

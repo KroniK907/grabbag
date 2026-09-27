@@ -23,6 +23,7 @@ type boardView struct {
 	LastQuip     bool
 	LastIntro    bool
 	VoteIntro    bool
+	PlayIntro    bool
 	ParadeBeat   bool
 	Matchup      bool
 	MatchupKey   string
@@ -72,6 +73,7 @@ type phoneView struct {
 	OverlayYes   bool
 	Role         string
 	VoteIntro    bool
+	PlayIntro    bool
 	LastQuip     bool
 	LastIntro    bool
 	Error        string
@@ -143,6 +145,7 @@ func (g *Game) boardViewLocked() boardView {
 	view.LastQuip = eng.Kind == roundLastQuip && eng.Phase == phaseWrite
 	view.LastIntro = view.LastQuip && eng.TimerKind == timerLastIntro
 	view.VoteIntro = eng.Phase == phaseVoteIntro
+	view.PlayIntro = eng.Phase == phaseWrite && eng.TimerKind == timerPlayIntro
 	view.ParadeBeat = eng.Phase == phaseReveal || eng.Phase == phaseVote || eng.Phase == phaseHold
 	view.Roster = g.rosterViewsLocked(eng)
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
@@ -307,6 +310,12 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 
 	switch eng.Phase {
 	case phaseWrite:
+		if eng.TimerKind == timerPlayIntro {
+			view.Role = "wait"
+			view.PlayIntro = true
+			view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = "", "", 0, 0, 0
+			return g.attachBurnDrawer(view, p)
+		}
 		if eng.Kind == roundLastQuip && eng.TimerKind == timerLastIntro {
 			view.Role = "wait"
 			view.LastQuip = true
@@ -441,7 +450,7 @@ func (g *Game) rosterViewsLocked(eng *engine) []rosterView {
 }
 
 func (g *Game) timerViewLocked(eng *engine) (label, text string, seconds, total int, endUnix int64) {
-	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro || eng.TimerKind == timerVoteIntro {
+	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro || eng.TimerKind == timerVoteIntro || eng.TimerKind == timerPlayIntro {
 		return "", "", 0, 0, 0
 	}
 	switch eng.TimerKind {
