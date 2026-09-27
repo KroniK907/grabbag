@@ -57,6 +57,16 @@
 </form>
 {{if eq .Err.Field "prompt-mode"}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
 
+<h2>Host</h2>
+<form class="ui-row" {{template "game-live" "/settings/game/host-judge"}}>
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.HostJudge}}checked{{end}} {{if .Frozen}}disabled{{end}}> Host always judges</label>
+</form>
+<form class="ui-row" {{template "game-live" "/settings/game/host-reveals"}}>
+  <input type="hidden" name="enabled" value="0">
+  <label><input type="checkbox" name="enabled" value="1" {{if .Settings.HostReveals}}checked{{end}} {{if .Frozen}}disabled{{end}}> Host reveals answers</label>
+</form>
+
 <h2>Bots</h2>
 <form class="ui-row ui-row-field" {{template "game-live" "/settings/game/bot-count"}}>
   <label class="ui-field"><span>Bot count</span>

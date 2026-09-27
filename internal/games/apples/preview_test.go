@@ -65,6 +65,29 @@ func snippet(body, needle string) string {
 	return body[i:end]
 }
 
+func TestHostRolePreviews(t *testing.T) {
+	t.Parallel()
+	settings := renderNamed(t, "settings", "host-roles")
+	if !strings.Contains(settings, "Host always judges") || !strings.Contains(settings, "Host reveals answers") {
+		t.Fatal("host role settings missing")
+	}
+	if strings.Count(settings, "checked") < 2 {
+		t.Fatal("host role checkboxes are off")
+	}
+	host := renderNamed(t, "phone", "host-reveal-host")
+	if !strings.Contains(host, "apples-host-reveal") || !strings.Contains(host, ">Reveal next<") {
+		t.Fatalf("host reveal phone missing the reveal control: %s", snippet(host, "apples-host-reveal"))
+	}
+	judge := renderNamed(t, "phone", "host-reveal-judge")
+	if strings.Contains(judge, ">Reveal next<") {
+		t.Fatal("non-host judge can reveal while host reveals is on")
+	}
+	pinned := renderNamed(t, "phone", "host-judge-judge")
+	if !strings.Contains(pinned, "apples-burn-handle") || !strings.Contains(pinned, ">Reveal next<") {
+		t.Fatal("pinned host judge is missing judge and host controls")
+	}
+}
+
 func TestScenariosRenderAtEverySweepCount(t *testing.T) {
 	t.Parallel()
 	uitest.RenderAll(t, apples.New().Scenarios())

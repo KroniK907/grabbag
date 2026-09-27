@@ -34,6 +34,8 @@ var previewStages = []previewStage{
 	{name: "submit-pick2", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 	{name: "submit-locked", minBoard: 3, minJudge: 3, minSeated: 3, minWatcher: 3},
 	{name: "reveal", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
+	{name: "host-reveal", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
+	{name: "host-judge", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 	{name: "favorites", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 	{name: "judge-pick", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 	{name: "sudden", minBoard: 2, minJudge: 3, minSeated: 2, minWatcher: 2},
@@ -74,7 +76,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 			list = append(list, ui.Scenario{
 				Surface: "phone", Group: st.name, Name: st.name + "-" + viewer.id, Viewer: viewer.id,
 				Frame: ui.FramePhone, Shell: ui.ShellPlayPhone, MinPlayers: viewer.min, MaxPlayers: maxPlayers,
-				Sample: (st.name == "submit" && viewer.id == "seated") || (st.name == "reveal" && viewer.id == "judge"),
+				Sample: (st.name == "submit" && viewer.id == "seated") || (st.name == "reveal" && viewer.id == "judge") || (st.name == "host-reveal" && viewer.id == "host") || (st.name == "host-judge" && viewer.id == "judge"),
 				Render: func(w io.Writer, p ui.Preview) error {
 					pg, cast, err := previewMatch(st.name, p.Players)
 					if err != nil {
@@ -121,14 +123,17 @@ func (g *Game) Scenarios() []ui.Scenario {
 		ui.Scenario{
 			Surface: "settings", Name: "match", Viewer: "operator", Frame: ui.FramePage, Shell: ui.ShellSettings,
 			Render: func(w io.Writer, p ui.Preview) error {
-				view := settingsView{
-					pageView:        previewPage(p, "Apples for Humanity"),
-					Settings:        factorySettings(),
-					WildcardEnabled: true,
-					DiscardEmpty:    true,
-					Burns:           []burnEntry{{Kind: kindPrompt, Text: previewPrompts[0].text}, {Kind: kindAnswer, Text: previewAnswers[3]}},
-				}
-				return ui.RenderScenario(w, pages, "settings.html", view, p)
+				return renderSettingsPreview(w, p, factorySettings())
+			},
+		},
+		ui.Scenario{
+			Surface: "settings", Name: "host-roles", Viewer: "operator", Frame: ui.FramePage, Shell: ui.ShellSettings,
+			Sample:  true,
+			Render: func(w io.Writer, p ui.Preview) error {
+				s := factorySettings()
+				s.HostJudge = true
+				s.HostReveals = true
+				return renderSettingsPreview(w, p, s)
 			},
 		},
 	)
@@ -141,6 +146,17 @@ func (g *Game) Scenarios() []ui.Scenario {
 		panic(err)
 	}
 	return out
+}
+
+func renderSettingsPreview(w io.Writer, p ui.Preview, settings matchSettings) error {
+	view := settingsView{
+		pageView:        previewPage(p, "Apples for Humanity"),
+		Settings:        settings,
+		WildcardEnabled: true,
+		DiscardEmpty:    true,
+		Burns:           []burnEntry{{Kind: kindPrompt, Text: previewPrompts[0].text}, {Kind: kindAnswer, Text: previewAnswers[3]}},
+	}
+	return ui.RenderScenario(w, pages, "settings.html", view, p)
 }
 
 func previewPage(p ui.Preview, title string) pageView {
@@ -191,6 +207,7 @@ func previewPicker(p ui.Preview) pickerView {
 // previewCast names who plays which part in a preview match.
 type previewCast struct {
 	judge  string
+	host   string
 	humans []string
 	names  map[string]string
 }
@@ -201,12 +218,17 @@ func (c previewCast) player(viewer string) (games.Player, error) {
 		if c.judge == "" {
 			return games.Player{}, fmt.Errorf("apples preview: no judge at this table size")
 		}
-		return games.Player{ID: c.judge, DisplayName: c.names[c.judge], Seated: true}, nil
+		return games.Player{ID: c.judge, DisplayName: c.names[c.judge], Seated: true, ClaimedHost: c.host == c.judge}, nil
 	case "seated", "host":
-		if len(c.humans) == 0 {
+		id := ""
+		if viewer == "host" && c.host != "" {
+			id = c.host
+		} else if len(c.humans) > 0 {
+			id = c.humans[0]
+		}
+		if id == "" {
 			return games.Player{}, fmt.Errorf("apples preview: no seated non-judge player at this table size")
 		}
-		id := c.humans[0]
 		return games.Player{ID: id, DisplayName: c.names[id], Seated: true, ClaimedHost: viewer == "host"}, nil
 	default:
 		return games.Player{ID: "audience", DisplayName: "Audience"}, nil
@@ -230,6 +252,10 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		settings.PromptMode = modeMulti
 	case "judge-pick", "scored":
 		settings.FavoriteVoteSec = 0
+	case "host-reveal":
+		settings.HostReveals = true
+	case "host-judge":
+		settings.HostJudge = true
 	case "over":
 		settings.FavoriteVoteSec = 0
 		settings.WinByRounds = true
@@ -242,12 +268,26 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		rows[i] = rosterRow{ID: fmt.Sprintf("p%02d", i+1), Name: names[i]}
 		cast.names[rows[i].ID] = names[i]
 	}
+	if stage == "host-judge" && len(rows) > 0 {
+		rows[0].ClaimedHost = true
+	}
 	piles := previewPiles(n)
 	e := &engine{}
 	now := previewNow
 	if out := e.Begin(settings, rows, piles, &previewSupply{piles: piles}, rand.New(rand.NewSource(7)), now); out.Err != nil || out.Shortage != "" {
 		return nil, cast, fmt.Errorf("apples preview: begin: %v %s", out.Err, out.Shortage)
 	}
+	if stage == "host-reveal" {
+		host := rows[0].ID
+		if host == e.JudgeID && len(rows) > 1 {
+			host = rows[1].ID
+		}
+		for i := range rows {
+			rows[i].ClaimedHost = rows[i].ID == host
+		}
+		e.SetSeated(rows)
+	}
+	cast.host = e.HostID
 	if stage == "submit-pick2" {
 		// Draw refills from the supply, so a prompt pushed onto the engine pile is thrown away.
 		if s, ok := e.supply.(*previewSupply); ok {
@@ -320,18 +360,22 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 				return nil, cast, err
 			}
 		}
-	case "reveal", "favorites", "judge-pick", "over", "scored":
+	case "reveal", "host-reveal", "host-judge", "favorites", "judge-pick", "over", "scored":
 		for _, id := range hs {
 			if err := slotAndLock(id, true); err != nil {
 				return nil, cast, err
 			}
 		}
 		reveals := len(e.Packets)
-		if stage == "reveal" {
+		if stage == "reveal" || stage == "host-reveal" || stage == "host-judge" {
 			reveals = (reveals + 1) / 2
 		}
+		revealer := e.JudgeID
+		if e.Settings.HostReveals {
+			revealer = e.HostID
+		}
 		for i := 0; i < reveals; i++ {
-			if err := do(command{Kind: cmdReveal, Actor: e.JudgeID}); err != nil {
+			if err := do(command{Kind: cmdReveal, Actor: revealer}); err != nil {
 				return nil, cast, err
 			}
 		}

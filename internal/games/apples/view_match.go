@@ -320,12 +320,22 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	for _, pk := range view.Packets {
 		if !pk.Revealed {
 			view.CanConfirm = false
-			if view.Role == "judge" && m.Phase == phaseReveal {
+			if m.Phase == phaseReveal && m.playerReveals(p) {
 				view.CanReveal = true
 			}
 		}
 	}
 	return view
+}
+
+func (e *engine) playerReveals(p games.Player) bool {
+	if e == nil || e.Phase != phaseReveal {
+		return false
+	}
+	if e.Settings.HostReveals {
+		return p.ClaimedHost
+	}
+	return p.ID == e.JudgeID
 }
 
 func (g *Game) packetViewsLocked(m *engine, viewer string, tv bool) []packetView {
