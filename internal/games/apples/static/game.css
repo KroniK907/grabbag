@@ -245,17 +245,42 @@
 }
 
 .apples-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(220px, 42vw);
   min-height: 140px;
   height: fit-content;
   max-height: min(38dvh, 280px);
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   hyphens: manual;
   padding: 14px;
   border: 3px solid var(--ui-accent);
   border-radius: 16px 16px 28px 8px;
   background: var(--ui-card-bg);
+}
+
+.apples-slot-body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.apples-slot-marks {
+  position: absolute;
+  z-index: 1;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.apples-slot-marks p {
+  margin: 0;
 }
 
 .apples-slot p {
