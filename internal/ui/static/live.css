@@ -217,7 +217,7 @@ button {
   font-weight: 400;
   letter-spacing: 1px;
   margin: 0;
-  font-size: 36px;
+  font-size: 2.25rem;
   line-height: 0.95;
   color: var(--ui-card-title);
 }
@@ -235,7 +235,7 @@ button {
 
 .ui-brand {
   font-family: var(--ui-font-display);
-  font-size: 54px;
+  font-size: 3.375rem;
   letter-spacing: 2px;
   line-height: 0.9;
   color: var(--ui-brand);
@@ -243,7 +243,7 @@ button {
 }
 
 .ui-brand-sm {
-  font-size: 36px;
+  font-size: 2.25rem;
 }
 
 .ui-stack {
@@ -365,7 +365,7 @@ button {
 
 .ui-drawer .ui-accordion-row .ui-btn {
   padding: 4px 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   border-radius: 8px;
 }
 
@@ -446,7 +446,7 @@ button {
 }
 
 .ui-page-compact .ui-brand-sm {
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 
 .ui-page-compact .ui-list {
@@ -498,7 +498,7 @@ button {
 }
 
 .ui-page-compact .ui-field-unit {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ui-fg);
   opacity: 0.7;
   white-space: nowrap;
@@ -535,7 +535,7 @@ button {
 .ui-page-compact .ui-btn {
   padding: 8px 12px;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
@@ -574,7 +574,7 @@ button {
   padding: 16px;
   background: var(--ui-btn-bg);
   color: var(--ui-btn-fg);
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 
 .ui-btn-inline,
@@ -652,13 +652,13 @@ button {
 }
 
 .ui-rail .ui-brand {
-  font-size: 40px;
+  font-size: 2.5rem;
   line-height: 1;
   white-space: nowrap;
 }
 
 .ui-now-playing {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.25;
 }
 
@@ -666,7 +666,7 @@ button {
   display: block;
   margin-top: 2px;
   font-family: var(--ui-font-display);
-  font-size: 22px;
+  font-size: 1.375rem;
   letter-spacing: 1px;
   line-height: 1.1;
   color: var(--ui-brand);
@@ -691,7 +691,7 @@ button {
 }
 
 .ui-url {
-  font-size: 13px;
+  font-size: 0.8125rem;
   word-break: break-all;
   color: var(--ui-url);
 }
@@ -705,7 +705,7 @@ button {
 .ui-pill {
   padding: 6px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--ui-pill-fg);
   background: var(--ui-pill-bg);
   box-shadow: var(--ui-pill-shadow);
@@ -730,7 +730,7 @@ button {
   height: auto;
   min-height: 0;
   padding: 4px 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.2;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -797,7 +797,7 @@ button {
 
 .ui-token-name {
   width: 100%;
-  font-size: 13px;
+  font-size: 0.8125rem;
   text-align: center;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -815,7 +815,7 @@ button {
   color: #062;
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 1.5rem;
   border: 3px solid #fff;
   box-shadow: var(--ui-check-shadow);
 }
@@ -823,7 +823,7 @@ button {
 .ui-host-badge {
   position: absolute;
   bottom: -6px;
-  font-size: 10px;
+  font-size: 0.625rem;
   background: #ffe14a;
   color: #111;
   padding: 2px 8px;
@@ -837,7 +837,7 @@ button {
   gap: 20px;
   padding: 0 20px;
   font-family: var(--ui-font-display);
-  font-size: 28px;
+  font-size: 1.75rem;
   letter-spacing: 1px;
   background: var(--ui-marquee-bg);
   border-top: 4px solid var(--ui-marquee-border);
@@ -853,7 +853,7 @@ button {
   background: var(--ui-accent-2);
   color: var(--ui-accent-2-fg);
   box-shadow: 0 3px 0 var(--ui-accent-2-shadow);
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .ui-chip .ui-avatar {
@@ -869,7 +869,7 @@ button {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  font-size: 22px;
+  font-size: 1.375rem;
   border: 3px solid var(--ui-gear-border);
   background: var(--ui-gear-bg);
   color: var(--ui-gear-fg);
@@ -886,7 +886,7 @@ button {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
   border: 3px solid var(--ui-gear-border);
   background: var(--ui-accent);
@@ -902,7 +902,7 @@ button {
   right: auto;
   width: 36px;
   height: 36px;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .ui-phone-wrap {
@@ -931,7 +931,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 0.625rem;
   letter-spacing: 0.12em;
   background: var(--ui-notch-bg);
   color: var(--ui-notch-fg);
@@ -1036,7 +1036,7 @@ body:has(.ui-leave-control) {
 
 .ui-you {
   font-family: var(--ui-font-display);
-  font-size: 40px;
+  font-size: 2.5rem;
   width: 100%;
   text-align: center;
   color: var(--ui-you);
@@ -1080,7 +1080,7 @@ body:has(.ui-leave-control) {
   background: radial-gradient(circle at 35% 30%, #ff8ad8, #ff2ad4 55%, #9b0878);
   color: #fff;
   font-family: var(--ui-font-display);
-  font-size: 52px;
+  font-size: 3.25rem;
   box-shadow: 0 16px 0 #6d0854, 0 0 30px #ff2ad4;
   text-shadow: 0 2px 0 #6d0854;
 }
@@ -1113,7 +1113,7 @@ body:has(.ui-leave-control) {
   }
 
   .ui-brand {
-    font-size: 36px;
+    font-size: 2.25rem;
   }
 
   .ui-qr {
@@ -1129,7 +1129,7 @@ body:has(.ui-leave-control) {
 
   .ui-url {
     flex: 1 1 140px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .ui-main {
@@ -1146,11 +1146,11 @@ body:has(.ui-leave-control) {
   }
 
   .ui-token-name {
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
 
   .ui-marquee {
-    font-size: 20px;
+    font-size: 1.25rem;
     min-height: 72px;
     overflow-x: auto;
     gap: 12px;
@@ -1161,7 +1161,7 @@ body:has(.ui-leave-control) {
     right: 10px;
     width: 40px;
     height: 40px;
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 }
 
@@ -1203,7 +1203,7 @@ body:has(.ui-leave-control) {
   .ui-plunger {
     width: min(220px, 70vw);
     height: min(220px, 70vw);
-    font-size: 44px;
+    font-size: 2.75rem;
   }
 }
 
