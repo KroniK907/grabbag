@@ -359,6 +359,10 @@ button {
   gap: 12px;
 }
 
+.ui-drawer .ui-accordion {
+  flex-shrink: 0;
+}
+
 .ui-drawer .ui-accordion-row {
   padding: 4px 8px;
 }
