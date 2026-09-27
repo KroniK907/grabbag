@@ -118,7 +118,7 @@
             <input type="hidden" name="card" value="{{.CardID}}">
             <button class="apples-card-button" type="submit">{{.Text}}</button>
           </form>
-          {{if $.HasWildSlot}}
+          {{if and $.HasWildSlot (not $.Discard)}}
           <form class="apples-discard" hx-post="/play/discard" hx-swap="outerHTML" hx-target="#apples-phone">
             <input type="hidden" name="card" value="{{.CardID}}">
             <button type="submit">Discard</button>
@@ -126,12 +126,21 @@
           {{end}}
         </div>
         {{end}}
+        {{if .Discard}}
+        <div class="apples-hand-card is-discarded">
+          <button class="apples-card-button" type="button" disabled>{{.Discard.Text}}</button>
+          <form class="apples-discard" hx-post="/play/discard" hx-swap="outerHTML" hx-target="#apples-phone">
+            <input type="hidden" name="card" value="{{.Discard.CardID}}">
+            <button type="submit">Undo</button>
+          </form>
+        </div>
+        {{end}}
         {{if .Blank}}
         <form class="apples-wildcard" hx-post="/play/wildcard-draft" hx-swap="outerHTML" hx-target="#apples-phone">
           <label>Wildcard <span>{{.Remain}} left</span>
             <textarea name="text" maxlength="{{.Cap}}">{{.Draft}}</textarea>
           </label>
-          <button class="ui-btn ui-btn-inline" type="submit">Done</button>
+          <button class="ui-btn" type="submit">Done</button>
         </form>
         {{if .Draft}}
         <form hx-post="/play/slot" hx-swap="outerHTML" hx-target="#apples-phone">

@@ -531,6 +531,7 @@ func (g *Game) slotLocked(m *matchState, id, cardID string) error {
 	}
 	c := card
 	a.Holes[slot] = &c
+	restoreOrphanDiscard(a)
 	return nil
 }
 
@@ -570,6 +571,7 @@ func (g *Game) unslotLocked(m *matchState, id string, hole int) error {
 		return fmt.Errorf("That hole is empty.")
 	}
 	returnHole(a, hole)
+	restoreOrphanDiscard(a)
 	return nil
 }
 
@@ -586,6 +588,23 @@ func returnHole(a *actor, hole int) {
 		return
 	}
 	a.Hand = append(a.Hand, card)
+}
+
+func holeHasWildcard(a *actor) bool {
+	for _, c := range a.Holes {
+		if c != nil && c.Wildcard {
+			return true
+		}
+	}
+	return false
+}
+
+func restoreOrphanDiscard(a *actor) {
+	if a.Discard == nil || holeHasWildcard(a) {
+		return
+	}
+	a.Hand = append(a.Hand, *a.Discard)
+	a.Discard = nil
 }
 
 func (g *Game) markDiscardLocked(m *matchState, id, cardID string) error {
@@ -608,11 +627,11 @@ func (g *Game) markDiscardLocked(m *matchState, id, cardID string) error {
 		a.Discard = nil
 		return nil
 	}
+	if a.Discard != nil {
+		return fmt.Errorf("You already discarded a leftover card.")
+	}
 	for i, c := range a.Hand {
 		if c.CardID == cardID && !c.Wildcard {
-			if a.Discard != nil {
-				a.Hand = append(a.Hand, *a.Discard)
-			}
 			a.Hand = slices.Delete(a.Hand, i, i+1)
 			cp := c
 			a.Discard = &cp

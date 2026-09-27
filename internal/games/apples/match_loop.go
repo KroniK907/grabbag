@@ -597,7 +597,7 @@ func (g *Game) setDraftLocked(m *matchState, id, text string) error {
 		text = string([]rune(text)[:m.Settings.WildcardCap])
 	}
 	a.Draft = text
-	return nil
+	return g.slotLocked(m, id, blankCardID)
 }
 
 func remainingCap(draft string, cap int) int {
