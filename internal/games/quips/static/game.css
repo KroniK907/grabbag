@@ -327,6 +327,31 @@
   font-size: clamp(2.75rem, 14vw, 4.5rem);
 }
 
+.quips-last-phone-kicker,
+.quips-last-phone-copy,
+.quips-last-phone-banner {
+  margin: 0;
+  color: var(--ui-brand);
+  font-family: var(--ui-font-display);
+  line-height: 0.95;
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-last-phone-kicker {
+  font-size: clamp(2.25rem, 9vw, 3.25rem);
+}
+
+.quips-last-phone-copy,
+.quips-last-phone-banner {
+  font-size: clamp(1.15rem, 4.5vw, 1.6rem);
+  max-width: 18ch;
+}
+
+.quips-last-phone-banner {
+  max-width: none;
+  text-align: center;
+}
+
 @keyframes quips-count-hold {
   0% { opacity: 0; transform: scale(0.8); }
   18% { opacity: 1; transform: scale(1); }

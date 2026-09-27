@@ -36,6 +36,16 @@
       <span>Go</span>
     </p>
   </div>
+  {{else if .LastIntro}}
+  <div class="quips-vote-ready">
+    <p class="quips-last-phone-kicker">Last Quip</p>
+    <p class="quips-last-phone-copy">Everybody shares the same prompt.</p>
+    <p class="quips-countdown">
+      <span>Ready</span>
+      <span>Set</span>
+      <span>Go</span>
+    </p>
+  </div>
   {{else if eq .Role "wait"}}
   <div class="quips-wait">
     {{template "quips-timer" .}}
@@ -71,6 +81,7 @@
   <div class="quips-phone-scroll">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
     {{template "quips-timer" .}}
+    {{if .LastQuip}}<p class="quips-last-phone-banner">Last Quip: Everybody shares the same prompt</p>{{end}}
     {{range .Slots}}
     <article class="quips-compose-card{{if .DupOutline}} dup-outline{{end}}">
       <p class="quips-prompt">{{.PromptText}}</p>

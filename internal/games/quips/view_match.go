@@ -72,6 +72,8 @@ type phoneView struct {
 	OverlayYes   bool
 	Role         string
 	VoteIntro    bool
+	LastQuip     bool
+	LastIntro    bool
 	Error        string
 	WaitCopy     string
 	Slots        []slotView
@@ -307,9 +309,13 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 	case phaseWrite:
 		if eng.Kind == roundLastQuip && eng.TimerKind == timerLastIntro {
 			view.Role = "wait"
-			view.WaitCopy = "Ready, set, go."
+			view.LastQuip = true
+			view.LastIntro = true
 			view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = "", "", 0, 0, 0
 			return g.attachBurnDrawer(view, p)
+		}
+		if eng.Kind == roundLastQuip {
+			view.LastQuip = true
 		}
 		return g.phoneComposeView(view, eng, p)
 	case phaseVote:
