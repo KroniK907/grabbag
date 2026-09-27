@@ -109,11 +109,18 @@
       slot.style.fontSize = best + "px";
       return best;
     }
+    var chip = slot.querySelector(".apples-vote-count");
+    if (chip) {
+      chip.style.marginTop = "0";
+    }
     slot.style.overflowWrap = "normal";
     search();
     if (slotOverflows(slot)) {
       slot.style.overflowWrap = "break-word";
       search();
+    }
+    if (chip) {
+      chip.style.marginTop = "auto";
     }
   }
 
