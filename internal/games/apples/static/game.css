@@ -459,6 +459,10 @@
   line-height: 1.2;
 }
 
+.apples-phone-scroll:has(> .apples-timer) .apples-prompt {
+  top: 46px;
+}
+
 .apples-play-dock .apples-prompt {
   position: static;
 }
