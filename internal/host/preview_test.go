@@ -47,6 +47,10 @@ func TestPreviewIndexListsLobbyAndGames(t *testing.T) {
 	if samples == 0 || len(doc.Devices) == 0 || len(doc.TextScales) == 0 {
 		t.Fatalf("samples=%d devices=%d scales=%d", samples, len(doc.Devices), len(doc.TextScales))
 	}
+	code, body = previewGet(t, h, "/dev/ui/")
+	if code != http.StatusOK || !strings.Contains(body, `id="game"`) || !strings.Contains(body, "All games") {
+		t.Fatalf("gallery game filter missing, status %d", code)
+	}
 }
 
 func TestPreviewScenarioWrapsGamePhoneAndAppliesPatch(t *testing.T) {
