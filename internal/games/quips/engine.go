@@ -23,9 +23,11 @@ const (
 )
 
 const (
-	timerVote   = "vote"
-	timerWinner = "winner"
-	timerFinal  = "final"
+	timerVote        = "vote"
+	timerWinner      = "winner"
+	timerFinal       = "final"
+	timerLastIntro   = "last-quip-intro"
+	lastQuipIntroSec = 4
 )
 
 type roundKind int
@@ -208,6 +210,10 @@ func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
 		out.PhoneErr[cmd.Actor] = "You cannot compose now."
 		return out
 	}
+	if e.TimerKind == timerLastIntro {
+		out.PhoneErr[cmd.Actor] = "Phones are paused for Last Quip."
+		return out
+	}
 	w := e.Writers[cmd.Actor]
 	if w == nil {
 		out.PhoneErr[cmd.Actor] = "You are not in this match."
@@ -243,6 +249,12 @@ func (e *engine) Advance(now time.Time) Outcome {
 		e.clearTimer()
 		e.timerSubmitAll()
 		return e.finishWriteIfReady(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerLastIntro:
+		e.clearTimer()
+		if e.Settings.WriteSec > 0 {
+			e.armTimer(now, "write", e.Settings.WriteSec)
+		}
+		return Outcome{Changed: true, Events: []string{eventQuips}}
 	case timerVote:
 		e.clearTimer()
 		return e.closeVote(now, Outcome{Changed: true, Events: []string{eventQuips}})

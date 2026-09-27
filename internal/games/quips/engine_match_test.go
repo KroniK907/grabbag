@@ -112,6 +112,37 @@ func TestEngineHostRevealGatesVote(t *testing.T) {
 	}
 }
 
+func TestLastQuipHoldsPhonesThenStartsTheWriteTimer(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 3, 3, 12, 0, 0, 0, time.UTC)
+	settings := factorySettings()
+	settings.WriteSec = 20
+	settings.RoundCount = 1
+	settings.LastQuipEnabled = true
+	pool := []playPrompt{{LibraryID: "quips", CardID: "x", Text: "Same prompt"}}
+	rows := []rosterRow{{ID: "p1", Name: "One"}, {ID: "p2", Name: "Two"}}
+	eng := &engine{}
+	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(8)), now); err != nil {
+		t.Fatal(err)
+	}
+	if eng.Kind != roundLastQuip || eng.TimerKind != timerLastIntro {
+		t.Fatalf("kind=%v timer=%s", eng.Kind, eng.TimerKind)
+	}
+	blocked := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "early"}, now)
+	if blocked.PhoneErr["p1"] == "" {
+		t.Fatal("draft accepted during last quip intro")
+	}
+	later := now.Add(time.Duration(lastQuipIntroSec) * time.Second)
+	out := eng.Advance(later)
+	if !out.Changed || eng.TimerKind != "write" {
+		t.Fatalf("after intro timer=%s changed=%v", eng.TimerKind, out.Changed)
+	}
+	ok := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "now"}, later)
+	if ok.PhoneErr["p1"] != "" {
+		t.Fatalf("draft after intro: %s", ok.PhoneErr["p1"])
+	}
+}
+
 func TestVoteClosesWhenEveryWriterHasVoted(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 3, 2, 12, 0, 0, 0, time.UTC)

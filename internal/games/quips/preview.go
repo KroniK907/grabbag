@@ -193,6 +193,12 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 	if err := e.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(7)), previewNow); err != nil {
 		return nil, cast, fmt.Errorf("quips preview: begin: %w", err)
 	}
+	if e.TimerKind == timerLastIntro {
+		e.clearTimer()
+		if e.Settings.WriteSec > 0 {
+			e.armTimer(previewNow, "write", e.Settings.WriteSec)
+		}
+	}
 	g := &Game{engine: e, started: true, now: clock, burnDrawer: []burnFace{
 		{Kind: kindPrompt, Text: previewPromptTexts[1]},
 		{Kind: kindPrompt, Text: previewPromptTexts[2]},

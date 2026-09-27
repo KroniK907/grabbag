@@ -43,6 +43,22 @@
     });
   }
 
+  function markLastClock() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var clock = document.querySelector(".quips-board-clock[data-last-clock]");
+    if (!clock) {
+      return;
+    }
+    var key = clock.getAttribute("data-last-clock") || "";
+    if (window.grabbagQuipsLastClock === key) {
+      return;
+    }
+    window.grabbagQuipsLastClock = key;
+    clock.classList.add("is-arriving");
+  }
+
   function markMatchup() {
     if (window.grabbagStatic) {
       return;
@@ -83,6 +99,7 @@
       paintTimers();
       bindComposeCards();
       markMatchup();
+      markLastClock();
     });
   }
   if (!window.grabbagQuipsViewport) {
@@ -97,4 +114,5 @@
   paintTimers();
   bindComposeCards();
   markMatchup();
+  markLastClock();
 })();

@@ -24,12 +24,19 @@
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
   </header>
   <main class="quips-board-center">
-    {{if .TimerText}}
-    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+    {{if and .WritingBeat .LastQuip}}
+      <div class="quips-last{{if .LastIntro}} is-holding{{end}}">
+        <p class="quips-last-kicker">Last Quip</p>
+        <p class="quips-last-copy">Everybody shares the same prompt.</p>
+        {{if .LastIntro}}<p class="quips-last-paused">Phones paused</p>{{end}}
+      </div>
+    {{end}}
+    {{if and .TimerText (or (not .LastQuip) (not .LastIntro))}}
+    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}>
       <strong data-timer-value>{{.TimerText}}</strong>
     </div>
     {{end}}
-    {{if .WritingBeat}}
+    {{if and .WritingBeat (not .LastQuip)}}
       <div class="quips-write-stage">
         <p class="quips-write-title">Write your quips</p>
       </div>
