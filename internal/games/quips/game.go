@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "playtest-1"
+	assetVersion = "playtest-2"
 )
 
 //go:embed templates/*.html

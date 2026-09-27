@@ -1,0 +1,11 @@
+{
+  "Prompt": {"Text": "In the director's cut, the hero finally confronts _ in an extremely long and dramatic monologue on a rooftop in the rain, while the orchestra swells.", "Pick": 1},
+  "Hand": [
+    {"LibraryID": "preview", "CardID": "l1", "Text": "Screaming into the void and the void screaming back, politely, with a follow-up question about your weekend plans."},
+    {"LibraryID": "preview", "CardID": "l2", "Text": "Supercalifragilisticexpialidociousnessesly."},
+    {"LibraryID": "preview", "CardID": "l3", "Text": "The entire discography of a kazoo cover band, performed live, in a hot tub."},
+    {"LibraryID": "preview", "CardID": "l4", "Text": "A haunted Roomba."},
+    {"LibraryID": "preview", "CardID": "l5", "Text": "Accidentally replying all to the company-wide email with a picture of your cat wearing sunglasses."},
+    {"LibraryID": "preview", "CardID": "l6", "Text": "Beans."}
+  ]
+}

@@ -28,6 +28,7 @@ grabbag/
   cmd/
     grabbag/
       main.go                 # process entry; almost no logic
+    grabbag-uishots/          # dev tool: headless Chromium screenshots of UI previews
   docs/
     embed.go                  # package docs; embeds *.html
     index.html                # operator how-to-run; CSS in the file
@@ -42,6 +43,7 @@ grabbag/
     ui/
       static/                 # host chrome CSS/JS (theme tokens + widgets)
       templates/              # shared chrome defines (ui-start, overlay)
+      uitest/                 # test helper: render every preview scenario
     store/                    # host/Lobby persistence, game_kv, path helpers
     platform/                 # host-wide packages
       hub/                    # in-process named SSE broadcaster
@@ -49,6 +51,7 @@ grabbag/
     games/                    # compile-time loader + Game/Helper contract
       game.go
       apples/                 # Apples for Humanity; package apples
+        previews/             # saved JSON patches for UI preview variants
       quips/                  # Quick Quips; package quips
       testing/                # Testing diagnostics; package testinggame
         templates/
@@ -60,7 +63,11 @@ grabbag/
 
 Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-light` (default) and `neon-dark`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
-A later `cmd/grabbag-dev` would also import only `internal/host`. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
+`cmd/grabbag-uishots` imports only `internal/host` and chromedp. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
+
+### UI previews
+
+Each package that draws pages lists `ui.Scenario` values in a `preview.go` next to its views: `lobby.Scenarios()`, and `Scenarios()` on each Game (`games.Previewer`). A scenario renders the real template from fixed data, with `ui.Chrome.Static` set so the page loads no htmx, SSE, or heartbeat. Host mounts the gallery at `/dev/ui/` only with `-dev-preview`. `cmd/grabbag-uishots` serves the same handler in-process and screenshots it. It is the only package that imports chromedp. The full rules are in [GAME_CONTRACT.md](GAME_CONTRACT.md#ui-previews).
 
 ## Import rules
 
@@ -69,6 +76,7 @@ A later `cmd/grabbag-dev` would also import only `internal/host`. Tray details a
 | From | May import | Must not import |
 |------|------------|-----------------|
 | `cmd/grabbag` | `internal/host` | everything else |
+| `cmd/grabbag-uishots` | `internal/host`, chromedp | everything else |
 | `internal/host` | lobby, games, ui, store, platform, docs | - |
 | `docs` | stdlib only | host, lobby, games, ui, store, platform |
 | `internal/lobby` | ui, platform, store | host, games |

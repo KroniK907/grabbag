@@ -16,6 +16,12 @@ type Chrome struct {
 	Title         string
 	Theme         string
 	NoticeTargets string
+	// Static renders a frozen page for UI previews: no htmx, no SSE, no
+	// heartbeat, and timers show their server-rendered value.
+	Static bool
+	// OpenIDs lists element ids a static preview opens on load (drawers get
+	// is-open, hidden modals are shown, details are expanded).
+	OpenIDs string
 }
 
 // Page returns light neon chrome, the default.

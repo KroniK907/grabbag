@@ -16,3 +16,4 @@ _site/
 !.cursor/environment.json
 !.cursor/Dockerfile
 # <<< agent-config-wizard <<<
+shots/

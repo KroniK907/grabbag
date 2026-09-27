@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 // Player is a Lobby row as a game may read it. Games never write these fields.
@@ -74,6 +76,14 @@ type Game interface {
 	// HTML unless the request has an admin session. After Start the game owns
 	// /board, so these only paint while Lobby still renders the TV.
 	BoardButtons() []BoardButton
+}
+
+// Previewer is optional. A Game that implements it lists UI scenarios that
+// host serves at /dev/ui when started with -dev-preview. Scenarios render
+// from fixed data on a fresh New() value: no Load, no Helper, no disk.
+// Scenario.Render must set GameCSS and GameJS links from Preview.Asset.
+type Previewer interface {
+	Scenarios() []ui.Scenario
 }
 
 // BoardButton is one Lobby rail control a loaded game may publish.

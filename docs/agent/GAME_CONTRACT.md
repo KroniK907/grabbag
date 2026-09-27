@@ -31,6 +31,7 @@ Operator playbook is `/docs`.
 - [Extra pages](#extra-pages)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
+- [UI previews](#ui-previews)
 - [Examples](#examples)
 - [Must not](#must-not)
 
@@ -74,6 +75,8 @@ mounts:
   game_play: /play/                # GET after Load; POST only after Start
 urls_game_must_not_own: ["/", "/board", "/settings"]
 nil_ok: [Settings, Play]
+optional:
+  games.Previewer: Scenarios() []ui.Scenario  # -dev-preview gallery at /dev/ui/
 sse:
   endpoint: GET /lobby/events
   connect: body hx-ext=sse sse-connect=/lobby/events on ui-start
@@ -266,6 +269,23 @@ Games may read these fields. They never write them.
 | `ClaimedHost` | This player claimed host. Phone End game in Testing keys off this. |
 | `Connected` | Heartbeat currently live. |
 | `LastHeartbeatRTT` | Last RTT. Zero means none yet. |
+
+## UI previews
+
+Optional. A Game that also implements `games.Previewer` lists `ui.Scenario` values. Host serves them at `/dev/ui/` when started with `-dev-preview`, and `cmd/grabbag-uishots` screenshots them. Host calls `Scenarios()` on a fresh `New()` value. There is no Load, no Helper, and no data dir.
+
+| Scenario field | Rule |
+|----------------|------|
+| `Surface`, `Name` | Unique pair. Lowercase, digits, dashes. |
+| `Group` | Same value on the board and every phone of one moment. Drives the table view. |
+| `Viewer` | `tv`, `judge`, `seated`, `host`, `audience`, `guest`, or `operator`. |
+| `Frame` | `ui.FramePhone`, `ui.FrameTV`, or `ui.FramePage`. |
+| `Shell` | Empty for a full document. `ui.ShellPlayPhone` for a phone body host wraps in the Lobby play phone. `ui.ShellSettings` for a settings fragment host inlines on `/settings`. |
+| `MinPlayers`, `MaxPlayers` | `MinPlayers > 0` turns on the seated sweep: min, middle, 12, max. `MaxPlayers 0` sweeps to the Lobby cap, 64. |
+| `Sample` | Include in the phone and tablet device matrix. Keep it to one or two phone screens per game. |
+| `Render` | Build the view from fixed data, then call `ui.RenderScenario`. Set `GameCSS` / `GameJS` from `Preview.Asset`. No disk, network, or wall clock. |
+
+Drive the real engine to each state where one exists, so previews cannot drift from play. Saved JSON merge patches go in `internal/games/<name>/previews/<surface>.<name>.<variant>.json` and load through `ui.WithVariants`. Add a `preview_test.go` that calls `uitest.RenderAll`.
 
 ## Examples
 
