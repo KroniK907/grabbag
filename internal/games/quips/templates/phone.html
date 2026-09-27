@@ -34,7 +34,9 @@
   <div class="quips-phone-scroll">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
     {{template "quips-timer" .}}
+    {{if .Voted}}<p>Your vote is in.</p>{{end}}
     {{range .VoteOptions}}
+    {{if not $.Voted}}
     <form
       class="quips-vote-option{{if .Chosen}} chosen{{end}}"
       hx-post="/play/vote"
@@ -44,6 +46,7 @@
       <input type="hidden" name="target" value="{{.Target}}">
       <button class="ui-btn" type="submit">{{shy .Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
     </form>
+    {{end}}
     {{end}}
   </div>
   {{else}}

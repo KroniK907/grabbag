@@ -101,32 +101,32 @@ type Outcome struct {
 }
 
 type engine struct {
-	Settings     matchSettings
-	Policy       composePolicy
-	Hooks        EngineHooks
-	Phase        enginePhase
-	Round        int
-	Kind         roundKind
-	Segments     []roundSegment
-	ParadeOrder  []int
-	ParadePos    int
-	Writers      map[string]*writerState
-	PromptPool   []playPrompt
-	PhoneErr     map[string]string
-	Scores       map[string]int
-	Multiplier   int
-	Revealed     int
-	Vote         voteState
-	HoldAwards   map[string]int
-	Champions    []string
-	MatchOver    bool
-	TimerKind    string
-	TimerEnd     time.Time
-	TimerTotal   time.Duration
-	FrozenLeft   time.Duration
-	Paused       bool
-	rng          *rand.Rand
-	now          func() time.Time
+	Settings    matchSettings
+	Policy      composePolicy
+	Hooks       EngineHooks
+	Phase       enginePhase
+	Round       int
+	Kind        roundKind
+	Segments    []roundSegment
+	ParadeOrder []int
+	ParadePos   int
+	Writers     map[string]*writerState
+	PromptPool  []playPrompt
+	PhoneErr    map[string]string
+	Scores      map[string]int
+	Multiplier  int
+	Revealed    int
+	Vote        voteState
+	HoldAwards  map[string]int
+	Champions   []string
+	MatchOver   bool
+	TimerKind   string
+	TimerEnd    time.Time
+	TimerTotal  time.Duration
+	FrozenLeft  time.Duration
+	Paused      bool
+	rng         *rand.Rand
+	now         func() time.Time
 }
 
 type rosterRow struct {
@@ -189,7 +189,7 @@ func (e *engine) Do(cmd Command, now time.Time) Outcome {
 	case CmdDraft, CmdLock:
 		return e.doCompose(cmd, now, out)
 	case CmdVote:
-		return e.doVote(cmd.Actor, cmd.VoteTarget, cmd.VoterSeat, out)
+		return e.doVote(cmd.Actor, cmd.VoteTarget, cmd.VoterSeat, now, out)
 	case CmdHostReveal:
 		return e.doHostRevealAt(now, out)
 	case CmdHostNextSegment:

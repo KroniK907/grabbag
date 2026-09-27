@@ -112,6 +112,44 @@ func TestEngineHostRevealGatesVote(t *testing.T) {
 	}
 }
 
+func TestVoteClosesWhenEveryWriterHasVoted(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 3, 2, 12, 0, 0, 0, time.UTC)
+	settings := factorySettings()
+	settings.WriteSec = 0
+	settings.VoteSec = 30
+	settings.WinnerScreenSec = 5
+	settings.HostControlledReveals = false
+	settings.RoundCount = 1
+	settings.LastQuipEnabled = false
+	pool := []playPrompt{{LibraryID: "quips", CardID: "x", Text: "p"}, {LibraryID: "quips", CardID: "y", Text: "p2"}}
+	rows := []rosterRow{{ID: "p1", Name: "One"}, {ID: "p2", Name: "Two"}}
+	eng := &engine{}
+	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(9)), now); err != nil {
+		t.Fatal(err)
+	}
+	lockPair(t, eng, "p1", []string{"a1", "a2"}, now)
+	lockPair(t, eng, "p2", []string{"b1", "b2"}, now)
+	if eng.Phase != phaseVote {
+		t.Fatalf("phase=%s want vote", eng.Phase)
+	}
+	out := eng.Do(Command{Kind: CmdVote, Actor: "p1", VoteTarget: "p2", VoterSeat: true}, now)
+	if eng.Phase != phaseVote {
+		t.Fatalf("phase after one vote=%s", eng.Phase)
+	}
+	again := eng.Do(Command{Kind: CmdVote, Actor: "p1", VoteTarget: "p2", VoterSeat: true}, now)
+	if again.PhoneErr["p1"] == "" {
+		t.Fatal("second vote was accepted")
+	}
+	out = eng.Do(Command{Kind: CmdVote, Actor: "p2", VoteTarget: "p1", VoterSeat: true}, now)
+	if out.PhoneErr["p2"] != "" {
+		t.Fatalf("p2 vote: %s", out.PhoneErr["p2"])
+	}
+	if eng.Phase == phaseVote {
+		t.Fatal("vote stayed open after every writer voted")
+	}
+}
+
 func lockPair(t *testing.T, eng *engine, id string, texts []string, now time.Time) {
 	t.Helper()
 	for i, text := range texts {

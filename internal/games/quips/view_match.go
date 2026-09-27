@@ -69,6 +69,7 @@ type phoneView struct {
 	WaitCopy     string
 	Slots        []slotView
 	VoteOptions  []voteOptionView
+	Voted        bool
 	LockLabel    string
 	LockReady    bool
 	Locked       bool
@@ -280,6 +281,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 		if eng.Vote.Picks != nil {
 			pick = eng.Vote.Picks[p.ID].Target
 		}
+		view.Voted = pick != ""
 		for _, id := range eng.voteTargets(p.ID) {
 			label := id
 			if w := eng.Writers[id]; w != nil {
