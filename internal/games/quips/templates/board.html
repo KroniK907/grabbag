@@ -25,7 +25,17 @@
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
   </header>
   <main class="quips-board-center">
-    {{if and .WritingBeat .LastQuip}}
+    {{if .VoteIntro}}
+      <div class="quips-vote-ready">
+        <p class="quips-vote-ready-copy">Get ready to vote for your favorite quips</p>
+        <p class="quips-countdown is-vote">
+          <span>3</span>
+          <span>2</span>
+          <span>1</span>
+          <span>Go</span>
+        </p>
+      </div>
+    {{else if and .WritingBeat .LastQuip}}
       <div class="quips-last{{if .LastIntro}} is-holding{{end}}">
         <p class="quips-last-kicker">Last Quip</p>
         <p class="quips-last-copy">Everybody shares the same prompt.</p>

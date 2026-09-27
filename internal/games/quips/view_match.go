@@ -22,6 +22,7 @@ type boardView struct {
 	WritingBeat  bool
 	LastQuip     bool
 	LastIntro    bool
+	VoteIntro    bool
 	ParadeBeat   bool
 	Matchup      bool
 	MatchupKey   string
@@ -138,13 +139,14 @@ func (g *Game) boardViewLocked() boardView {
 	view.WritingBeat = eng.Phase == phaseWrite
 	view.LastQuip = eng.Kind == roundLastQuip && eng.Phase == phaseWrite
 	view.LastIntro = view.LastQuip && eng.TimerKind == timerLastIntro
+	view.VoteIntro = eng.Phase == phaseVoteIntro
 	view.ParadeBeat = eng.Phase == phaseReveal || eng.Phase == phaseVote || eng.Phase == phaseHold
 	view.Roster = g.rosterViewsLocked(eng)
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
 	view.LiveCounts = eng.liveVoteCounts()
 
 	segIdx := eng.activeSegmentIdx()
-	if segIdx >= 0 && segIdx < len(eng.Segments) && eng.Phase != phaseWrite {
+	if segIdx >= 0 && segIdx < len(eng.Segments) && eng.Phase != phaseWrite && eng.Phase != phaseVoteIntro {
 		view.CenterPrompt = eng.Segments[segIdx].Prompt.Text
 	}
 	revealed := eng.revealedWriterIDs(segIdx)
@@ -340,6 +342,8 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 			view.VoteOptions = append(view.VoteOptions, opt)
 		}
 		return g.attachBurnDrawer(view, p)
+	case phaseVoteIntro:
+		view.WaitCopy = "Get ready to vote for your favorite quips."
 	case phaseParadeWait:
 		view.WaitCopy = "Waiting for the host to start the vote parade."
 	case phaseReveal:
@@ -430,7 +434,7 @@ func (g *Game) rosterViewsLocked(eng *engine) []rosterView {
 }
 
 func (g *Game) timerViewLocked(eng *engine) (label, text string, seconds, total int, endUnix int64) {
-	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro {
+	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro || eng.TimerKind == timerVoteIntro {
 		return "", "", 0, 0, 0
 	}
 	switch eng.TimerKind {

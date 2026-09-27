@@ -13,7 +13,11 @@ func (e *engine) afterWriteClosed(now time.Time, out Outcome) Outcome {
 		out.Events = appendUniqueEvent(out.Events, eventQuips)
 		return out
 	}
-	return e.startCurrentSegment(now, out)
+	e.Phase = phaseVoteIntro
+	e.armTimer(now, timerVoteIntro, voteIntroSec)
+	out.Changed = true
+	out.Events = appendUniqueEvent(out.Events, eventQuips)
+	return out
 }
 
 func (e *engine) startCurrentSegment(now time.Time, out Outcome) Outcome {

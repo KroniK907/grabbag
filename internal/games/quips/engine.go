@@ -17,6 +17,7 @@ const (
 	phaseParadeWait  enginePhase = "parade-wait"
 	phaseReveal      enginePhase = "reveal"
 	phaseVote        enginePhase = "vote"
+	phaseVoteIntro   enginePhase = "vote-intro"
 	phaseHold        enginePhase = "hold"
 	phaseFinalScores enginePhase = "final-scores"
 	phaseOver        enginePhase = "over"
@@ -30,6 +31,8 @@ const (
 	lastQuipIntroSec = 3
 	timerVersusIntro = "versus-intro"
 	versusIntroSec   = 2
+	timerVoteIntro   = "vote-intro"
+	voteIntroSec     = 6
 )
 
 type roundKind int
@@ -257,6 +260,9 @@ func (e *engine) Advance(now time.Time) Outcome {
 			e.armTimer(now, "write", e.Settings.WriteSec)
 		}
 		return Outcome{Changed: true, Events: []string{eventQuips}}
+	case timerVoteIntro:
+		e.clearTimer()
+		return e.startCurrentSegment(now, Outcome{Changed: true, Events: []string{eventQuips}})
 	case timerVersusIntro:
 		e.clearTimer()
 		e.Phase = phaseVote

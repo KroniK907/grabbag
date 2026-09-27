@@ -42,7 +42,7 @@ sawLock:
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 0, Text: "alpha"}, clock)
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 1, Text: "beta"}, clock)
 	out = eng.Do(Command{Kind: CmdLock, Actor: "p2", Drafts: []string{"alpha", "beta"}}, clock)
-	if eng.Phase != phaseReveal || eng.TimerKind != timerVersusIntro {
+	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
 		t.Fatalf("phase after all locks=%s timer=%s", eng.Phase, eng.TimerKind)
 	}
 	if len(out.Events) == 0 {
@@ -57,6 +57,12 @@ sawLock:
 	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "x"}, clock)
 	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 1, Text: "y"}, clock)
 	future := clock.Add(2 * time.Second)
+	eng2.now = func() time.Time { return future }
+	out = eng2.Advance(future)
+	if eng2.TimerKind != timerVoteIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	}
+	future = future.Add(time.Duration(voteIntroSec) * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
 	if eng2.TimerKind != timerVersusIntro {
@@ -92,8 +98,13 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 	voteOpen := begin.Add(20 * time.Second)
 	lockPairAt(t, eng, "p1", []string{"a1", "a2"}, voteOpen)
 	lockPairAt(t, eng, "p2", []string{"b1", "b2"}, voteOpen)
-	if eng.Phase != phaseReveal || eng.TimerKind != timerVersusIntro {
+	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
 		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	}
+	voteOpen = voteOpen.Add(time.Duration(voteIntroSec) * time.Second)
+	eng.Advance(voteOpen)
+	if eng.Phase != phaseReveal {
+		t.Fatalf("phase=%s want reveal", eng.Phase)
 	}
 	voteOpen = voteOpen.Add(time.Duration(versusIntroSec) * time.Second)
 	if out := eng.Advance(voteOpen); eng.Phase != phaseVote {
