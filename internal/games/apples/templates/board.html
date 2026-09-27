@@ -71,14 +71,24 @@
     </div>
   </main>
   {{end}}
-  <div class="apples-roster">
+  <div class="apples-roster"{{if .JudgeID}} data-judge="{{.JudgeID}}"{{end}}>
     {{range .Roster}}
-    <div class="apples-player{{if .Judge}} judge{{end}}{{if .Locked}} locked{{end}}">
+    {{if .Judge}}
+    <div class="apples-judge-seat">
+      <p class="apples-judge-heading">Judge</p>
+      <div class="apples-player{{if .Locked}} locked{{end}}">
+        <strong>{{.Name}}</strong>
+        <span>{{.Score}}</span>
+        {{if .Locked}}<span class="apples-locked-mark">Locked</span>{{end}}
+      </div>
+    </div>
+    {{else}}
+    <div class="apples-player{{if .Locked}} locked{{end}}">
       <strong>{{.Name}}</strong>
       <span>{{.Score}}</span>
-      {{if .Judge}}<span>Judge</span>{{end}}
       {{if .Locked}}<span class="apples-locked-mark">Locked</span>{{end}}
     </div>
+    {{end}}
     {{end}}
   </div>
 </div>

@@ -116,6 +116,22 @@
     }
   }
 
+  function markJudgeArrival() {
+    var roster = document.querySelector(".apples-tv .apples-roster");
+    if (!roster) {
+      return;
+    }
+    var id = roster.getAttribute("data-judge") || "";
+    var seat = roster.querySelector(".apples-judge-seat");
+    if (!seat || !id) {
+      return;
+    }
+    if (window.grabbagApplesJudge && window.grabbagApplesJudge !== id) {
+      seat.classList.add("is-arriving");
+    }
+    window.grabbagApplesJudge = id;
+  }
+
   function layoutBoardCards() {
     var slots = document.querySelector(".apples-tv .apples-slots");
     if (!slots) {
@@ -173,6 +189,7 @@
       var el = evt.detail && evt.detail.elt;
       if (el && el.id === "apples-board") {
         watchBoardCards();
+        markJudgeArrival();
       }
     });
     if (document.fonts && document.fonts.ready) {
@@ -182,4 +199,5 @@
   syncVisualViewport();
   paintTimers();
   watchBoardCards();
+  markJudgeArrival();
 })();
