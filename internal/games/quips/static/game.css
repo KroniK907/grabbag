@@ -193,6 +193,21 @@
   opacity: 0.55;
 }
 
+.quips-lock-bar.is-ready .ui-btn {
+  background: var(--ui-btn-bg);
+  color: var(--ui-btn-fg);
+  box-shadow: 0 0 0 3px var(--ui-brand), 0 0 22px var(--ui-glow);
+}
+
+.quips-lock-bar.is-locked .ui-btn,
+.quips-lock-bar.is-locked .ui-btn:disabled {
+  opacity: 1;
+  background: #3ddc55;
+  color: #04210c;
+  box-shadow: inset 0 0 0 3px #0d7a28;
+  cursor: default;
+}
+
 .quips-tv {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;

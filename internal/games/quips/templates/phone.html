@@ -69,7 +69,7 @@
   </div>
   {{if or (eq .Role "compose") (eq .Role "locked")}}
   <form
-    class="quips-lock-bar{{if not .LockReady}} gray{{end}}"
+    class="quips-lock-bar{{if .Locked}} is-locked{{else if .LockReady}} is-ready{{else}} gray{{end}}"
     hx-post="/play/lock"
     hx-swap="outerHTML"
     hx-target="#quips-phone"
