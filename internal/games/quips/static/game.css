@@ -389,6 +389,10 @@
   bottom: calc(var(--ui-side-tab-bottom, 28px) + var(--ui-side-tab-span, 8rem) + var(--ui-side-tab-gap, 10px));
 }
 
+.ui-phone:has(.ui-drawer.is-open) .quips-burn-handle {
+  visibility: hidden;
+}
+
 .quips-phone:has(.quips-burn-drawer.is-open) .quips-burn-handle {
   visibility: hidden;
 }
