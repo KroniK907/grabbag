@@ -64,6 +64,103 @@
       window.visualViewport.addEventListener("resize", syncVisualViewport);
     }
   }
+  function boardColumnCount(count) {
+    if (count <= 7) {
+      return count;
+    }
+    var cols = Math.ceil(count / 2);
+    return cols > 7 ? 7 : cols;
+  }
+
+  function slotOverflows(slot) {
+    return slot.scrollHeight > slot.clientHeight + 1 || slot.scrollWidth > slot.clientWidth + 1;
+  }
+
+  function fitBoardSlot(slot) {
+    var minPx = 22;
+    var maxPx = Math.max(minPx, Math.floor(slot.clientHeight * 0.62));
+    function search() {
+      var lo = minPx;
+      var hi = maxPx;
+      var best = minPx;
+      while (lo <= hi) {
+        var mid = (lo + hi) >> 1;
+        slot.style.fontSize = mid + "px";
+        if (!slotOverflows(slot)) {
+          best = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      slot.style.fontSize = best + "px";
+      return best;
+    }
+    slot.style.overflowWrap = "normal";
+    search();
+    if (slotOverflows(slot)) {
+      slot.style.overflowWrap = "break-word";
+      search();
+    }
+  }
+
+  function layoutBoardCards() {
+    var slots = document.querySelector(".apples-tv .apples-slots");
+    if (!slots) {
+      return;
+    }
+    var cards = slots.querySelectorAll(":scope > .apples-slot");
+    var count = cards.length;
+    if (!count) {
+      return;
+    }
+    var cols = boardColumnCount(count);
+    var rows = Math.ceil(count / cols);
+    var avail = slots.clientWidth;
+    var cap = 0;
+    if (count === 1) {
+      cap = Math.min(avail * 0.5, 780);
+    } else if (count === 2) {
+      cap = Math.min(avail * 0.38, 640);
+    } else if (count <= 4) {
+      cap = Math.min(avail * 0.3, 500);
+    }
+    if (cap > 0) {
+      slots.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, " + Math.floor(cap) + "px))";
+    } else {
+      slots.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
+    }
+    slots.style.gridTemplateRows = "repeat(" + rows + ", minmax(0, 1fr))";
+    cards.forEach(fitBoardSlot);
+  }
+
+  function watchBoardCards() {
+    layoutBoardCards();
+    var center = document.querySelector(".apples-tv .apples-board-center");
+    if (!center || !window.ResizeObserver) {
+      return;
+    }
+    if (window.grabbagApplesBoardObserver) {
+      window.grabbagApplesBoardObserver.disconnect();
+    }
+    window.grabbagApplesBoardObserver = new ResizeObserver(layoutBoardCards);
+    window.grabbagApplesBoardObserver.observe(center);
+  }
+
+  if (!window.grabbagApplesBoardLayout) {
+    window.grabbagApplesBoardLayout = true;
+    window.addEventListener("resize", layoutBoardCards);
+    document.body.addEventListener("htmx:afterSwap", function (evt) {
+      var el = evt.detail && evt.detail.elt;
+      if (el && el.id === "apples-board") {
+        watchBoardCards();
+      }
+    });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(layoutBoardCards);
+    }
+  }
   syncVisualViewport();
   paintTimers();
+  watchBoardCards();
 })();

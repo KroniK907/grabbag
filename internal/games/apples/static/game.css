@@ -244,6 +244,16 @@
   overflow-y: auto;
 }
 
+.apples-tv .apples-slots {
+  display: grid;
+  align-content: stretch;
+  justify-content: center;
+  align-items: stretch;
+  gap: clamp(14px, 1.6vw, 28px);
+  padding: clamp(16px, 2vh, 32px) clamp(20px, 2.2vw, 40px);
+  overflow: hidden;
+}
+
 .apples-slot {
   width: min(220px, 42vw);
   min-height: 140px;
@@ -258,8 +268,30 @@
   background: var(--ui-card-bg);
 }
 
+.apples-tv .apples-slot {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+  padding: clamp(14px, 1.3vw, 26px);
+  font-size: 2.25rem;
+  line-height: 1.18;
+  text-align: center;
+  hyphens: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-wrap: break-word;
+}
+
 .apples-slot p {
   margin: 0 0 10px;
+}
+
+.apples-tv .apples-slot p {
+  margin: 0 0 0.28em;
 }
 
 .apples-slot p:last-child {
