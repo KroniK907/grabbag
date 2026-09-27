@@ -311,8 +311,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  justify-items: center;
   gap: 12px 20px;
-  width: 100%;
+  width: min(100%, 1100px);
+  margin-inline: auto;
+  overflow: visible;
+}
+
+.quips-quip-row.is-matchup .quips-quip-card:first-of-type {
+  justify-self: end;
+}
+
+.quips-quip-row.is-matchup .quips-quip-card:last-of-type {
+  justify-self: start;
 }
 
 .quips-final {
@@ -383,12 +394,12 @@
 }
 
 @keyframes quips-from-left {
-  from { opacity: 0; transform: translateX(-36px); }
+  from { opacity: 0; transform: translateX(-45vw); }
   to { opacity: 1; transform: none; }
 }
 
 @keyframes quips-from-right {
-  from { opacity: 0; transform: translateX(36px); }
+  from { opacity: 0; transform: translateX(45vw); }
   to { opacity: 1; transform: none; }
 }
 
