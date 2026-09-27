@@ -49,7 +49,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 		st := st
 		list = append(list, ui.Scenario{
 			Surface: "board", Group: st.name, Name: st.name, Viewer: "tv",
-			Frame: ui.FrameTV, MinPlayers: st.minBoard,
+			Frame: ui.FrameTV, MinPlayers: st.minBoard, MaxPlayers: maxPlayers,
 			Render: func(w io.Writer, p ui.Preview) error {
 				pg, _, err := previewMatch(st.name, p.Players)
 				if err != nil {
@@ -72,7 +72,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 			viewer := viewer
 			list = append(list, ui.Scenario{
 				Surface: "phone", Group: st.name, Name: st.name + "-" + viewer.id, Viewer: viewer.id,
-				Frame: ui.FramePhone, Shell: ui.ShellPlayPhone, MinPlayers: viewer.min,
+				Frame: ui.FramePhone, Shell: ui.ShellPlayPhone, MinPlayers: viewer.min, MaxPlayers: maxPlayers,
 				Sample: (st.name == "submit" && viewer.id == "seated") || (st.name == "reveal" && viewer.id == "judge"),
 				Render: func(w io.Writer, p ui.Preview) error {
 					pg, cast, err := previewMatch(st.name, p.Players)
