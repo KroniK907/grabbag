@@ -132,7 +132,7 @@ func (g *Game) boardViewLocked() boardView {
 	view.LiveCounts = eng.liveVoteCounts()
 
 	segIdx := eng.activeSegmentIdx()
-	if segIdx >= 0 && segIdx < len(eng.Segments) {
+	if segIdx >= 0 && segIdx < len(eng.Segments) && eng.Phase != phaseWrite {
 		view.CenterPrompt = eng.Segments[segIdx].Prompt.Text
 	}
 	revealed := eng.revealedWriterIDs(segIdx)

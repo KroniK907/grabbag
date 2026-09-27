@@ -22,15 +22,18 @@
   <header class="quips-board-head">
     <span class="display">Quick Quips</span>
     <span class="quips-round">Round {{.Round}}{{if gt .Multiplier 1}} · {{.Multiplier}}×{{end}}</span>
-    {{template "quips-timer" .}}
+    {{if not .WritingBeat}}{{template "quips-timer" .}}{{end}}
   </header>
   <main class="quips-board-center">
     {{if .WritingBeat}}
-      {{if .CenterPrompt}}
-        <div class="quips-prompt">{{.CenterPrompt}}</div>
-      {{else}}
-        <p class="quips-writing-beat">Everyone is writing…</p>
-      {{end}}
+      <div class="quips-write-stage">
+        <p class="quips-write-title">Write your quips</p>
+        {{if .TimerText}}
+        <div class="quips-write-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+          <strong data-timer-value>{{.TimerText}}</strong>
+        </div>
+        {{end}}
+      </div>
     {{else if .ParadeBeat}}
       {{if .CenterPrompt}}<div class="quips-prompt">{{.CenterPrompt}}</div>{{end}}
       <div class="quips-quip-row">

@@ -125,6 +125,21 @@ func TestStartOpensWritePhase(t *testing.T) {
 	if phase != phaseWrite {
 		t.Fatalf("phase=%s want write", phase)
 	}
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	body := board.Body.String()
+	if !strings.Contains(body, "Write your quips") || !strings.Contains(body, "quips-write-clock") {
+		t.Fatalf("write board = %s", body)
+	}
+	g.mu.Lock()
+	prompt := ""
+	if g.engine != nil && len(g.engine.Segments) > 0 {
+		prompt = g.engine.Segments[0].Prompt.Text
+	}
+	g.mu.Unlock()
+	if prompt != "" && strings.Contains(body, prompt) {
+		t.Fatalf("write board showed the prompt %q", prompt)
+	}
 }
 
 type fakeHelper struct {

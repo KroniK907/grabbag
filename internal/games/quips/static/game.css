@@ -196,6 +196,43 @@
 .quips-tv {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--ui-board-bg);
+  color: var(--ui-fg);
+}
+
+.quips-write-stage {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: center;
+  justify-items: center;
+  gap: 28px;
+}
+
+.quips-write-title {
+  margin: 0;
+  color: var(--ui-brand);
+  font-family: var(--ui-font-display);
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: 0.9;
+  text-shadow: var(--ui-brand-shadow);
+}
+
+.quips-write-clock {
+  min-width: min(420px, 80%);
+  padding: 12px 36px 18px;
+  border: 6px solid var(--ui-accent);
+  border-radius: 28px;
+  background: var(--ui-card-bg);
+  box-shadow: 0 0 40px var(--ui-glow), 0 14px 0 #6d0854;
+}
+
+.quips-write-clock strong {
+  color: var(--ui-accent-2);
+  font-family: var(--ui-font-display);
+  font-size: clamp(4.5rem, 14vw, 10rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
 }
 
 .quips-board-head {
