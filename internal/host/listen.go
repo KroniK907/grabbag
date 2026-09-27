@@ -35,16 +35,19 @@ func Main() {
 type options struct {
 	port       string
 	devPreview bool
+	devBench   bool
 }
 
-// parseFlags reads -port and -dev-preview. The default port is listenPort.
+// parseFlags reads -port, -dev-preview, and -dev-bench. The default port is listenPort.
 // The value must be a TCP port from 1 through 65535. -dev-preview mounts the
-// UI scenario gallery at PreviewPath.
+// UI scenario gallery at PreviewPath. -dev-bench runs a throwaway room with
+// every screen on one page at BenchPath.
 func parseFlags(args []string) (options, error) {
 	fs := flag.NewFlagSet("grabbag", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	port := fs.String("port", listenPort, "TCP port to listen on")
 	devPreview := fs.Bool("dev-preview", false, "serve the UI scenario gallery at /dev/ui/")
+	devBench := fs.Bool("dev-bench", false, "run a throwaway room with board, settings, and phones on one page at /dev/bench/")
 	if err := fs.Parse(args); err != nil {
 		return options{}, err
 	}
@@ -52,10 +55,13 @@ func parseFlags(args []string) (options, error) {
 	if err != nil || n < 1 || n > 65535 {
 		return options{}, fmt.Errorf("host: -port must be 1 through 65535, got %q", *port)
 	}
-	return options{port: strconv.Itoa(n), devPreview: *devPreview}, nil
+	return options{port: strconv.Itoa(n), devPreview: *devPreview, devBench: *devBench}, nil
 }
 
 func run(opts options) error {
+	if opts.devBench {
+		return runBench(opts)
+	}
 	port := opts.port
 	dataDir, err := store.DefaultDataDir()
 	if err != nil {
