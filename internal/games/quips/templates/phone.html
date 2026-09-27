@@ -33,22 +33,29 @@
   </div>
   {{else if eq .Role "vote"}}
   {{template "quips-timer" .}}
-  <div class="quips-phone-scroll">
+  <div class="quips-vote-stage">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
-    {{if .Voted}}<p>Your vote is in.</p>{{end}}
-    {{range .VoteOptions}}
-    {{if not $.Voted}}
-    <form
-      class="quips-vote-option{{if .Chosen}} chosen{{end}}"
-      hx-post="/play/vote"
-      hx-swap="outerHTML"
-      hx-target="#quips-phone"
-    >
-      <input type="hidden" name="target" value="{{.Target}}">
-      <button class="ui-btn" type="submit">{{shy .Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
-    </form>
-    {{end}}
-    {{end}}
+    {{if .Voted}}<p class="quips-vote-in">Your vote is in.</p>{{end}}
+    <div class="quips-vote-match">
+      {{range $i, $opt := .VoteOptions}}
+      {{if and (eq (len $.VoteOptions) 2) (eq $i 1)}}<p class="quips-vote-versus">versus</p>{{end}}
+      {{if or $opt.Self $.Voted}}
+      <div class="quips-vote-option{{if $opt.Self}} is-mine{{end}}{{if $opt.Chosen}} chosen{{end}}">
+        <button class="ui-btn" type="button" disabled>{{shy $opt.Label}}{{if gt $opt.Count 0}} ({{$opt.Count}}){{end}}</button>
+      </div>
+      {{else}}
+      <form
+        class="quips-vote-option{{if $opt.Chosen}} chosen{{end}}"
+        hx-post="/play/vote"
+        hx-swap="outerHTML"
+        hx-target="#quips-phone"
+      >
+        <input type="hidden" name="target" value="{{$opt.Target}}">
+        <button class="ui-btn" type="submit">{{shy $opt.Label}}{{if gt $opt.Count 0}} ({{$opt.Count}}){{end}}</button>
+      </form>
+      {{end}}
+      {{end}}
+    </div>
   </div>
   {{else}}
   <div class="quips-phone-scroll">

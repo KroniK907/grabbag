@@ -45,6 +45,7 @@ type quipBoardView struct {
 	Empty    bool
 	Revealed bool
 	Count    int
+	Won      bool
 }
 
 type holdAwardView struct {
@@ -95,6 +96,7 @@ type voteOptionView struct {
 	Label  string
 	Count  int
 	Chosen bool
+	Self   bool
 }
 
 type slotView struct {
@@ -177,6 +179,21 @@ func (g *Game) boardViewLocked() boardView {
 			q.Count = view.LiveCounts[id]
 		}
 		view.Quips = append(view.Quips, q)
+	}
+	if eng.Phase == phaseHold {
+		best := 0
+		for _, pts := range eng.HoldAwards {
+			if pts > best {
+				best = pts
+			}
+		}
+		if best > 0 {
+			for i := range view.Quips {
+				if eng.HoldAwards[view.Quips[i].WriterID] == best {
+					view.Quips[i].Won = true
+				}
+			}
+		}
 	}
 	if view.ParadeBeat && !(eng.Phase == phaseReveal && eng.Kind == roundLastQuip) {
 		var ids []string
@@ -300,7 +317,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 			pick = eng.Vote.Picks[p.ID].Target
 		}
 		view.Voted = pick != ""
-		for _, id := range eng.voteTargets(p.ID) {
+		for _, id := range eng.segmentWriters(eng.activeSegmentIdx()) {
 			label := id
 			if w := eng.Writers[id]; w != nil {
 				label = w.Name
@@ -311,7 +328,12 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 			} else if text == "" {
 				label = "Empty quip"
 			}
-			opt := voteOptionView{Target: id, Label: label, Chosen: id == pick}
+			opt := voteOptionView{
+				Target: id,
+				Label:  label,
+				Chosen: id == pick,
+				Self:   !eng.Settings.AllowSelfVote && id == p.ID,
+			}
 			if counts != nil {
 				opt.Count = counts[id]
 			}

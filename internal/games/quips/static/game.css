@@ -526,6 +526,11 @@
   opacity: 0.85;
 }
 
+.quips-quip-card.is-winner {
+  border-color: #7cff6b;
+  box-shadow: 0 0 28px #7cff6b;
+}
+
 .quips-quip-author {
   margin: 0 0 8px;
   font-size: 0.8125rem;
@@ -598,8 +603,45 @@
   text-align: center;
 }
 
+.quips-vote-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.quips-vote-in {
+  margin: 0;
+}
+
+.quips-vote-match {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.quips-vote-versus {
+  margin: 0;
+  color: var(--ui-brand);
+  font-family: var(--ui-font-display);
+  font-size: clamp(2.5rem, 10vw, 4.5rem);
+  line-height: 0.85;
+  text-shadow: var(--ui-brand-shadow);
+}
+
 .quips-vote-option {
   min-width: 0;
+}
+
+.quips-vote-option.is-mine .ui-btn,
+.quips-vote-option.is-mine .ui-btn:disabled {
+  opacity: 1;
+  background: #3a3a3a;
+  color: #bdbdbd;
+  border-color: #666;
 }
 
 .quips-vote-option .ui-btn {
