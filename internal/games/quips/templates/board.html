@@ -29,10 +29,15 @@
       <div class="quips-last{{if .LastIntro}} is-holding{{end}}">
         <p class="quips-last-kicker">Last Quip</p>
         <p class="quips-last-copy">Everybody shares the same prompt.</p>
-        {{if .LastIntro}}<p class="quips-last-paused">Phones paused</p>{{end}}
       </div>
     {{end}}
-    {{if and .TimerText (or (not .LastQuip) (not .LastIntro))}}
+    {{if and .LastQuip .LastIntro}}
+    <p class="quips-countdown">
+      <span>Ready</span>
+      <span>Set</span>
+      <span>Go</span>
+    </p>
+    {{else if and .TimerText (or (not .LastQuip) (not .LastIntro))}}
     <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}>
       <strong data-timer-value>{{.TimerText}}</strong>
     </div>

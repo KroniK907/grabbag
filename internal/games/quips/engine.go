@@ -27,7 +27,7 @@ const (
 	timerWinner      = "winner"
 	timerFinal       = "final"
 	timerLastIntro   = "last-quip-intro"
-	lastQuipIntroSec = 4
+	lastQuipIntroSec = 3
 	timerVersusIntro = "versus-intro"
 	versusIntroSec   = 1
 )
@@ -213,7 +213,7 @@ func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
 		return out
 	}
 	if e.TimerKind == timerLastIntro {
-		out.PhoneErr[cmd.Actor] = "Phones are paused for Last Quip."
+		out.PhoneErr[cmd.Actor] = "Ready, set, go."
 		return out
 	}
 	w := e.Writers[cmd.Actor]

@@ -304,7 +304,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 	case phaseWrite:
 		if eng.Kind == roundLastQuip && eng.TimerKind == timerLastIntro {
 			view.Role = "wait"
-			view.WaitCopy = "Last Quip: Everybody shares the same prompt. Phones are paused."
+			view.WaitCopy = "Ready, set, go."
 			view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = "", "", 0, 0, 0
 			return g.attachBurnDrawer(view, p)
 		}
