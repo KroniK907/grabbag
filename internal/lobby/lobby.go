@@ -1385,7 +1385,7 @@ CREATE TABLE IF NOT EXISTS host_phone_session (
 CREATE TABLE IF NOT EXISTS room_state (
 	id INTEGER PRIMARY KEY CHECK (id = 1),
 	open INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1)),
-	theme TEXT NOT NULL DEFAULT 'neon-light'
+	theme TEXT NOT NULL DEFAULT 'neon-dark'
 );
 INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 `)
@@ -1397,7 +1397,7 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE roster ADD COLUMN waiting INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE roster ADD COLUMN wait_seq INTEGER`,
 		`ALTER TABLE roster ADD COLUMN disconnected INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE room_state ADD COLUMN theme TEXT NOT NULL DEFAULT 'neon-light'`,
+		`ALTER TABLE room_state ADD COLUMN theme TEXT NOT NULL DEFAULT 'neon-dark'`,
 		`ALTER TABLE room_state ADD COLUMN advertised_hostname TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE room_state ADD COLUMN seat_cap INTEGER NOT NULL DEFAULT 8`,
 		`ALTER TABLE room_state ADD COLUMN cycle_seats INTEGER NOT NULL DEFAULT 0`,

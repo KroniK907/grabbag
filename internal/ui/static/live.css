@@ -1,9 +1,6 @@
 /* GrabBag.gg chrome. Widget classes are theme-agnostic. Palettes live on html[data-theme]. */
 
-:root,
 [data-theme="neon-light"] {
-  --ui-font-display: Bangers, Impact, sans-serif;
-  --ui-font-ui: "Russo One", "Arial Black", sans-serif;
   --ui-bg: #fff7fb;
   --ui-bg-2: #ffe6f7;
   --ui-fg: #1a0730;
@@ -61,7 +58,10 @@
   color-scheme: light;
 }
 
+:root,
 [data-theme="neon-dark"] {
+  --ui-font-display: Bangers, Impact, sans-serif;
+  --ui-font-ui: "Russo One", "Arial Black", sans-serif;
   --ui-bg: #090612;
   --ui-bg-2: #0b0618;
   --ui-fg: #fff;

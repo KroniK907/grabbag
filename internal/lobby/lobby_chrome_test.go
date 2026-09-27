@@ -18,7 +18,7 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 
 	join := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil)
 	body := join.Body.String()
-	if !strings.Contains(body, `data-theme="neon-light"`) {
+	if !strings.Contains(body, `data-theme="neon-dark"`) {
 		t.Fatalf("join default theme = %q", body)
 	}
 	if !strings.Contains(body, `/static/live.css?v=`+ui.AssetVersion) {
@@ -74,7 +74,7 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	}
 
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, `data-theme="neon-light"`) ||
+	if !strings.Contains(board, `data-theme="neon-dark"`) ||
 		!strings.Contains(board, `class="ui-rail"`) ||
 		!strings.Contains(board, `class="ui-cluster"`) ||
 		!strings.Contains(board, `class="ui-marquee"`) ||
@@ -131,7 +131,7 @@ func TestSettingsThemeToggle(t *testing.T) {
 	_, handler, _ := testLobby(t)
 
 	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
-	if !strings.Contains(settings, `data-theme="neon-light"`) || !strings.Contains(settings, ">Light</button>") {
+	if !strings.Contains(settings, `data-theme="neon-dark"`) || !strings.Contains(settings, ">Dark</button>") {
 		t.Fatalf("settings default theme = %q", settings)
 	}
 	if !strings.Contains(settings, `id="logout-modal" class="ui-modal" hidden`) {
@@ -161,13 +161,13 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if toggled.Code != http.StatusSeeOther {
 		t.Fatalf("theme toggle status = %d; body = %q", toggled.Code, toggled.Body.String())
 	}
-	darkSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
-	if !strings.Contains(darkSettings, `data-theme="neon-dark"`) || !strings.Contains(darkSettings, ">Dark</button>") {
-		t.Fatalf("settings after toggle = %q", darkSettings)
+	lightSettings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
+	if !strings.Contains(lightSettings, `data-theme="neon-light"`) || !strings.Contains(lightSettings, ">Light</button>") {
+		t.Fatalf("settings after toggle = %q", lightSettings)
 	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, `data-theme="neon-dark"`) {
-		t.Fatalf("board did not pick up dark theme: %q", board)
+	if !strings.Contains(board, `data-theme="neon-light"`) {
+		t.Fatalf("board did not pick up light theme: %q", board)
 	}
 
 	live := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/theme", nil)
@@ -176,8 +176,8 @@ func TestSettingsThemeToggle(t *testing.T) {
 	liveRec := httptest.NewRecorder()
 	handler.ServeHTTP(liveRec, live)
 	if liveRec.Code != http.StatusOK ||
-		!strings.Contains(liveRec.Body.String(), `data-theme="neon-light"`) ||
-		!strings.Contains(liveRec.Body.String(), ">Light</button>") {
+		!strings.Contains(liveRec.Body.String(), `data-theme="neon-dark"`) ||
+		!strings.Contains(liveRec.Body.String(), ">Dark</button>") {
 		t.Fatalf("htmx theme toggle = %d %q", liveRec.Code, liveRec.Body.String())
 	}
 }

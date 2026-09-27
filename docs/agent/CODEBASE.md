@@ -61,7 +61,7 @@ grabbag/
 
 `internal/ui` is one package. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
 
-Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-light` (default) and `neon-dark`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
+Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-dark` (default) and `neon-light`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
 `cmd/grabbag-uishots` imports only `internal/host` and chromedp. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
