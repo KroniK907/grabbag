@@ -1,0 +1,4 @@
+{"Error": "Two answers on this prompt match. Change the outlined one.", "Slots": [
+  {"Index": 0, "PromptText": "A rejected flavor of ice cream", "Draft": "Pickle-flavored regret", "Remain": 98, "Cap": 120, "DupOutline": true},
+  {"Index": 1, "PromptText": "A terrible name for a boat, and the story of how the boat got that name after a long night", "Draft": "", "Remain": 120, "Cap": 120}
+]}

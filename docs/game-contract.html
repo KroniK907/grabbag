@@ -315,6 +315,7 @@
             <a href="#game-resume">Resume</a>
             <a href="#game-stop">Stop</a>
             <a href="#game-shutdown">Shutdown</a>
+            <a href="#game-scenarios">Scenarios (optional)</a>
           </div>
         </li>
         <li>
@@ -833,6 +834,39 @@ func (g *Game) ID() string { return id }</pre>
     g.taps = make(map[string]int)
     return nil
 }</pre>
+      </article>
+
+      <article class="method" id="game-scenarios">
+        <div class="tags"><span class="tag">Game</span><span class="tag">optional</span><span class="tag">-dev-preview</span></div>
+        <h3>Scenarios</h3>
+        <p>Lists UI states the host gallery at <code>/dev/ui/</code> can show without anyone playing to them. Implement <code>games.Previewer</code> to opt in.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Previewer interface {
+    Scenarios() []ui.Scenario
+}</div>
+        <h4>Parameters</h4>
+        <p>None. Host calls it on a fresh <code>New()</code> value. There is no Load and no Helper.</p>
+        <h4>Return value</h4>
+        <p>One <code>ui.Scenario</code> per page state. Each has a Surface and Name, a Viewer, a Frame (phone, TV, or page), an optional Shell, a seated-count range, and a <code>Render(w, ui.Preview)</code> func. Host passes the theme, seated count, JSON merge patches, and an asset URL prefix in <code>ui.Preview</code>.</p>
+        <h4>Description</h4>
+        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. That sets <code>Chrome.Static</code>, so the page loads no htmx, no SSE, and no heartbeat, and timers hold their rendered value. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
+        <h4>Examples</h4>
+        <h5>A board at every table size</h5>
+        <pre class="ex">func (g *Game) Scenarios() []ui.Scenario {
+    return []ui.Scenario{{
+        Surface: "board", Group: "live", Name: "live", Viewer: "tv",
+        Frame: ui.FrameTV, MinPlayers: 1,
+        Render: func(w io.Writer, p ui.Preview) error {
+            view := boardView{Chrome: ui.Chrome{Title: "Testing"}, GameCSS: p.Asset("game.css")}
+            for _, name := range ui.PreviewNames(p.Players) {
+                view.Players = append(view.Players, playerRow{DisplayName: name})
+            }
+            return ui.RenderScenario(w, pages, "board.html", view, p)
+        },
+    }}
+}</pre>
+        <h5>Saved variant</h5>
+        <p><code>previews/board.live.paused.json</code> containing <code>{"Paused": true}</code> adds <code>live~paused</code> when the list passes through <code>ui.WithVariants</code>.</p>
       </article>
 
       <h2 id="helper">Helper</h2>

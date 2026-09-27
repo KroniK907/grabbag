@@ -22,32 +22,41 @@ const listenPort = "8654"
 // that host is public, and the first usable LAN IPv4 otherwise. That
 // advertised URL does not change the listen address.
 func Main() {
-	port, err := parseListenPort(os.Args[1:])
+	opts, err := parseFlags(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := run(port); err != nil {
+	if err := run(opts); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// parseListenPort reads -port. The default is listenPort. The value must be
-// a TCP port from 1 through 65535.
-func parseListenPort(args []string) (string, error) {
+// options are the host command-line flags.
+type options struct {
+	port       string
+	devPreview bool
+}
+
+// parseFlags reads -port and -dev-preview. The default port is listenPort.
+// The value must be a TCP port from 1 through 65535. -dev-preview mounts the
+// UI scenario gallery at PreviewPath.
+func parseFlags(args []string) (options, error) {
 	fs := flag.NewFlagSet("grabbag", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	port := fs.String("port", listenPort, "TCP port to listen on")
+	devPreview := fs.Bool("dev-preview", false, "serve the UI scenario gallery at /dev/ui/")
 	if err := fs.Parse(args); err != nil {
-		return "", err
+		return options{}, err
 	}
 	n, err := strconv.Atoi(*port)
 	if err != nil || n < 1 || n > 65535 {
-		return "", fmt.Errorf("host: -port must be 1 through 65535, got %q", *port)
+		return options{}, fmt.Errorf("host: -port must be 1 through 65535, got %q", *port)
 	}
-	return strconv.Itoa(n), nil
+	return options{port: strconv.Itoa(n), devPreview: *devPreview}, nil
 }
 
-func run(port string) error {
+func run(opts options) error {
+	port := opts.port
 	dataDir, err := store.DefaultDataDir()
 	if err != nil {
 		return err
@@ -83,6 +92,10 @@ func run(port string) error {
 	handler, err := NewHandler(db, joinURL)
 	if err != nil {
 		return fmt.Errorf("host: build handler: %w", err)
+	}
+	if opts.devPreview {
+		handler = withPreview(handler)
+		log.Printf("UI preview http://127.0.0.1:%s%s", port, PreviewPath)
 	}
 	if err := http.Serve(listener, handler); err != nil {
 		return fmt.Errorf("host: serve: %w", err)

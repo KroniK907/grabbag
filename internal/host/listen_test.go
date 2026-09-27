@@ -42,28 +42,28 @@ func TestFirstNonLoopbackIPv4RefusesMissingAddress(t *testing.T) {
 	}
 }
 
-func TestParseListenPort(t *testing.T) {
+func TestParseFlags(t *testing.T) {
 	t.Parallel()
-	got, err := parseListenPort(nil)
+	got, err := parseFlags(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != listenPort {
-		t.Fatalf("default port = %q, want %s", got, listenPort)
+	if got.port != listenPort || got.devPreview {
+		t.Fatalf("defaults = %+v, want port %s and no preview", got, listenPort)
 	}
 
-	got, err = parseListenPort([]string{"-port", "9000"})
+	got, err = parseFlags([]string{"-port", "9000", "-dev-preview"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "9000" {
-		t.Fatalf("port = %q, want 9000", got)
+	if got.port != "9000" || !got.devPreview {
+		t.Fatalf("flags = %+v, want port 9000 with preview", got)
 	}
 
-	if _, err := parseListenPort([]string{"-port", "0"}); err == nil {
+	if _, err := parseFlags([]string{"-port", "0"}); err == nil {
 		t.Fatal("expected an error for port 0")
 	}
-	if _, err := parseListenPort([]string{"-port", "nope"}); err == nil {
+	if _, err := parseFlags([]string{"-port", "nope"}); err == nil {
 		t.Fatal("expected an error for a non-numeric port")
 	}
 }

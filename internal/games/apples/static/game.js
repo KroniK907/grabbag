@@ -17,7 +17,7 @@
     document.querySelectorAll("[data-apples-timer]").forEach(function (timer) {
       var total = Number(timer.dataset.timerTotal) || 0;
       var left;
-      if (timer.dataset.timerPaused === "1") {
+      if (timer.dataset.timerPaused === "1" || window.grabbagStatic) {
         left = Number(timer.dataset.timerSeconds) || 0;
       } else {
         var end = Number(timer.dataset.timerEnd) || 0;

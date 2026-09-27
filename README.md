@@ -22,6 +22,7 @@ Join is a face, a name, and one button. The first person who also types the admi
 - [Run a room](#run-a-room)
 - [Hosting](#hosting)
 - [Write a game](#write-a-game)
+- [UI previews](#ui-previews)
 - [Docs](#docs)
 - [Tests](#tests)
 - [License](#license)
@@ -116,6 +117,26 @@ go run ./cmd/grabbag
 ```
 
 Load the game from the Host drawer. Start needs at least one seated player.
+
+## UI previews
+
+Every Lobby and game screen can be opened in any state without playing to it. Scenarios drive the real engine with fixed names and cards, so each page is the real template with the timers stopped.
+
+```text
+go run ./cmd/grabbag-uishots -serve 127.0.0.1:8655   # gallery only, no data dir
+go run ./cmd/grabbag -dev-preview                     # full host plus /dev/ui/
+```
+
+Open `/dev/ui/` to pick a scenario, theme, seated count, phone or tablet, orientation, and text size. You can also paste a JSON merge patch (`{"Paused": true}`) to change the view. Table view (`/dev/ui/table/apples/reveal?players=12`) shows the TV and every viewer's phone at the same moment.
+
+Screenshots need Chromium (`chromium-browser`, `chromium`, or Chrome):
+
+```text
+go run ./cmd/grabbag-uishots                 # every set into ./shots
+go run ./cmd/grabbag-uishots -set devices -only 'apples/phone/*'
+```
+
+`scenarios` shoots every page in both themes. `sweep` shoots each page at the minimum, middle, 12, and the maximum seated count, or 64 when the game sets no maximum. `devices` shoots the sample pages on 8 phones and 4 tablets, with tablets in both orientations, at 100 to 200% text. `shots/index.html` is a contact sheet with the layout findings on each shot. `shots/report.json` has the same data as JSON.
 
 ## Docs
 
