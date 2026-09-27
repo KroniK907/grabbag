@@ -730,6 +730,11 @@
   color: #fff;
 }
 
+.apples-tv .apples-slot .apples-vote-count {
+  font-size: 1.5rem;
+  padding: 6px 14px;
+}
+
 .apples-player-name {
   background: var(--ui-card-bg);
   color: var(--ui-fg);
