@@ -312,6 +312,7 @@
 
 .apples-roster {
   display: flex;
+  align-items: flex-start;
   flex: 0 0 auto;
   gap: 8px;
   padding: 10px 16px;
@@ -405,9 +406,10 @@
 }
 
 .apples-win {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   place-items: center;
-  min-height: 0;
 }
 
 .apples-win-card {
@@ -420,10 +422,17 @@
 }
 
 .apples-final-winner {
-  margin: 12px 0 24px;
+  margin: 12px 0 0;
   color: var(--ui-accent-2);
   font-family: var(--ui-font-display);
   font-size: clamp(2.25rem, 8vw, 5.375rem);
+}
+
+.apples-final-score {
+  margin: 4px 0 24px;
+  color: var(--ui-brand);
+  font-family: var(--ui-font-display);
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
 }
 
 .apples-round-winner {

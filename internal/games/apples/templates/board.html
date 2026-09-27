@@ -19,26 +19,26 @@
   </div>
   {{end}}
   {{if .Paused}}<div class="apples-dim">Paused</div>{{end}}
-  {{if .Sudden}}
-  <div class="apples-win"><div class="apples-win-card"><h1 class="display">Tie breaker</h1><p>Leaders play sudden death.</p></div></div>
-  {{else if .Over}}
-  <div class="apples-win"><div class="apples-win-card">
-    <h1 class="display">Winner</h1>
-    <p class="apples-final-winner">{{.WinnerName}}</p>
-    {{template "apples-timer" .}}
-    {{if .CanFinish}}
-    <form method="post" action="/play/finish">
-      <input type="hidden" name="return" value="/board">
-      <button class="ui-btn" type="submit">Back to lobby</button>
-    </form>
-    {{end}}
-  </div></div>
-  {{else}}
   <header class="apples-board-head">
     <span class="display">Apples for Humanity</span>
     {{template "apples-timer" .}}
   </header>
   <main class="apples-board-center">
+    {{if .Sudden}}
+    <div class="apples-win"><div class="apples-win-card"><h1 class="display">Tie breaker</h1><p>Leaders play sudden death.</p></div></div>
+    {{else if .Over}}
+    <div class="apples-win"><div class="apples-win-card">
+      <h1 class="display">Winner</h1>
+      <p class="apples-final-winner">{{.WinnerName}}</p>
+      <p class="apples-final-score">{{.WinnerScore}}</p>
+      {{if .CanFinish}}
+      <form method="post" action="/play/finish">
+        <input type="hidden" name="return" value="/board">
+        <button class="ui-btn" type="submit">Back to lobby</button>
+      </form>
+      {{end}}
+    </div></div>
+    {{else}}
     {{if .RoundWinner}}<p class="apples-round-winner">Round winner - {{.RoundWinner}}</p>{{end}}
     {{if .Multiplier}}<p class="apples-mult">{{.Multiplier}}</p>{{end}}
     {{if or (eq .Phase "choose") (eq .Phase "hold")}}
@@ -69,8 +69,8 @@
       </article>
       {{end}}
     </div>
+    {{end}}
   </main>
-  {{end}}
   <div class="apples-roster"{{if .JudgeID}} data-judge="{{.JudgeID}}"{{end}}>
     {{range .Roster}}
     {{if .Judge}}

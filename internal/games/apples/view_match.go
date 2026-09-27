@@ -52,6 +52,7 @@ type boardView struct {
 	JudgeID      string
 	Over         bool
 	WinnerName   string
+	WinnerScore  int
 	RoundWinner  string
 	NamesShown   bool
 	Overlay      bool
@@ -149,6 +150,7 @@ func (g *Game) boardViewLocked() boardView {
 	if m.WinnerID != "" && m.Phase != phaseDrawWait {
 		if a := m.Actors[m.WinnerID]; a != nil {
 			view.WinnerName = a.Name
+			view.WinnerScore = a.Score
 			if m.NamesShown && m.Phase != phaseDrawWait {
 				view.RoundWinner = a.Name
 			}
