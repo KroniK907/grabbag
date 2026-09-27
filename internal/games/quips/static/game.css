@@ -178,8 +178,8 @@
 .quips-lock-bar {
   flex: 0 0 auto;
   padding: 10px 12px;
-  background: var(--ui-board-bg);
-  border-top: 2px solid var(--ui-rail-border);
+  background: transparent;
+  border-top: 0;
 }
 
 .quips-lock-bar .ui-btn {
@@ -394,10 +394,17 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px;
-  border-top: 3px solid var(--ui-rail-border);
+  border-top: 0;
   position: sticky;
   bottom: 0;
-  background: var(--ui-board-bg);
+  background: transparent;
+}
+
+.quips-wait {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 64px 48px 16px;
+  text-align: center;
 }
 
 .quips-vote-option {
