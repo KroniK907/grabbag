@@ -742,9 +742,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 6px;
+  gap: 0.35rem;
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 0.35rem;
+  max-height: 2.6rem;
+  overflow: hidden;
 }
 
 .apples-tv .apples-slot.down .apples-slot-copy {
@@ -753,10 +755,17 @@
   justify-content: center;
 }
 
+html:has(.apples-tv) {
+  font-size: clamp(8px, 0.833vw, 16px);
+}
+
 .apples-tv .apples-slot .apples-vote-count {
-  font-size: 1.5rem;
-  padding: 6px 14px;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  padding: 0.28rem 0.7rem;
   margin: 0;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .apples-player-name {

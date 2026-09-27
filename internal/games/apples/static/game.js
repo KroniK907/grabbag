@@ -87,8 +87,9 @@
 
   function fitBoardSlot(slot) {
     var copy = slot.querySelector(".apples-slot-copy") || slot;
-    var minPx = 20;
-    var maxPx = 64;
+    var root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var minPx = Math.max(12, Math.round(root * 1.15));
+    var maxPx = Math.round(root * 4);
     function overflows() {
       return copy.scrollHeight > copy.clientHeight + 1 || copy.scrollWidth > copy.clientWidth + 1;
     }
