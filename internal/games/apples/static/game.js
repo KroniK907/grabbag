@@ -85,42 +85,33 @@
     return Math.max(0, Math.floor((slots.clientHeight - pad - gap) / 2));
   }
 
-  function slotOverflows(slot) {
-    return slot.scrollHeight > slot.clientHeight + 1 || slot.scrollWidth > slot.clientWidth + 1;
-  }
-
   function fitBoardSlot(slot) {
-    var minPx = 28;
+    var copy = slot.querySelector(".apples-slot-copy") || slot;
+    var minPx = 20;
     var maxPx = 64;
+    function overflows() {
+      return copy.scrollHeight > copy.clientHeight + 1 || copy.scrollWidth > copy.clientWidth + 1;
+    }
     function search() {
       var lo = minPx;
       var hi = maxPx;
       var best = minPx;
       while (lo <= hi) {
         var mid = (lo + hi) >> 1;
-        slot.style.fontSize = mid + "px";
-        if (!slotOverflows(slot)) {
+        copy.style.fontSize = mid + "px";
+        if (!overflows()) {
           best = mid;
           lo = mid + 1;
         } else {
           hi = mid - 1;
         }
       }
-      slot.style.fontSize = best + "px";
-      return best;
+      copy.style.fontSize = best + "px";
     }
-    var chip = slot.querySelector(".apples-vote-count");
-    if (chip) {
-      chip.style.marginTop = "0";
-    }
-    slot.style.overflowWrap = "normal";
+    copy.style.overflowWrap = "normal";
     search();
-    if (slotOverflows(slot)) {
-      slot.style.overflowWrap = "break-word";
-      search();
-    }
-    if (chip) {
-      chip.style.marginTop = "auto";
+    if (copy.scrollWidth > copy.clientWidth + 1) {
+      copy.style.overflowWrap = "break-word";
     }
   }
 
