@@ -257,8 +257,10 @@
 
 .quips-countdown {
   position: relative;
+  width: 100%;
   height: 1.1em;
   margin: 8px 0 0;
+  text-align: center;
   color: var(--ui-accent-2);
   font-family: var(--ui-font-display);
   font-size: clamp(3.25rem, 8vw, 6.5rem);
@@ -270,6 +272,7 @@
   position: absolute;
   left: 0;
   right: 0;
+  text-align: center;
   opacity: 0;
   animation: quips-count-word 1s ease both;
 }
