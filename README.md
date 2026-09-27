@@ -34,7 +34,7 @@ Join is a face, a name, and one button. The first person who also types the admi
 - Phones as controllers. Players scan the QR, pick a face, type a name, tap Join.
 - A claimed-host phone with Load, Start, Pause, Stop, kick, and settings.
 - Room state in SQLite. Quit and come back, then Keep this room or Clear room.
-- Two palettes, `neon-light` and `neon-dark`.
+- Two palettes. New rooms start on `neon-dark`. Settings can switch to `neon-light`.
 - Operator docs inside the binary at `http://127.0.0.1:8654/docs`.
 - Two party games, Apples for Humanity and Quick Quips, plus Testing.
 
