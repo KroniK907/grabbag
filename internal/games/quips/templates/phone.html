@@ -38,7 +38,7 @@
     {{if .Voted}}<p class="quips-vote-in">Your vote is in.</p>{{end}}
     <div class="quips-vote-match">
       {{range $i, $opt := .VoteOptions}}
-      {{if and (eq (len $.VoteOptions) 2) (eq $i 1)}}<p class="quips-vote-versus">versus</p>{{end}}
+      {{if and (eq (len $.VoteOptions) 2) (eq $i 1)}}<p class="quips-vote-versus">VS</p>{{end}}
       {{if or $opt.Self $.Voted}}
       <div class="quips-vote-option{{if $opt.Self}} is-mine{{end}}{{if $opt.Chosen}} chosen{{end}}">
         <button class="ui-btn" type="button" disabled>{{shy $opt.Label}}{{if gt $opt.Count 0}} ({{$opt.Count}}){{end}}</button>
