@@ -435,6 +435,39 @@
   font-size: clamp(1.75rem, 5vw, 3.5rem);
 }
 
+.apples-vote-cue {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: none;
+  place-items: center;
+  pointer-events: none;
+}
+
+.apples-vote-cue.is-on {
+  display: grid;
+}
+
+.apples-vote-cue p {
+  margin: 0;
+  padding: 18px 28px;
+  border: 6px solid var(--ui-brand);
+  border-radius: 24px;
+  background: var(--ui-card-bg);
+  color: var(--ui-fg);
+  font-family: var(--ui-font-display);
+  font-size: clamp(2rem, 6vw, 4.5rem);
+  text-align: center;
+  animation: apples-vote-cue 2.6s ease forwards;
+}
+
+@keyframes apples-vote-cue {
+  0% { opacity: 0; transform: scale(0.96); }
+  12% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .apples-round-winner {
   margin: 8px auto 0;
   padding: 7px 12px;
