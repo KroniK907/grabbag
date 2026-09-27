@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 )
 
-func TestBoardRosterKeepsSeatOrder(t *testing.T) {
+func TestBoardRosterPinsJudgeThenScore(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 6, 40, 1)
 	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
@@ -21,9 +22,18 @@ func TestBoardRosterKeepsSeatOrder(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
+	g.mu.Lock()
+	judgeName := g.engine.Actors[g.engine.JudgeID].Name
+	g.mu.Unlock()
 	first := boardRosterNames(t, g)
-	if len(first) < 3 || first[0] != "Pat" || first[1] != "Sam" {
-		t.Fatalf("seat order = %v", first)
+	if len(first) < 3 || first[0] != judgeName {
+		t.Fatalf("judge %s not first: %v", judgeName, first)
+	}
+	rest := append([]string(nil), first[1:]...)
+	sorted := append([]string(nil), rest...)
+	sort.Strings(sorted)
+	if strings.Join(rest, ",") != strings.Join(sorted, ",") {
+		t.Fatalf("tied scores not alphabetical: %v", rest)
 	}
 	for i := 0; i < 8; i++ {
 		got := boardRosterNames(t, g)

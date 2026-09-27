@@ -30,6 +30,7 @@
     <div class="apples-win"><div class="apples-win-card">
       <h1 class="display">Winner</h1>
       <p class="apples-final-winner">{{.WinnerName}}</p>
+      <p class="apples-final-score">{{.WinnerScore}}</p>
       {{if .CanFinish}}
       <form method="post" action="/play/finish">
         <input type="hidden" name="return" value="/board">
@@ -50,34 +51,44 @@
     <div class="apples-slots">
       {{range .Packets}}
       <article class="apples-slot{{if not .Revealed}} down{{end}}{{if .Winner}} winner{{end}}">
+        <div class="apples-slot-copy">
         {{if .Revealed}}
-          <div class="apples-slot-body">
-            {{range .Cards}}<p>{{shy .Text}}</p>{{end}}
-          </div>
-          {{if or .Winner .FavoriteMark .VoteLabel (and $.NamesShown .Name)}}
-          <div class="apples-slot-marks">
-            {{if .Winner}}<p class="apples-chip">Judge's pick</p>{{end}}
-            {{if .FavoriteMark}}<p class="apples-chip favorite">{{.FavoriteMark}}</p>{{end}}
-            {{if .VoteLabel}}<p class="apples-vote-count">{{.VoteLabel}}</p>{{end}}
-            {{if or .Winner $.NamesShown}}<p class="apples-player-name">{{.Name}}</p>{{end}}
-          </div>
-          {{end}}
+          {{range .Cards}}<p>{{shy .Text}}</p>{{end}}
         {{else}}
           <p>?</p>
+        {{end}}
+        </div>
+        {{if .Revealed}}
+        <div class="apples-slot-meta">
+          {{if .Winner}}<p class="apples-chip">Judge's pick</p>{{end}}
+          {{if .FavoriteMark}}<p class="apples-chip favorite">{{.FavoriteMark}}</p>{{end}}
+          {{if .VoteLabel}}<p class="apples-vote-count">{{.VoteLabel}}</p>{{end}}
+          {{if or .Winner $.NamesShown}}<p class="apples-player-name">{{.Name}}</p>{{end}}
+        </div>
         {{end}}
       </article>
       {{end}}
     </div>
     {{end}}
   </main>
-  <div class="apples-roster">
+  <div class="apples-roster"{{if .JudgeID}} data-judge="{{.JudgeID}}"{{end}}>
     {{range .Roster}}
-    <div class="apples-player{{if .Judge}} judge{{end}}{{if .Locked}} locked{{end}}">
+    {{if .Judge}}
+    <div class="apples-judge-seat">
+      <p class="apples-judge-heading">Judge</p>
+      <div class="apples-player{{if .Locked}} locked{{end}}">
+        <strong>{{.Name}}</strong>
+        <span>{{.Score}}</span>
+        {{if .Locked}}<span class="apples-locked-mark">Locked</span>{{end}}
+      </div>
+    </div>
+    {{else}}
+    <div class="apples-player{{if .Locked}} locked{{end}}">
       <strong>{{.Name}}</strong>
       <span>{{.Score}}</span>
-      {{if .Judge}}<span>Judge</span>{{end}}
       {{if .Locked}}<span class="apples-locked-mark">Locked</span>{{end}}
     </div>
+    {{end}}
     {{end}}
   </div>
 </div>
