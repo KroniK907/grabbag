@@ -297,6 +297,12 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 			view.LockLabel = strconv.Itoa(filled) + " of " + strconv.Itoa(pick)
 		}
 	}
+	if m.NamesShown && view.Role == "judge" && m.Phase == phaseReveal {
+		view.Role = "seated"
+		view.CanConfirm = false
+		view.CanReveal = false
+		view.CanDraw = false
+	}
 	if m.Phase == phaseHold && view.Role != "judge" {
 		view.Prompt = nil
 	}
