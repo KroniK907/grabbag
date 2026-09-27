@@ -412,6 +412,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
+  overflow-x: hidden;
   overflow-y: auto;
   overflow-anchor: none;
   overscroll-behavior: contain;
@@ -1017,11 +1018,6 @@ html.apples-compact-height .apples-lock-bar .ui-btn {
 }
 
 @media (min-width: 700px) {
-  .apples-packet-list,
-  .apples-hand {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .apples-card-button,
   .apples-hole-card {
     min-height: 72px;
@@ -1031,4 +1027,15 @@ html.apples-compact-height .apples-lock-bar .ui-btn {
   .apples-phone .apples-prompt {
     font-size: clamp(20px, 3vw, 28px);
   }
+}
+
+.apples-phone .apples-packet-list,
+.apples-phone .apples-hand {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.apples-phone .apples-card-button,
+.apples-phone .apples-result-card,
+.apples-phone .apples-slot {
+  overflow-wrap: anywhere;
 }
