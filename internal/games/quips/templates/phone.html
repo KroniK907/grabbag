@@ -8,6 +8,7 @@
   class="quips-phone ui-stack{{if .Paused}} is-paused{{end}}"
   hx-get="/play/partials/phone"
   hx-trigger="sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-sync="this:queue all"
   hx-swap="outerHTML"
 >
   <a class="quips-help" href="/play/howto" aria-label="How to play">?</a>
@@ -31,9 +32,9 @@
     <p>{{.WaitCopy}}</p>
   </div>
   {{else if eq .Role "vote"}}
+  {{template "quips-timer" .}}
   <div class="quips-phone-scroll">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
-    {{template "quips-timer" .}}
     {{if .Voted}}<p>Your vote is in.</p>{{end}}
     {{range .VoteOptions}}
     {{if not $.Voted}}

@@ -11,6 +11,7 @@
   class="quips-board quips-tv{{if .Paused}} is-paused{{end}}"
   hx-get="/play/partials/board"
   hx-trigger="sse:quips-lock, sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-sync="this:queue all"
   hx-swap="outerHTML"
 >
   {{if .Paused}}<div class="quips-dim">Paused</div>{{end}}
@@ -59,7 +60,7 @@
       {{if .HoldAwards}}
       <div class="quips-hold-awards">
         {{range .HoldAwards}}
-        <p><strong>{{.Name}}</strong> +{{.Points}}</p>
+        <p><span class="quips-hold-name">{{.Name}}</span> <span class="quips-hold-points">+{{.Points}}</span></p>
         {{end}}
       </div>
       {{end}}

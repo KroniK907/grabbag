@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/KroniK907/grabbag/internal/games"
@@ -190,12 +191,17 @@ func (g *Game) boardViewLocked() boardView {
 		}
 	}
 	if eng.Phase == phaseHold {
-		for id, pts := range eng.HoldAwards {
+		ids := make([]string, 0, len(eng.HoldAwards))
+		for id := range eng.HoldAwards {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
 			name := id
 			if w := eng.Writers[id]; w != nil {
 				name = w.Name
 			}
-			view.HoldAwards = append(view.HoldAwards, holdAwardView{Name: name, Points: pts})
+			view.HoldAwards = append(view.HoldAwards, holdAwardView{Name: name, Points: eng.HoldAwards[id]})
 		}
 	}
 	if eng.Phase == phaseFinalScores || eng.Phase == phaseOver {
