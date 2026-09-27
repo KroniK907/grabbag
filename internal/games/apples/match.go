@@ -41,7 +41,7 @@ func (g *Game) beginMatchLocked(h games.Helper) error {
 func rosterRows(players []games.Player) []rosterRow {
 	rows := make([]rosterRow, 0, len(players))
 	for _, p := range players {
-		rows = append(rows, rosterRow{ID: p.ID, Name: p.DisplayName})
+		rows = append(rows, rosterRow{ID: p.ID, Name: p.DisplayName, ClaimedHost: p.ClaimedHost})
 	}
 	return rows
 }

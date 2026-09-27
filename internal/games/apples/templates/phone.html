@@ -210,6 +210,14 @@
     <button class="ui-btn" type="submit" {{if not .LockReady}}disabled{{end}}>{{.LockLabel}}</button>
   </form>
   {{end}}
+  {{if and .ClaimedHost .CanReveal (ne .Role "judge")}}
+  <div class="apples-host-reveal">
+    <p class="apples-step">Reveal the next answer.</p>
+    <form hx-post="/play/reveal" hx-swap="outerHTML" hx-target="#apples-phone">
+      <button class="ui-btn apples-reveal" type="submit">Reveal next</button>
+    </form>
+  </div>
+  {{end}}
   {{if .ClaimedHost}}
   <button class="ui-btn apples-burn-handle" type="button" aria-controls="apples-burn-drawer" onclick="document.getElementById('apples-burn-drawer').classList.add('is-open')">Burn</button>
   <button class="apples-burn-scrim" type="button" aria-label="Close Burn drawer" onclick="document.getElementById('apples-burn-drawer').classList.remove('is-open')"></button>

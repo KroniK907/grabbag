@@ -111,8 +111,9 @@ type cardSupply interface {
 }
 
 type rosterRow struct {
-	ID   string
-	Name string
+	ID          string
+	Name        string
+	ClaimedHost bool
 }
 
 // engine is one Apples match: rounds, hands, judging, scoring, and timers.
@@ -128,6 +129,7 @@ type engine struct {
 	JudgeCycle      []string
 	JudgeIdx        int
 	JudgeID         string
+	HostID          string
 	SeatOrder       []string
 	Actors          map[string]*actor
 	NextBot         int
@@ -220,6 +222,7 @@ func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal enabledP
 	if len(ids) > 0 {
 		e.JudgeID = ids[0]
 	}
+	e.pinHostJudge()
 	needBots := settings.BotCount
 	if len(roster)+needBots < 3 {
 		needBots = 3 - len(roster)
@@ -241,8 +244,12 @@ func (e *engine) Begin(settings matchSettings, roster []rosterRow, deal enabledP
 // SetSeated replaces the live seated roster without dealing or bot fill.
 func (e *engine) SetSeated(roster []rosterRow) {
 	e.Live = map[string]bool{}
+	e.HostID = ""
 	for _, row := range roster {
 		e.Live[row.ID] = true
+		if row.ClaimedHost {
+			e.HostID = row.ID
+		}
 	}
 }
 
@@ -270,7 +277,11 @@ func (e *engine) Do(cmd command, now time.Time) outcome {
 	case cmdLock:
 		err = e.lock(cmd.Actor)
 	case cmdReveal:
-		err = e.judgeOnly(cmd, "Only the judge can reveal.", e.revealNext)
+		if e.Settings.HostReveals {
+			err = e.hostOnly(cmd, "Only the host can reveal.", e.revealNext)
+		} else {
+			err = e.judgeOnly(cmd, "Only the judge can reveal.", e.revealNext)
+		}
 	case cmdVote:
 		err = e.vote(cmd.Actor, cmd.Card)
 	case cmdConfirm:
@@ -289,6 +300,24 @@ func (e *engine) judgeOnly(cmd command, refuse string, fn func() error) error {
 	return fn()
 }
 
+func (e *engine) hostOnly(cmd command, refuse string, fn func() error) error {
+	if cmd.Actor == "" || cmd.Actor != e.HostID {
+		return errors.New(refuse)
+	}
+	return fn()
+}
+
+func (e *engine) pinHostJudge() bool {
+	if !e.Settings.HostJudge || e.HostID == "" || !e.Live[e.HostID] {
+		return false
+	}
+	if _, ok := e.Actors[e.HostID]; !ok {
+		return false
+	}
+	e.JudgeID = e.HostID
+	return true
+}
+
 // Advance fires the running timer once it has expired.
 func (e *engine) Advance(now time.Time) outcome {
 	e.begin(now)
@@ -303,7 +332,9 @@ func (e *engine) Advance(now time.Time) outcome {
 	case timerSubmit:
 		e.timerSubmit()
 	case timerBetween:
-		_ = e.revealNext()
+		if !e.Settings.HostReveals {
+			_ = e.revealNext()
+		}
 	case timerFavoriteVote:
 		e.armTimer(timerJudgePick, e.Settings.JudgePickSec)
 	case timerJudgePick:

@@ -94,6 +94,12 @@ func (e *engine) enterSudden() {
 	}
 	slices.Sort(pool)
 	e.JudgeID = ""
+	if e.Settings.HostJudge && e.HostID != "" && e.Live[e.HostID] && !slices.Contains(ties, e.HostID) {
+		if _, ok := e.Actors[e.HostID]; ok {
+			e.JudgeID = e.HostID
+			return
+		}
+	}
 	if len(pool) > 0 {
 		e.JudgeID = pool[e.intn(len(pool))]
 	}
@@ -101,6 +107,9 @@ func (e *engine) enterSudden() {
 
 // advanceJudge passes the judge seat to the next live player in the cycle.
 func (e *engine) advanceJudge() {
+	if e.pinHostJudge() {
+		return
+	}
 	for range e.JudgeCycle {
 		e.JudgeIdx = (e.JudgeIdx + 1) % len(e.JudgeCycle)
 		if id := e.JudgeCycle[e.JudgeIdx]; e.Live[id] {
