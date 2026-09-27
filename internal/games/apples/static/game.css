@@ -723,11 +723,12 @@
   position: sticky;
   top: 0;
   z-index: 4;
-  align-self: flex-end;
+  align-self: stretch;
+  justify-content: flex-end;
   min-height: 34px;
   padding: 3px 8px;
-  border-radius: 999px;
   background: var(--ui-phone-bg);
+  box-shadow: 0 12px 0 var(--ui-phone-bg);
 }
 
 .apples-reshuffle {
