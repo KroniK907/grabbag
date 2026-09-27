@@ -38,8 +38,8 @@ func (e *engine) startCurrentSegment(now time.Time, out Outcome) Outcome {
 		e.Phase = phaseReveal
 	} else {
 		e.Revealed = 2
-		e.Phase = phaseVote
-		e.openVoteTimer(now)
+		e.Phase = phaseReveal
+		e.armTimer(now, timerVersusIntro, versusIntroSec)
 	}
 	out.Changed = true
 	out.Events = appendUniqueEvent(out.Events, eventQuips)

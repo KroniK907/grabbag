@@ -28,6 +28,8 @@ const (
 	timerFinal       = "final"
 	timerLastIntro   = "last-quip-intro"
 	lastQuipIntroSec = 4
+	timerVersusIntro = "versus-intro"
+	versusIntroSec   = 1
 )
 
 type roundKind int
@@ -254,6 +256,11 @@ func (e *engine) Advance(now time.Time) Outcome {
 		if e.Settings.WriteSec > 0 {
 			e.armTimer(now, "write", e.Settings.WriteSec)
 		}
+		return Outcome{Changed: true, Events: []string{eventQuips}}
+	case timerVersusIntro:
+		e.clearTimer()
+		e.Phase = phaseVote
+		e.openVoteTimer(now)
 		return Outcome{Changed: true, Events: []string{eventQuips}}
 	case timerVote:
 		e.clearTimer()

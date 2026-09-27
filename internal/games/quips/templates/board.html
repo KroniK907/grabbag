@@ -46,7 +46,7 @@
         {{$shown := 0}}
         {{range .Quips}}
         {{if .Revealed}}
-        {{if and $.Matchup (eq $shown 1)}}<p class="quips-versus">versus</p>{{end}}
+        {{if and $.Matchup (eq $shown 1)}}<p class="quips-versus">VS</p>{{end}}
         <article class="quips-quip-card{{if .Empty}} is-empty{{end}}">
           <p class="quips-quip-author">{{.Name}}</p>
           {{if .Empty}}<p class="quips-quip-empty">Empty quip</p>{{else}}<p class="quips-quip-text">{{shy .Text}}</p>{{end}}

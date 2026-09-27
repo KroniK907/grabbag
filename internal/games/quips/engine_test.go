@@ -42,8 +42,8 @@ sawLock:
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 0, Text: "alpha"}, clock)
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 1, Text: "beta"}, clock)
 	out = eng.Do(Command{Kind: CmdLock, Actor: "p2", Drafts: []string{"alpha", "beta"}}, clock)
-	if eng.Phase != phaseVote {
-		t.Fatalf("phase after all locks=%s", eng.Phase)
+	if eng.Phase != phaseReveal || eng.TimerKind != timerVersusIntro {
+		t.Fatalf("phase after all locks=%s timer=%s", eng.Phase, eng.TimerKind)
 	}
 	if len(out.Events) == 0 {
 		t.Fatal("expected write-end publish event")
@@ -59,6 +59,12 @@ sawLock:
 	future := clock.Add(2 * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
+	if eng2.TimerKind != timerVersusIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	}
+	shown := future.Add(time.Duration(versusIntroSec) * time.Second)
+	eng2.now = func() time.Time { return shown }
+	out = eng2.Advance(shown)
 	if eng2.Phase != phaseVote {
 		t.Fatalf("timer phase=%s", eng2.Phase)
 	}
@@ -86,8 +92,12 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 	voteOpen := begin.Add(20 * time.Second)
 	lockPairAt(t, eng, "p1", []string{"a1", "a2"}, voteOpen)
 	lockPairAt(t, eng, "p2", []string{"b1", "b2"}, voteOpen)
-	if eng.Phase != phaseVote {
-		t.Fatalf("phase=%s want vote", eng.Phase)
+	if eng.Phase != phaseReveal || eng.TimerKind != timerVersusIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	}
+	voteOpen = voteOpen.Add(time.Duration(versusIntroSec) * time.Second)
+	if out := eng.Advance(voteOpen); eng.Phase != phaseVote {
+		t.Fatalf("phase=%s want vote changed=%v", eng.Phase, out.Changed)
 	}
 	wantEnd := voteOpen.Add(15 * time.Second)
 	if !eng.TimerEnd.Equal(wantEnd) {

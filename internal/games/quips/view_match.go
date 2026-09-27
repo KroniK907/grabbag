@@ -402,7 +402,7 @@ func (g *Game) rosterViewsLocked(eng *engine) []rosterView {
 }
 
 func (g *Game) timerViewLocked(eng *engine) (label, text string, seconds, total int, endUnix int64) {
-	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro {
+	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro {
 		return "", "", 0, 0, 0
 	}
 	switch eng.TimerKind {

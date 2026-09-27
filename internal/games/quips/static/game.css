@@ -365,7 +365,7 @@
   margin: 0;
   color: var(--ui-brand);
   font-family: var(--ui-font-display);
-  font-size: clamp(2.75rem, 7vw, 6rem);
+  font-size: clamp(4rem, 10vw, 8rem);
   line-height: 0.85;
   text-shadow: var(--ui-brand-shadow);
 }
@@ -598,7 +598,7 @@
 
 .quips-burn-handle {
   position: absolute;
-  left: -36px;
+  left: 0;
   bottom: var(--ui-side-tab-bottom, 28px);
   z-index: 7;
   width: auto;
@@ -623,8 +623,6 @@
 .quips-burn-scrim {
   position: absolute;
   inset: 0;
-  left: -36px;
-  right: -36px;
   z-index: 8;
   margin: 0;
   padding: 0;
@@ -642,7 +640,7 @@
 
 .quips-burn-drawer {
   position: absolute;
-  inset: 22px auto 0 -36px;
+  inset: 22px auto 0 0;
   z-index: 9;
   width: min(100%, 320px);
   padding: 14px;
@@ -705,10 +703,15 @@
   border-top: 3px solid var(--ui-accent);
 }
 
+.ui-phone:has(.quips-phone) .ui-phone-body {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .quips-help {
   position: absolute;
-  top: 26px;
-  left: 8px;
+  top: 8px;
+  left: 10px;
   z-index: 8;
   width: 36px;
   height: 36px;

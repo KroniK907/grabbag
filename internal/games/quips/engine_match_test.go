@@ -32,13 +32,20 @@ func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 	}
 	lockPair(t, eng, "p1", []string{"a1", "a2"}, clock)
 	lockPair(t, eng, "p2", []string{"b1", "b2"}, clock)
-	if eng.Phase != phaseVote {
-		t.Fatalf("phase=%s want vote", eng.Phase)
+	if eng.Phase != phaseReveal || eng.TimerKind != timerVersusIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
 	}
 	tick := clock.Add(5 * time.Second)
 	for eng.Phase != phaseFinalScores && eng.Phase != phaseOver {
 		eng.now = func() time.Time { return tick }
 		switch eng.Phase {
+		case phaseReveal:
+			if eng.TimerKind != timerVersusIntro {
+				t.Fatalf("reveal timer=%s", eng.TimerKind)
+			}
+			tick = tick.Add(time.Duration(versusIntroSec) * time.Second)
+			eng.now = func() time.Time { return tick }
+			eng.Advance(tick)
 		case phaseVote:
 			eng.Do(Command{Kind: CmdVote, Actor: "p1", VoteTarget: "p2", VoterSeat: true}, tick)
 			eng.Do(Command{Kind: CmdVote, Actor: "p2", VoteTarget: "p1", VoterSeat: true}, tick)
@@ -161,6 +168,8 @@ func TestVoteClosesWhenEveryWriterHasVoted(t *testing.T) {
 	}
 	lockPair(t, eng, "p1", []string{"a1", "a2"}, now)
 	lockPair(t, eng, "p2", []string{"b1", "b2"}, now)
+	now = now.Add(time.Duration(versusIntroSec) * time.Second)
+	eng.Advance(now)
 	if eng.Phase != phaseVote {
 		t.Fatalf("phase=%s want vote", eng.Phase)
 	}
