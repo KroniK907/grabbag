@@ -177,7 +177,7 @@ func (g *Game) boardViewLocked() boardView {
 		}
 		view.Quips = append(view.Quips, q)
 	}
-	if view.ParadeBeat && eng.Phase != phaseReveal {
+	if view.ParadeBeat && !(eng.Phase == phaseReveal && eng.Kind == roundLastQuip) {
 		var ids []string
 		for _, q := range view.Quips {
 			if q.Revealed {
