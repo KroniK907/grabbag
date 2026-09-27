@@ -597,7 +597,7 @@ func TestScoringViewLabelsWinnerAndFavoriteVotes(t *testing.T) {
 	rec := httptest.NewRecorder()
 	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
 	body := rec.Body.String()
-	for _, want := range []string{"Round winner - Pat", "2 favorite votes", "Favorite 1st", "Judge's pick"} {
+	for _, want := range []string{"Round winner - Pat", "Favorite: 2", "Favorite 1st", "Judge's pick"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("board missing %q: %s", want, body)
 		}

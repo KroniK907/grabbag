@@ -49,6 +49,7 @@ type boardView struct {
 	Sudden       bool
 	Packets      []packetView
 	Roster       []rosterView
+	JudgeID      string
 	Over         bool
 	WinnerName   string
 	RoundWinner  string
@@ -163,7 +164,8 @@ func (g *Game) boardViewLocked() boardView {
 	if m.Phase != phaseDrawWait {
 		view.Packets = g.packetViewsLocked(m, "", true)
 	}
-	for _, id := range g.rosterIDsLocked(m) {
+	view.JudgeID = m.JudgeID
+	for _, id := range g.boardRosterIDsLocked(m) {
 		a := m.Actors[id]
 		if a == nil {
 			continue
@@ -439,10 +441,7 @@ func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
 }
 
 func favoriteVoteLabel(votes int) string {
-	if votes == 1 {
-		return "1 favorite vote"
-	}
-	return fmt.Sprintf("%d favorite votes", votes)
+	return fmt.Sprintf("Favorite: %d", votes)
 }
 
 func favoriteMarks(counts map[string]int) map[string]string {
@@ -498,4 +497,30 @@ func (g *Game) rosterIDsLocked(m *engine) []string {
 	}
 	sort.Strings(extra)
 	return append(ids, extra...)
+}
+
+// boardRosterIDsLocked keeps seat order until a judge exists. After that the
+// judge is first and everyone else is ranked by score, then name.
+func (g *Game) boardRosterIDsLocked(m *engine) []string {
+	ids := g.rosterIDsLocked(m)
+	if m == nil || m.JudgeID == "" || m.Actors[m.JudgeID] == nil {
+		return ids
+	}
+	rest := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id != m.JudgeID && m.Actors[id] != nil {
+			rest = append(rest, id)
+		}
+	}
+	sort.SliceStable(rest, func(i, j int) bool {
+		ai, aj := m.Actors[rest[i]], m.Actors[rest[j]]
+		if ai.Score != aj.Score {
+			return ai.Score > aj.Score
+		}
+		if ai.Name != aj.Name {
+			return ai.Name < aj.Name
+		}
+		return ai.ID < aj.ID
+	})
+	return append([]string{m.JudgeID}, rest...)
 }
