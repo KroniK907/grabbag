@@ -79,7 +79,7 @@ func TestReadyToggleAndBoardCheck(t *testing.T) {
 	host := joinNamed(t, handler, "Host", "correct horse")
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, host).Body.String()
-	if !strings.Contains(phone, `action="/lobby/ready"`) || !strings.Contains(phone, ">READY<") {
+	if !strings.Contains(phone, `action="/lobby/ready"`) || !strings.Contains(phone, `is-unready`) || !strings.Contains(phone, ">Unready<") {
 		t.Fatalf("seated ready missing: %q", phone)
 	}
 
@@ -89,6 +89,10 @@ func TestReadyToggleAndBoardCheck(t *testing.T) {
 	}
 	if !playerFromCookie(t, room, host).Ready {
 		t.Fatal("ready did not toggle on")
+	}
+	readyPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, host).Body.String()
+	if !strings.Contains(readyPhone, `is-ready`) || !strings.Contains(readyPhone, ">Ready<") {
+		t.Fatalf("ready phone = %q", readyPhone)
 	}
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
 	if !strings.Contains(board, `class="ui-check"`) {
