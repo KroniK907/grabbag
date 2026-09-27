@@ -414,6 +414,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
+  overflow-x: hidden;
   overflow-y: auto;
   overflow-anchor: none;
   overscroll-behavior: contain;
@@ -449,12 +450,19 @@
   position: sticky;
   top: 0;
   z-index: 3;
+  flex: 0 0 auto;
   width: 100%;
+  max-height: none;
+  overflow: visible;
   margin: 0 0 2px;
   padding: 11px 12px;
   border-width: 3px;
   font-size: clamp(17px, 5.5vw, 23px);
   line-height: 1.2;
+}
+
+.apples-phone-scroll:has(> .apples-timer) .apples-prompt {
+  top: 46px;
 }
 
 .apples-play-dock .apples-prompt {
@@ -719,11 +727,12 @@
   position: sticky;
   top: 0;
   z-index: 4;
-  align-self: flex-end;
+  align-self: stretch;
+  justify-content: flex-end;
   min-height: 34px;
   padding: 3px 8px;
-  border-radius: 999px;
   background: var(--ui-phone-bg);
+  box-shadow: 0 12px 0 var(--ui-phone-bg);
 }
 
 .apples-reshuffle {
@@ -1018,11 +1027,6 @@ html.apples-compact-height .apples-lock-bar .ui-btn {
 }
 
 @media (min-width: 700px) {
-  .apples-packet-list,
-  .apples-hand {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .apples-card-button,
   .apples-hole-card {
     min-height: 72px;
@@ -1032,4 +1036,15 @@ html.apples-compact-height .apples-lock-bar .ui-btn {
   .apples-phone .apples-prompt {
     font-size: clamp(20px, 3vw, 28px);
   }
+}
+
+.apples-phone .apples-packet-list,
+.apples-phone .apples-hand {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.apples-phone .apples-card-button,
+.apples-phone .apples-result-card,
+.apples-phone .apples-slot {
+  overflow-wrap: anywhere;
 }
