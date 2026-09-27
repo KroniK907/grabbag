@@ -315,6 +315,52 @@
   width: 100%;
 }
 
+.quips-final {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+}
+
+.quips-winner-kicker,
+.quips-winner-name,
+.quips-winner-score {
+  margin: 0;
+  font-family: var(--ui-font-display);
+  line-height: 0.9;
+}
+
+.quips-winner-kicker {
+  color: var(--ui-accent-2);
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+.quips-winner-name {
+  color: var(--ui-brand);
+  font-size: clamp(4rem, 14vw, 11rem);
+  text-shadow: var(--ui-brand-shadow);
+  overflow-wrap: anywhere;
+}
+
+.quips-winner-score {
+  color: var(--ui-fg);
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+}
+
+.quips-final.is-arriving .quips-winner-kicker,
+.quips-final.is-arriving .quips-winner-name,
+.quips-final.is-arriving .quips-winner-score {
+  animation: quips-winner-in 0.7s ease;
+}
+
+@keyframes quips-winner-in {
+  0% { opacity: 0; transform: scale(0.72); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: none; }
+}
+
 .quips-versus {
   margin: 0;
   color: var(--ui-brand);

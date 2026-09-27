@@ -43,6 +43,22 @@
     });
   }
 
+  function markWinner() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var board = document.querySelector(".quips-final[data-winner]");
+    if (!board) {
+      return;
+    }
+    var key = board.getAttribute("data-winner") || "";
+    if (window.grabbagQuipsWinner === key) {
+      return;
+    }
+    window.grabbagQuipsWinner = key;
+    board.classList.add("is-arriving");
+  }
+
   function markLastClock() {
     if (window.grabbagStatic) {
       return;
@@ -100,6 +116,7 @@
       bindComposeCards();
       markMatchup();
       markLastClock();
+      markWinner();
     });
   }
   if (!window.grabbagQuipsViewport) {
@@ -115,4 +132,5 @@
   bindComposeCards();
   markMatchup();
   markLastClock();
+  markWinner();
 })();

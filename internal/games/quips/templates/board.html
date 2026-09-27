@@ -64,11 +64,13 @@
       </div>
       {{end}}
     {{else if eq .Phase "final-scores"}}
-      <div class="quips-final">
-        <h2>Final scores</h2>
-        {{if .Champions}}<p class="quips-champs">Co-champions: {{range $i, $n := .Champions}}{{if $i}}, {{end}}{{$n}}{{end}}</p>{{end}}
-        {{range .Roster}}
-        <p><strong>{{.Name}}</strong> {{.Score}}</p>
+      <div class="quips-final" data-winner="{{range .Champions}}{{.}} {{end}}">
+        {{if .Champions}}
+        <p class="quips-winner-kicker">{{if gt (len .Champions) 1}}Co-champions{{else}}Winner{{end}}</p>
+        {{range .Champions}}<p class="quips-winner-name">{{.}}</p>{{end}}
+        <p class="quips-winner-score">{{.WinnerScore}}</p>
+        {{else}}
+        <p class="quips-winner-kicker">Final scores</p>
         {{end}}
       </div>
     {{else if eq .Phase "parade-wait"}}

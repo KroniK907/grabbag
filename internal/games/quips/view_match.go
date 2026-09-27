@@ -27,6 +27,7 @@ type boardView struct {
 	Quips        []quipBoardView
 	HoldAwards   []holdAwardView
 	Champions    []string
+	WinnerScore  int
 	Roster       []rosterView
 	TimerLabel   string
 	TimerText    string
@@ -176,7 +177,7 @@ func (g *Game) boardViewLocked() boardView {
 		}
 		view.Quips = append(view.Quips, q)
 	}
-	if view.ParadeBeat {
+	if view.ParadeBeat && eng.Phase != phaseReveal {
 		var ids []string
 		for _, q := range view.Quips {
 			if q.Revealed {
@@ -201,6 +202,7 @@ func (g *Game) boardViewLocked() boardView {
 		for _, id := range eng.Champions {
 			if w := eng.Writers[id]; w != nil {
 				view.Champions = append(view.Champions, w.Name)
+				view.WinnerScore = eng.Scores[id]
 			}
 		}
 	}
