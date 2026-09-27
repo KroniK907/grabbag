@@ -42,7 +42,7 @@
       hx-target="#quips-phone"
     >
       <input type="hidden" name="target" value="{{.Target}}">
-      <button class="ui-btn" type="submit">{{.Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
+      <button class="ui-btn" type="submit">{{shy .Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
     </form>
     {{end}}
   </div>
@@ -93,7 +93,7 @@
         {{range .BurnFaces}}
         <label>
           <input type="checkbox" name="face" value="{{.Kind}}	{{.Text}}" {{if or .Burned .Checked}}checked{{end}} {{if .Burned}}disabled{{end}}>
-          <span>{{.Text}}</span>
+          <span>{{shy .Text}}</span>
         </label>
         {{end}}
       </div>

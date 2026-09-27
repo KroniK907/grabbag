@@ -52,7 +52,7 @@
       {{range .Packets}}
       <article class="apples-slot{{if not .Revealed}} down{{end}}{{if .Winner}} winner{{end}}">
         {{if .Revealed}}
-          {{range .Cards}}<p>{{.Text}}</p>{{end}}
+          {{range .Cards}}<p>{{shy .Text}}</p>{{end}}
           {{if .Winner}}<p class="apples-chip">Judge's pick</p>{{end}}
           {{if .FavoriteMark}}<p class="apples-chip favorite">{{.FavoriteMark}}</p>{{end}}
           {{if .VoteLabel}}<p class="apples-vote-count">{{.VoteLabel}}</p>{{end}}
