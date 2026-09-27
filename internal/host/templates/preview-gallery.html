@@ -15,7 +15,7 @@
   nav button.on { background: #1b1b24; color: #fff; }
   nav small { color: #8a8fa0; }
   nav button.on small { color: #c8cbd6; }
-  #filter { width: 100%; padding: 6px 8px; margin-top: 4px; border: 1px solid #c9ccd6; border-radius: 4px; }
+  #filter, #game { width: 100%; padding: 6px 8px; margin-top: 4px; border: 1px solid #c9ccd6; border-radius: 4px; font: inherit; background: #fff; }
   main { display: grid; grid-template-rows: auto 1fr; min-width: 0; }
   .bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; padding: 10px 14px; background: #fff; border-bottom: 1px solid #d4d7e0; }
   .bar label { display: grid; gap: 2px; font-size: 11px; color: #6a6f80; text-transform: uppercase; letter-spacing: .04em; }
@@ -32,6 +32,7 @@
 <body>
 <nav>
   <input id="filter" type="search" placeholder="Filter scenarios">
+  <select id="game" aria-label="Game"><option value="">All games</option></select>
   <div id="list"></div>
 </nav>
 <main>
@@ -74,14 +75,30 @@
     if (!current) return;
     var p = new URLSearchParams();
     controls.forEach(function (id) { if ($(id).value) p.set(id, $(id).value); });
+    if ($("game").value) p.set("game", $("game").value);
     history.replaceState(null, "", "#" + keyOf(current) + "?" + p.toString());
   }
 
+  function gameLabel(id) {
+    if (id === "testing") return "Test";
+    return id.charAt(0).toUpperCase() + id.slice(1);
+  }
+
+  function fillGames() {
+    var sel = $("game"), seen = {};
+    index.scenarios.forEach(function (s) {
+      if (seen[s.package]) return;
+      seen[s.package] = true;
+      option(sel, s.package, gameLabel(s.package));
+    });
+  }
+
   function buildList() {
-    var list = $("list"), filter = $("filter").value.toLowerCase();
+    var list = $("list"), filter = $("filter").value.toLowerCase(), game = $("game").value;
     list.innerHTML = "";
     var lastPkg, lastSurface;
     index.scenarios.forEach(function (s) {
+      if (game && s.package !== game) return;
       if (filter && keyOf(s).toLowerCase().indexOf(filter) < 0 && s.viewer.indexOf(filter) < 0) return;
       if (s.package !== lastPkg) {
         var h = document.createElement("h2"); h.textContent = s.package; list.appendChild(h);
@@ -188,7 +205,9 @@
     Object.keys(data.frames).forEach(function (k) { option($("device"), "frame:" + k, "Reference " + data.frames[k].label); });
     data.devices.forEach(function (d) { option($("device"), d.id, d.label + " " + d.width + "×" + d.height); });
     data.textScales.forEach(function (s) { option($("text"), String(s), Math.round(s * 100) + "%"); });
+    fillGames();
     var h = readHash();
+    if (h.params.has("game")) $("game").value = h.params.get("game");
     controls.forEach(function (id) { if (h.params.has(id) && id !== "players") $(id).value = h.params.get(id); });
     var found = data.scenarios.filter(function (s) { return keyOf(s) === h.key; })[0] || data.scenarios[0];
     current = found;
@@ -200,6 +219,7 @@
 
   controls.forEach(function (id) { $(id).addEventListener("change", render); });
   $("filter").addEventListener("input", buildList);
+  $("game").addEventListener("change", function () { buildList(); writeHash(); });
   window.addEventListener("resize", render);
 })();
 </script>
