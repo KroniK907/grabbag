@@ -18,10 +18,10 @@ func TestPairings2RegularDegrees(t *testing.T) {
 		deg[e[0]]++
 		deg[e[1]]++
 		if opponents[e[0]] == nil {
-		 opponents[e[0]] = map[string]int{}
+			opponents[e[0]] = map[string]int{}
 		}
 		if opponents[e[1]] == nil {
-		 opponents[e[1]] = map[string]int{}
+			opponents[e[1]] = map[string]int{}
 		}
 		opponents[e[0]][e[1]]++
 		opponents[e[1]][e[0]]++

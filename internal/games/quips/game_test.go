@@ -103,6 +103,31 @@ func TestHowtoAndCompactViewportAssets(t *testing.T) {
 	}
 }
 
+func TestLockButtonMarksReadyAndLocked(t *testing.T) {
+	t.Parallel()
+	g := New()
+	ready := httptest.NewRecorder()
+	g.render(ready, "phone.html", phoneView{
+		pageView:  g.pageView("Quick Quips"),
+		Role:      "compose",
+		LockReady: true,
+		LockLabel: "Lock",
+	}, http.StatusOK)
+	if !strings.Contains(ready.Body.String(), "is-ready") || strings.Contains(ready.Body.String(), "is-locked") {
+		t.Fatalf("ready lock bar = %s", ready.Body.String())
+	}
+	locked := httptest.NewRecorder()
+	g.render(locked, "phone.html", phoneView{
+		pageView:  g.pageView("Quick Quips"),
+		Role:      "locked",
+		Locked:    true,
+		LockLabel: "Locked",
+	}, http.StatusOK)
+	if !strings.Contains(locked.Body.String(), "is-locked") || strings.Contains(locked.Body.String(), " gray") {
+		t.Fatalf("locked lock bar = %s", locked.Body.String())
+	}
+}
+
 func TestStartOpensWritePhase(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -124,6 +149,21 @@ func TestStartOpensWritePhase(t *testing.T) {
 	g.mu.Unlock()
 	if phase != phaseWrite {
 		t.Fatalf("phase=%s want write", phase)
+	}
+	board := httptest.NewRecorder()
+	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
+	body := board.Body.String()
+	if !strings.Contains(body, "Get ready to play Quick Quips") || !strings.Contains(body, "Go!") {
+		t.Fatalf("write board = %s", body)
+	}
+	g.mu.Lock()
+	prompt := ""
+	if g.engine != nil && len(g.engine.Segments) > 0 {
+		prompt = g.engine.Segments[0].Prompt.Text
+	}
+	g.mu.Unlock()
+	if prompt != "" && strings.Contains(body, prompt) {
+		t.Fatalf("write board showed the prompt %q", prompt)
 	}
 }
 

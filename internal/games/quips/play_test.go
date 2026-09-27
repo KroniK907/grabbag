@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
 )
@@ -31,6 +32,9 @@ func TestDraftBannedRendersPhoneAlert(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
+	g.mu.Lock()
+	skipPlayIntro(g.engine, time.Now())
+	g.mu.Unlock()
 	form := url.Values{"slot": {"0"}, "text": {"banana"}}
 	req := httptest.NewRequest(http.MethodPost, "/draft", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -64,6 +68,9 @@ func TestDraftPOSTReturns204(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
+	g.mu.Lock()
+	skipPlayIntro(g.engine, time.Now())
+	g.mu.Unlock()
 	form := url.Values{"slot": {"0"}, "text": {"draft text"}}
 	req := httptest.NewRequest(http.MethodPost, "/draft", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

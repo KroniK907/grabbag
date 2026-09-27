@@ -8,6 +8,7 @@
   class="quips-phone ui-stack{{if .Paused}} is-paused{{end}}"
   hx-get="/play/partials/phone"
   hx-trigger="sse:quips, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-sync="this:queue all"
   hx-swap="outerHTML"
 >
   <a class="quips-help" href="/play/howto" aria-label="How to play">?</a>
@@ -25,31 +26,72 @@
   </div>
   {{else}}
   {{if .Paused}}<p class="quips-dim">Paused</p>{{end}}
-  {{if eq .Role "wait"}}
+  {{if .PlayIntro}}
+  <div class="quips-vote-ready">
+    <p class="quips-vote-ready-copy">Get ready to play Quick Quips. Write your quips in...</p>
+    <p class="quips-countdown is-play">
+      <span>3</span>
+      <span>2</span>
+      <span>1</span>
+      <span>Go!</span>
+    </p>
+  </div>
+  {{else if .VoteIntro}}
+  <div class="quips-vote-ready">
+    <p class="quips-vote-ready-copy">Get ready to vote for your favorite quips</p>
+    <p class="quips-countdown is-vote">
+      <span>3</span>
+      <span>2</span>
+      <span>1</span>
+      <span>Go</span>
+    </p>
+  </div>
+  {{else if .LastIntro}}
+  <div class="quips-vote-ready">
+    <p class="quips-last-phone-kicker">Last Quip</p>
+    <p class="quips-last-phone-copy">Everybody shares the same prompt.</p>
+    <p class="quips-countdown">
+      <span>Ready</span>
+      <span>Set</span>
+      <span>Go</span>
+    </p>
+  </div>
+  {{else if eq .Role "wait"}}
   <div class="quips-wait">
     {{template "quips-timer" .}}
     <p>{{.WaitCopy}}</p>
   </div>
   {{else if eq .Role "vote"}}
-  <div class="quips-phone-scroll">
+  {{template "quips-timer" .}}
+  <div class="quips-vote-stage">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
-    {{template "quips-timer" .}}
-    {{range .VoteOptions}}
-    <form
-      class="quips-vote-option{{if .Chosen}} chosen{{end}}"
-      hx-post="/play/vote"
-      hx-swap="outerHTML"
-      hx-target="#quips-phone"
-    >
-      <input type="hidden" name="target" value="{{.Target}}">
-      <button class="ui-btn" type="submit">{{shy .Label}}{{if gt .Count 0}} ({{.Count}}){{end}}</button>
-    </form>
-    {{end}}
+    {{if .Voted}}<p class="quips-vote-in">Your vote is in.</p>{{end}}
+    <div class="quips-vote-match">
+      {{range $i, $opt := .VoteOptions}}
+      {{if and (eq (len $.VoteOptions) 2) (eq $i 1)}}<p class="quips-vote-versus">VS</p>{{end}}
+      {{if or $opt.Self $.Voted}}
+      <div class="quips-vote-option{{if $opt.Self}} is-mine{{end}}{{if $opt.Chosen}} chosen{{end}}">
+        <button class="ui-btn" type="button" disabled>{{shy $opt.Label}}{{if gt $opt.Count 0}} ({{$opt.Count}}){{end}}</button>
+      </div>
+      {{else}}
+      <form
+        class="quips-vote-option{{if $opt.Chosen}} chosen{{end}}"
+        hx-post="/play/vote"
+        hx-swap="outerHTML"
+        hx-target="#quips-phone"
+      >
+        <input type="hidden" name="target" value="{{$opt.Target}}">
+        <button class="ui-btn" type="submit">{{shy $opt.Label}}{{if gt $opt.Count 0}} ({{$opt.Count}}){{end}}</button>
+      </form>
+      {{end}}
+      {{end}}
+    </div>
   </div>
   {{else}}
   <div class="quips-phone-scroll">
     {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
     {{template "quips-timer" .}}
+    {{if .LastQuip}}<p class="quips-last-phone-banner">Last Quip: Everybody shares the same prompt</p>{{end}}
     {{range .Slots}}
     <article class="quips-compose-card{{if .DupOutline}} dup-outline{{end}}">
       <p class="quips-prompt">{{.PromptText}}</p>
@@ -69,7 +111,7 @@
   </div>
   {{if or (eq .Role "compose") (eq .Role "locked")}}
   <form
-    class="quips-lock-bar{{if not .LockReady}} gray{{end}}"
+    class="quips-lock-bar{{if .Locked}} is-locked{{else if .LockReady}} is-ready{{else}} gray{{end}}"
     hx-post="/play/lock"
     hx-swap="outerHTML"
     hx-target="#quips-phone"

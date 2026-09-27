@@ -642,6 +642,41 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 	}
 }
 
+func TestBoardCueWhenFavoriteVotingStarts(t *testing.T) {
+	t.Parallel()
+	h := newFakeHelper(t.TempDir(), true)
+	g := loadedGame(t, h)
+	g.mu.Lock()
+	g.started = true
+	g.engine = &engine{
+		Settings:  factorySettings(),
+		Phase:     phaseReveal,
+		Round:     3,
+		TimerKind: timerFavoriteVote,
+		Actors:    map[string]*actor{},
+		Packets:   []packet{{ActorID: "p1", Revealed: true}},
+		Votes:     map[string]string{},
+		PhoneErr:  map[string]string{},
+	}
+	g.mu.Unlock()
+
+	rec := httptest.NewRecorder()
+	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
+	body := rec.Body.String()
+	if !strings.Contains(body, `data-vote-cue="3"`) || !strings.Contains(body, "Vote for your favorite") {
+		t.Fatalf("board missing favorite cue: %s", body)
+	}
+
+	g.mu.Lock()
+	g.engine.TimerKind = timerJudgePick
+	g.mu.Unlock()
+	rec = httptest.NewRecorder()
+	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
+	if strings.Contains(rec.Body.String(), "apples-vote-cue") {
+		t.Fatal("cue stayed up after favorite voting")
+	}
+}
+
 func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)

@@ -17,15 +17,24 @@ const (
 	phaseParadeWait  enginePhase = "parade-wait"
 	phaseReveal      enginePhase = "reveal"
 	phaseVote        enginePhase = "vote"
+	phaseVoteIntro   enginePhase = "vote-intro"
 	phaseHold        enginePhase = "hold"
 	phaseFinalScores enginePhase = "final-scores"
 	phaseOver        enginePhase = "over"
 )
 
 const (
-	timerVote   = "vote"
-	timerWinner = "winner"
-	timerFinal  = "final"
+	timerVote        = "vote"
+	timerWinner      = "winner"
+	timerFinal       = "final"
+	timerLastIntro   = "last-quip-intro"
+	lastQuipIntroSec = 3
+	timerVersusIntro = "versus-intro"
+	versusIntroSec   = 2
+	timerVoteIntro   = "vote-intro"
+	voteIntroSec     = 6
+	timerPlayIntro   = "play-intro"
+	playIntroSec     = 4
 )
 
 type roundKind int
@@ -101,32 +110,32 @@ type Outcome struct {
 }
 
 type engine struct {
-	Settings     matchSettings
-	Policy       composePolicy
-	Hooks        EngineHooks
-	Phase        enginePhase
-	Round        int
-	Kind         roundKind
-	Segments     []roundSegment
-	ParadeOrder  []int
-	ParadePos    int
-	Writers      map[string]*writerState
-	PromptPool   []playPrompt
-	PhoneErr     map[string]string
-	Scores       map[string]int
-	Multiplier   int
-	Revealed     int
-	Vote         voteState
-	HoldAwards   map[string]int
-	Champions    []string
-	MatchOver    bool
-	TimerKind    string
-	TimerEnd     time.Time
-	TimerTotal   time.Duration
-	FrozenLeft   time.Duration
-	Paused       bool
-	rng          *rand.Rand
-	now          func() time.Time
+	Settings    matchSettings
+	Policy      composePolicy
+	Hooks       EngineHooks
+	Phase       enginePhase
+	Round       int
+	Kind        roundKind
+	Segments    []roundSegment
+	ParadeOrder []int
+	ParadePos   int
+	Writers     map[string]*writerState
+	PromptPool  []playPrompt
+	PhoneErr    map[string]string
+	Scores      map[string]int
+	Multiplier  int
+	Revealed    int
+	Vote        voteState
+	HoldAwards  map[string]int
+	Champions   []string
+	MatchOver   bool
+	TimerKind   string
+	TimerEnd    time.Time
+	TimerTotal  time.Duration
+	FrozenLeft  time.Duration
+	Paused      bool
+	rng         *rand.Rand
+	now         func() time.Time
 }
 
 type rosterRow struct {
@@ -189,7 +198,7 @@ func (e *engine) Do(cmd Command, now time.Time) Outcome {
 	case CmdDraft, CmdLock:
 		return e.doCompose(cmd, now, out)
 	case CmdVote:
-		return e.doVote(cmd.Actor, cmd.VoteTarget, cmd.VoterSeat, out)
+		return e.doVote(cmd.Actor, cmd.VoteTarget, cmd.VoterSeat, now, out)
 	case CmdHostReveal:
 		return e.doHostRevealAt(now, out)
 	case CmdHostNextSegment:
@@ -206,6 +215,14 @@ func (e *engine) Do(cmd Command, now time.Time) Outcome {
 func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
 	if e.Phase != phaseWrite {
 		out.PhoneErr[cmd.Actor] = "You cannot compose now."
+		return out
+	}
+	if e.TimerKind == timerLastIntro {
+		out.PhoneErr[cmd.Actor] = "Ready, set, go."
+		return out
+	}
+	if e.TimerKind == timerPlayIntro {
+		out.PhoneErr[cmd.Actor] = "Get ready to play Quick Quips."
 		return out
 	}
 	w := e.Writers[cmd.Actor]
@@ -243,6 +260,26 @@ func (e *engine) Advance(now time.Time) Outcome {
 		e.clearTimer()
 		e.timerSubmitAll()
 		return e.finishWriteIfReady(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerPlayIntro:
+		e.clearTimer()
+		if e.Settings.WriteSec > 0 {
+			e.armTimer(now, "write", e.Settings.WriteSec)
+		}
+		return Outcome{Changed: true, Events: []string{eventQuips}}
+	case timerLastIntro:
+		e.clearTimer()
+		if e.Settings.WriteSec > 0 {
+			e.armTimer(now, "write", e.Settings.WriteSec)
+		}
+		return Outcome{Changed: true, Events: []string{eventQuips}}
+	case timerVoteIntro:
+		e.clearTimer()
+		return e.startCurrentSegment(now, Outcome{Changed: true, Events: []string{eventQuips}})
+	case timerVersusIntro:
+		e.clearTimer()
+		e.Phase = phaseVote
+		e.openVoteTimer(now)
+		return Outcome{Changed: true, Events: []string{eventQuips}}
 	case timerVote:
 		e.clearTimer()
 		return e.closeVote(now, Outcome{Changed: true, Events: []string{eventQuips}})

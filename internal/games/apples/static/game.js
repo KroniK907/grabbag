@@ -116,6 +116,23 @@
     }
   }
 
+  function markVoteCue() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var cue = document.querySelector(".apples-tv .apples-vote-cue");
+    if (!cue) {
+      return;
+    }
+    var key = cue.getAttribute("data-vote-cue") || "";
+    if (window.grabbagApplesVoteCue === key) {
+      return;
+    }
+    window.grabbagApplesVoteCue = key;
+    cue.hidden = false;
+    cue.classList.add("is-on");
+  }
+
   function markJudgeArrival() {
     var roster = document.querySelector(".apples-tv .apples-roster");
     if (!roster) {
@@ -190,6 +207,7 @@
       if (el && el.id === "apples-board") {
         watchBoardCards();
         markJudgeArrival();
+        markVoteCue();
       }
     });
     if (document.fonts && document.fonts.ready) {
@@ -200,4 +218,5 @@
   paintTimers();
   watchBoardCards();
   markJudgeArrival();
+  markVoteCue();
 })();

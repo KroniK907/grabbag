@@ -63,6 +63,8 @@ type boardView struct {
 	TimerTotal   int
 	TimerEndUnix int64
 	CanFinish    bool
+	VoteCue      bool
+	Round        int
 }
 
 type phoneView struct {
@@ -144,6 +146,8 @@ func (g *Game) boardViewLocked() boardView {
 	view.Over = m.Phase == phaseOver
 	view.NamesShown = m.NamesShown
 	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(m)
+	view.Round = m.Round
+	view.VoteCue = m.TimerKind == timerFavoriteVote && m.Settings.Voting != voteOff
 	if m.InMultiplier && m.Settings.LastRoundMultiplier > 1 {
 		view.Multiplier = "THIS ROUND IS " + strconv.Itoa(m.Settings.LastRoundMultiplier) + "X POINTS"
 	}

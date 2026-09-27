@@ -13,7 +13,11 @@ func (e *engine) afterWriteClosed(now time.Time, out Outcome) Outcome {
 		out.Events = appendUniqueEvent(out.Events, eventQuips)
 		return out
 	}
-	return e.startCurrentSegment(now, out)
+	e.Phase = phaseVoteIntro
+	e.armTimer(now, timerVoteIntro, voteIntroSec)
+	out.Changed = true
+	out.Events = appendUniqueEvent(out.Events, eventQuips)
+	return out
 }
 
 func (e *engine) startCurrentSegment(now time.Time, out Outcome) Outcome {
@@ -38,8 +42,8 @@ func (e *engine) startCurrentSegment(now time.Time, out Outcome) Outcome {
 		e.Phase = phaseReveal
 	} else {
 		e.Revealed = 2
-		e.Phase = phaseVote
-		e.openVoteTimer(now)
+		e.Phase = phaseReveal
+		e.armTimer(now, timerVersusIntro, versusIntroSec)
 	}
 	out.Changed = true
 	out.Events = appendUniqueEvent(out.Events, eventQuips)
@@ -105,10 +109,16 @@ func (e *engine) voteTargets(voterID string) []string {
 	return out
 }
 
-func (e *engine) doVote(actor string, target string, seated bool, out Outcome) Outcome {
+func (e *engine) doVote(actor string, target string, seated bool, now time.Time, out Outcome) Outcome {
 	if e.Phase != phaseVote {
 		out.PhoneErr[actor] = "You cannot vote now."
 		return out
+	}
+	if e.Vote.Picks != nil {
+		if _, voted := e.Vote.Picks[actor]; voted {
+			out.PhoneErr[actor] = "You already voted."
+			return out
+		}
 	}
 	allowed := e.voteTargets(actor)
 	ok := false
@@ -128,7 +138,28 @@ func (e *engine) doVote(actor string, target string, seated bool, out Outcome) O
 	e.Vote.Picks[actor] = votePick{Voter: actor, Target: target, Seated: seated}
 	out.Changed = true
 	out.Events = appendUniqueEvent(out.Events, eventQuips)
+	if e.voteRosterComplete() {
+		return e.closeVote(now, out)
+	}
 	return out
+}
+
+// voteRosterComplete is true when every writer who can vote has a pick.
+func (e *engine) voteRosterComplete() bool {
+	need := 0
+	for id := range e.Writers {
+		if len(e.voteTargets(id)) == 0 {
+			continue
+		}
+		need++
+		if e.Vote.Picks == nil {
+			return false
+		}
+		if _, ok := e.Vote.Picks[id]; !ok {
+			return false
+		}
+	}
+	return need > 0
 }
 
 func (e *engine) doHostReveal(out Outcome) Outcome {

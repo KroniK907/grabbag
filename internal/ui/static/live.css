@@ -1089,6 +1089,21 @@ body:has(.ui-leave-control) {
   text-shadow: 0 2px 0 #6d0854;
 }
 
+.ui-plunger.is-unready {
+  background: radial-gradient(circle at 35% 30%, #ffd27a, #ff8a1e 55%, #c24100);
+  color: #fff;
+  font-size: 2.15rem;
+  box-shadow: 0 16px 0 #7a2800, 0 0 30px #ff8a1e;
+  text-shadow: 0 2px 0 #7a2800;
+}
+
+.ui-plunger.is-ready {
+  background: radial-gradient(circle at 35% 30%, #b6ff8a, #3ddc55 55%, #0d7a28);
+  color: #04210c;
+  box-shadow: 0 16px 0 #085218, 0 0 30px #3ddc55;
+  text-shadow: none;
+}
+
 .ui-alert {
   margin: 0;
   color: var(--ui-danger-bg);

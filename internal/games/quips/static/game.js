@@ -43,6 +43,70 @@
     });
   }
 
+  function markWinner() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var board = document.querySelector(".quips-final[data-winner]");
+    if (!board) {
+      return;
+    }
+    var key = board.getAttribute("data-winner") || "";
+    if (window.grabbagQuipsWinner === key) {
+      return;
+    }
+    window.grabbagQuipsWinner = key;
+    board.classList.add("is-arriving");
+  }
+
+  function markLastClock() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var clock = document.querySelector(".quips-board-clock[data-last-clock]");
+    if (!clock) {
+      return;
+    }
+    var key = clock.getAttribute("data-last-clock") || "";
+    if (window.grabbagQuipsLastClock === key) {
+      return;
+    }
+    window.grabbagQuipsLastClock = key;
+    clock.classList.add("is-arriving");
+  }
+
+  function markVoteClock() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var clock = document.querySelector(".quips-board-clock[data-vote-clock]");
+    if (!clock) {
+      return;
+    }
+    var key = clock.getAttribute("data-vote-clock") || "";
+    if (window.grabbagQuipsVoteClock === key) {
+      return;
+    }
+    window.grabbagQuipsVoteClock = key;
+    clock.classList.add("is-fading");
+  }
+
+  function markMatchup() {
+    if (window.grabbagStatic) {
+      return;
+    }
+    var row = document.querySelector(".quips-quip-row.is-matchup");
+    if (!row) {
+      return;
+    }
+    var key = row.getAttribute("data-matchup") || "";
+    if (window.grabbagQuipsMatchup === key) {
+      return;
+    }
+    window.grabbagQuipsMatchup = key;
+    row.classList.add("is-arriving");
+  }
+
   function paintTimers() {
     document.querySelectorAll("[data-quips-timer]").forEach(function (timer) {
       var total = Number(timer.dataset.timerTotal) || 0;
@@ -66,6 +130,10 @@
     document.body.addEventListener("htmx:afterSwap", function () {
       paintTimers();
       bindComposeCards();
+      markMatchup();
+      markVoteClock();
+      markLastClock();
+      markWinner();
     });
   }
   if (!window.grabbagQuipsViewport) {
@@ -79,4 +147,8 @@
   syncVisualViewport();
   paintTimers();
   bindComposeCards();
+  markMatchup();
+  markVoteClock();
+  markLastClock();
+  markWinner();
 })();

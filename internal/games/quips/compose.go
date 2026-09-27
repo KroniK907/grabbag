@@ -75,10 +75,10 @@ func (p composePolicy) draftOK(text string) bool {
 }
 
 type lockIssue struct {
-	Slot    int
-	Empty   bool
-	Banned  string
-	Dup     bool
+	Slot   int
+	Empty  bool
+	Banned string
+	Dup    bool
 }
 
 func (p composePolicy) lockIssues(texts []string, lockedNorms []string) []lockIssue {

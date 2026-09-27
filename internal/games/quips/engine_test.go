@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+func skipPlayIntro(eng *engine, now time.Time) time.Time {
+	if eng == nil || eng.TimerKind != timerPlayIntro {
+		return now
+	}
+	at := eng.TimerEnd
+	if now.After(at) {
+		at = now
+	}
+	prev := eng.now
+	eng.now = func() time.Time { return at }
+	eng.Advance(at)
+	eng.now = prev
+	return at
+}
+
 func TestEngineWriteGateAndTimer(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
@@ -21,9 +36,10 @@ func TestEngineWriteGateAndTimer(t *testing.T) {
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(2)), clock); err != nil {
 		t.Fatal(err)
 	}
-	if eng.Phase != phaseWrite {
-		t.Fatalf("phase=%s", eng.Phase)
+	if eng.Phase != phaseWrite || eng.TimerKind != timerPlayIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
 	}
+	clock = skipPlayIntro(eng, clock)
 	out := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "first"}, clock)
 	if !out.Changed {
 		t.Fatal("draft should change")
@@ -42,8 +58,8 @@ sawLock:
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 0, Text: "alpha"}, clock)
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 1, Text: "beta"}, clock)
 	out = eng.Do(Command{Kind: CmdLock, Actor: "p2", Drafts: []string{"alpha", "beta"}}, clock)
-	if eng.Phase != phaseVote {
-		t.Fatalf("phase after all locks=%s", eng.Phase)
+	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
+		t.Fatalf("phase after all locks=%s timer=%s", eng.Phase, eng.TimerKind)
 	}
 	if len(out.Events) == 0 {
 		t.Fatal("expected write-end publish event")
@@ -54,11 +70,24 @@ sawLock:
 	if err := eng2.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(3)), clock); err != nil {
 		t.Fatal(err)
 	}
-	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "x"}, clock)
-	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 1, Text: "y"}, clock)
-	future := clock.Add(2 * time.Second)
+	opened := skipPlayIntro(eng2, clock)
+	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "x"}, opened)
+	eng2.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 1, Text: "y"}, opened)
+	future := opened.Add(2 * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
+	if eng2.TimerKind != timerVoteIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	}
+	future = future.Add(time.Duration(voteIntroSec) * time.Second)
+	eng2.now = func() time.Time { return future }
+	out = eng2.Advance(future)
+	if eng2.TimerKind != timerVersusIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	}
+	shown := future.Add(time.Duration(versusIntroSec) * time.Second)
+	eng2.now = func() time.Time { return shown }
+	out = eng2.Advance(shown)
 	if eng2.Phase != phaseVote {
 		t.Fatalf("timer phase=%s", eng2.Phase)
 	}
@@ -86,8 +115,17 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 	voteOpen := begin.Add(20 * time.Second)
 	lockPairAt(t, eng, "p1", []string{"a1", "a2"}, voteOpen)
 	lockPairAt(t, eng, "p2", []string{"b1", "b2"}, voteOpen)
-	if eng.Phase != phaseVote {
-		t.Fatalf("phase=%s want vote", eng.Phase)
+	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	}
+	voteOpen = voteOpen.Add(time.Duration(voteIntroSec) * time.Second)
+	eng.Advance(voteOpen)
+	if eng.Phase != phaseReveal {
+		t.Fatalf("phase=%s want reveal", eng.Phase)
+	}
+	voteOpen = voteOpen.Add(time.Duration(versusIntroSec) * time.Second)
+	if out := eng.Advance(voteOpen); eng.Phase != phaseVote {
+		t.Fatalf("phase=%s want vote changed=%v", eng.Phase, out.Changed)
 	}
 	wantEnd := voteOpen.Add(15 * time.Second)
 	if !eng.TimerEnd.Equal(wantEnd) {
@@ -125,6 +163,7 @@ func TestEngineComposeErrClearsOnSuccess(t *testing.T) {
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(11)), now); err != nil {
 		t.Fatal(err)
 	}
+	now = skipPlayIntro(eng, now)
 	out := eng.Do(Command{Kind: CmdLock, Actor: "p1", Drafts: []string{"", ""}}, now)
 	if out.PhoneErr["p1"] == "" {
 		t.Fatal("empty lock should alert")
@@ -161,6 +200,7 @@ func TestEngineBannedDraftKeptForLock(t *testing.T) {
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(12)), now); err != nil {
 		t.Fatal(err)
 	}
+	now = skipPlayIntro(eng, now)
 	out := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "banana"}, now)
 	if out.PhoneErr["p1"] != "Banned: banana" {
 		t.Fatalf("draft err=%q", out.PhoneErr["p1"])
@@ -177,6 +217,7 @@ func TestEngineBannedDraftKeptForLock(t *testing.T) {
 
 func lockPairAt(t *testing.T, eng *engine, id string, texts []string, now time.Time) {
 	t.Helper()
+	now = skipPlayIntro(eng, now)
 	for i, text := range texts {
 		eng.Do(Command{Kind: CmdDraft, Actor: id, Slot: i, Text: text}, now)
 	}
