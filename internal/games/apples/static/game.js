@@ -90,8 +90,8 @@
   }
 
   function fitBoardSlot(slot) {
-    var minPx = 22;
-    var maxPx = Math.max(minPx, Math.floor(slot.clientHeight * 0.62));
+    var minPx = 28;
+    var maxPx = 64;
     function search() {
       var lo = minPx;
       var hi = maxPx;

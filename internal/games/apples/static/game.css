@@ -278,11 +278,12 @@
   padding: clamp(14px, 1.3vw, 26px);
   font-size: 2.25rem;
   line-height: 1.18;
-  text-align: center;
+  text-align: left;
   hyphens: none;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  border-radius: 16px;
   overflow-wrap: break-word;
 }
 
@@ -730,9 +731,17 @@
   color: #fff;
 }
 
+.apples-tv .apples-slot.down {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+}
+
 .apples-tv .apples-slot .apples-vote-count {
   font-size: 1.5rem;
   padding: 6px 14px;
+  margin-top: auto;
+  align-self: flex-start;
 }
 
 .apples-player-name {
