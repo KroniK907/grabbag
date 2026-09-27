@@ -132,7 +132,7 @@
   width: 100%;
   min-height: 0;
   height: 100%;
-  padding: 12px 0 0;
+  padding: 12px 36px 12px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -145,7 +145,7 @@
   min-height: 0;
   flex: 1 1 auto;
   gap: 14px;
-  padding: 0 12px 12px;
+  padding: 0 0 12px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -177,7 +177,7 @@
 
 .quips-lock-bar {
   flex: 0 0 auto;
-  padding: 10px 12px;
+  padding: 10px 0;
   background: transparent;
   border-top: 0;
 }
@@ -573,7 +573,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px;
+  padding: 12px 0;
   border-top: 0;
   position: sticky;
   bottom: 0;
@@ -583,7 +583,7 @@
 .quips-wait {
   box-sizing: border-box;
   width: 100%;
-  padding: 64px 48px 16px;
+  padding: 64px 0 16px;
   text-align: center;
 }
 
