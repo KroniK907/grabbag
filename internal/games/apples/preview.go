@@ -38,6 +38,7 @@ var previewStages = []previewStage{
 	{name: "judge-pick", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 	{name: "sudden", minBoard: 2, minJudge: 3, minSeated: 2, minWatcher: 2},
 	{name: "over", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
+	{name: "scored", minBoard: 2, minJudge: 2, minSeated: 2, minWatcher: 2},
 }
 
 // Scenarios lists every Apples board, phone, and page state for the host
@@ -227,7 +228,7 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		settings.PromptMode = modeSkip
 	case "choose":
 		settings.PromptMode = modeMulti
-	case "judge-pick":
+	case "judge-pick", "scored":
 		settings.FavoriteVoteSec = 0
 	case "over":
 		settings.FavoriteVoteSec = 0
@@ -248,7 +249,10 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		return nil, cast, fmt.Errorf("apples preview: begin: %v %s", out.Err, out.Shortage)
 	}
 	if stage == "submit-pick2" {
-		e.Prompts = append([]playPrompt{previewPrompt(1, 2)}, e.Prompts...)
+		// Draw refills from the supply, so a prompt pushed onto the engine pile is thrown away.
+		if s, ok := e.supply.(*previewSupply); ok {
+			s.piles.Prompts = []playPrompt{previewPrompt(0, 2)}
+		}
 	}
 	g := &Game{engine: e, now: func() time.Time { return previewNow }}
 	do := func(cmd command) error {
@@ -316,7 +320,7 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 				return nil, cast, err
 			}
 		}
-	case "reveal", "favorites", "judge-pick", "over":
+	case "reveal", "favorites", "judge-pick", "over", "scored":
 		for _, id := range hs {
 			if err := slotAndLock(id, true); err != nil {
 				return nil, cast, err
@@ -333,13 +337,20 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		}
 		previewVotes(e, hs)
 		g.snapshotBurnDrawerLocked()
-		if stage == "over" {
-			for i, row := range rows {
-				e.Actors[row.ID].Score = 5 * (i % 15)
+		if stage == "over" || stage == "scored" {
+			if stage == "over" {
+				for i, row := range rows {
+					e.Actors[row.ID].Score = 5 * (i % 15)
+				}
 			}
 			if err := do(command{Kind: cmdConfirm, Actor: e.JudgeID, Card: e.Packets[0].ActorID}); err != nil {
 				return nil, cast, err
 			}
+		}
+		if stage == "scored" {
+			// Confirm leaves the round immediately. Freeze the scoring frame the board and phones already know how to draw.
+			e.Phase = phaseReveal
+			e.clearTimer()
 		}
 	}
 	return g, cast, nil
