@@ -86,6 +86,23 @@ type Previewer interface {
 	Scenarios() []ui.Scenario
 }
 
+// DisconnectPolicy is optional. A Game that implements it tells host whether
+// the operator's auto-pause on seated disconnect applies to it. Return false
+// when play never waits on one phone, so a phone that sleeps or drops does
+// not stop the room. A Game without it follows the operator setting.
+type DisconnectPolicy interface {
+	PauseOnDisconnect() bool
+}
+
+// PausesOnDisconnect reports whether auto-pause on seated disconnect applies
+// to g: true unless g implements DisconnectPolicy and returns false.
+func PausesOnDisconnect(g Game) bool {
+	if p, ok := g.(DisconnectPolicy); ok {
+		return p.PauseOnDisconnect()
+	}
+	return true
+}
+
 // BoardButton is one Lobby rail control a loaded game may publish.
 type BoardButton struct {
 	Label    string

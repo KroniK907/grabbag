@@ -167,6 +167,7 @@
     <button class="ui-btn ui-btn-inline ui-btn-toggle" type="submit">Off</button>
     {{end}}
   </form>
+  {{if .AutoPauseSkippedBy}}<p class="ui-row"><small>{{.AutoPauseSkippedBy}} keeps playing when a phone drops, so this does not apply to it.</small></p>{{end}}
   <form class="ui-row" {{template "settings-live" "/settings/fill-empty"}}>
     <span>Fill empty seats</span>
     {{if .FillEmpty}}

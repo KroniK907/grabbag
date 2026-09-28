@@ -53,6 +53,7 @@ grabbag/
       apples/                 # Apples for Humanity; package apples
         previews/             # saved JSON patches for UI preview variants
       quips/                  # Quick Quips; package quips
+      borrowedtruths/         # Borrowed Truths; package borrowedtruths
       testing/                # Testing diagnostics; package testinggame
         templates/
         static/

@@ -1,0 +1,256 @@
+{{template "bt-assets" .}}
+{{template "phone-frame" .}}
+
+{{define "phone-frame"}}
+<div
+  id="bt-phone"
+  class="bt-wall bt-phone phase-{{.Phase}} role-{{.Role}}{{if .Paused}} is-paused{{end}}"
+  hx-get="/play/partials/phone"
+  hx-trigger="sse:borrowedtruths, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-sync="this:queue all"
+  hx-swap="outerHTML"
+>
+  <a class="bt-help" href="/play/howto" aria-label="How to play">?</a>
+  {{if .Paused}}<p class="bt-kick">Paused</p>{{end}}
+  {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
+  {{template "bt-timer" .Timer}}
+
+  {{if eq .Phase ""}}
+  <p class="bt-kick">Waiting for the match.</p>
+
+  {{else if eq .Phase "facts"}}
+  {{if eq .Role "writer"}}
+  {{if .PhotoAsk}}
+  <div class="bt-fact is-photo" data-bt-photo>
+    <span>Photo <small>optional</small></span>
+    <small>A photo you took of something interesting. Not a selfie. Nobody from this room in it. Nothing that gives away that you took it. Nothing you wouldn't put on the TV.</small>
+    <img class="bt-photo-preview" data-bt-photo-preview alt="" hidden>
+    <label class="bt-btn is-borrowed bt-photo-pick">{{if .HasPhoto}}Change photo{{else}}Pick a photo{{end}}<input type="file" accept="image/*" data-bt-photo-input hidden></label>
+    <p class="bt-photo-status" data-bt-photo-status role="status">{{if .HasPhoto}}Photo added.{{end}}</p>
+  </div>
+  {{end}}
+  {{if .FactsDone}}
+  <p class="bt-big">Locked in.</p>
+  <p class="bt-kick">Waiting on {{.FactsLeft}} more.</p>
+  {{else}}
+  <form class="bt-facts" hx-post="/play/facts" hx-target="#bt-phone" hx-swap="outerHTML">
+    <p class="bt-kick">Only the game sees these. Write in the first person.</p>
+    {{range .TruthSlots}}
+    <label class="bt-fact is-truth">
+      <span>Truth {{.}}</span>
+      <small>True about you, a little embarrassing or a little weird, and most of this room doesn't know it. Nothing that points straight at you, like your job or hometown.</small>
+      <textarea name="truth" maxlength="{{$.MaxChars}}" required rows="3"></textarea>
+    </label>
+    {{end}}
+    {{range .LieSlots}}
+    <label class="bt-fact is-lie">
+      <span>Lie</span>
+      <small>A little embarrassing or funny, sounds like it could be true, and fun to defend. Someone else reads it, so nothing about age, gender, or a known life event.</small>
+      <textarea name="lie" maxlength="{{$.MaxChars}}" required rows="3"></textarea>
+    </label>
+    {{end}}
+    <button class="bt-btn is-true" type="submit">Lock in</button>
+  </form>
+  {{end}}
+  {{else}}
+  <p class="bt-big">The players are writing facts.</p>
+  {{end}}
+
+  {{else if .TIM}}
+  <p class="bt-kick">{{if .TIMClaimant}}You're in This Is My{{else}}This Is My{{end}}</p>
+  {{if .Badge.Marker}}{{template "bt-hello" .Badge}}{{end}}
+  <div class="bt-photo is-mini"><img src="{{.PhotoURL}}" alt="This Is My photo"></div>
+  {{if .Hint}}<p class="bt-kick">{{.Hint}}</p>{{end}}
+
+  {{if eq .Phase "tim-look"}}
+  {{if .CanKnew}}
+  <details class="bt-knew">
+    <summary class="bt-btn is-ghost">I knew it<small>Know whose photo this is? Tap it and score without the vote.</small></summary>
+    <div class="bt-knew-sheet">
+      <p class="bt-kick">Private. Whose is it?</p>
+      <div class="bt-names">
+        {{range .TIMOptions}}
+        <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
+          <input type="hidden" name="pick" value="{{.ID}}">
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+        </form>
+        {{end}}
+        <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
+          <input type="hidden" name="pick" value="none">
+          <button class="bt-name is-none" type="submit">None of them</button>
+        </form>
+      </div>
+    </div>
+  </details>
+  {{else if .KnewPicked}}
+  <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{else if not .TIMClaimant}}
+  <p class="bt-big">Take a good look.</p>
+  {{end}}
+
+  {{else if eq .Phase "tim-claims"}}
+  {{if .MySpeak}}
+  <p class="bt-big">Your turn. Tell them about it. Keep it short.</p>
+  {{else}}
+  <p class="bt-big">{{.Speaker}} is claiming it.</p>
+  {{end}}
+
+  {{else if eq .Phase "tim-questioning"}}
+  <p class="bt-big">{{if .TIMClaimant}}Answer their questions.{{else}}Grill all three.{{end}}</p>
+
+  {{else if eq .Phase "tim-vote"}}
+  {{if .TIMClaimant}}
+  <p class="bt-big">The room is voting.</p>
+  {{else if .SatOut}}
+  <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{else if .CanVote}}
+  <div class="bt-names">
+    {{range .TIMOptions}}
+    <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
+      <input type="hidden" name="pick" value="{{.ID}}">
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+    </form>
+    {{end}}
+    <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
+      <input type="hidden" name="pick" value="none">
+      <button class="bt-name is-none" type="submit">None of them</button>
+    </form>
+  </div>
+  {{else if .MyVote}}
+  <p class="bt-big">Locked: {{.MyVote}}</p>
+  {{else}}
+  <p class="bt-big">Votes are in.</p>
+  {{end}}
+
+  {{else if eq .Phase "tim-reveal"}}
+  <p class="bt-answer is-small is-true">{{.Answer}}</p>
+  <p class="bt-big">{{if gt .MyPoints 0}}+{{.MyPoints}} for you{{else}}No points this time{{end}}</p>
+  {{end}}
+
+  {{else if or (eq .Phase "standings") (eq .Phase "final")}}
+  <p class="bt-big">{{if eq .Phase "final"}}Final scores{{else}}Standings{{end}}</p>
+  <ol class="bt-phone-standings">
+    {{range .Standings}}<li><span>{{.Rank}}. {{.Name}}</span><b>{{.Score}}</b></li>{{end}}
+  </ol>
+  {{range .Ribbons}}
+  <div class="bt-ribbon is-small"><h3>{{.Title}}</h3><p>{{range $i, $n := .Names}}{{if $i}}, {{end}}{{$n}}{{end}}</p></div>
+  {{end}}
+
+  {{else}}
+  {{if .Badge.Marker}}
+  <p class="bt-kick">Only you can see this</p>
+  {{template "bt-hello" .Badge}}
+  {{else if and .TellerName (ne .Role "teller")}}
+  <p class="bt-kick">{{.TellerName}} says</p>
+  {{end}}
+  {{if .CardText}}<div class="bt-mini">{{.CardText}}</div>{{end}}
+  {{if .Hint}}<p class="bt-kick">{{.Hint}}</p>{{end}}
+
+  {{if eq .Phase "private-read"}}
+  {{if .CanLockIn}}
+  <div class="bt-row">
+    {{if .CanSkip}}
+    <form hx-post="/play/skip" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-btn is-borrowed" type="submit">Skip<small>{{.SkipsLeft}} left</small></button></form>
+    {{end}}
+    <form hx-post="/play/lock-in" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-btn is-true" type="submit">Lock in</button></form>
+  </div>
+  {{else}}
+  <p class="bt-big">{{.TellerName}} is reading their card.</p>
+  {{end}}
+
+  {{else if or (eq .Phase "public-read") (eq .Phase "questioning")}}
+  {{if .CanKnew}}
+  <details class="bt-knew">
+    <summary class="bt-btn is-ghost">I knew it<small>Know this one? Tap it and score without the vote.</small></summary>
+    <div class="bt-knew-sheet">
+      <p class="bt-kick">Private. What is it?</p>
+      <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="pick" value="true"><button class="bt-btn is-true" type="submit">Theirs</button></form>
+      <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="pick" value="lie"><button class="bt-btn is-lie" type="submit">Pure lie</button></form>
+      <p class="bt-kick">Someone else's. Whose?</p>
+      <div class="bt-names">
+        {{range .Names}}
+        <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
+          <input type="hidden" name="pick" value="borrowed"><input type="hidden" name="owner" value="{{.ID}}">
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+        </form>
+        {{end}}
+      </div>
+    </div>
+  </details>
+  {{else if .KnewPicked}}
+  <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{end}}
+
+  {{else if eq .Phase "vote"}}
+  {{if .CanReveal}}
+  <p class="bt-kick">Say it out loud:</p>
+  <p class="bt-big">"{{.RevealLine}}"</p>
+  <form hx-post="/play/reveal" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-btn is-true" type="submit">Reveal</button></form>
+  {{else if eq .Role "teller"}}
+  <p class="bt-big">The room is voting.</p>
+  {{else if .SatOut}}
+  <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{else if .CanVote}}
+  <div class="bt-vote-stack">
+    {{range .VoteOptions}}
+    <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
+      <input type="hidden" name="pick" value="{{.Value}}">
+      <button class="bt-btn {{.Class}}" type="submit">{{.Label}}{{if .Small}}<small>{{.Small}}</small>{{end}}</button>
+    </form>
+    {{end}}
+  </div>
+  {{else if .MyVote}}
+  <p class="bt-big">Locked: {{.MyVote}}</p>
+  {{else}}
+  <p class="bt-big">Votes are in.</p>
+  {{end}}
+
+  {{else if eq .Phase "owner-vote"}}
+  {{if .CanOwnerVote}}
+  <p class="bt-big">Whose truth is it?</p>
+  <div class="bt-names">
+    {{range .Names}}
+    <form hx-post="/play/owner-vote" hx-target="#bt-phone" hx-swap="outerHTML">
+      <input type="hidden" name="target" value="{{.ID}}">
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+    </form>
+    {{end}}
+  </div>
+  {{else if .MyVote}}
+  <p class="bt-big">Locked: {{.MyVote}}</p>
+  {{else if .SatOut}}
+  <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{else}}
+  <p class="bt-big">The room is guessing whose truth it is.</p>
+  {{end}}
+
+  {{else if or (eq .Phase "reveal") (eq .Phase "owner-reveal")}}
+  <p class="bt-answer is-small {{if .AnswerTrue}}is-true{{else}}is-lie{{end}}">{{.Answer}}</p>
+  <p class="bt-big">{{if gt .MyPoints 0}}+{{.MyPoints}} for you{{else}}No points this time{{end}}</p>
+  {{end}}
+  {{end}}
+
+  {{if .Host.Show}}
+  <div class="bt-host">
+    <div class="bt-host-head">
+      <span>{{.Host.PhaseLabel}}</span>
+      <span data-bt-elapsed data-start="{{.Host.PhaseStart}}"></span>
+    </div>
+    <div class="bt-host-row">
+      <form hx-post="/play/host/continue" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-host-btn is-go" type="submit" {{if .Host.Paused}}disabled{{end}}>{{.Host.Continue}}</button></form>
+      {{if .Host.Paused}}
+      <form hx-post="/play/host/resume" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-host-btn" type="submit">Resume</button></form>
+      {{else}}
+      <form hx-post="/play/host/pause" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-host-btn" type="submit">Pause</button></form>
+      {{end}}
+      {{if .Host.CanVoid}}
+      <form hx-post="/play/host/void" hx-target="#bt-phone" hx-swap="outerHTML" hx-confirm="Void this {{if .TIM}}photo{{else}}card{{end}}? Nobody scores on it."><button class="bt-host-btn" type="submit" {{if .Host.Paused}}disabled{{end}}>Void {{if .TIM}}photo{{else}}card{{end}}</button></form>
+      {{end}}
+      {{if .Host.CanExtend}}
+      <form hx-post="/play/host/extend" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-host-btn" type="submit" {{if .Host.Paused}}disabled{{end}}>+30s</button></form>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

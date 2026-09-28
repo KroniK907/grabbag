@@ -1,0 +1,198 @@
+{{template "ui-start" .}}
+{{template "round-swap" "/board"}}
+{{template "bt-assets" .}}
+{{template "board-frame" .}}
+{{template "ui-end"}}
+
+{{define "bt-assets"}}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Dela+Gothic+One&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="{{.GameCSS}}">
+<script defer src="{{.GameJS}}"></script>
+{{end}}
+
+{{define "bt-hello"}}
+<div class="bt-hello">
+  <h4>HELLO</h4>
+  <small>{{.Small}}</small>
+  <div>{{.Marker}}</div>
+</div>
+{{end}}
+
+{{define "bt-sticker"}}
+<div class="bt-stk{{if .Locked}} is-locked{{end}}">
+  <span class="bt-av">{{avatar .Seed}}</span>
+  <span class="bt-stk-name">{{.Name}}</span>
+</div>
+{{end}}
+
+{{define "bt-timer"}}
+{{if .On}}<div class="bt-tape bt-timer" data-bt-timer data-end="{{.EndUnix}}" data-seconds="{{.Seconds}}"><span data-bt-timer-value>{{.Seconds}}s</span></div>{{end}}
+{{end}}
+
+{{define "board-frame"}}
+<div
+  id="bt-board"
+  class="bt-wall bt-board phase-{{.Phase}}{{if .Paused}} is-paused{{end}}"
+  data-moment="{{.Phase}} {{.TellNum}} {{.CardText}} {{.PhotoURL}} {{.Notice}}"
+  hx-get="/play/partials/board"
+  hx-trigger="sse:borrowedtruths, sse:borrowedtruths-facts, sse:pause, sse:roster, htmx:sseOpen from:body"
+  hx-sync="this:queue all"
+  hx-swap="outerHTML"
+>
+  <div class="bt-logo">BORROWED<br>TRUTHS</div>
+  <div class="bt-board-tapes">
+    {{if .TIM}}<div class="bt-tape is-tim">THIS IS MY</div>
+    {{else if gt .TellTotal 0}}<div class="bt-tape">TELL {{.TellNum}} OF {{.TellTotal}}</div>{{end}}
+    {{template "bt-timer" .Timer}}
+  </div>
+  {{if .Paused}}<div class="bt-paused">Paused</div>{{end}}
+
+  {{if eq .Phase "facts"}}
+  <main class="bt-board-main bt-center">
+    <h1 class="bt-headline">Write two truths and a lie.</h1>
+    <p class="bt-sub">On your phone. Nobody sees them but the game.</p>
+    <div class="bt-stickers is-wide">
+      {{range .Facts}}{{template "bt-sticker" .}}{{end}}
+    </div>
+  </main>
+
+  {{else if eq .Phase "private-read"}}
+  <main class="bt-board-main bt-center">
+    {{if .Notice}}<p class="bt-notice">{{.Notice}}</p>{{end}}
+    <div class="bt-hello bt-hello-big">
+      <h4>HELLO</h4>
+      <small>my name is</small>
+      <div><span class="bt-av">{{avatar .Teller.Seed}}</span>{{.Teller.Name}}</div>
+    </div>
+    <p class="bt-sub">Reading their card</p>
+  </main>
+
+  {{else if .TIM}}
+  <main class="bt-board-main bt-tim">
+    {{if .Notice}}<p class="bt-notice">{{.Notice}}</p>{{end}}
+    <div class="bt-photo"><img src="{{.PhotoURL}}" alt="This Is My photo"></div>
+    <div class="bt-claimants">
+      {{range .Claimants}}
+      <div class="bt-hello bt-claimant{{if .Speaking}} is-speaking{{end}}{{if .Owner}} is-owner{{end}}">
+        <h4>HELLO</h4>
+        <small>this is my photo</small>
+        <div><span class="bt-av">{{avatar .Seed}}</span><span class="bt-claimant-name">{{.Name}}</span>{{if eq $.Phase "tim-reveal"}}<b>{{.Count}}</b>{{end}}</div>
+      </div>
+      {{end}}
+      {{if eq .Phase "tim-reveal"}}
+      <div class="bt-none-count">None of them <b>{{.NoneCount}}</b></div>
+      {{end}}
+    </div>
+    {{if eq .Phase "tim-reveal"}}
+    <div class="bt-tim-answer">
+      {{if .NotTheirs}}
+      <div class="bt-answer is-lie">None of them</div>
+      <div class="bt-but">It's {{.Owner.Name}}'s photo. Stand up.</div>
+      {{else}}
+      <div class="bt-answer is-true">{{.Owner.Name}} took it</div>
+      {{end}}
+      {{if .Awards}}
+      <ul class="bt-awards">
+        {{range .Awards}}<li><b>+{{.Points}}</b> {{.Name}} <small>{{.Why}}</small></li>{{end}}
+      </ul>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="bt-ask bt-tim-ask">
+      <span>{{.Prompt}}</span>
+      {{if .Voters}}<b>{{.Locked}}/{{len .Voters}} LOCKED</b>{{end}}
+    </div>
+    {{if .Voters}}
+    <div class="bt-stickers bt-tim-stickers">
+      {{range .Voters}}{{template "bt-sticker" .}}{{end}}
+    </div>
+    {{end}}
+    {{end}}
+  </main>
+
+  {{else if or (eq .Phase "standings") (eq .Phase "final")}}
+  <main class="bt-board-main">
+    <h1 class="bt-headline">{{if eq .Phase "final"}}{{.FinalWinner}}{{else}}Standings{{end}}</h1>
+    <ol class="bt-standings">
+      {{range .Standings}}
+      <li class="bt-standing{{if eq .Rank 1}} is-top{{end}}">
+        <span class="bt-rank">{{.Rank}}</span>
+        <span class="bt-av">{{avatar .Seed}}</span>
+        <span class="bt-standing-name">{{.Name}}</span>
+        <b>{{.Score}}</b>
+      </li>
+      {{end}}
+    </ol>
+    {{if .Ribbons}}
+    <div class="bt-ribbons">
+      {{range .Ribbons}}
+      <div class="bt-ribbon">
+        <h3>{{.Title}}</h3>
+        <small>{{.Line}}</small>
+        <p>{{range $i, $n := .Names}}{{if $i}}, {{end}}{{$n}}{{end}}</p>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </main>
+
+  {{else}}
+  <main class="bt-board-main bt-tell">
+    <div class="bt-card"><p>{{.CardText}}</p></div>
+    <div class="bt-hello bt-teller">
+      <h4>HELLO</h4>
+      <small>my name is</small>
+      <div><span class="bt-av">{{avatar .Teller.Seed}}</span>{{.Teller.Name}}</div>
+    </div>
+
+    {{if or (eq .Phase "reveal") (eq .Phase "owner-reveal")}}
+    <div class="bt-reveal">
+      {{if eq .Phase "reveal"}}
+      <div class="bt-split">
+        <div class="bt-split-bar">
+          <span class="is-true" style="flex: {{.TrueCount}} 1 0">TRUE {{.TrueCount}}</span>
+          <span class="is-lie" style="flex: {{.LieCount}} 1 0">LIE {{.LieCount}}</span>
+        </div>
+        {{if .Crowd}}
+        <div class="bt-split-bar is-crowd">
+          <span class="is-true" style="flex: {{.CrowdTrue}} 1 0">Crowd {{.CrowdTrue}}</span>
+          <span class="is-lie" style="flex: {{.CrowdLie}} 1 0">{{.CrowdLie}}</span>
+        </div>
+        {{end}}
+      </div>
+      <div class="bt-answer {{if .AnswerTrue}}is-true{{else}}is-lie{{end}}">{{.Answer}}</div>
+      {{if .Borrowed}}<div class="bt-but">But it's true for someone in this room.</div>{{end}}
+      {{if .Author}}<div class="bt-author">Written by {{.Author}}</div>{{end}}
+      {{else}}
+      <div class="bt-owner-split">
+        {{range .OwnerSplit}}
+        <div class="bt-stk{{if .Owner}} is-owner{{end}}">
+          <span class="bt-av">{{avatar .Seed}}</span>
+          <span class="bt-stk-name">{{.Name}}</span>
+          <b>{{.Count}}</b>
+        </div>
+        {{end}}
+      </div>
+      <div class="bt-answer is-true bt-owner-name">{{.Owner.Name}}, stand up.</div>
+      {{end}}
+      {{if .Awards}}
+      <ul class="bt-awards">
+        {{range .Awards}}<li><b>+{{.Points}}</b> {{.Name}} <small>{{.Why}}</small></li>{{end}}
+      </ul>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="bt-ask">
+      <span>{{.Prompt}}</span>
+      {{if .Voters}}<b>{{.Locked}}/{{len .Voters}} LOCKED</b>{{end}}
+    </div>
+    {{if .Voters}}
+    <div class="bt-stickers">
+      {{range .Voters}}{{template "bt-sticker" .}}{{end}}
+    </div>
+    {{end}}
+    {{end}}
+  </main>
+  {{end}}
+</div>
+{{end}}

@@ -18,6 +18,7 @@ import (
 	_ "github.com/KroniK907/grabbag/internal/games/testing"
 
 	_ "github.com/KroniK907/grabbag/internal/games/apples"
+	_ "github.com/KroniK907/grabbag/internal/games/borrowedtruths"
 	"github.com/KroniK907/grabbag/internal/lobby"
 	"github.com/KroniK907/grabbag/internal/platform/hub"
 	"github.com/KroniK907/grabbag/internal/store"
