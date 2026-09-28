@@ -31,6 +31,7 @@ Operator playbook is `/docs`.
 - [Extra pages](#extra-pages)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
+- [Disconnect policy](#disconnect-policy)
 - [UI previews](#ui-previews)
 - [Examples](#examples)
 - [Must not](#must-not)
@@ -77,6 +78,7 @@ urls_game_must_not_own: ["/", "/board", "/settings"]
 nil_ok: [Settings, Play]
 optional:
   games.Previewer: Scenarios() []ui.Scenario  # -dev-preview gallery at /dev/ui/
+  games.DisconnectPolicy: PauseOnDisconnect() bool  # false opts out of auto-pause on seated disconnect
 sse:
   endpoint: GET /lobby/events
   connect: body hx-ext=sse sse-connect=/lobby/events on ui-start
@@ -156,7 +158,7 @@ Host calls these on the Game value.
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
 | `Phone(w, r)` | GET `/` after Start, any signed-in player | Inner body only. Host wraps Leave and the claimed-host drawer. Unknown cookies stay on Lobby join. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
-| `Pause() error` | operator or auto-pause on seated disconnect | Stop accepting play if that is the game's rule. May no-op. |
+| `Pause() error` | operator or auto-pause on seated disconnect (unless the game opts out, see [Disconnect policy](#disconnect-policy)) | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
 | `Stop() error` | round end | Drop in-memory run state. Keep KV. Keep helper. |
 | `Shutdown() error` | unload | Drop helper. Stop goroutines. |
@@ -269,6 +271,18 @@ Games may read these fields. They never write them.
 | `ClaimedHost` | This player claimed host. Phone End game in Testing keys off this. |
 | `Connected` | Heartbeat currently live. |
 | `LastHeartbeatRTT` | Last RTT. Zero means none yet. |
+
+## Disconnect policy
+
+Optional. The operator's Auto-pause on seated disconnect is a room setting, off by default. When it is on, host pauses the round as soon as a seated phone drops. A Game that also implements `games.DisconnectPolicy` and returns false from `PauseOnDisconnect()` is skipped: host does not pause it, and `/settings` notes under the switch that the loaded game keeps playing.
+
+Opt out when play never waits on one phone, so a phone that sleeps or drops should not stop the room. The game must then cope with a missing player itself, usually by letting the host Continue past them and by keeping run state on the server so the phone repaints the same moment when it returns. Borrowed Truths opts out. A Game without the method follows the operator setting. `games.PausesOnDisconnect(g)` is the check host uses.
+
+```go
+func (g *Game) PauseOnDisconnect() bool { return false }
+```
+
+Operator Pause from `/settings` and `Helper.Pause` still reach every game.
 
 ## UI previews
 

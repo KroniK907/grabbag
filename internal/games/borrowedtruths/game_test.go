@@ -231,3 +231,9 @@ func TestSettingsSaveAndLockDuringMatch(t *testing.T) {
 		t.Fatal("settings changed during a match")
 	}
 }
+
+func TestNeverPausesOnDisconnect(t *testing.T) {
+	if games.PausesOnDisconnect(New()) {
+		t.Fatal("Borrowed Truths should keep playing when a phone drops")
+	}
+}

@@ -97,6 +97,11 @@ func (g *Game) MinPlayers() int { return 4 }
 // MaxPlayers is 20.
 func (g *Game) MaxPlayers() int { return 20 }
 
+// PauseOnDisconnect is false. Nothing in a tell waits on one phone: the host's
+// Continue covers every teller action, and a phone that sleeps reloads the
+// same moment when it wakes. So a dropped phone never pauses the room.
+func (g *Game) PauseOnDisconnect() bool { return false }
+
 // Load stores the helper.
 func (g *Game) Load(h games.Helper) error {
 	g.mu.Lock()

@@ -621,3 +621,48 @@ func requestFromCookies(cookies []*http.Cookie) *http.Request {
 	}
 	return req
 }
+
+// noPauseGame is a fake that opts out of auto-pause on seated disconnect.
+type noPauseGame struct{ *fakeGame }
+
+func (noPauseGame) PauseOnDisconnect() bool { return false }
+
+func TestAutoPauseSkipsGamesThatOptOut(t *testing.T) {
+	t.Parallel()
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	fake := &fakeGame{}
+	handler, rt, err := newHandler(db, "http://192.168.10.24:8654/", []games.Factory{{
+		ID:  "fake",
+		New: func() games.Game { return noPauseGame{fake} },
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin := finishAndJoinHost(t, handler)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
+	requestWithCookie(t, handler, http.MethodPost, "/settings/auto-pause", url.Values{"enabled": {"1"}}, admin)
+
+	settings := requestWithCookie(t, handler, http.MethodGet, "/settings", nil, admin).Body.String()
+	if !strings.Contains(settings, "keeps playing when a phone drops") {
+		t.Fatal("settings do not say the loaded game ignores auto-pause")
+	}
+	player, ok, err := rt.room.PlayerFromRequest(requestFromCookies(admin))
+	if err != nil || !ok {
+		t.Fatal(err)
+	}
+	if err := rt.markDisconnected(context.Background(), player.ID); err != nil {
+		t.Fatal(err)
+	}
+	if !player.Seated {
+		t.Fatal("host player is not seated")
+	}
+	rt.afterDisconnect(context.Background(), player)
+	if fake.paused {
+		t.Fatal("auto-pause paused a game that opted out")
+	}
+}

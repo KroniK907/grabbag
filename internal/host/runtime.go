@@ -73,6 +73,12 @@ func (rt *runtime) extras(ctx context.Context) lobby.SettingsExtras {
 		AutoPause:    auto,
 		LogLines:     rt.log.Lines(),
 	}
+	if rt.game != nil && !games.PausesOnDisconnect(rt.game) {
+		extra.AutoPauseSkippedBy = rt.game.Name()
+		if extra.AutoPauseSkippedBy == "" {
+			extra.AutoPauseSkippedBy = rt.loadedID
+		}
+	}
 	if rt.game != nil && rt.game.Settings() != nil {
 		var buf bytes.Buffer
 		rec := &capture{buf: &buf, header: make(http.Header)}
@@ -380,17 +386,23 @@ func (rt *runtime) afterDisconnect(ctx context.Context, player lobby.Player) {
 	if !player.Seated {
 		return
 	}
+	if rt.autoPauseApplies(ctx) {
+		_ = rt.pause()
+	}
+}
+
+// autoPauseApplies reports whether a seated disconnect should pause the
+// round: a round is running, the operator turned auto-pause on, and the
+// loaded game does not opt out through games.DisconnectPolicy.
+func (rt *runtime) autoPauseApplies(ctx context.Context) bool {
 	rt.mu.Lock()
 	started, game := rt.started, rt.game
 	rt.mu.Unlock()
-	if !started || game == nil {
-		return
+	if !started || game == nil || !games.PausesOnDisconnect(game) {
+		return false
 	}
 	auto, err := rt.room.AutoPause(ctx)
-	if err != nil || !auto {
-		return
-	}
-	_ = rt.pause()
+	return err == nil && auto
 }
 
 func (rt *runtime) markDisconnected(ctx context.Context, playerID string) error {
@@ -416,11 +428,7 @@ func (rt *runtime) markDisconnected(ctx context.Context, playerID string) error 
 			break
 		}
 	}
-	auto, err := rt.room.AutoPause(ctx)
-	if err != nil {
-		return err
-	}
-	if seated && auto {
+	if seated && rt.autoPauseApplies(ctx) {
 		_ = rt.pause()
 	}
 	rt.events.Publish("roster")

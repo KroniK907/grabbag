@@ -699,6 +699,7 @@ func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, err
 		data.LoadedGameID = extra.LoadedGameID
 		data.GameSettings = extra.GameSettings
 		data.AutoPause = extra.AutoPause
+		data.AutoPauseSkippedBy = extra.AutoPauseSkippedBy
 	} else {
 		on, err := l.AutoPause(ctx)
 		if err != nil {
