@@ -54,7 +54,10 @@ type SettingsExtras struct {
 	LoadedGameID string
 	GameSettings template.HTML
 	AutoPause    bool
-	LogLines     []string
+	// AutoPauseSkippedBy names the loaded game when it opts out of
+	// auto-pause on seated disconnect. Empty when the setting applies.
+	AutoPauseSkippedBy string
+	LogLines           []string
 }
 
 // PhoneExtras is host-owned Start and game-picker chrome for the claim-host drawer.
@@ -309,6 +312,7 @@ type settingsData struct {
 	LogStdout          bool
 	LogFile            bool
 	AutoPause          bool
+	AutoPauseSkippedBy string
 	AutoStart          bool
 	ProtectHost        bool
 	SeatDisconnected   bool

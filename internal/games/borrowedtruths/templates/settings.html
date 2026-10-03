@@ -1,0 +1,79 @@
+<div id="game-settings">
+{{if .Frozen}}<p class="ui-alert" role="status">This match is running. Setup is locked.</p>{{end}}
+{{if and .Err.Msg (not (index .Nums .Err.Field).Err)}}<p class="ui-alert" role="alert">{{.Err.Msg}}</p>{{end}}
+<form method="post" action="/settings/game/match" hx-post="/settings/game/match" hx-target="#game-settings" hx-swap="outerHTML" hx-trigger="change, submit">
+  <fieldset class="ui-stack" {{if .Frozen}}disabled{{end}}>
+    <h2>Cards</h2>
+    {{template "bt-num" index .Nums "truths"}}
+    {{template "bt-num" index .Nums "lies"}}
+    <label class="ui-field"><span>Lie source</span>
+      <select name="lie_source">
+        <option value="mixed" {{if eq .Settings.LieSource "mixed"}}selected{{end}}>Mixed: players first, then the bank</option>
+        <option value="players" {{if eq .Settings.LieSource "players"}}selected{{end}}>Players only</option>
+        <option value="bank" {{if eq .Settings.LieSource "bank"}}selected{{end}}>Bank only</option>
+      </select>
+    </label>
+    {{if eq .Settings.LiesPerPlayer 0}}<p><small>With 0 lies per player, every lie comes from the bank.</small></p>{{end}}
+    {{template "bt-num" index .Nums "mix_yours"}}
+    {{template "bt-num" index .Nums "mix_borrowed"}}
+    {{template "bt-num" index .Nums "mix_lie"}}
+    {{template "bt-num" index .Nums "skips"}}
+
+    <h2>Match length</h2>
+    <label class="ui-field"><span>Tells per player</span>
+      <select name="tells">
+        <option value="0" {{if eq .Settings.TellsPerPlayer 0}}selected{{end}}>Auto: 2 at 4 to 7 seated, 1 at 8 and up</option>
+        <option value="1" {{if eq .Settings.TellsPerPlayer 1}}selected{{end}}>1</option>
+        <option value="2" {{if eq .Settings.TellsPerPlayer 2}}selected{{end}}>2</option>
+        <option value="3" {{if eq .Settings.TellsPerPlayer 3}}selected{{end}}>3</option>
+      </select>
+    </label>
+    {{template "bt-num" index .Nums "max_tells"}}
+
+    <h2>I knew it</h2>
+    <label class="ui-row"><input type="checkbox" name="knew_it" value="1" {{if .Settings.KnewIt}}checked{{end}}> I knew it is on</label>
+    <label class="ui-field"><span>Void the card when this share taps it</span>
+      <select name="knew_void">
+        <option value="third" {{if eq .Settings.KnewVoid "third"}}selected{{end}}>A third</option>
+        <option value="half" {{if eq .Settings.KnewVoid "half"}}selected{{end}}>Half</option>
+        <option value="two-thirds" {{if eq .Settings.KnewVoid "two-thirds"}}selected{{end}}>Two thirds</option>
+      </select>
+    </label>
+    <label class="ui-row"><input type="checkbox" name="audience_vote" value="1" {{if .Settings.AudienceVote}}checked{{end}}> Audience can vote (crowd bar, no points)</label>
+
+    <h2>This Is My</h2>
+    <label class="ui-field"><span>This Is My rounds</span>
+      <select name="tim_rounds">
+        <option value="auto" {{if eq .Settings.TIMRounds "auto"}}selected{{end}}>Auto: 0 below 5 seated, 1 at 5 to 7, 2 at 8 to 12, 3 at 13+</option>
+        {{range .TIMCounts}}<option value="{{.}}" {{if eq $.Settings.TIMRounds .}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    <label class="ui-field"><span>Placement</span>
+      <select name="tim_placement">
+        <option value="middle" {{if eq .Settings.TIMPlacement "middle"}}selected{{end}}>Middle: a block halfway through</option>
+        <option value="alternate" {{if eq .Settings.TIMPlacement "alternate"}}selected{{end}}>Alternate: spread between tells</option>
+      </select>
+    </label>
+    {{template "bt-num" index .Nums "not_theirs"}}
+    {{template "bt-num" index .Nums "look_sec"}}
+    <p><small>Look time is always timed, even with timers off. The host can Continue early.</small></p>
+
+    <h2>Timers</h2>
+    <label class="ui-row"><input type="checkbox" name="timers" value="1" {{if .Settings.Timers}}checked{{end}}> Timers on. Off means the host paces every phase with Continue.</label>
+    {{template "bt-num" index .Nums "facts_sec"}}
+    {{template "bt-num" index .Nums "private_sec"}}
+    {{template "bt-num" index .Nums "question_sec"}}
+    {{template "bt-num" index .Nums "vote_sec"}}
+    {{template "bt-num" index .Nums "owner_vote_sec"}}
+    {{template "bt-num" index .Nums "claim_sec"}}
+    {{template "bt-num" index .Nums "tim_question_sec"}}
+  </fieldset>
+</form>
+</div>
+
+{{define "bt-num"}}
+<label class="ui-field"><span>{{.Label}}</span>
+  <input name="{{.Name}}" type="number" min="{{.Lo}}" max="{{.Hi}}" value="{{.Value}}">
+</label>
+{{if .Err}}<p class="ui-alert" role="alert">{{.Err}}</p>{{end}}
+{{end}}

@@ -316,6 +316,7 @@
             <a href="#game-stop">Stop</a>
             <a href="#game-shutdown">Shutdown</a>
             <a href="#game-scenarios">Scenarios (optional)</a>
+            <a href="#game-pauseondisconnect">PauseOnDisconnect (optional)</a>
           </div>
         </li>
         <li>
@@ -748,7 +749,7 @@ func (g *Game) ID() string { return id }</pre>
         <h4>Return value</h4>
         <p><code>nil</code> on success. Host then sets paused, writes a log line, and publishes <code>pause</code>.</p>
         <h4>Description</h4>
-        <p>Operator Pause and auto-pause on seated disconnect both land here. Audience disconnects do not. A game may no-op and still return nil. Testing stops its 1s tick and ignores taps. Host may Resume while the disconnected player is still gone.</p>
+        <p>Operator Pause and auto-pause on seated disconnect both land here. Audience disconnects do not. A game that returns false from <a href="#game-pauseondisconnect"><code>PauseOnDisconnect</code></a> gets no auto-pause, only operator and Helper Pause. A game may no-op and still return nil. Testing stops its 1s tick and ignores taps. Host may Resume while the disconnected player is still gone.</p>
         <p>This is not <a href="#helper-pause">Helper.Pause</a>. Helper.Pause asks host to pause the room. Game.Pause is host telling you the room is pausing.</p>
         <h4>Examples</h4>
         <h5>Stop the tick, keep tap counts</h5>
@@ -867,6 +868,26 @@ func (g *Game) ID() string { return id }</pre>
 }</pre>
         <h5>Saved variant</h5>
         <p><code>previews/board.live.paused.json</code> containing <code>{"Paused": true}</code> adds <code>live~paused</code> when the list passes through <code>ui.WithVariants</code>.</p>
+      </article>
+
+      <article class="method" id="game-pauseondisconnect">
+        <div class="tags"><span class="tag">Game</span><span class="tag">optional</span></div>
+        <h3>PauseOnDisconnect</h3>
+        <p>Says whether the operator's Auto-pause on seated disconnect applies to this game. Implement <code>games.DisconnectPolicy</code> to opt in or out.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type DisconnectPolicy interface {
+    PauseOnDisconnect() bool
+}</div>
+        <h4>Parameters</h4>
+        <p>None. Host asks when a seated phone drops during a round, and when it draws <code>/settings</code>.</p>
+        <h4>Return value</h4>
+        <p><code>false</code> skips auto-pause for this game. <code>true</code>, or not implementing the interface, follows the operator setting.</p>
+        <h4>Description</h4>
+        <p>Auto-pause is a room setting, off by default. When it is on, host pauses the round as soon as any seated phone drops. That suits a game that waits on every phone. A game where the host can Continue past a missing player, and where run state lives on the server so a phone that wakes repaints the same moment, can return false. A phone going to sleep then never stops the room. <code>/settings</code> notes under the switch that the loaded game keeps playing. Operator Pause and <code>Helper.Pause</code> still reach the game. Host checks with <code>games.PausesOnDisconnect(g)</code>.</p>
+        <h4>Examples</h4>
+        <h5>Keep playing when a phone sleeps</h5>
+        <pre class="ex">// Borrowed Truths: the host's Continue covers every teller action.
+func (g *Game) PauseOnDisconnect() bool { return false }</pre>
       </article>
 
       <h2 id="helper">Helper</h2>

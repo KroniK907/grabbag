@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE. Throwaway. Not a production template.
+
+  Question: What should Borrowed Truths (#137) look like on the board and
+  on phones?
+
+  Verdict (2026-09-27): Sticker bomb, in navy and yellow. Die-cut stickers
+  slapped on a halftone wall, printed slightly off register in two inks.
+  Neon cabinet, Studio, Face-off, and Bluff table were dropped.
+
+  One moment is shown:
+    - Board: public read into the vote. Card on screen, teller named,
+      who has voted (never what), tell count.
+    - Voter phone: the vote.
+    - Teller phone: the private read (card type, Skip, Lock in).
+
+  Dark first. ?mode=light, the half-moon button, or the M key flips it.
+  Double-click to open. Avatars are initials; production uses ui.AvatarSVG.
+  Google Fonts is prototype-only.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE - Borrowed Truths surfaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Dela+Gothic+One&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #0e0f12; color: #e8e8ea; }
+  body { font-family: system-ui, sans-serif; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ---------- Prototype chrome. Plain on purpose. ---------- */
+  .stage {
+    display: grid; gap: 28px; padding: 28px 28px 96px;
+    grid-template-columns: minmax(0, 1fr) auto auto; align-items: start;
+  }
+  @media (max-width: 1380px) {
+    .stage { grid-template-columns: repeat(2, auto); justify-content: center; }
+    .stage > .cell:first-child { grid-column: 1 / -1; }
+  }
+  .cap { font: 12px/1.4 ui-monospace, monospace; color: #8a8d96; margin: 0 0 8px; }
+  .board { width: 100%; aspect-ratio: 16 / 9; container-type: inline-size; position: relative; overflow: hidden; border-radius: 6px; }
+  .phone { width: 300px; height: 620px; border: 10px solid #1d1e23; border-radius: 38px; overflow: hidden; position: relative; }
+  .av { display: inline-grid; place-items: center; border-radius: 50%; background: var(--c); color: #111; font-weight: 800; flex: none; }
+  #proto-bar {
+    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 99;
+    display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 16px; border-radius: 999px;
+    background: #fafafa; color: #111; box-shadow: 0 8px 30px rgb(0 0 0 / .5); font: 13px ui-monospace, monospace;
+  }
+  #proto-bar button { border: 0; background: #111; color: #fafafa; width: 32px; height: 32px; border-radius: 50%; }
+
+  /* ======================================================================
+     STICKER BOMB. Navy wall, halftone dots, two inks: sun yellow and sky
+     blue. Truth is sun. Lie is sky.
+     ====================================================================== */
+  .sb {
+    --bg: #0b1430; --fg: #fff; --muted: #aab6d6;
+    --sun: #ffd23f; --sky: #3d7bff; --on-sun: #0b1430; --on-sky: #fff;
+    --sticker: #f7f9ff; --sink: #0b1430; --edge: transparent; --peel: #cfd6ea;
+    --dot: rgb(255 210 63 / .22); --count: var(--sun);
+  }
+  .sb[data-mode="light"] {
+    --bg: #eef2fb; --fg: #0b1430; --muted: #4a5578;
+    --edge: #0b1430; --dot: rgb(61 123 255 / .3); --count: #2a5fd6;
+  }
+  .sb .board, .sb .phone { color: var(--fg); font-family: "DM Mono", monospace;
+    background: linear-gradient(110deg, var(--bg) 35%, transparent 80%), radial-gradient(circle, var(--dot) 22%, transparent 24%) 0 0 / 12px 12px, var(--bg); }
+
+  .sb .logo { position: absolute; left: 2.6cqw; top: 2.4cqw; background: var(--sun); color: var(--on-sun); font-family: "Dela Gothic One"; font-size: 1.9cqw; line-height: 1; padding: .9cqw 1.4cqw;
+    border: .35cqw solid #fff; outline: .15cqw solid var(--edge); border-radius: 1.2cqw; transform: rotate(-4deg); box-shadow: .4cqw .5cqw 0 rgb(0 0 0 / .35); }
+  .sb .tape { position: absolute; right: 3cqw; top: 2.6cqw; background: rgb(255 255 255 / .8); color: var(--sink); font-size: 1.2cqw; padding: .6cqw 2cqw; transform: rotate(3deg); letter-spacing: .1em; }
+  .sb .card { position: absolute; left: 4cqw; top: 10cqw; width: 55cqw; background: var(--sticker); color: var(--sink); border: .3cqw solid var(--edge); border-radius: 2cqw; padding: 3cqw 3.2cqw 3.4cqw;
+    transform: rotate(-2deg); box-shadow: 1cqw 1cqw 0 var(--sky), -.6cqw -.5cqw 0 var(--sun); }
+  .sb .card p { margin: 0; font-family: "Dela Gothic One"; font-size: 4.2cqw; line-height: 1.12; }
+  .sb .card::after { content: ""; position: absolute; right: 0; bottom: 0; width: 5cqw; height: 5cqw; border-radius: 0 0 2cqw 0; background: linear-gradient(135deg, transparent 50%, var(--peel) 50%); }
+  .sb .hello { position: absolute; right: 4cqw; top: 8.5cqw; width: 27cqw; background: var(--sun); border: .35cqw solid #fff; outline: .15cqw solid var(--edge); border-radius: 1.6cqw; transform: rotate(4deg); overflow: hidden; box-shadow: .4cqw .6cqw 0 rgb(0 0 0 / .35); }
+  .sb .hello h4 { margin: 0; padding: 1cqw 1.4cqw .2cqw; font-family: "Dela Gothic One"; font-weight: 400; font-size: 2.6cqw; color: var(--on-sun); line-height: 1; }
+  .sb .hello small { display: block; padding: 0 1.4cqw .8cqw; color: var(--on-sun); font-size: 1.1cqw; }
+  .sb .hello div { background: #fff; color: var(--sink); display: flex; align-items: center; gap: 1.2cqw; padding: 1.2cqw 1.4cqw; font-family: "Permanent Marker"; font-size: 3.4cqw; }
+  .sb .hello .av { width: 4cqw; height: 4cqw; font-family: "Dela Gothic One"; font-size: 1.6cqw; }
+  .sb .stickers { position: absolute; right: 3cqw; bottom: 3.4cqw; width: 34cqw; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4cqw 1cqw; }
+  .sb .stk { display: grid; justify-items: center; gap: .5cqw; font-size: 1.1cqw; position: relative; }
+  .sb .stk .av { width: 6cqw; height: 6cqw; font-family: "Dela Gothic One"; font-size: 2.4cqw; border: .45cqw solid #fff; outline: .15cqw solid var(--edge); box-shadow: .3cqw .4cqw 0 rgb(0 0 0 / .3); }
+  .sb .stk:nth-child(odd) .av { transform: rotate(-8deg); } .sb .stk:nth-child(even) .av { transform: rotate(6deg); }
+  .sb .stk:not(.on) { opacity: .4; filter: grayscale(1); }
+  .sb .stk.on::after { content: "LOCKED"; position: absolute; top: 2.2cqw; background: var(--sun); color: var(--on-sun); font-size: .9cqw; font-weight: 700; padding: .2cqw .8cqw; transform: rotate(-12deg); letter-spacing: .08em; }
+  .sb .ask { position: absolute; left: 5cqw; bottom: 4cqw; display: grid; gap: .8cqw; }
+  .sb .ask span { font-size: 1.4cqw; text-decoration: underline wavy var(--sun); text-underline-offset: .5cqw; }
+  .sb[data-mode="light"] .ask span { text-decoration-color: var(--sky); }
+  .sb .ask b { font-family: "Dela Gothic One"; font-weight: 400; font-size: 3cqw; color: var(--count); }
+
+  .sb .body { padding: 26px 18px; display: grid; gap: 14px; }
+  .sb .kick { margin: 0; font-size: 12px; color: var(--muted); }
+  .sb .mini { background: var(--sticker); color: var(--sink); border: 2px solid var(--edge); border-radius: 16px; padding: 14px; font-family: "Dela Gothic One"; font-size: 19px; line-height: 1.15;
+    transform: rotate(-1.5deg); box-shadow: 5px 5px 0 var(--sky), -3px -3px 0 var(--sun); }
+  .sb .btn { border: 4px solid #fff; outline: 2px solid var(--edge); border-radius: 18px; padding: 14px; font-family: "Dela Gothic One"; font-size: 26px; box-shadow: 4px 5px 0 rgb(0 0 0 / .35); transition: transform .12s; }
+  .sb .btn:active { transform: scale(.96) rotate(0); }
+  .sb .btn small { display: block; font-family: "DM Mono"; font-size: 12px; font-weight: 500; }
+  .sb .t { background: var(--sun); color: var(--on-sun); transform: rotate(-1deg); }
+  .sb .l { background: var(--sky); color: var(--on-sky); transform: rotate(1deg); }
+  .sb .l2 { background: transparent; color: var(--fg); border: 3px dashed var(--sky); outline: 0; box-shadow: none; transform: rotate(-.5deg); }
+  .sb .hello2 { background: var(--sun); border: 3px solid #fff; outline: 2px solid var(--edge); border-radius: 14px; overflow: hidden; transform: rotate(2deg); }
+  .sb .hello2 h4 { margin: 0; padding: 8px 12px 0; font-family: "Dela Gothic One"; font-weight: 400; font-size: 22px; color: var(--on-sun); }
+  .sb .hello2 small { display: block; padding: 0 12px 6px; font-size: 11px; color: var(--on-sun); }
+  .sb .hello2 div { background: #fff; color: var(--sink); padding: 8px 12px; font-family: "Permanent Marker"; font-size: 26px; }
+  .sb .row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }
+  .sb .row .btn { font-size: 20px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="proto-bar">
+  <span id="label"></span>
+  <button id="mode" aria-label="Toggle light and dark">&#9680;</button>
+</div>
+<script>
+// Mock room. Sample data only.
+const P = [
+  { name: "Marisol", c: "#ff8a3d" },
+  { name: "Ana", c: "#5ad1ff", voted: true },
+  { name: "Theo", c: "#b7f36b", voted: true },
+  { name: "Priya", c: "#ff6fae", voted: true },
+  { name: "Dev", c: "#c8a6ff", voted: true },
+  { name: "Kofi", c: "#ffd84a" },
+  { name: "June", c: "#7ef0c1" },
+];
+const teller = P[0], owner = P[1], voters = P.slice(1);
+const card = "I once got locked in a zoo overnight.";
+const tell = "Tell 5 of 14";
+const nVoted = voters.filter(v => v.voted).length;
+const av = p => `<span class="av" style="--c:${p.c}">${p.name[0]}</span>`;
+
+const board = () => `
+  <div class="logo">BORROWED<br>TRUTHS</div>
+  <div class="tape">${tell.toUpperCase()}</div>
+  <div class="card"><p>${card}</p></div>
+  <div class="hello"><h4>HELLO</h4><small>my name is</small><div>${av(teller)}${teller.name}</div></div>
+  <div class="ask"><span>True or lie? Grill ${teller.name}.</span><b>${nVoted}/${voters.length} LOCKED</b></div>
+  <div class="stickers">${voters.map(v => `<div class="stk ${v.voted ? "on" : ""}">${av(v)}${v.name}</div>`).join("")}</div>`;
+
+const voter = () => `
+  <div class="body">
+    <p class="kick">${teller.name} says</p>
+    <div class="mini">${card}</div>
+    <button class="btn t">TRUE</button>
+    <button class="btn l">LIE<small>a pure lie</small></button>
+    <button class="btn l2">LIE<small>someone else's truth</small></button>
+  </div>`;
+
+const tellerPhone = () => `
+  <div class="body">
+    <p class="kick">Only you can see this</p>
+    <div class="hello2"><h4>HELLO</h4><small>this truth belongs to</small><div>${owner.name}</div></div>
+    <div class="mini">${card}</div>
+    <p class="kick">Claim it. ${owner.name} might back you up.</p>
+    <div class="row"><button class="btn l2">Skip</button><button class="btn t">Lock in</button></div>
+  </div>`;
+
+const params = () => new URLSearchParams(location.search);
+function render() {
+  const mode = params().get("mode") === "light" ? "light" : "dark";
+  document.getElementById("app").innerHTML = `
+    <div class="stage sb" data-mode="${mode}">
+      <div class="cell"><p class="cap">Board: public read, vote open</p><div class="board">${board()}</div></div>
+      <div class="cell"><p class="cap">Voter phone: vote</p><div class="phone">${voter()}</div></div>
+      <div class="cell"><p class="cap">Teller phone: private read</p><div class="phone">${tellerPhone()}</div></div>
+    </div>`;
+  document.getElementById("label").textContent = `Sticker bomb, ${mode}`;
+}
+function flip() {
+  const q = params();
+  q.set("mode", q.get("mode") === "light" ? "dark" : "light");
+  history.replaceState(null, "", `?${q}`);
+  render();
+}
+document.getElementById("mode").onclick = flip;
+addEventListener("keydown", e => {
+  if (e.target.closest("input, textarea, [contenteditable]")) return;
+  if (e.key === "m") flip();
+});
+render();
+</script>
+</body>
+</html>
