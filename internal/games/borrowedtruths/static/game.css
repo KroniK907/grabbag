@@ -323,7 +323,6 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 /* ---------- Phone ---------- */
 
 .bt-phone {
-  position: relative;
   display: grid;
   align-content: start;
   gap: 14px;
@@ -335,10 +334,11 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 }
 .bt-help {
   position: absolute;
-  right: 12px;
-  top: 10px;
-  width: 30px;
-  height: 30px;
+  left: 10px;
+  top: 30px;
+  z-index: 8;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -404,21 +404,22 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-name {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   min-height: 56px;
-  padding: 6px 10px;
+  padding: 6px;
   border: 3px solid #fff;
   outline: 2px solid var(--bt-edge);
   border-radius: 16px;
   background: var(--bt-sticker);
   color: var(--bt-sink);
-  font: 600 14px var(--bt-mono);
+  font: 600 13px var(--bt-mono);
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   cursor: pointer;
 }
-.bt-name .bt-av { width: 36px; height: 36px; }
+.bt-name .bt-av { flex: none; width: 32px; height: 32px; }
+.bt-name-text { min-width: 0; }
 
 .bt-facts { display: grid; gap: 14px; }
 .bt-fact {
@@ -561,6 +562,7 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .phase-tim-reveal .bt-claimant:not(.is-owner) { opacity: .6; }
 .bt-none-count { font-family: var(--bt-display); font-size: 1.8cqw; }
 .bt-none-count b { color: var(--bt-count); font-weight: 400; }
+.bt-tim-crowd { display: flex; flex-wrap: wrap; gap: .4cqw 1.2cqw; font-size: 1.1cqw; opacity: .8; }
 
 .bt-tim-ask { grid-column: 2; grid-row: 2; align-self: start; }
 .bt-tim-stickers { grid-column: 2; grid-row: 2; margin-top: 7cqw; }

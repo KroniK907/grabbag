@@ -81,6 +81,9 @@
       {{end}}
       {{if eq .Phase "tim-reveal"}}
       <div class="bt-none-count">None of them <b>{{.NoneCount}}</b></div>
+      {{if .Crowd}}
+      <div class="bt-none-count bt-tim-crowd">Crowd {{range .Claimants}}<span>{{.Name}} <b>{{.Crowd}}</b></span>{{end}}<span>None <b>{{.CrowdNone}}</b></span></div>
+      {{end}}
       {{end}}
     </div>
     {{if eq .Phase "tim-reveal"}}

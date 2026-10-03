@@ -79,12 +79,12 @@ func (e *engine) pick(k cardKind, teller string) int {
 	case kindBorrowed:
 		return e.pickBorrowed(teller)
 	case kindLie:
-		if e.Settings.LieSource != lieSourceBank {
+		if e.Settings.lieSource() != lieSourceBank {
 			if i := e.pickFrom(func(f fact) bool { return f.Lie && f.Owner != "" && f.Owner != teller }); i >= 0 {
 				return i
 			}
 		}
-		if e.Settings.LieSource != lieSourcePlayers {
+		if e.Settings.lieSource() != lieSourcePlayers {
 			return e.pickFrom(func(f fact) bool { return f.Lie && f.Owner == "" })
 		}
 	}

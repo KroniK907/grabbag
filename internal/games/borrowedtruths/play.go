@@ -11,7 +11,8 @@ import (
 // "" when the post changed run state.
 type action func(e *engine, p games.Player, r *http.Request, now time.Time) string
 
-// withEngine runs fn under the lock and answers with the fresh phone column.
+// withEngine runs a signed-in player's fn under the lock and answers with the
+// fresh phone column.
 func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, fn action) {
 	h := g.helperNow()
 	if h == nil {
@@ -23,6 +24,20 @@ func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, fn action) {
 		http.Error(w, "Sign in to play.", http.StatusUnauthorized)
 		return
 	}
+	g.runAction(w, r, p, fn)
+}
+
+// withHost is withEngine for host posts. An admin session needs no player
+// cookie, so p may be the zero Player.
+func (g *Game) withHost(w http.ResponseWriter, r *http.Request, fn action) {
+	p, ok := g.hostOnly(w, r)
+	if !ok {
+		return
+	}
+	g.runAction(w, r, p, fn)
+}
+
+func (g *Game) runAction(w http.ResponseWriter, r *http.Request, p games.Player, fn action) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
@@ -98,26 +113,28 @@ func (g *Game) postReveal(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// hostOnly lets the claimed host or an admin session through.
-func (g *Game) hostOnly(w http.ResponseWriter, r *http.Request) bool {
+// hostOnly lets the claimed host or an admin session through. It returns the
+// request's player, which is the zero Player for an admin with no player
+// cookie.
+func (g *Game) hostOnly(w http.ResponseWriter, r *http.Request) (games.Player, bool) {
 	h := g.helperNow()
 	if h == nil {
 		http.NotFound(w, r)
-		return false
+		return games.Player{}, false
 	}
 	p, ok, err := h.PlayerFromRequest(r)
-	if h.HasAdmin(r) || (err == nil && ok && p.ClaimedHost) {
-		return true
+	if err != nil || !ok {
+		p = games.Player{}
+	}
+	if h.HasAdmin(r) || p.ClaimedHost {
+		return p, true
 	}
 	http.Error(w, "Host only.", http.StatusForbidden)
-	return false
+	return games.Player{}, false
 }
 
 func (g *Game) postHostContinue(w http.ResponseWriter, r *http.Request) {
-	if !g.hostOnly(w, r) {
-		return
-	}
-	g.withEngine(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
+	g.withHost(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
 		finish, changed := e.Continue(now)
 		if finish {
 			g.needFinish = true
@@ -130,28 +147,19 @@ func (g *Game) postHostContinue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) postHostVoid(w http.ResponseWriter, r *http.Request) {
-	if !g.hostOnly(w, r) {
-		return
-	}
-	g.withEngine(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
+	g.withHost(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
 		return e.Void(now)
 	})
 }
 
 func (g *Game) postHostExtend(w http.ResponseWriter, r *http.Request) {
-	if !g.hostOnly(w, r) {
-		return
-	}
-	g.withEngine(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
+	g.withHost(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
 		return e.Extend(now)
 	})
 }
 
 func (g *Game) postHostPause(w http.ResponseWriter, r *http.Request) {
-	if !g.hostOnly(w, r) {
-		return
-	}
-	g.withEngine(w, r, func(*engine, games.Player, *http.Request, time.Time) string {
+	g.withHost(w, r, func(*engine, games.Player, *http.Request, time.Time) string {
 		g.needPause = true
 		return ""
 	})
@@ -159,11 +167,10 @@ func (g *Game) postHostPause(w http.ResponseWriter, r *http.Request) {
 
 // postHostResume is the one host post that runs while paused.
 func (g *Game) postHostResume(w http.ResponseWriter, r *http.Request) {
-	if !g.hostOnly(w, r) {
+	p, ok := g.hostOnly(w, r)
+	if !ok {
 		return
 	}
-	h := g.helperNow()
-	p, _, _ := h.PlayerFromRequest(r)
 	g.mu.Lock()
 	if g.engine == nil || !g.started {
 		g.mu.Unlock()

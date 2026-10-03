@@ -46,15 +46,22 @@ func (g *Game) fillTIMBoard(view *boardView) {
 		view.Voters, view.Locked = e.lockFaces(e.Votes)
 	case phaseTIMReveal:
 		owner := e.Photos[r.Photo].Owner
-		counts := map[string]int{}
+		// The audience gets its own counts. It never scores.
+		counts, crowd := map[string]int{}, map[string]int{}
 		for _, pick := range e.Votes {
 			counts[pick]++
 		}
+		for _, pick := range e.Crowd {
+			crowd[pick]++
+		}
 		for i := range view.Claimants {
 			view.Claimants[i].Count = counts[view.Claimants[i].ID]
+			view.Claimants[i].Crowd = crowd[view.Claimants[i].ID]
 			view.Claimants[i].Owner = view.Claimants[i].ID == owner
 		}
 		view.NoneCount = counts[pickNone]
+		view.Crowd = len(e.Crowd) > 0
+		view.CrowdNone = crowd[pickNone]
 		view.NotTheirs = r.NotTheirs
 		view.Owner = faceOf(e.player(owner))
 		view.Awards = e.awardViews()

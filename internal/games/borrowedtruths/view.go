@@ -18,6 +18,7 @@ type face struct {
 	Locked   bool
 	Owner    bool
 	Count    int
+	Crowd    int
 	Score    int
 	Rank     int
 }
@@ -78,6 +79,7 @@ type boardView struct {
 	PhotoURL  template.URL
 	Claimants []face
 	NoneCount int
+	CrowdNone int
 	NotTheirs bool
 }
 

@@ -428,3 +428,88 @@ func TestPhotoUploadServeAndDelete(t *testing.T) {
 		t.Fatal("Stop left the photo folder")
 	}
 }
+
+func TestPhotoRefusedBeforeDecode(t *testing.T) {
+	g, _, mux := startGame(t, 6)
+	// A flat 4096x4096 image compresses far below 2 MB but decodes to 16 MiB.
+	var big bytes.Buffer
+	if err := png.Encode(&big, image.NewGray(image.Rect(0, 0, 4096, 4096))); err != nil {
+		t.Fatal(err)
+	}
+	if big.Len() >= maxPhotoBytes {
+		t.Fatalf("test image is %d bytes, want under the byte cap", big.Len())
+	}
+	if rec := upload(t, mux, "p2", big.Bytes()); rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("huge dimensions = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := upload(t, mux, "watcher", pngBytes(t)); rec.Code != http.StatusConflict {
+		t.Fatalf("audience upload = %d", rec.Code)
+	}
+	_ = g.Pause()
+	if rec := upload(t, mux, "p2", pngBytes(t)); rec.Code != http.StatusConflict {
+		t.Fatalf("paused upload = %d", rec.Code)
+	}
+	_ = g.Resume()
+	g.mu.Lock()
+	g.engine.enter(phasePrivate, t0)
+	g.mu.Unlock()
+	if rec := upload(t, mux, "p2", pngBytes(t)); rec.Code != http.StatusConflict {
+		t.Fatalf("upload after facts = %d", rec.Code)
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if len(g.engine.Photos) != 0 {
+		t.Fatalf("%d photos stored, want none", len(g.engine.Photos))
+	}
+}
+
+func TestTIMRevealShowsCrowdApart(t *testing.T) {
+	e := timEngine(t, 6, 6, func(s *matchSettings) { s.NotTheirsPct = 0 })
+	g := &Game{engine: e, started: true, now: func() time.Time { return t0 }}
+	toTIM(t, e)
+	for e.Phase != phaseTIMVote {
+		e.Continue(t0)
+	}
+	owner := e.Photos[e.Round.Photo].Owner
+	if msg := e.Vote("crowd-1", pickNone, false); msg != "" {
+		t.Fatal(msg)
+	}
+	if msg := e.Vote("crowd-2", owner, false); msg != "" {
+		t.Fatal(msg)
+	}
+	for _, v := range e.voters() {
+		e.Vote(v.ID, pickNone, true)
+	}
+	e.Continue(t0)
+	if e.Phase != phaseTIMReveal {
+		t.Fatalf("phase = %s", e.Phase)
+	}
+	view := g.boardViewLocked()
+	if !view.Crowd || view.CrowdNone != 1 {
+		t.Fatalf("crowd=%v none=%d, want the audience None vote", view.Crowd, view.CrowdNone)
+	}
+	for _, c := range view.Claimants {
+		want := 0
+		if c.ID == owner {
+			want = 1
+		}
+		if c.Crowd != want || c.Count != 0 {
+			t.Fatalf("%s crowd=%d count=%d, want crowd %d and no seated votes", c.Name, c.Crowd, c.Count, want)
+		}
+	}
+	if view.NoneCount != len(e.voters()) {
+		t.Fatalf("seated None = %d, want %d", view.NoneCount, len(e.voters()))
+	}
+	for _, a := range e.Awards {
+		if strings.HasPrefix(a.ID, "crowd-") {
+			t.Fatalf("audience scored: %+v", a)
+		}
+	}
+	var buf bytes.Buffer
+	if err := pages.ExecuteTemplate(&buf, "board-frame", view); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "bt-tim-crowd") {
+		t.Fatal("board html has no crowd results")
+	}
+}

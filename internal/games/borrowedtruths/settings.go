@@ -107,6 +107,15 @@ func (s matchSettings) timRounds(seated int) int {
 	return 3
 }
 
+// lieSource is the lie source in play. Zero lies per player means bank only,
+// whatever the form says, so a Lie weight always has cards to deal.
+func (s matchSettings) lieSource() string {
+	if s.LiesPerPlayer == 0 {
+		return lieSourceBank
+	}
+	return s.LieSource
+}
+
 // voidShare is the I knew it void threshold as num/den.
 func (s matchSettings) voidShare() (num, den int) {
 	switch s.KnewVoid {

@@ -21,7 +21,8 @@
   {{else if eq .Phase "facts"}}
   {{if eq .Role "writer"}}
   {{if .PhotoAsk}}
-  <div class="bt-fact is-photo" data-bt-photo>
+  {{/* hx-preserve keeps half-written facts and an upload in flight through roster, pause, and reconnect repaints. */}}
+  <div id="bt-facts-photo" class="bt-fact is-photo" data-bt-photo hx-preserve="true">
     <span>Photo <small>optional</small></span>
     <small>A photo you took of something interesting. Not a selfie. Nobody from this room in it. Nothing that gives away that you took it. Nothing you wouldn't put on the TV.</small>
     <img class="bt-photo-preview" data-bt-photo-preview alt="" hidden>
@@ -33,7 +34,7 @@
   <p class="bt-big">Locked in.</p>
   <p class="bt-kick">Waiting on {{.FactsLeft}} more.</p>
   {{else}}
-  <form class="bt-facts" hx-post="/play/facts" hx-target="#bt-phone" hx-swap="outerHTML">
+  <form id="bt-facts" class="bt-facts" hx-preserve="true" hx-post="/play/facts" hx-target="#bt-phone" hx-swap="outerHTML">
     <p class="bt-kick">Only the game sees these. Write in the first person.</p>
     {{range .TruthSlots}}
     <label class="bt-fact is-truth">
@@ -72,7 +73,7 @@
         {{range .TIMOptions}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
           <input type="hidden" name="pick" value="{{.ID}}">
-          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
         </form>
         {{end}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
@@ -108,7 +109,7 @@
     {{range .TIMOptions}}
     <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
       <input type="hidden" name="pick" value="{{.ID}}">
-      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
     </form>
     {{end}}
     <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
@@ -171,7 +172,7 @@
         {{range .Names}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
           <input type="hidden" name="pick" value="borrowed"><input type="hidden" name="owner" value="{{.ID}}">
-          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
         </form>
         {{end}}
       </div>
@@ -212,7 +213,7 @@
     {{range .Names}}
     <form hx-post="/play/owner-vote" hx-target="#bt-phone" hx-swap="outerHTML">
       <input type="hidden" name="target" value="{{.ID}}">
-      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
     </form>
     {{end}}
   </div>

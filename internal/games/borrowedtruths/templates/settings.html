@@ -13,6 +13,7 @@
         <option value="bank" {{if eq .Settings.LieSource "bank"}}selected{{end}}>Bank only</option>
       </select>
     </label>
+    {{if eq .Settings.LiesPerPlayer 0}}<p><small>With 0 lies per player, every lie comes from the bank.</small></p>{{end}}
     {{template "bt-num" index .Nums "mix_yours"}}
     {{template "bt-num" index .Nums "mix_borrowed"}}
     {{template "bt-num" index .Nums "mix_lie"}}
