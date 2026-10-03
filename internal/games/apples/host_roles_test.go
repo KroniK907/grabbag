@@ -83,14 +83,14 @@ func TestHostRevealsOnlyHostMayReveal(t *testing.T) {
 	if allRevealed(g) {
 		return
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	revealed := 0
-	for _, p := range g.engine.Packets {
+	for _, p := range g.run.Engine().Packets {
 		if p.Revealed {
 			revealed++
 		}
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	if revealed != 1 {
 		t.Fatalf("revealed count = %d", revealed)
 	}
@@ -108,7 +108,7 @@ func TestHostRevealsSkipsAutoBetweenTimer(t *testing.T) {
 	h.sit("p2", "Sam")
 	seedRNG(g)
 	now := time.Date(2026, 9, 26, 12, 0, 0, 0, time.UTC)
-	g.now = func() time.Time { return now }
+	g.run.SetClock(func() time.Time { return now })
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
@@ -120,9 +120,7 @@ func TestHostRevealsSkipsAutoBetweenTimer(t *testing.T) {
 	enterReveal(t, g, judge, other)
 	before := revealedCount(g)
 	now = now.Add(2 * time.Second)
-	g.mu.Lock()
-	g.fireTimerLocked()
-	g.mu.Unlock()
+	g.run.Tick()
 	if got := revealedCount(g); got != before {
 		t.Fatalf("auto timer revealed %d packets, want %d", got, before)
 	}
@@ -188,10 +186,10 @@ func runMiniRound(t *testing.T, g *Game, judge, submitter string) {
 }
 
 func revealedCount(g *Game) int {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	n := 0
-	for _, p := range g.engine.Packets {
+	for _, p := range g.run.Engine().Packets {
 		if p.Revealed {
 			n++
 		}

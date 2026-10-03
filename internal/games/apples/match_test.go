@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 func TestStartRefusesWhenLibraryTooSmall(t *testing.T) {
@@ -53,13 +54,13 @@ func TestStartDealsHumansAndFillsBots(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.engine == nil || len(g.engine.Actors["p1"].Hand) != 3 {
-		t.Fatalf("human hand = %#v", g.engine.Actors["p1"])
+	g.run.Lock()
+	defer g.run.Unlock()
+	if g.run.Engine() == nil || len(g.run.Engine().Actors["p1"].Hand) != 3 {
+		t.Fatalf("human hand = %#v", g.run.Engine().Actors["p1"])
 	}
 	bots := 0
-	for _, a := range g.engine.Actors {
+	for _, a := range g.run.Engine().Actors {
 		if a.Bot {
 			bots++
 			if len(a.Hand) != 0 {
@@ -185,8 +186,8 @@ func TestRoundLockRevealConfirm(t *testing.T) {
 	if conf.Code != http.StatusOK {
 		t.Fatal(conf.Body.String())
 	}
-	if g.engine.Actors[winner].Score != 100 {
-		t.Fatalf("score = %d", g.engine.Actors[winner].Score)
+	if g.run.Engine().Actors[winner].Score != 100 {
+		t.Fatalf("score = %d", g.run.Engine().Actors[winner].Score)
 	}
 	nextJudge := currentJudge(g)
 	if nextJudge == judge {
@@ -228,8 +229,8 @@ func TestBoardRosterMarksLocked(t *testing.T) {
 	board = httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	body := board.Body.String()
-	otherName := g.engine.Actors[other].Name
-	judgeName := g.engine.Actors[judge].Name
+	otherName := g.run.Engine().Actors[other].Name
+	judgeName := g.run.Engine().Actors[judge].Name
 	if !playerTileLocked(body, "Bot 1") {
 		t.Fatalf("bot missing lock mark: %s", body)
 	}
@@ -267,19 +268,19 @@ func TestPickNHolesStayPut(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	if promptPick(g.engine.LivePrompt) != 2 {
-		t.Fatalf("pick = %d", promptPick(g.engine.LivePrompt))
+	if promptPick(g.run.Engine().LivePrompt) != 2 {
+		t.Fatalf("pick = %d", promptPick(g.run.Engine().LivePrompt))
 	}
-	c1 := g.engine.Actors[other].Hand[0].CardID
-	c2 := g.engine.Actors[other].Hand[1].CardID
+	c1 := g.run.Engine().Actors[other].Hand[0].CardID
+	c2 := g.run.Engine().Actors[other].Hand[1].CardID
 	playPOST(g, "/slot", other, url.Values{"card": {c1}})
 	playPOST(g, "/slot", other, url.Values{"card": {c2}})
-	if g.engine.Actors[other].Holes[0] == nil || g.engine.Actors[other].Holes[0].CardID != c1 {
-		t.Fatalf("holes moved: %#v", g.engine.Actors[other].Holes)
+	if g.run.Engine().Actors[other].Holes[0] == nil || g.run.Engine().Actors[other].Holes[0].CardID != c1 {
+		t.Fatalf("holes moved: %#v", g.run.Engine().Actors[other].Holes)
 	}
 	playPOST(g, "/unslot", other, url.Values{"hole": {"1"}})
-	if g.engine.Actors[other].Holes[0] == nil || g.engine.Actors[other].Holes[0].CardID != c1 || g.engine.Actors[other].Holes[1] != nil {
-		t.Fatalf("unslot moved first card: %#v", g.engine.Actors[other].Holes)
+	if g.run.Engine().Actors[other].Holes[0] == nil || g.run.Engine().Actors[other].Holes[0].CardID != c1 || g.run.Engine().Actors[other].Holes[1] != nil {
+		t.Fatalf("unslot moved first card: %#v", g.run.Engine().Actors[other].Holes)
 	}
 }
 
@@ -302,23 +303,23 @@ func TestSlotSwapsLastHoleWhenFull(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	if promptPick(g.engine.LivePrompt) != 2 {
-		t.Fatalf("pick = %d", promptPick(g.engine.LivePrompt))
+	if promptPick(g.run.Engine().LivePrompt) != 2 {
+		t.Fatalf("pick = %d", promptPick(g.run.Engine().LivePrompt))
 	}
-	c1 := g.engine.Actors[other].Hand[0].CardID
-	c2 := g.engine.Actors[other].Hand[1].CardID
-	c3 := g.engine.Actors[other].Hand[2].CardID
+	c1 := g.run.Engine().Actors[other].Hand[0].CardID
+	c2 := g.run.Engine().Actors[other].Hand[1].CardID
+	c3 := g.run.Engine().Actors[other].Hand[2].CardID
 	playPOST(g, "/slot", other, url.Values{"card": {c1}})
 	playPOST(g, "/slot", other, url.Values{"card": {c2}})
 	swap := playPOST(g, "/slot", other, url.Values{"card": {c3}})
 	if strings.Contains(swap.Body.String(), "Every hole is filled.") {
 		t.Fatalf("full slot rejected: %s", swap.Body.String())
 	}
-	holes := g.engine.Actors[other].Holes
+	holes := g.run.Engine().Actors[other].Holes
 	if holes[0] == nil || holes[0].CardID != c1 || holes[1] == nil || holes[1].CardID != c3 {
 		t.Fatalf("swap last hole = %#v", holes)
 	}
-	hand := g.engine.Actors[other].Hand
+	hand := g.run.Engine().Actors[other].Hand
 	foundOld := false
 	for _, c := range hand {
 		if c.CardID == c2 {
@@ -352,22 +353,22 @@ func TestSlotReplacesSingleHoleWhenFull(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	c1 := g.engine.Actors[other].Hand[0].CardID
-	c2 := g.engine.Actors[other].Hand[1].CardID
+	c1 := g.run.Engine().Actors[other].Hand[0].CardID
+	c2 := g.run.Engine().Actors[other].Hand[1].CardID
 	playPOST(g, "/slot", other, url.Values{"card": {c1}})
 	playPOST(g, "/slot", other, url.Values{"card": {c2}})
-	hole := g.engine.Actors[other].Holes
+	hole := g.run.Engine().Actors[other].Holes
 	if len(hole) != 1 || hole[0] == nil || hole[0].CardID != c2 {
 		t.Fatalf("single swap = %#v", hole)
 	}
 	foundOld := false
-	for _, c := range g.engine.Actors[other].Hand {
+	for _, c := range g.run.Engine().Actors[other].Hand {
 		if c.CardID == c1 {
 			foundOld = true
 		}
 	}
 	if !foundOld {
-		t.Fatalf("replaced card missing from hand: %#v", g.engine.Actors[other].Hand)
+		t.Fatalf("replaced card missing from hand: %#v", g.run.Engine().Actors[other].Hand)
 	}
 }
 
@@ -385,25 +386,25 @@ func TestWildcardDoneSlotsAndHidesBox(t *testing.T) {
 	if !strings.Contains(body, "A rubber chicken") {
 		t.Fatalf("slotted text missing: %s", body)
 	}
-	g.mu.Lock()
-	a := g.engine.Actors[other]
+	g.run.Lock()
+	a := g.run.Engine().Actors[other]
 	if a.Blank != nil {
 		t.Fatal("blank still in the hand after Done")
 	}
 	if len(a.Holes) == 0 || a.Holes[0] == nil || a.Holes[0].Text != "A rubber chicken" {
 		t.Fatalf("holes = %#v", a.Holes)
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 }
 
 func TestWildcardDiscardOnlyOneLeftover(t *testing.T) {
 	t.Parallel()
 	g, other := startWildcardSubmit(t)
 	playPOST(g, "/wildcard-draft", other, url.Values{"text": {"A rubber chicken"}})
-	g.mu.Lock()
-	first := g.engine.Actors[other].Hand[0].CardID
-	second := g.engine.Actors[other].Hand[1].CardID
-	g.mu.Unlock()
+	g.run.Lock()
+	first := g.run.Engine().Actors[other].Hand[0].CardID
+	second := g.run.Engine().Actors[other].Hand[1].CardID
+	g.run.Unlock()
 	slotted := playPOST(g, "/discard", other, url.Values{"card": {first}})
 	if strings.Count(slotted.Body.String(), ">Discard</button>") != 0 {
 		t.Fatalf("leftover discard chips still on the hand: %s", slotted.Body.String())
@@ -415,9 +416,9 @@ func TestWildcardDiscardOnlyOneLeftover(t *testing.T) {
 	if !strings.Contains(again.Body.String(), "already discarded") {
 		t.Fatalf("second discard = %s", again.Body.String())
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	a := g.engine.Actors[other]
+	g.run.Lock()
+	defer g.run.Unlock()
+	a := g.run.Engine().Actors[other]
 	if a.Discard == nil || a.Discard.CardID != first {
 		t.Fatalf("discard = %#v", a.Discard)
 	}
@@ -457,26 +458,26 @@ func TestSkipSpendsPromptMultiReturnsOther(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	left := len(g.engine.Prompts)
+	left := len(g.run.Engine().Prompts)
 	judge := currentJudge(g)
 	playPOST(g, "/draw", judge, nil)
-	if g.engine.Phase != phaseHold {
-		t.Fatalf("phase after draw = %s", g.engine.Phase)
+	if g.run.Engine().Phase != phaseHold {
+		t.Fatalf("phase after draw = %s", g.run.Engine().Phase)
 	}
-	first := g.engine.LivePrompt.CardID
+	first := g.run.Engine().LivePrompt.CardID
 	playPOST(g, "/skip", judge, nil)
-	if g.engine.LivePrompt.CardID == first {
+	if g.run.Engine().LivePrompt.CardID == first {
 		t.Fatal("skip kept the same prompt")
 	}
-	if g.engine.Phase != phaseHold {
-		t.Fatalf("phase after skip = %s", g.engine.Phase)
+	if g.run.Engine().Phase != phaseHold {
+		t.Fatalf("phase after skip = %s", g.run.Engine().Phase)
 	}
-	if len(g.engine.Prompts) != left-2 {
-		t.Fatalf("skip returned prompt to pile: have %d started %d", len(g.engine.Prompts), left)
+	if len(g.run.Engine().Prompts) != left-2 {
+		t.Fatalf("skip returned prompt to pile: have %d started %d", len(g.run.Engine().Prompts), left)
 	}
 	playPOST(g, "/keep-prompt", judge, nil)
-	if g.engine.Phase != phaseSubmit {
-		t.Fatalf("phase after lock in = %s", g.engine.Phase)
+	if g.run.Engine().Phase != phaseSubmit {
+		t.Fatalf("phase after lock in = %s", g.run.Engine().Phase)
 	}
 
 	g2h, g2 := tinyGame(t, 6, 40, 1)
@@ -489,17 +490,17 @@ func TestSkipSpendsPromptMultiReturnsOther(t *testing.T) {
 	if err := g2.Start(g2h); err != nil {
 		t.Fatal(err)
 	}
-	left = len(g2.engine.Prompts)
+	left = len(g2.run.Engine().Prompts)
 	judge = currentJudge(g2)
 	playPOST(g2, "/draw", judge, nil)
-	if g2.engine.Phase != phaseChoose {
-		t.Fatalf("phase = %s", g2.engine.Phase)
+	if g2.run.Engine().Phase != phaseChoose {
+		t.Fatalf("phase = %s", g2.run.Engine().Phase)
 	}
-	keep := g2.engine.Choice[0].CardID
-	drop := g2.engine.Choice[1].CardID
+	keep := g2.run.Engine().Choice[0].CardID
+	drop := g2.run.Engine().Choice[1].CardID
 	playPOST(g2, "/choose-prompt", judge, url.Values{"prompt": {keep}})
 	found := false
-	for _, p := range g2.engine.Prompts {
+	for _, p := range g2.run.Engine().Prompts {
 		if p.CardID == drop {
 			found = true
 		}
@@ -507,7 +508,7 @@ func TestSkipSpendsPromptMultiReturnsOther(t *testing.T) {
 	if !found {
 		t.Fatal("unpicked multi prompt was not returned")
 	}
-	if g2.engine.LivePrompt.CardID != keep {
+	if g2.run.Engine().LivePrompt.CardID != keep {
 		t.Fatal("chose the wrong prompt")
 	}
 }
@@ -523,20 +524,20 @@ func TestBotsGetPickOnlyOnDraw(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	for _, a := range g.engine.Actors {
+	for _, a := range g.run.Engine().Actors {
 		if a.Bot && filledCount(a.Holes) != 0 {
 			t.Fatal("bot dealt before draw")
 		}
 	}
 	judge := currentJudge(g)
 	playPOST(g, "/draw", judge, nil)
-	for _, a := range g.engine.Actors {
+	for _, a := range g.run.Engine().Actors {
 		if a.Bot && filledCount(a.Holes) != 0 {
 			t.Fatalf("bot dealt before lock in: %#v", a)
 		}
 	}
 	playPOST(g, "/keep-prompt", judge, nil)
-	for _, a := range g.engine.Actors {
+	for _, a := range g.run.Engine().Actors {
 		if !a.Bot {
 			continue
 		}
@@ -561,18 +562,18 @@ func TestSuddenDeathWhenLeadTiedAtFinish(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.engine.Actors["p1"].Score = 100
-	g.engine.Actors["p2"].Score = 100
-	g.engine.PendingFinish = true
-	g.engine.Phase = phaseReveal
-	g.engine.Packets = []packet{
+	g.run.Engine().Actors["p1"].Score = 100
+	g.run.Engine().Actors["p2"].Score = 100
+	g.run.Engine().PendingFinish = true
+	g.run.Engine().Phase = phaseReveal
+	g.run.Engine().Packets = []packet{
 		{ActorID: "p1", Cards: []playCard{{Text: "a"}}, Revealed: true},
 		{ActorID: "p2", Cards: []playCard{{Text: "b"}}, Revealed: true},
 	}
-	g.engine.LivePrompt = &playPrompt{Text: "Hi", Pick: 1}
-	_ = g.engine.confirm("p1")
-	if g.engine.Phase != phaseSudden {
-		t.Fatalf("phase = %s", g.engine.Phase)
+	g.run.Engine().LivePrompt = &playPrompt{Text: "Hi", Pick: 1}
+	_ = g.run.Engine().confirm("p1")
+	if g.run.Engine().Phase != phaseSudden {
+		t.Fatalf("phase = %s", g.run.Engine().Phase)
 	}
 }
 
@@ -580,9 +581,7 @@ func TestScoringViewLabelsWinnerAndFavoriteVotes(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)
 	g := loadedGame(t, h)
-	g.mu.Lock()
-	g.started = true
-	g.engine = &engine{
+	g.run.Install(&engine{
 		Settings:   factorySettings(),
 		Phase:      phaseReveal,
 		Actors:     map[string]*actor{"p1": {ID: "p1", Name: "Pat"}, "p2": {ID: "p2", Name: "Sam"}},
@@ -591,8 +590,7 @@ func TestScoringViewLabelsWinnerAndFavoriteVotes(t *testing.T) {
 		WinnerID:   "p1",
 		NamesShown: true,
 		PhoneErr:   map[string]string{},
-	}
-	g.mu.Unlock()
+	})
 
 	rec := httptest.NewRecorder()
 	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
@@ -609,19 +607,18 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 	h := newFakeHelper(t.TempDir(), true)
 	g := loadedGame(t, h)
 	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
-	g.now = func() time.Time { return now }
+	g.run.SetClock(func() time.Time { return now })
 	m := &engine{
 		Settings: matchSettings{FinishHoldSec: 8},
 		Actors:   map[string]*actor{"p1": {ID: "p1", Name: "Pat"}},
 		WinnerID: "p1",
 		PhoneErr: map[string]string{},
 	}
-	g.mu.Lock()
-	g.started = true
-	g.engine = m
-	m.at = g.clock()
+	g.run.Install(m)
+	g.run.Lock()
+	m.at = g.run.Now()
 	m.finish()
-	g.mu.Unlock()
+	g.run.Unlock()
 
 	rec := httptest.NewRecorder()
 	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
@@ -633,10 +630,7 @@ func TestMatchWinnerStaysVisibleBeforeHostFinish(t *testing.T) {
 	}
 
 	now = now.Add(8*time.Second + time.Second)
-	g.mu.Lock()
-	g.fireTimerLocked()
-	g.flushHostLocked()
-	g.mu.Unlock()
+	g.run.Tick()
 	if h.finishN != 1 {
 		t.Fatalf("Finish calls = %d, want 1", h.finishN)
 	}
@@ -646,19 +640,16 @@ func TestBoardCueWhenFavoriteVotingStarts(t *testing.T) {
 	t.Parallel()
 	h := newFakeHelper(t.TempDir(), true)
 	g := loadedGame(t, h)
-	g.mu.Lock()
-	g.started = true
-	g.engine = &engine{
-		Settings:  factorySettings(),
-		Phase:     phaseReveal,
-		Round:     3,
-		TimerKind: timerFavoriteVote,
-		Actors:    map[string]*actor{},
-		Packets:   []packet{{ActorID: "p1", Revealed: true}},
-		Votes:     map[string]string{},
-		PhoneErr:  map[string]string{},
-	}
-	g.mu.Unlock()
+	g.run.Install(&engine{
+		Settings: factorySettings(),
+		Phase:    phaseReveal,
+		Round:    3,
+		Timer:    runtimekit.Timer{Kind: timerFavoriteVote},
+		Actors:   map[string]*actor{},
+		Packets:  []packet{{ActorID: "p1", Revealed: true}},
+		Votes:    map[string]string{},
+		PhoneErr: map[string]string{},
+	})
 
 	rec := httptest.NewRecorder()
 	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
@@ -667,9 +658,9 @@ func TestBoardCueWhenFavoriteVotingStarts(t *testing.T) {
 		t.Fatalf("board missing favorite cue: %s", body)
 	}
 
-	g.mu.Lock()
-	g.engine.TimerKind = timerJudgePick
-	g.mu.Unlock()
+	g.run.Lock()
+	g.run.Engine().Timer.Kind = timerJudgePick
+	g.run.Unlock()
 	rec = httptest.NewRecorder()
 	g.Board(rec, httptest.NewRequest(http.MethodGet, "/board", nil))
 	if strings.Contains(rec.Body.String(), "apples-vote-cue") {
@@ -683,9 +674,7 @@ func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
 	h.sit("p1", "Pat")
 	h.sit("p2", "Sam")
 	g := loadedGame(t, h)
-	g.mu.Lock()
-	g.started = true
-	g.engine = &engine{
+	g.run.Install(&engine{
 		Settings: factorySettings(),
 		Phase:    phaseReveal,
 		JudgeID:  "p2",
@@ -700,8 +689,7 @@ func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
 		},
 		Votes:    map[string]string{},
 		PhoneErr: map[string]string{},
-	}
-	g.mu.Unlock()
+	})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -719,15 +707,15 @@ func TestSeatedPlayerCanVoteDuringReveal(t *testing.T) {
 	if vote.Code != http.StatusOK {
 		t.Fatal(vote.Body.String())
 	}
-	if g.engine.Votes["p1"] != "bot:1" {
-		t.Fatalf("vote = %#v", g.engine.Votes)
+	if g.run.Engine().Votes["p1"] != "bot:1" {
+		t.Fatalf("vote = %#v", g.run.Engine().Votes)
 	}
 	again := playPOST(g, "/vote", "p1", url.Values{"target": {"bot:1"}})
 	if again.Code != http.StatusOK {
 		t.Fatal(again.Body.String())
 	}
-	if _, ok := g.engine.Votes["p1"]; ok {
-		t.Fatalf("retap kept vote = %#v", g.engine.Votes)
+	if _, ok := g.run.Engine().Votes["p1"]; ok {
+		t.Fatalf("retap kept vote = %#v", g.run.Engine().Votes)
 	}
 }
 
@@ -738,9 +726,7 @@ func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
 	h.players[viewer.ID] = viewer
 	h.audience = append(h.audience, viewer)
 	g := loadedGame(t, h)
-	g.mu.Lock()
-	g.started = true
-	g.engine = &engine{
+	g.run.Install(&engine{
 		Settings: factorySettings(),
 		Phase:    phaseReveal,
 		JudgeID:  "judge",
@@ -756,8 +742,7 @@ func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
 		},
 		Votes:    map[string]string{"viewer": "p1"},
 		PhoneErr: map[string]string{},
-	}
-	g.mu.Unlock()
+	})
 
 	renderPhone := func() string {
 		rec := httptest.NewRecorder()
@@ -771,10 +756,10 @@ func TestAudienceVotePhoneMarksChoiceAndScoring(t *testing.T) {
 		t.Fatalf("audience voting phone = %s", voting)
 	}
 
-	g.mu.Lock()
-	g.engine.NamesShown = true
-	g.engine.WinnerID = "p2"
-	g.mu.Unlock()
+	g.run.Lock()
+	g.run.Engine().NamesShown = true
+	g.run.Engine().WinnerID = "p2"
+	g.run.Unlock()
 	scoring := renderPhone()
 	for _, want := range []string{"Judge's pick", "Favorite 1st", "Your favorite", "Sam"} {
 		if !strings.Contains(scoring, want) {
@@ -802,7 +787,7 @@ func TestSkipHoldHidesPromptUntilKeep(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	prompt := g.engine.LivePrompt.Text
+	prompt := g.run.Engine().LivePrompt.Text
 
 	otherPhone := httptest.NewRecorder()
 	otherReq := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -841,22 +826,21 @@ func TestTimerViewKeepsEndAcrossTicks(t *testing.T) {
 	h := newFakeHelper(t.TempDir(), true)
 	g := loadedGame(t, h)
 	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
-	g.now = func() time.Time { return now }
+	g.run.SetClock(func() time.Time { return now })
 	m := &engine{PhoneErr: map[string]string{}}
-	g.mu.Lock()
-	g.started = true
-	g.engine = m
-	m.at = g.clock()
+	g.run.Install(m)
+	g.run.Lock()
+	m.at = g.run.Now()
 	m.armTimer(timerSubmit, 30)
-	label1, text1, sec1, total1, end1 := g.timerViewLocked(m)
+	label1, v1 := g.timerViewLocked(m)
 	now = now.Add(5 * time.Second)
-	label2, text2, sec2, total2, end2 := g.timerViewLocked(m)
-	g.mu.Unlock()
-	if label1 != "Submit" || total1 != 30 || end1 == 0 {
-		t.Fatalf("first timer view = %s %s %d %d %d", label1, text1, sec1, total1, end1)
+	label2, v2 := g.timerViewLocked(m)
+	g.run.Unlock()
+	if label1 != "Submit" || v1.TotalSeconds != 30 || v1.EndMs == 0 {
+		t.Fatalf("first timer view = %s %+v", label1, v1)
 	}
-	if end2 != end1 || total2 != total1 || sec2 != 25 || text2 != "0:25" {
-		t.Fatalf("second timer view = %s %s %d %d %d", label2, text2, sec2, total2, end2)
+	if label2 != label1 || v2.EndMs != v1.EndMs || v2.TotalSeconds != 30 || v2.Seconds != 25 || v2.Clock() != "0:25" {
+		t.Fatalf("second timer view = %s %+v", label2, v2)
 	}
 }
 
@@ -916,9 +900,9 @@ func startWildcardSubmit(t *testing.T) (*Game, string) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	g.mu.Lock()
-	blank := g.engine.Actors[other].Blank
-	g.mu.Unlock()
+	g.run.Lock()
+	blank := g.run.Engine().Actors[other].Blank
+	g.run.Unlock()
 	if blank == nil {
 		t.Fatal("submitter has no wildcard blank")
 	}
@@ -996,44 +980,42 @@ func playPOST(g *Game, path, player string, vals url.Values) *httptest.ResponseR
 }
 
 func seedRNG(g *Game) {
-	g.mu.Lock()
-	g.rng = rand.New(rand.NewSource(1))
-	g.mu.Unlock()
+	g.run.SetRand(rand.New(rand.NewSource(1)))
 }
 
 func currentJudge(g *Game) string {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.engine.JudgeID
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Engine().JudgeID
 }
 
 func phaseOf(g *Game) phase {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.engine.Phase
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Engine().Phase
 }
 
 func firstHandCard(g *Game, id string) string {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.engine.Actors[id].Hand[0].CardID
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Engine().Actors[id].Hand[0].CardID
 }
 
 func allRevealed(g *Game) bool {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	for _, p := range g.engine.Packets {
+	g.run.Lock()
+	defer g.run.Unlock()
+	for _, p := range g.run.Engine().Packets {
 		if !p.Revealed {
 			return false
 		}
 	}
-	return len(g.engine.Packets) > 0
+	return len(g.run.Engine().Packets) > 0
 }
 
 func firstPacket(g *Game) string {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.engine.Packets[0].ActorID
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Engine().Packets[0].ActorID
 }
 
 func playerTile(body, name string) string {
@@ -1059,7 +1041,7 @@ func playerTileLocked(body, name string) bool {
 }
 
 func settingsMode(g *Game) string {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.engine.Settings.PromptMode
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Engine().Settings.PromptMode
 }

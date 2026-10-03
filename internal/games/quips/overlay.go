@@ -17,17 +17,13 @@ func (g *Game) overlayActive() bool {
 func (g *Game) showOverlayLocked(kind string) {
 	g.overlay = kind
 	g.overlayTooSmall = false
-	if g.engine != nil {
-		g.engine.SetPaused(true, g.clock())
-	}
+	g.run.Hold()
 }
 
 func (g *Game) clearOverlayLocked() {
 	g.overlay = ""
 	g.overlayTooSmall = false
-	if g.engine != nil && !g.paused {
-		g.engine.SetPaused(false, g.clock())
-	}
+	g.run.Hold()
 }
 
 func promptsNeededForRound(kind roundKind, seated int) int {
@@ -84,17 +80,17 @@ func (g *Game) discardWouldCover(need int, eng *engine) bool {
 }
 
 func (g *Game) handleDealShortageLocked() {
-	if g.engine == nil {
+	if g.run.Engine() == nil {
 		return
 	}
-	kind := openingRoundKind(g.engine.Settings)
-	if g.engine.Round > 1 || len(g.engine.Segments) > 0 {
-		kind = g.engine.Kind
+	kind := openingRoundKind(g.run.Engine().Settings)
+	if g.run.Engine().Round > 1 || len(g.run.Engine().Segments) > 0 {
+		kind = g.run.Engine().Kind
 	}
-	need := promptsNeededForRound(kind, len(g.engine.seatedIDs()))
-	if g.discardWouldCover(need, g.engine) {
+	need := promptsNeededForRound(kind, len(g.run.Engine().seatedIDs()))
+	if g.discardWouldCover(need, g.run.Engine()) {
 		overlayKind := pendingRound
-		if g.engine.Phase == "" || len(g.engine.Segments) == 0 {
+		if g.run.Engine().Phase == "" || len(g.run.Engine().Segments) == 0 {
 			overlayKind = pendingStart
 		}
 		g.showOverlayLocked(overlayKind)
@@ -117,25 +113,25 @@ func (g *Game) partialReshuffleDiscardLocked(eng *engine) {
 }
 
 func (g *Game) rebuildPromptPoolLocked(eng *engine) {
-	h := g.helper
+	h := g.run.HelperLocked()
 	if h == nil || eng == nil {
 		return
 	}
 	cat := scanDataDir(h.DataDir())
 	piles := filterPlayed(filterBurns(buildPromptPiles(cat, eng.Settings), g.burns), g.played)
 	pool := append([]playPrompt(nil), piles.Prompts...)
-	g.rngLocked().Shuffle(len(pool), func(i, j int) { pool[i], pool[j] = pool[j], pool[i] })
+	g.run.Rand().Shuffle(len(pool), func(i, j int) { pool[i], pool[j] = pool[j], pool[i] })
 	eng.PromptPool = pool
 }
 
 func (g *Game) fulfillOverlayLocked() error {
-	if g.engine == nil {
+	if g.run.Engine() == nil {
 		return nil
 	}
 	kind := g.overlay
-	g.partialReshuffleDiscardLocked(g.engine)
-	g.rebuildPromptPoolLocked(g.engine)
-	if err := g.engine.openWriteRoundForIDs(g.clock()); err != nil {
+	g.partialReshuffleDiscardLocked(g.run.Engine())
+	g.rebuildPromptPoolLocked(g.run.Engine())
+	if err := g.run.Engine().openWriteRoundForIDs(g.run.Now()); err != nil {
 		if err == errOutOfPrompts {
 			g.overlayTooSmall = true
 			g.overlay = kind
@@ -144,7 +140,7 @@ func (g *Game) fulfillOverlayLocked() error {
 		return err
 	}
 	g.clearOverlayLocked()
-	g.publishLocked()
+	g.run.Publish(eventQuips)
 	return nil
 }
 

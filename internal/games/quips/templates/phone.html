@@ -167,8 +167,8 @@
 
 {{define "quips-timer"}}
 {{if .TimerLabel}}
-<div class="quips-timer" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
-  <span>{{.TimerLabel}} <strong data-timer-value>{{.TimerText}}</strong></span>
+<div class="quips-timer" {{template "ui-countdown" .Timer}}>
+  <span>{{.TimerLabel}} <strong data-countdown-value>{{.Timer.Clock}}</strong></span>
 </div>
 {{end}}
 {{end}}

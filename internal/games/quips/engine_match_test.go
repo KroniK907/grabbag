@@ -32,8 +32,8 @@ func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 	}
 	lockPair(t, eng, "p1", []string{"a1", "a2"}, clock)
 	lockPair(t, eng, "p2", []string{"b1", "b2"}, clock)
-	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
-		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	if eng.Phase != phaseVoteIntro || eng.Timer.Kind != timerVoteIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.Timer.Kind)
 	}
 	tick := clock.Add(5 * time.Second)
 	for eng.Phase != phaseFinalScores && eng.Phase != phaseOver {
@@ -44,8 +44,8 @@ func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 			eng.now = func() time.Time { return tick }
 			eng.Advance(tick)
 		case phaseReveal:
-			if eng.TimerKind != timerVersusIntro {
-				t.Fatalf("reveal timer=%s", eng.TimerKind)
+			if eng.Timer.Kind != timerVersusIntro {
+				t.Fatalf("reveal timer=%s", eng.Timer.Kind)
 			}
 			tick = tick.Add(time.Duration(versusIntroSec) * time.Second)
 			eng.now = func() time.Time { return tick }
@@ -57,8 +57,8 @@ func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 			eng.now = func() time.Time { return tick }
 			eng.Advance(tick)
 		case phaseHold:
-			if eng.TimerKind != "" {
-				t.Fatalf("zero winner hold armed %s", eng.TimerKind)
+			if eng.Timer.Kind != "" {
+				t.Fatalf("zero winner hold armed %s", eng.Timer.Kind)
 			}
 			eng.Do(Command{Kind: CmdHostNextSegment, Actor: "host"}, tick)
 		default:
@@ -77,8 +77,8 @@ func TestEngineZeroHoldTimersWaitForHost(t *testing.T) {
 	if eng.Phase != phaseFinalScores {
 		t.Fatalf("after parade phase=%s scores=%v", eng.Phase, eng.Scores)
 	}
-	if eng.TimerKind != "" || eng.MatchOver {
-		t.Fatalf("zero final hold timer=%s over=%v", eng.TimerKind, eng.MatchOver)
+	if eng.Timer.Kind != "" || eng.MatchOver {
+		t.Fatalf("zero final hold timer=%s over=%v", eng.Timer.Kind, eng.MatchOver)
 	}
 	eng.Do(Command{Kind: CmdHostEndMatch, Actor: "host"}, tick)
 	if !eng.MatchOver {
@@ -136,8 +136,8 @@ func TestLastQuipHoldsPhonesThenStartsTheWriteTimer(t *testing.T) {
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(8)), now); err != nil {
 		t.Fatal(err)
 	}
-	if eng.Kind != roundLastQuip || eng.TimerKind != timerLastIntro {
-		t.Fatalf("kind=%v timer=%s", eng.Kind, eng.TimerKind)
+	if eng.Kind != roundLastQuip || eng.Timer.Kind != timerLastIntro {
+		t.Fatalf("kind=%v timer=%s", eng.Kind, eng.Timer.Kind)
 	}
 	blocked := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "early"}, now)
 	if blocked.PhoneErr["p1"] == "" {
@@ -145,8 +145,8 @@ func TestLastQuipHoldsPhonesThenStartsTheWriteTimer(t *testing.T) {
 	}
 	later := now.Add(time.Duration(lastQuipIntroSec) * time.Second)
 	out := eng.Advance(later)
-	if !out.Changed || eng.TimerKind != "write" {
-		t.Fatalf("after intro timer=%s changed=%v", eng.TimerKind, out.Changed)
+	if !out.Changed || eng.Timer.Kind != "write" {
+		t.Fatalf("after intro timer=%s changed=%v", eng.Timer.Kind, out.Changed)
 	}
 	ok := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "now"}, later)
 	if ok.PhoneErr["p1"] != "" {

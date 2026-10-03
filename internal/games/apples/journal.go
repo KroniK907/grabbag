@@ -141,7 +141,6 @@ func playedKey(libraryID, cardID string) string {
 
 func (g *Game) openJournalsLocked(h games.Helper) {
 	g.stopWritersLocked()
-	g.helper = h
 	g.burns = nil
 	g.burnCorrupt = false
 	g.played = map[string]playedRow{}
@@ -220,8 +219,8 @@ func (g *Game) readDiscardLocked(path string) {
 }
 
 func (g *Game) logLine(line string) {
-	if g.helper != nil {
-		g.helper.Log(line)
+	if g.run.HelperLocked() != nil {
+		g.run.HelperLocked().Log(line)
 	}
 }
 

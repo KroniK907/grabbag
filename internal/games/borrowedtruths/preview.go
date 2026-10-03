@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 	"github.com/KroniK907/grabbag/internal/ui"
 )
 
@@ -61,7 +62,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 					return err
 				}
 				view := pg.boardViewLocked()
-				view.pageView = previewPage(p, "Borrowed Truths")
+				view.Page = previewPage(p, "Borrowed Truths")
 				return ui.RenderScenario(w, pages, "board.html", view, p)
 			},
 		})
@@ -77,7 +78,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 						return err
 					}
 					view := pg.phoneViewFor(cast[v.name], previewNow)
-					view.pageView = previewPage(p, "Borrowed Truths")
+					view.Page = previewPage(p, "Borrowed Truths")
 					return ui.RenderScenario(w, pages, "phone.html", view, p)
 				},
 			})
@@ -94,7 +95,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 					return err
 				}
 				view := pg.boardViewLocked()
-				view.pageView = previewPage(p, "Borrowed Truths")
+				view.Page = previewPage(p, "Borrowed Truths")
 				return ui.RenderScenario(w, pages, "board.html", view, p)
 			},
 		})
@@ -110,7 +111,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 						return err
 					}
 					view := pg.phoneViewFor(cast[v.name], previewNow)
-					view.pageView = previewPage(p, "Borrowed Truths")
+					view.Page = previewPage(p, "Borrowed Truths")
 					return ui.RenderScenario(w, pages, "phone.html", view, p)
 				},
 			})
@@ -134,8 +135,8 @@ func (g *Game) Scenarios() []ui.Scenario {
 	return list
 }
 
-func previewPage(p ui.Preview, title string) pageView {
-	return pageView{
+func previewPage(p ui.Preview, title string) runtimekit.Page {
+	return runtimekit.Page{
 		Chrome:  ui.Chrome{Title: title, Theme: ui.NormalizeTheme(p.Theme)},
 		GameCSS: p.Asset("game.css?v=" + assetVersion),
 		GameJS:  p.Asset("game.js?v=" + assetVersion),
@@ -161,7 +162,7 @@ func previewMatch(stage string, kind cardKind, n int) (*Game, map[string]games.P
 		rows[i] = rosterRow{ID: fmt.Sprintf("p%02d", i+1), Name: names[i], Seed: fmt.Sprintf("seed-%d", i+1)}
 	}
 	e := newEngine(s, rows, bank, rand.New(rand.NewSource(7)), previewNow)
-	g := &Game{engine: e, started: true, now: func() time.Time { return previewNow }}
+	g := fixedGame(e, previewNow)
 	cast := map[string]games.Player{
 		"audience": {ID: "audience", DisplayName: "Audience", Audience: true},
 	}
@@ -318,7 +319,8 @@ func previewTIM(stage string, n int) (*Game, map[string]games.Player, error) {
 	if e.Phase != phaseLook {
 		return nil, nil, fmt.Errorf("borrowedtruths preview %s: no This Is My round", stage)
 	}
-	g := &Game{engine: e, started: true, now: func() time.Time { return previewNow }, photoSrc: previewPhoto}
+	g := fixedGame(e, previewNow)
+	g.photoSrc = previewPhoto
 	owner := e.Photos[e.Round.Photo].Owner
 	var claimant, voter string
 	for _, id := range e.Round.Claimants {

@@ -6,19 +6,10 @@
     return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
   }
 
+  // paint runs the host's elapsed clock. Phase timers are the shared
+  // countdown script.
   function paint() {
     var now = Date.now() / 1000;
-    document.querySelectorAll("[data-bt-timer]").forEach(function (el) {
-      var left = Number(el.dataset.seconds) || 0;
-      var paused = el.closest(".is-paused");
-      if (!window.grabbagStatic && !paused) {
-        left = (Number(el.dataset.end) || 0) - now;
-      }
-      var value = el.querySelector("[data-bt-timer-value]");
-      if (value) {
-        value.textContent = clock(Math.ceil(left));
-      }
-    });
     document.querySelectorAll("[data-bt-elapsed]").forEach(function (el) {
       var start = Number(el.dataset.start) || 0;
       el.textContent = start > 0 && !window.grabbagStatic ? clock(now - start) : "";

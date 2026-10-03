@@ -7,36 +7,36 @@ func (e *engine) armTimer(kind string, sec int) {
 		e.clearTimer()
 		return
 	}
-	e.TimerKind = kind
-	e.TimerTotal = time.Duration(sec) * time.Second
+	e.Timer.Kind = kind
+	e.Timer.Total = time.Duration(sec) * time.Second
 	if e.Paused {
-		e.FrozenLeft = e.TimerTotal
-		e.TimerEnd = time.Time{}
+		e.Timer.Left = e.Timer.Total
+		e.Timer.End = time.Time{}
 		return
 	}
-	e.TimerEnd = e.at.Add(e.TimerTotal)
-	e.FrozenLeft = 0
+	e.Timer.End = e.at.Add(e.Timer.Total)
+	e.Timer.Left = 0
 }
 
 func (e *engine) clearTimer() {
-	e.TimerKind = ""
-	e.TimerEnd = time.Time{}
-	e.TimerTotal = 0
-	e.FrozenLeft = 0
+	e.Timer.Kind = ""
+	e.Timer.End = time.Time{}
+	e.Timer.Total = 0
+	e.Timer.Left = 0
 }
 
 func (e *engine) freezeTimer() {
-	if e.TimerKind == "" || e.TimerEnd.IsZero() {
+	if e.Timer.Kind == "" || e.Timer.End.IsZero() {
 		return
 	}
-	e.FrozenLeft = max(e.TimerEnd.Sub(e.at), 0)
-	e.TimerEnd = time.Time{}
+	e.Timer.Left = max(e.Timer.End.Sub(e.at), 0)
+	e.Timer.End = time.Time{}
 }
 
 func (e *engine) thawTimer() {
-	if e.TimerKind == "" || e.FrozenLeft <= 0 {
+	if e.Timer.Kind == "" || e.Timer.Left <= 0 {
 		return
 	}
-	e.TimerEnd = e.at.Add(e.FrozenLeft)
-	e.FrozenLeft = 0
+	e.Timer.End = e.at.Add(e.Timer.Left)
+	e.Timer.Left = 0
 }

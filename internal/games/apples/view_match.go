@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 type holeView struct {
@@ -40,88 +40,82 @@ type rosterView struct {
 }
 
 type boardView struct {
-	pageView
-	Paused       bool
-	Phase        string
-	Prompt       *playPrompt
-	FaceDown     bool
-	Multiplier   string
-	Sudden       bool
-	Packets      []packetView
-	Roster       []rosterView
-	JudgeID      string
-	Over         bool
-	WinnerName   string
-	WinnerScore  int
-	RoundWinner  string
-	NamesShown   bool
-	Overlay      bool
-	OverlayCopy  string
-	TimerLabel   string
-	TimerText    string
-	TimerSeconds int
-	TimerTotal   int
-	TimerEndUnix int64
-	CanFinish    bool
-	VoteCue      bool
-	Round        int
+	runtimekit.Page
+	Paused      bool
+	Phase       string
+	Prompt      *playPrompt
+	FaceDown    bool
+	Multiplier  string
+	Sudden      bool
+	Packets     []packetView
+	Roster      []rosterView
+	JudgeID     string
+	Over        bool
+	WinnerName  string
+	WinnerScore int
+	RoundWinner string
+	NamesShown  bool
+	Overlay     bool
+	OverlayCopy string
+	TimerLabel  string
+	Timer       runtimekit.TimerView
+	CanFinish   bool
+	VoteCue     bool
+	Round       int
 }
 
 type phoneView struct {
-	pageView
-	Paused       bool
-	Phase        string
-	Role         string
-	Prompt       *playPrompt
-	Choices      []*playPrompt
-	Holes        []holeView
-	Hand         []playCard
-	Blank        *playCard
-	Draft        string
-	Remain       int
-	Cap          int
-	Discard      *playCard
-	HasWildSlot  bool
-	LockLabel    string
-	LockReady    bool
-	Skip         bool
-	Error        string
-	Packets      []packetView
-	CanVote      bool
-	CanReveal    bool
-	CanConfirm   bool
-	CanDraw      bool
-	Multiplier   string
-	Sudden       bool
-	Over         bool
-	WinnerName   string
-	RoundWinner  string
-	JudgeName    string
-	Help         bool
-	ClaimedHost  bool
-	BurnFaces    []burnFace
-	BurnErr      string
-	Overlay      bool
-	OverlayCopy  string
-	OverlayYes   bool
-	TimerLabel   string
-	TimerText    string
-	TimerSeconds int
-	TimerTotal   int
-	TimerEndUnix int64
-	BurnOpen     bool
-	Keep         bool
-	CanFinish    bool
+	runtimekit.Page
+	Paused      bool
+	Phase       string
+	Role        string
+	Prompt      *playPrompt
+	Choices     []*playPrompt
+	Holes       []holeView
+	Hand        []playCard
+	Blank       *playCard
+	Draft       string
+	Remain      int
+	Cap         int
+	Discard     *playCard
+	HasWildSlot bool
+	LockLabel   string
+	LockReady   bool
+	Skip        bool
+	Error       string
+	Packets     []packetView
+	CanVote     bool
+	CanReveal   bool
+	CanConfirm  bool
+	CanDraw     bool
+	Multiplier  string
+	Sudden      bool
+	Over        bool
+	WinnerName  string
+	RoundWinner string
+	JudgeName   string
+	Help        bool
+	ClaimedHost bool
+	BurnFaces   []burnFace
+	BurnErr     string
+	Overlay     bool
+	OverlayCopy string
+	OverlayYes  bool
+	TimerLabel  string
+	Timer       runtimekit.TimerView
+	BurnOpen    bool
+	Keep        bool
+	CanFinish   bool
 }
 
 func (g *Game) boardView(r *http.Request) boardView {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.helper != nil {
-		g.syncRosterLocked(g.helper)
+	g.run.Lock()
+	defer g.run.Unlock()
+	if g.run.HelperLocked() != nil {
+		g.syncRosterLocked(g.run.HelperLocked())
 	}
 	view := g.boardViewLocked()
-	if view.Over && g.helper != nil && r != nil && g.helper.HasAdmin(r) {
+	if view.Over && g.run.HelperLocked() != nil && r != nil && g.run.HelperLocked().HasAdmin(r) {
 		view.CanFinish = true
 	}
 	return view
@@ -129,10 +123,10 @@ func (g *Game) boardView(r *http.Request) boardView {
 
 func (g *Game) boardViewLocked() boardView {
 	view := boardView{
-		pageView: g.chromeView("Apples for Humanity"),
-		Paused:   g.paused,
+		Page:   g.chromeView("Apples for Humanity"),
+		Paused: g.run.Paused(),
 	}
-	m := g.engine
+	m := g.run.Engine()
 	if m == nil {
 		return view
 	}
@@ -145,9 +139,9 @@ func (g *Game) boardViewLocked() boardView {
 	view.Sudden = m.Phase == phaseSudden
 	view.Over = m.Phase == phaseOver
 	view.NamesShown = m.NamesShown
-	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(m)
+	view.TimerLabel, view.Timer = g.timerViewLocked(m)
 	view.Round = m.Round
-	view.VoteCue = m.TimerKind == timerFavoriteVote && m.Settings.Voting != voteOff
+	view.VoteCue = m.Timer.Kind == timerFavoriteVote && m.Settings.Voting != voteOff
 	if m.InMultiplier && m.Settings.LastRoundMultiplier > 1 {
 		view.Multiplier = "THIS ROUND IS " + strconv.Itoa(m.Settings.LastRoundMultiplier) + "X POINTS"
 	}
@@ -189,13 +183,13 @@ func (g *Game) boardViewLocked() boardView {
 }
 
 func (g *Game) phoneView(r *http.Request) phoneView {
-	h := g.helperNow()
+	h := g.run.Helper()
 	var p games.Player
 	if h != nil {
 		p, _, _ = h.PlayerFromRequest(r)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	if h != nil {
 		g.syncRosterLocked(h)
 	}
@@ -204,10 +198,10 @@ func (g *Game) phoneView(r *http.Request) phoneView {
 
 func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	view := phoneView{
-		pageView: g.chromeView("Apples for Humanity"),
-		Paused:   g.paused,
+		Page:   g.chromeView("Apples for Humanity"),
+		Paused: g.run.Paused(),
 	}
-	m := g.engine
+	m := g.run.Engine()
 	if m == nil {
 		view.Role = "wait"
 		return view
@@ -219,7 +213,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	view.Over = m.Phase == phaseOver
 	view.Error = m.PhoneErr[p.ID]
 	view.Help = true
-	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(m)
+	view.TimerLabel, view.Timer = g.timerViewLocked(m)
 	view.ClaimedHost = p.ClaimedHost
 	view.BurnErr = g.burnErr
 	if view.Over && p.ClaimedHost {
@@ -322,7 +316,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	}
 	view.CanVote = playerMayVote(m, p)
 	view.CanReveal = false
-	if m.TimerKind == "favorite-vote" {
+	if m.Timer.Kind == "favorite-vote" {
 		view.CanConfirm = false
 	}
 	for _, pk := range view.Packets {
@@ -420,21 +414,11 @@ func containsID(ids []string, target string) bool {
 	return false
 }
 
-func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
-	if m == nil || m.TimerKind == "" {
-		return "", "", 0, 0, 0
+// timerViewLocked is the running timer's label and countdown.
+func (g *Game) timerViewLocked(m *engine) (string, runtimekit.TimerView) {
+	if m == nil || m.Timer.Kind == "" {
+		return "", runtimekit.TimerView{}
 	}
-	left := m.FrozenLeft
-	endUnix := int64(0)
-	if !g.paused && !m.TimerEnd.IsZero() {
-		left = m.TimerEnd.Sub(g.clock())
-		endUnix = m.TimerEnd.UnixMilli()
-	}
-	if left < 0 {
-		left = 0
-	}
-	seconds := int((left + time.Second - 1) / time.Second)
-	total := int((m.TimerTotal + time.Second - 1) / time.Second)
 	label := map[string]string{
 		"auto-draw":       "Auto-draw",
 		"submit":          "Submit",
@@ -442,8 +426,8 @@ func (g *Game) timerViewLocked(m *engine) (string, string, int, int, int64) {
 		"favorite-vote":   "Favorites",
 		"judge-pick":      "Judge picks",
 		"finish":          "Back to lobby",
-	}[m.TimerKind]
-	return label, fmt.Sprintf("%d:%02d", seconds/60, seconds%60), seconds, total, endUnix
+	}[m.Timer.Kind]
+	return label, m.Timer.View(g.run.Now())
 }
 
 func favoriteVoteLabel(votes int) string {

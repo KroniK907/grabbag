@@ -56,10 +56,10 @@ func TestCorruptBurnedStaysAndLogs(t *testing.T) {
 func TestBurnNormalizesAndHidesAcrossLibraries(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 20, 1)
-	g.mu.Lock()
+	g.run.Lock()
 	g.burnPairLocked(kindAnswer, "  Answer 0  ")
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 
 	path := filepath.Join(h.dir, "state", "burned.json")
 	raw, err := os.ReadFile(path)
@@ -78,26 +78,26 @@ func TestBurnNormalizesAndHidesAcrossLibraries(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	for _, c := range g.engine.Answers {
+	g.run.Lock()
+	for _, c := range g.run.Engine().Answers {
 		if normalizeCardText(c.Text) == "answer 0" {
-			g.mu.Unlock()
+			g.run.Unlock()
 			t.Fatal("burned answer stayed in the pile")
 		}
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 }
 
 func TestUnburnLastTenNewestFirst(t *testing.T) {
 	t.Parallel()
 	_, g := tinyGame(t, 4, 20, 1)
-	g.mu.Lock()
+	g.run.Lock()
 	for i := 0; i < 12; i++ {
 		g.burnPairLocked(kindPrompt, "Prompt "+string(rune('A'+i)))
 	}
 	g.drainJournalsLocked()
 	last := g.lastBurns(10)
-	g.mu.Unlock()
+	g.run.Unlock()
 	if len(last) != 10 {
 		t.Fatalf("last = %d", len(last))
 	}
@@ -162,7 +162,7 @@ func TestDiscardSpendThenConfirmWritesStateFile(t *testing.T) {
 func TestStartWipesDiscardWhenEveryDealableCardIsSpent(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 20, 1)
-	g.mu.Lock()
+	g.run.Lock()
 	cat := scanDataDir(h.dir)
 	s, ok := g.loadSettings(h)
 	s = reconcileSettings(s, ok, cat)
@@ -174,15 +174,15 @@ func TestStartWipesDiscardWhenEveryDealableCardIsSpent(t *testing.T) {
 		g.recordPlayedLocked(a.LibraryID, a.CardID)
 	}
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	h.sit("p1", "Pat")
 	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	n := len(g.played)
-	g.mu.Unlock()
+	g.run.Unlock()
 	if n != 0 {
 		t.Fatalf("played after exhaustion wipe = %d", n)
 	}
@@ -192,10 +192,10 @@ func TestReshuffleOnUnloadWipesOnlyOnShutdown(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 20, 1)
 	postSettings(g, "/reshuffle-on-unload", url.Values{"enabled": {"1"}})
-	g.mu.Lock()
+	g.run.Lock()
 	g.recordPlayedLocked("tiny", "a0")
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	if err := g.Stop(); err != nil {
 		t.Fatal(err)
 	}
@@ -221,10 +221,10 @@ func TestReshuffleOnUnloadWipesOnlyOnShutdown(t *testing.T) {
 func TestClearLeavesDiscardFile(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 20, 1)
-	g.mu.Lock()
+	g.run.Lock()
 	g.recordPlayedLocked("tiny", "a0")
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	h.kv = map[string][]byte{}
 	page := settingsPage(t, g)
 	if !strings.Contains(page, "Reshuffle discard pile") {
@@ -288,7 +288,7 @@ func TestStartOverlayWhenDiscardHoldsTheRest(t *testing.T) {
 	t.Parallel()
 	h, g := tinyGame(t, 4, 8, 1)
 	postSettings(g, "/hand-size", url.Values{"hand_size": {"3"}})
-	g.mu.Lock()
+	g.run.Lock()
 	cat := scanDataDir(h.dir)
 	s, ok := g.loadSettings(h)
 	s = reconcileSettings(s, ok, cat)
@@ -300,7 +300,7 @@ func TestStartOverlayWhenDiscardHoldsTheRest(t *testing.T) {
 		g.recordPlayedLocked(a.LibraryID, a.CardID)
 	}
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	h.sitHost("p1", "Pat")
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)

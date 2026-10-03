@@ -97,7 +97,7 @@ func TestHowtoAndCompactViewportAssets(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	g.render(rec, "phone.html", phoneView{pageView: g.pageView("Quick Quips")}, http.StatusOK)
+	g.run.Render(rec, "phone.html", phoneView{Page: g.run.Page("Quick Quips")}, http.StatusOK)
 	if !strings.Contains(rec.Body.String(), `class="quips-help"`) {
 		t.Fatalf("phone missing help: %s", rec.Body.String())
 	}
@@ -107,8 +107,8 @@ func TestLockButtonMarksReadyAndLocked(t *testing.T) {
 	t.Parallel()
 	g := New()
 	ready := httptest.NewRecorder()
-	g.render(ready, "phone.html", phoneView{
-		pageView:  g.pageView("Quick Quips"),
+	g.run.Render(ready, "phone.html", phoneView{
+		Page:      g.run.Page("Quick Quips"),
 		Role:      "compose",
 		LockReady: true,
 		LockLabel: "Lock",
@@ -117,8 +117,8 @@ func TestLockButtonMarksReadyAndLocked(t *testing.T) {
 		t.Fatalf("ready lock bar = %s", ready.Body.String())
 	}
 	locked := httptest.NewRecorder()
-	g.render(locked, "phone.html", phoneView{
-		pageView:  g.pageView("Quick Quips"),
+	g.run.Render(locked, "phone.html", phoneView{
+		Page:      g.run.Page("Quick Quips"),
 		Role:      "locked",
 		Locked:    true,
 		LockLabel: "Locked",
@@ -144,9 +144,9 @@ func TestStartOpensWritePhase(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
-	g.mu.Lock()
-	phase := g.engine.Phase
-	g.mu.Unlock()
+	g.run.Lock()
+	phase := g.run.Engine().Phase
+	g.run.Unlock()
 	if phase != phaseWrite {
 		t.Fatalf("phase=%s want write", phase)
 	}
@@ -156,12 +156,12 @@ func TestStartOpensWritePhase(t *testing.T) {
 	if !strings.Contains(body, "Get ready to play Quick Quips") || !strings.Contains(body, "Go!") {
 		t.Fatalf("write board = %s", body)
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	prompt := ""
-	if g.engine != nil && len(g.engine.Segments) > 0 {
-		prompt = g.engine.Segments[0].Prompt.Text
+	if g.run.Engine() != nil && len(g.run.Engine().Segments) > 0 {
+		prompt = g.run.Engine().Segments[0].Prompt.Text
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	if prompt != "" && strings.Contains(body, prompt) {
 		t.Fatalf("write board showed the prompt %q", prompt)
 	}

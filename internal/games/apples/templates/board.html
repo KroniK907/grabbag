@@ -99,9 +99,9 @@
 
 {{define "apples-timer"}}
 {{if .TimerLabel}}
-<div class="apples-timer" data-apples-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}>
+<div class="apples-timer" {{template "ui-countdown" .Timer}}>
   <span class="apples-timer-pie" aria-hidden="true"></span>
-  <span>{{.TimerLabel}} <strong data-timer-value>{{.TimerText}}</strong></span>
+  <span>{{.TimerLabel}} <strong data-countdown-value>{{.Timer.Clock}}</strong></span>
 </div>
 {{end}}
 {{end}}

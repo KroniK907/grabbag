@@ -1,17 +1,16 @@
 package quips
 
 import (
-	"fmt"
-	"math"
 	"net/http"
 	"sort"
 	"strings"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 type boardView struct {
-	pageView
+	runtimekit.Page
 	Paused       bool
 	Overlay      bool
 	OverlayCopy  string
@@ -33,10 +32,7 @@ type boardView struct {
 	WinnerScore  int
 	Roster       []rosterView
 	TimerLabel   string
-	TimerText    string
-	TimerSeconds int
-	TimerTotal   int
-	TimerEndUnix int64
+	Timer        runtimekit.TimerView
 	LiveCounts   map[string]int
 }
 
@@ -62,7 +58,7 @@ type rosterView struct {
 }
 
 type phoneView struct {
-	pageView
+	runtimekit.Page
 	Paused       bool
 	ClaimedHost  bool
 	BurnFaces    []burnFace
@@ -91,10 +87,7 @@ type phoneView struct {
 	HostSkipHold bool
 	HostEndMatch bool
 	TimerLabel   string
-	TimerText    string
-	TimerSeconds int
-	TimerTotal   int
-	TimerEndUnix int64
+	Timer        runtimekit.TimerView
 }
 
 type voteOptionView struct {
@@ -116,15 +109,15 @@ type slotView struct {
 }
 
 func (g *Game) boardView() boardView {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	return g.boardViewLocked()
 }
 
 func (g *Game) boardViewLocked() boardView {
 	view := boardView{
-		pageView: g.pageViewLocked("Quick Quips"),
-		Phase:    "setup",
+		Page:  g.run.PageLocked("Quick Quips"),
+		Phase: "setup",
 	}
 	if g.overlay != "" {
 		view.Overlay = true
@@ -133,22 +126,22 @@ func (g *Game) boardViewLocked() boardView {
 			view.OverlayCopy = overlayFailCopy
 		}
 	}
-	if g.engine == nil {
+	if g.run.Engine() == nil {
 		return view
 	}
-	eng := g.engine
-	view.Paused = g.paused
+	eng := g.run.Engine()
+	view.Paused = g.run.Paused()
 	view.Phase = string(eng.Phase)
 	view.Round = eng.Round
 	view.Multiplier = eng.Multiplier
 	view.WritingBeat = eng.Phase == phaseWrite
 	view.LastQuip = eng.Kind == roundLastQuip && eng.Phase == phaseWrite
-	view.LastIntro = view.LastQuip && eng.TimerKind == timerLastIntro
+	view.LastIntro = view.LastQuip && eng.Timer.Kind == timerLastIntro
 	view.VoteIntro = eng.Phase == phaseVoteIntro
-	view.PlayIntro = eng.Phase == phaseWrite && eng.TimerKind == timerPlayIntro
+	view.PlayIntro = eng.Phase == phaseWrite && eng.Timer.Kind == timerPlayIntro
 	view.ParadeBeat = eng.Phase == phaseReveal || eng.Phase == phaseVote || eng.Phase == phaseHold
 	view.Roster = g.rosterViewsLocked(eng)
-	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
+	view.TimerLabel, view.Timer = g.timerViewLocked(eng)
 	view.LiveCounts = eng.liveVoteCounts()
 
 	segIdx := eng.activeSegmentIdx()
@@ -241,16 +234,16 @@ func (g *Game) boardViewLocked() boardView {
 }
 
 func (g *Game) phoneView(r *http.Request) phoneView {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
-		return phoneView{pageView: g.pageView("Quick Quips")}
+		return phoneView{Page: g.run.Page("Quick Quips")}
 	}
 	p, ok, _ := h.PlayerFromRequest(r)
 	if !ok {
-		return phoneView{pageView: g.pageView("Quick Quips")}
+		return phoneView{Page: g.run.Page("Quick Quips")}
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	return g.phoneViewLockedWithRequest(p, r)
 }
 
@@ -260,7 +253,7 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 
 func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phoneView {
 	view := phoneView{
-		pageView:    g.pageViewLocked("Quick Quips"),
+		Page:        g.run.PageLocked("Quick Quips"),
 		Role:        "wait",
 		WaitCopy:    "Hang tight.",
 		ClaimedHost: p.ClaimedHost,
@@ -272,22 +265,22 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 		view.OverlayYes = yes
 		return view
 	}
-	if g.engine == nil {
+	if g.run.Engine() == nil {
 		return view
 	}
-	eng := g.engine
-	view.Paused = g.paused
+	eng := g.run.Engine()
+	view.Paused = g.run.Paused()
 	view.Policy = eng.Policy
 	if msg := eng.PhoneErr[p.ID]; msg != "" {
 		view.Error = msg
 	}
-	if msg := eng.PhoneErr["host"]; msg != "" && r != nil && g.helper != nil && g.helper.HasAdmin(r) {
+	if msg := eng.PhoneErr["host"]; msg != "" && r != nil && g.run.HelperLocked() != nil && g.run.HelperLocked().HasAdmin(r) {
 		view.Error = msg
 	}
-	view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = g.timerViewLocked(eng)
+	view.TimerLabel, view.Timer = g.timerViewLocked(eng)
 
 	canHost := p.ClaimedHost
-	if r != nil && g.helper != nil && g.helper.HasAdmin(r) {
+	if r != nil && g.run.HelperLocked() != nil && g.run.HelperLocked().HasAdmin(r) {
 		canHost = true
 	}
 	if canHost {
@@ -310,17 +303,17 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 
 	switch eng.Phase {
 	case phaseWrite:
-		if eng.TimerKind == timerPlayIntro {
+		if eng.Timer.Kind == timerPlayIntro {
 			view.Role = "wait"
 			view.PlayIntro = true
-			view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = "", "", 0, 0, 0
+			view.TimerLabel, view.Timer = "", runtimekit.TimerView{}
 			return g.attachBurnDrawer(view, p)
 		}
-		if eng.Kind == roundLastQuip && eng.TimerKind == timerLastIntro {
+		if eng.Kind == roundLastQuip && eng.Timer.Kind == timerLastIntro {
 			view.Role = "wait"
 			view.LastQuip = true
 			view.LastIntro = true
-			view.TimerLabel, view.TimerText, view.TimerSeconds, view.TimerTotal, view.TimerEndUnix = "", "", 0, 0, 0
+			view.TimerLabel, view.Timer = "", runtimekit.TimerView{}
 			return g.attachBurnDrawer(view, p)
 		}
 		if eng.Kind == roundLastQuip {
@@ -375,7 +368,7 @@ func (g *Game) phoneViewLockedWithRequest(p games.Player, r *http.Request) phone
 }
 
 func (g *Game) attachBurnDrawer(view phoneView, p games.Player) phoneView {
-	if p.ClaimedHost && g.started {
+	if p.ClaimedHost && g.run.Running() {
 		view.BurnFaces = g.burnDrawerFacesLocked()
 		view.BurnErr = g.burnErr
 	}
@@ -449,44 +442,20 @@ func (g *Game) rosterViewsLocked(eng *engine) []rosterView {
 	return out
 }
 
-func (g *Game) timerViewLocked(eng *engine) (label, text string, seconds, total int, endUnix int64) {
-	if eng.TimerKind == "" || eng.TimerKind == timerLastIntro || eng.TimerKind == timerVersusIntro || eng.TimerKind == timerVoteIntro || eng.TimerKind == timerPlayIntro {
-		return "", "", 0, 0, 0
-	}
-	switch eng.TimerKind {
+// timerViewLocked is the running timer's label and countdown. Intro beats
+// run on the clock but show no timer.
+func (g *Game) timerViewLocked(eng *engine) (string, runtimekit.TimerView) {
+	switch eng.Timer.Kind {
+	case "", timerLastIntro, timerVersusIntro, timerVoteIntro, timerPlayIntro:
+		return "", runtimekit.TimerView{}
 	case "write":
-		label = "Write"
+		return "Write", eng.Timer.View(g.run.Now())
 	case timerVote:
-		label = "Vote"
+		return "Vote", eng.Timer.View(g.run.Now())
 	case timerWinner:
-		label = "Scores"
+		return "Scores", eng.Timer.View(g.run.Now())
 	case timerFinal:
-		label = "Final"
-	default:
-		label = "Timer"
+		return "Final", eng.Timer.View(g.run.Now())
 	}
-	total = int(eng.TimerTotal.Seconds())
-	if eng.Paused || g.paused {
-		left := eng.FrozenLeft
-		if left <= 0 && eng.TimerTotal > 0 {
-			left = eng.TimerTotal
-		}
-		seconds = int(math.Ceil(left.Seconds()))
-		text = formatTimer(seconds)
-		return label, text, seconds, total, 0
-	}
-	if eng.TimerEnd.IsZero() {
-		return label, "", 0, total, 0
-	}
-	left := eng.TimerEnd.Sub(g.clock())
-	if left < 0 {
-		left = 0
-	}
-	seconds = int(math.Ceil(left.Seconds()))
-	text = formatTimer(seconds)
-	return label, text, seconds, total, eng.TimerEnd.UnixMilli() / 1000
-}
-
-func formatTimer(sec int) string {
-	return fmt.Sprintf("%d:%02d", sec/60, sec%60)
+	return "Timer", eng.Timer.View(g.run.Now())
 }

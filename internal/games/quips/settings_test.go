@@ -115,10 +115,7 @@ func TestSettingsFreezeAfterStart(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = g.Shutdown() })
 
-	g.mu.Lock()
-	g.engine = &engine{Phase: phaseWrite}
-	g.started = true
-	g.mu.Unlock()
+	g.run.Install(&engine{Phase: phaseWrite})
 
 	frozen := postSettings(g, "/seated-vote-points", url.Values{"seated_vote_points": {"50"}})
 	if frozen.Code != http.StatusOK || !strings.Contains(frozen.Body.String(), "This match is running. Setup is locked.") {

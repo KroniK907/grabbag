@@ -140,7 +140,6 @@ func playedKey(libraryID, cardID string) string {
 
 func (g *Game) openJournalsLocked(h games.Helper) {
 	g.stopWritersLocked()
-	g.helper = h
 	g.burns = nil
 	g.burnCorrupt = false
 	g.played = map[string]playedRow{}
@@ -219,8 +218,8 @@ func (g *Game) readDiscardLocked(path string) {
 }
 
 func (g *Game) logLine(line string) {
-	if g.helper != nil {
-		g.helper.Log(line)
+	if g.run.HelperLocked() != nil {
+		g.run.HelperLocked().Log(line)
 	}
 }
 
@@ -422,15 +421,15 @@ func (g *Game) burnDrawerFacesLocked() []burnFace {
 }
 
 func (g *Game) stripBurnedFromPoolLocked() {
-	if g.engine == nil {
+	if g.run.Engine() == nil {
 		return
 	}
-	pool := g.engine.PromptPool[:0]
-	for _, p := range g.engine.PromptPool {
+	pool := g.run.Engine().PromptPool[:0]
+	for _, p := range g.run.Engine().PromptPool {
 		if g.isBurned(kindPrompt, p.Text) {
 			continue
 		}
 		pool = append(pool, p)
 	}
-	g.engine.PromptPool = pool
+	g.run.Engine().PromptPool = pool
 }

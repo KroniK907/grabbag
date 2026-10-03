@@ -1,7 +1,9 @@
 package apples
 
+import "github.com/KroniK907/grabbag/internal/games/runtimekit"
+
 type pickerView struct {
-	pageView
+	runtimekit.Page
 	DataDir      string
 	Frozen       bool
 	RowError     string
@@ -42,7 +44,7 @@ type packView struct {
 }
 
 type settingsView struct {
-	pageView
+	runtimekit.Page
 	Frozen          bool
 	Shortage        []string
 	Settings        matchSettings
@@ -57,7 +59,7 @@ type settingsView struct {
 }
 
 func (g *Game) currentSettings() matchSettings {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return factorySettings()
 	}
@@ -67,7 +69,7 @@ func (g *Game) currentSettings() matchSettings {
 }
 
 func (g *Game) shortageNow() []string {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return nil
 	}
@@ -75,17 +77,17 @@ func (g *Game) shortageNow() []string {
 	cat := scanDataDir(h.DataDir())
 	piles := buildPiles(cat, s)
 	n := len(h.Seated())
-	g.mu.Lock()
+	g.run.Lock()
 	noBurn := filterBurns(piles, g.burns)
 	help := burnedWouldHelp(piles, noBurn, s, n)
-	g.mu.Unlock()
+	g.run.Unlock()
 	return shortageLines(noBurn, s, n, help)
 }
 
 func (g *Game) settingsView(rowErr settingsErr) settingsView {
 	s := g.currentSettings()
 	view := settingsView{
-		pageView:        g.chromeView("Apples for Humanity"),
+		Page:            g.chromeView("Apples for Humanity"),
 		Frozen:          g.matchFrozen(),
 		Shortage:        g.shortageNow(),
 		Settings:        s,
@@ -93,41 +95,41 @@ func (g *Game) settingsView(rowErr settingsErr) settingsView {
 		Err:             rowErr,
 		VotingOff:       s.Voting == voteOff,
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	view.BurnCorrupt = g.burnCorrupt
 	view.DiscardCorrupt = g.discardCorrupt
 	view.DiscardEmpty = len(g.played) == 0
 	if !g.burnCorrupt {
 		view.Burns = g.lastBurns(10)
 	}
-	if g.engine != nil {
-		view.WildcardAtStart = g.engine.WildcardAtStart
-		view.WildcardEnabled = view.WildcardEnabled || g.engine.WildcardAtStart
+	if g.run.Engine() != nil {
+		view.WildcardAtStart = g.run.Engine().WildcardAtStart
+		view.WildcardEnabled = view.WildcardEnabled || g.run.Engine().WildcardAtStart
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	return view
 }
 
 func (g *Game) pickerView(rowErr pickerErr) pickerView {
 	view := pickerView{
-		pageView:     g.chromeView("Deck Library"),
+		Page:         g.chromeView("Deck Library"),
 		RowError:     rowErr.Msg,
 		ErrorLibrary: rowErr.LibraryID,
 		ErrorPack:    rowErr.PackID,
 		ErrorTag:     rowErr.Tag,
 		Shortage:     g.shortageNow(),
 	}
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return view
 	}
 	view.DataDir = h.DataDir()
 	view.Frozen = g.matchFrozen()
-	g.mu.Lock()
+	g.run.Lock()
 	if view.RowError == "" {
 		view.RowError = g.importErr
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	cat := scanDataDir(h.DataDir())
 	settings, ok := g.loadSettings(h)
 	settings = reconcileSettings(settings, ok, cat)

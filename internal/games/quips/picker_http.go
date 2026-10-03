@@ -19,7 +19,7 @@ func (g *Game) writePicker(w http.ResponseWriter, r *http.Request, rowErr picker
 	if hxRequest(r) {
 		name = "picker-body"
 	}
-	g.render(w, name, g.pickerView(rowErr), http.StatusOK)
+	g.run.Render(w, name, g.pickerView(rowErr), http.StatusOK)
 }
 
 func (g *Game) writePickerOK(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func (g *Game) writePickerOK(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -40,7 +40,7 @@ func (g *Game) getPicker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Admin session required.", http.StatusUnauthorized)
 		return
 	}
-	g.render(w, "picker.html", g.pickerView(pickerErr{}), http.StatusOK)
+	g.run.Render(w, "picker.html", g.pickerView(pickerErr{}), http.StatusOK)
 }
 
 func (g *Game) postPack(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +60,7 @@ func (g *Game) postSelectNone(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) togglePack(w http.ResponseWriter, r *http.Request, libraryID, packID string, on bool) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -91,7 +91,7 @@ func (g *Game) togglePack(w http.ResponseWriter, r *http.Request, libraryID, pac
 }
 
 func (g *Game) selectAllPacks(w http.ResponseWriter, r *http.Request, on bool) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return

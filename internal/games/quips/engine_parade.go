@@ -190,7 +190,7 @@ func (e *engine) doHostReveal(out Outcome) Outcome {
 
 func (e *engine) doHostRevealAt(now time.Time, out Outcome) Outcome {
 	out = e.doHostReveal(out)
-	if e.Phase == phaseVote && e.TimerKind == "" {
+	if e.Phase == phaseVote && e.Timer.Kind == "" {
 		e.openVoteTimer(now)
 	}
 	return out

@@ -5,68 +5,34 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
-
-func (g *Game) playerOr401(w http.ResponseWriter, r *http.Request) (games.Player, bool) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return games.Player{}, false
-	}
-	p, ok, err := h.PlayerFromRequest(r)
-	if err != nil || !ok {
-		http.Error(w, "Sign in to play.", http.StatusUnauthorized)
-		return games.Player{}, false
-	}
-	return p, true
-}
 
 // withEngine runs one engine command for the signed-in player and renders
 // their phone.
 func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, build func(games.Player) (command, error)) {
-	p, ok := g.playerOr401(w, r)
-	if !ok {
-		return
-	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Could not read the form.", http.StatusBadRequest)
-		return
-	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
-		http.NotFound(w, r)
-		return
-	}
-	if g.overlayActive() {
-		g.engine.PhoneErr[p.ID] = overlayWaitCopy
-		view := g.phoneViewLocked(p)
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
-		return
-	}
-	if g.helper != nil {
-		g.syncRosterLocked(g.helper)
-	}
-	cmd, err := build(p)
-	if err == nil {
+	g.run.Act(w, r, func(e *engine, p games.Player, now time.Time) runtimekit.Result {
+		if h := g.run.HelperLocked(); h != nil {
+			g.syncRosterLocked(h)
+		}
+		cmd, err := build(p)
+		if err != nil {
+			return runtimekit.Result{Err: err.Error()}
+		}
 		cmd.Actor = p.ID
-		out := g.engine.Do(cmd, g.clock())
-		err = out.Err
-		g.applyOutcomeLocked(out)
-	}
-	if err != nil {
-		g.engine.PhoneErr[p.ID] = err.Error()
-	} else {
-		delete(g.engine.PhoneErr, p.ID)
-		g.publishLocked()
-	}
-	view := g.phoneViewLocked(p)
-	g.flushHostLocked()
-	g.mu.Unlock()
-	g.render(w, "phone.html", view, http.StatusOK)
+		out := e.Do(cmd, now)
+		res := g.resultLocked(e, out)
+		if out.Err != nil {
+			res.Err = out.Err.Error()
+			return res
+		}
+		delete(e.PhoneErr, p.ID)
+		res.Changed = true
+		return res
+	})
 }
 
 // post returns a handler for a command that needs no form parsing beyond
@@ -87,27 +53,6 @@ var cardField = map[commandKind]string{
 	cmdConfirm:      "winner",
 }
 
-func (g *Game) flushHostLocked() {
-	h := g.helper
-	finish := g.needFinish
-	pause := g.needPause
-	g.needFinish = false
-	g.needPause = false
-	if h == nil {
-		return
-	}
-	if pause {
-		g.mu.Unlock()
-		h.Pause()
-		g.mu.Lock()
-	}
-	if finish {
-		g.mu.Unlock()
-		h.Finish()
-		g.mu.Lock()
-	}
-}
-
 func (g *Game) postUnslot(w http.ResponseWriter, r *http.Request) {
 	g.withEngine(w, r, func(games.Player) (command, error) {
 		n, err := strconv.Atoi(r.FormValue("hole"))
@@ -120,7 +65,7 @@ func (g *Game) postUnslot(w http.ResponseWriter, r *http.Request) {
 
 func (g *Game) postVote(w http.ResponseWriter, r *http.Request) {
 	g.withEngine(w, r, func(p games.Player) (command, error) {
-		if !playerMayVote(g.engine, p) {
+		if !playerMayVote(g.run.Engine(), p) {
 			return command{}, fmt.Errorf("You cannot vote now.")
 		}
 		return command{Kind: cmdVote, Card: r.FormValue("target")}, nil
@@ -128,31 +73,31 @@ func (g *Game) postVote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) getBoardPartial(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board-frame", g.boardView(r), http.StatusOK)
+	g.run.Render(w, "board-frame", g.boardView(r), http.StatusOK)
 }
 
 func (g *Game) getPhonePartial(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "phone-frame", g.phoneView(r), http.StatusOK)
+	g.run.Render(w, "phone-frame", g.phoneView(r), http.StatusOK)
 }
 
 func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
-	if g.helperNow() == nil {
+	if g.run.Helper() == nil {
 		http.NotFound(w, r)
 		return
 	}
-	g.render(w, "howto.html", g.howtoView(false), http.StatusOK)
+	g.run.Render(w, "howto.html", g.howtoView(false), http.StatusOK)
 }
 
 func (g *Game) getHowtoSheet(w http.ResponseWriter, r *http.Request) {
-	if g.helperNow() == nil {
+	if g.run.Helper() == nil {
 		http.NotFound(w, r)
 		return
 	}
-	g.render(w, "howto-sheet", g.howtoView(true), http.StatusOK)
+	g.run.Render(w, "howto-sheet", g.howtoView(true), http.StatusOK)
 }
 
 func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
-	p, ok := g.playerOr401(w, r)
+	p, ok := g.run.Player(w, r)
 	if !ok {
 		return
 	}
@@ -160,32 +105,32 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
 	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
+	g.run.Lock()
+	if !g.run.Running() {
+		g.run.Unlock()
 		http.NotFound(w, r)
 		return
 	}
 	if g.overlayActive() {
 		view := g.phoneViewLocked(p)
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	if !p.ClaimedHost {
 		g.burnErr = "Only the claimed host can burn cards."
 		view := g.phoneViewLocked(p)
 		view.BurnOpen = true
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	if g.burnCorrupt {
 		g.burnErr = "Burn list is unreadable"
 		view := g.phoneViewLocked(p)
 		view.BurnOpen = true
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	g.burnChecks = map[string]bool{}
@@ -197,7 +142,7 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 		g.burnChecks[kind+"\x00"+text] = true
 		g.burnPairLocked(kind, text)
 	}
-	g.engine.StripBurned(g.isBurned)
+	g.run.Engine().StripBurned(g.isBurned)
 	for i := range g.burnSnap {
 		g.burnSnap[i].Burned = g.isBurned(g.burnSnap[i].Kind, g.burnSnap[i].Text)
 		g.burnSnap[i].Checked = g.burnChecks[g.burnSnap[i].Kind+"\x00"+g.burnSnap[i].Text]
@@ -205,69 +150,66 @@ func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {
 	g.burnErr = ""
 	view := g.phoneViewLocked(p)
 	view.BurnOpen = true
-	g.mu.Unlock()
-	g.render(w, "phone.html", view, http.StatusOK)
+	g.run.Unlock()
+	g.run.Render(w, "phone.html", view, http.StatusOK)
 }
 
 func (g *Game) postReshuffleYes(w http.ResponseWriter, r *http.Request) {
-	p, ok := g.playerOr401(w, r)
+	p, ok := g.run.Player(w, r)
 	if !ok {
 		return
 	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
+	g.run.Lock()
+	if !g.run.Running() {
+		g.run.Unlock()
 		http.NotFound(w, r)
 		return
 	}
 	if !p.ClaimedHost {
-		g.engine.PhoneErr[p.ID] = overlayWaitCopy
+		g.run.Engine().PhoneErr[p.ID] = overlayWaitCopy
 		view := g.phoneViewLocked(p)
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	if g.overlay == "" || g.overlayTooSmall {
 		view := g.phoneViewLocked(p)
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
 	g.fulfillOverlayLocked()
-	g.publishLocked()
+	g.run.Apply(runtimekit.Result{Changed: true})
 	view := g.phoneViewLocked(p)
-	g.flushHostLocked()
-	g.mu.Unlock()
-	g.render(w, "phone.html", view, http.StatusOK)
+	g.run.Unlock()
+	g.run.Render(w, "phone.html", view, http.StatusOK)
 }
 
 func (g *Game) postEndGame(w http.ResponseWriter, r *http.Request) {
-	p, ok := g.playerOr401(w, r)
+	p, ok := g.run.Player(w, r)
 	if !ok {
 		return
 	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
+	g.run.Lock()
+	if !g.run.Running() {
+		g.run.Unlock()
 		http.NotFound(w, r)
 		return
 	}
 	if !p.ClaimedHost || g.overlay == "" {
 		view := g.phoneViewLocked(p)
-		g.mu.Unlock()
-		g.render(w, "phone.html", view, http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "phone.html", view, http.StatusOK)
 		return
 	}
-	g.needFinish = true
-	g.publishLocked()
+	g.run.Apply(runtimekit.Result{Changed: true, Finish: true})
 	view := g.phoneViewLocked(p)
-	g.flushHostLocked()
-	g.mu.Unlock()
-	g.render(w, "phone.html", view, http.StatusOK)
+	g.run.Unlock()
+	g.run.Render(w, "phone.html", view, http.StatusOK)
 }
 
 func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -279,15 +221,14 @@ func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only the host can continue.", http.StatusForbidden)
 		return
 	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started || g.engine.Phase != phaseOver {
-		g.mu.Unlock()
+	g.run.Lock()
+	if !g.run.Running() || g.run.Engine().Phase != phaseOver {
+		g.run.Unlock()
 		http.NotFound(w, r)
 		return
 	}
-	g.needFinish = true
-	g.flushHostLocked()
-	g.mu.Unlock()
+	g.run.Apply(runtimekit.Result{Finish: true})
+	g.run.Unlock()
 	next := "/"
 	if r.FormValue("return") == "/board" {
 		next = "/board"

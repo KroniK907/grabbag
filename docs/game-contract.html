@@ -371,6 +371,21 @@
             <a href="#sse-drops">Missed events</a>
           </div>
         </li>
+        <li>
+          <a class="group" href="#kit">Runtime kit</a>
+          <div class="sub">
+            <a href="#kit-overview">When to use it</a>
+            <a href="#kit-new">New and Config</a>
+            <a href="#kit-lifecycle">Lifecycle</a>
+            <a href="#kit-act">Act and HostAct</a>
+            <a href="#kit-result">Result, Apply, Defer</a>
+            <a href="#kit-lock">Lock and state</a>
+            <a href="#kit-timer">Timer</a>
+            <a href="#kit-countdown">Countdown</a>
+            <a href="#kit-pages">Page, Render, Static</a>
+            <a href="#kit-tests">Tests and previews</a>
+          </div>
+        </li>
         <li><a class="group" href="#must-not">Must not</a></li>
       </ul>
     </nav>
@@ -1543,6 +1558,348 @@ h.Publish("tap")</pre>
         <p>If you animate from the event itself and ignore the GET, a dropped poke is a dropped animation with no recovery. Prefer server state plus refetch.</p>
       </article>
 
+      <h2 id="kit">Runtime kit</h2>
+      <p>Optional. Package <code>runtimekit</code> in <code>internal/games/runtimekit</code> is the match runtime that Apples for Humanity, Quick Quips, and Borrowed Truths share. Host never sees it. Every hook above still belongs to your Game. The kit only does the plumbing behind them.</p>
+
+      <article class="method" id="kit-overview">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">optional</span></div>
+        <h3>When to use it</h3>
+        <p>Use the kit when your game is turns, timers, and phone buttons that change one shared match. Skip it when you want your own runtime. Testing skips it.</p>
+        <h4>Description</h4>
+        <p>Split the game in two. The <strong>engine</strong> is rules and run state: no HTTP, no Helper, no goroutines, and the clock comes in as an argument. The <strong>Game</strong> holds a <code>*runtimekit.Runner[*engine]</code> plus views, templates, and extra routes. The Runner owns:</p>
+        <ul>
+          <li>one mutex for run state;</li>
+          <li>the timer tick;</li>
+          <li>the player and host POST pipeline: sign-in or host check, form parse, 404 with no match, your gate, your action, publish, then the phone reply;</li>
+          <li>Helper <code>Pause</code>, <code>Resume</code>, and <code>Finish</code> calls with the lock released, because host calls straight back into your Game;</li>
+          <li>page chrome, template render, and the static mount.</li>
+        </ul>
+        <p>Your Game methods hand off to the Runner. Your rules stay in the engine.</p>
+      </article>
+
+      <article class="method" id="kit-new">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">setup</span></div>
+        <h3>New and Config</h3>
+        <p>Builds an unloaded Runner wired to your engine type through hooks.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func New[E any](cfg Config[E]) *Runner[E]
+
+type Config[E any] struct {
+    Game         string
+    Event        string
+    Pages        *template.Template
+    AssetVersion string
+    Tick         time.Duration
+    Advance      func(e E, now time.Time) Result
+    Hold         func(e E, paused bool, now time.Time)
+    Gate         func(e E, p games.Player, paused bool) string
+    Reply        func(e E, p games.Player, r *http.Request, msg string) (name string, data any)
+    Cleanup      func(e E, unload bool)
+}</div>
+        <h4>Fields</h4>
+        <dl>
+          <dt>Game</dt>
+          <dd>Player-facing name, used in render errors.</dd>
+          <dt>Event</dt>
+          <dd>The SSE name published when a Result has <code>Changed</code>. See <a href="#sse-own">Your own names</a>.</dd>
+          <dt>Pages, AssetVersion</dt>
+          <dd>Your parsed templates and the <code>?v=</code> for <code>game.css</code> and <code>game.js</code>.</dd>
+          <dt>Tick</dt>
+          <dd>How often Advance runs. Zero is 250ms.</dd>
+          <dt>Advance</dt>
+          <dd>Runs every tick while a match runs and is not paused. Fire expired timers here. Nil means no timers and no tick.</dd>
+          <dt>Hold</dt>
+          <dd>Freezes or thaws the engine clock on host Pause and Resume. Fold in your own holds here, such as a reshuffle overlay, and call <code>Runner.Hold</code> when they change.</dd>
+          <dt>Gate</dt>
+          <dd>Refuses a player or host action before it runs. Return the phone error, or <code>""</code>. Nil lets every action run, paused or not.</dd>
+          <dt>Reply</dt>
+          <dd>Picks the template and view that answer an action. <code>msg</code> is the phone error or <code>""</code>. <code>e</code> is nil when the action ended the match.</dd>
+          <dt>Cleanup</dt>
+          <dd>Runs on Stop and Shutdown after the tick stops and before the engine is dropped. <code>unload</code> is true on Shutdown. The helper is still set.</dd>
+        </dl>
+        <p>Every hook runs with the lock held.</p>
+        <h4>Examples</h4>
+        <h5>Wire Borrowed Truths</h5>
+        <pre class="ex">func New() *Game {
+    g := &amp;Game{}
+    g.run = runtimekit.New(runtimekit.Config[*engine]{
+        Game:         "Borrowed Truths",
+        Event:        event,
+        Pages:        pages,
+        AssetVersion: assetVersion,
+        Advance: func(e *engine, now time.Time) runtimekit.Result {
+            finish, changed := e.Advance(now)
+            return runtimekit.Result{Changed: changed, Finish: finish}
+        },
+        Hold: func(e *engine, paused bool, now time.Time) { e.SetPaused(paused, now) },
+        Gate: func(_ *engine, _ games.Player, paused bool) string {
+            if paused {
+                return "The match is paused."
+            }
+            return ""
+        },
+        Reply: func(_ *engine, p games.Player, _ *http.Request, msg string) (string, any) {
+            return "phone-frame", g.phoneViewLocked(p, msg)
+        },
+        Cleanup: func(*engine, bool) { g.dropRunLocked() },
+    })
+    return g
+}</pre>
+        <p>Apples for Humanity leaves actions open while paused, so its Gate only refuses during the reshuffle overlay.</p>
+      </article>
+
+      <article class="method" id="kit-lifecycle">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">lifecycle</span></div>
+        <h3>Lifecycle</h3>
+        <p>The Runner methods your <a href="#game">Game</a> hooks hand off to.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func (r *Runner[E]) Load(h games.Helper)
+func (r *Runner[E]) Start(h games.Helper, begin func(h games.Helper) (E, error)) error
+func (r *Runner[E]) Pause() error
+func (r *Runner[E]) Resume() error
+func (r *Runner[E]) Stop() error
+func (r *Runner[E]) Shutdown() error</div>
+        <h4>Description</h4>
+        <p><code>Load</code> stores the helper and drops any match. <code>Start</code> runs <code>begin</code> under the lock to build the engine, then starts the tick. An error from <code>begin</code> leaves no match running, and host keeps Lobby on <code>/</code>. <code>Pause</code> and <code>Resume</code> flip the paused flag and call <code>Hold</code>. <code>Stop</code> runs <code>Cleanup</code> and drops the engine. <code>Shutdown</code> does that and drops the helper. None of them touch KV.</p>
+        <h4>Examples</h4>
+        <h5>Hand off the Game hooks</h5>
+        <pre class="ex">func (g *Game) Load(h games.Helper) error {
+    g.run.Load(h)
+    return nil
+}
+
+func (g *Game) Start(h games.Helper) error {
+    return g.run.Start(h, func(h games.Helper) (*engine, error) {
+        return newEngine(g.loadSettings(h), rosterOf(h.Seated()), g.run.Rand(), g.run.Now()), nil
+    })
+}
+
+func (g *Game) Pause() error    { return g.run.Pause() }
+func (g *Game) Resume() error   { return g.run.Resume() }
+func (g *Game) Stop() error     { return g.run.Stop() }
+func (g *Game) Shutdown() error { return g.run.Shutdown() }</pre>
+      </article>
+
+      <article class="method" id="kit-act">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">Play POST</span></div>
+        <h3>Act and HostAct</h3>
+        <p>Runs one phone button against the engine and answers with the fresh phone.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Action[E any] func(e E, p games.Player, now time.Time) Result
+
+func (r *Runner[E]) Act(w http.ResponseWriter, req *http.Request, fn Action[E])
+func (r *Runner[E]) HostAct(w http.ResponseWriter, req *http.Request, fn Action[E])
+func (r *Runner[E]) HostPause(w http.ResponseWriter, req *http.Request)
+func (r *Runner[E]) HostResume(w http.ResponseWriter, req *http.Request)
+func (r *Runner[E]) Player(w http.ResponseWriter, req *http.Request) (games.Player, bool)
+func (r *Runner[E]) HostPlayer(w http.ResponseWriter, req *http.Request) (games.Player, bool)</div>
+        <h4>Return value</h4>
+        <p>None. The Runner writes the response: 404 before Load or with no match, 401 with no player cookie, 403 for a non-host on the host routes, 400 for a bad form, or 200 with the template Reply picks.</p>
+        <h4>Description</h4>
+        <p><code>Act</code> is for any signed-in player. <code>HostAct</code> lets the claimed host or an admin session through. An admin with no player cookie gets the zero Player. Both parse the form before your action runs, so close over the request for form values. <code>HostPause</code> and <code>HostResume</code> are ready-made phone host buttons. Resume skips the Gate, since a paused Gate would refuse it.</p>
+        <p><code>Player</code> and <code>HostPlayer</code> are the same checks for handlers that do not fit the pipeline, such as a photo upload that answers 204.</p>
+        <h4>Examples</h4>
+        <h5>A vote button</h5>
+        <pre class="ex">func (g *Game) postVote(w http.ResponseWriter, r *http.Request) {
+    g.run.Act(w, r, func(e *engine, p games.Player, now time.Time) runtimekit.Result {
+        if msg := e.Vote(p.ID, r.FormValue("pick")); msg != "" {
+            return runtimekit.Result{Err: msg}
+        }
+        return runtimekit.Result{Changed: true}
+    })
+}
+
+mux.HandleFunc("POST /host/pause", g.run.HostPause)
+mux.HandleFunc("POST /host/resume", g.run.HostResume)</pre>
+      </article>
+
+      <article class="method" id="kit-result">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">SSE</span></div>
+        <h3>Result, Apply, Defer</h3>
+        <p>What an action or tick asks the Runner to do after run state changed.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Result struct {
+    Err     string
+    Changed bool
+    Events  []string
+    Pause   bool
+    Resume  bool
+    Finish  bool
+}
+
+func (r *Runner[E]) Apply(res Result)
+func (r *Runner[E]) Defer(res Result)
+func (r *Runner[E]) Publish(names ...string)</div>
+        <h4>Fields</h4>
+        <dl>
+          <dt>Err</dt>
+          <dd>The phone error for the player who acted. Reply gets it as <code>msg</code>.</dd>
+          <dt>Changed</dt>
+          <dd>Publish <code>Config.Event</code>.</dd>
+          <dt>Events</dt>
+          <dd>More SSE names to publish, in order, after Config.Event. Borrowed Truths publishes only <code>borrowedtruths-facts</code> while phones are mid-write, so their text boxes are not swapped.</dd>
+          <dt>Pause, Resume, Finish</dt>
+          <dd>Call the matching <a href="#helper">Helper</a> method with the lock released.</dd>
+        </dl>
+        <h4>Description</h4>
+        <p>Act, HostAct, and the tick apply the Result for you. Call <code>Apply</code> from your own handlers. It may release and retake the lock, so read the engine again afterwards: after Finish it is gone. <code>Defer</code> publishes now and holds the host calls for the next Apply or tick. Use it where the lock must stay held, such as a view that syncs the roster and may need to Pause.</p>
+        <h4>Examples</h4>
+        <h5>End the match from a custom handler</h5>
+        <pre class="ex">g.run.Lock()
+g.run.Apply(runtimekit.Result{Changed: true, Finish: true})
+view := g.phoneViewLocked(p)
+g.run.Unlock()</pre>
+      </article>
+
+      <article class="method" id="kit-lock">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">state</span></div>
+        <h3>Lock and state</h3>
+        <p>Reads run state from code that is not a hook.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func (r *Runner[E]) Lock()
+func (r *Runner[E]) Unlock()
+func (r *Runner[E]) Engine() E
+func (r *Runner[E]) Running() bool
+func (r *Runner[E]) Paused() bool
+func (r *Runner[E]) Helper() games.Helper
+func (r *Runner[E]) HelperLocked() games.Helper
+func (r *Runner[E]) Now() time.Time
+func (r *Runner[E]) Rand() *rand.Rand
+func (r *Runner[E]) Hold()</div>
+        <h4>Description</h4>
+        <p>Hold the lock for <code>Engine</code>, <code>Running</code>, <code>Paused</code>, <code>HelperLocked</code>, <code>Rand</code>, <code>Hold</code>, <code>Publish</code>, <code>Apply</code>, and <code>Defer</code>. <code>Helper</code>, <code>Now</code>, and the methods on other cards take it themselves. Hooks already run with it held.</p>
+        <h4>Examples</h4>
+        <h5>A settings form frozen during a match</h5>
+        <pre class="ex">g.run.Lock()
+frozen := g.run.Running()
+g.run.Unlock()</pre>
+      </article>
+
+      <article class="method" id="kit-timer">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">engine</span></div>
+        <h3>Timer</h3>
+        <p>One phase countdown kept as plain data in your engine.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Timer struct {
+    Kind  string
+    End   time.Time
+    Total time.Duration
+    Left  time.Duration
+}
+
+func (t *Timer) Arm(kind string, d time.Duration, now time.Time, paused bool)
+func (t *Timer) Clear()
+func (t *Timer) Freeze(now time.Time)
+func (t *Timer) Thaw(now time.Time)
+func (t *Timer) Extend(d time.Duration)
+func (t Timer) On() bool
+func (t Timer) Frozen() bool
+func (t Timer) Expired(now time.Time) bool
+func (t Timer) Remaining(now time.Time) time.Duration
+func (t Timer) View(now time.Time) TimerView</div>
+        <h4>Description</h4>
+        <p><code>Arm</code> starts a countdown. Pass the engine's paused flag so a timer armed during a pause starts frozen. <code>Freeze</code> and <code>Thaw</code> are what <code>Hold</code> calls. A frozen timer has a zero End, keeps its remainder in Left, and never expires. <code>Kind</code> says what fires on expiry. The client gets it as <code>detail.kind</code> on countdown events.</p>
+        <h4>Examples</h4>
+        <h5>Fire the vote timer from Advance</h5>
+        <pre class="ex">func (e *engine) Advance(now time.Time) runtimekit.Result {
+    if e.Paused || !e.Timer.Expired(now) {
+        return runtimekit.Result{}
+    }
+    e.Timer.Clear()
+    e.closeVote()
+    return runtimekit.Result{Changed: true}
+}
+
+func (e *engine) openVote(now time.Time) {
+    e.Timer.Arm("vote", 20*time.Second, now, e.Paused)
+}</pre>
+      </article>
+
+      <article class="method" id="kit-countdown">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">ui</span><span class="tag">client</span></div>
+        <h3>Countdown</h3>
+        <p>Draws a Timer on the board or a phone with the shared countdown script.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type TimerView struct {
+    On, Frozen          bool
+    Kind                string
+    EndUnix, EndMs      int64
+    Seconds             int
+    TotalSeconds        int
+}
+func (v TimerView) Clock() string
+
+{{template "ui-countdown" .Timer}}   inside the element's opening tag
+data-countdown-value                 on the text node</div>
+        <h4>Description</h4>
+        <p><code>ui-start</code> loads <code>/static/countdown.js</code> on every game document and phone. It paints <code>m:ss</code> into each <code>[data-countdown-value]</code> every 250ms and after every swap. While <code>data-countdown-frozen</code> is set, or in a static preview, it shows the rendered seconds. Seconds round up, so the last second shows <code>0:01</code>.</p>
+        <p>It sets <code>--countdown-left</code> (1 to 0) and <code>--countdown-turn</code> on the element for bars and conic rings. A running countdown fires <code>grabbag:countdown-tick</code> when the shown second changes and <code>grabbag:countdown-done</code> once at zero. Both bubble with <code>detail.seconds</code> and <code>detail.kind</code>. A repaint of the same countdown fires nothing new, and a page that loads after the end fires nothing. Hook sound or animation cues there. Do not write a second timer loop in <code>game.js</code>.</p>
+        <h4>Examples</h4>
+        <h5>A timer pill with a ring</h5>
+        <pre class="ex">{{if .Timer.On}}
+&lt;div class="wordbox-timer" {{template "ui-countdown" .Timer}}&gt;
+  &lt;span class="wordbox-ring" aria-hidden="true"&gt;&lt;/span&gt;
+  &lt;strong data-countdown-value&gt;{{.Timer.Clock}}&lt;/strong&gt;
+&lt;/div&gt;
+{{end}}
+
+.wordbox-ring {
+  background: conic-gradient(var(--ui-accent-2) var(--countdown-turn, 1turn), transparent 0);
+}</pre>
+        <h5>Beep in the last three seconds</h5>
+        <pre class="ex">document.addEventListener("grabbag:countdown-tick", function (ev) {
+  if (ev.detail.kind === "vote" &amp;&amp; ev.detail.seconds &lt;= 3) {
+    beep();
+  }
+});</pre>
+      </article>
+
+      <article class="method" id="kit-pages">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">ui</span></div>
+        <h3>Page, Render, Static</h3>
+        <p>Chrome, template output, and asset serving every game repeats.</p>
+        <h4>Syntax</h4>
+        <div class="sig">type Page struct {
+    ui.Chrome
+    GameCSS string
+    GameJS  string
+}
+
+func (r *Runner[E]) Page(title string) Page
+func (r *Runner[E]) PageLocked(title string) Page
+func (r *Runner[E]) Render(w http.ResponseWriter, name string, data any, status int)
+func Static(files fs.FS) http.Handler</div>
+        <h4>Description</h4>
+        <p>Embed <code>Page</code> in board, phone, and settings views. It stamps <a href="#helper-theme">Theme</a> and links <code>/play/static/game.css</code> and <code>game.js</code> at <code>AssetVersion</code>. <code>Render</code> buffers the template, so a template error is a clean 500 and not half a page. <code>Static</code> serves the <code>static/</code> folder of your embedded FS.</p>
+        <h4>Examples</h4>
+        <h5>Mount static assets</h5>
+        <pre class="ex">//go:embed static/*
+var staticFiles embed.FS
+
+mux.Handle("GET /static/", runtimekit.Static(staticFiles))</pre>
+      </article>
+
+      <article class="method" id="kit-tests">
+        <div class="tags"><span class="tag">runtimekit</span><span class="tag">tests</span></div>
+        <h3>Tests and previews</h3>
+        <p>Drives a Runner without a host, a wall clock, or waiting on the tick.</p>
+        <h4>Syntax</h4>
+        <div class="sig">func (r *Runner[E]) Install(e E)
+func (r *Runner[E]) SetClock(now func() time.Time)
+func (r *Runner[E]) SetRand(rng *rand.Rand)
+func (r *Runner[E]) Tick()</div>
+        <h4>Description</h4>
+        <p><code>Install</code> makes <code>e</code> a running match with no helper and no tick, which is what <a href="#game-scenarios">Scenarios</a> need. <code>SetClock</code> and <code>SetRand</code> fix time and shuffles. <code>Tick</code> runs one tick now, host calls included. All four take the lock, so do not call them while holding it.</p>
+        <h4>Examples</h4>
+        <h5>A preview Game at a fixed moment</h5>
+        <pre class="ex">func fixedGame(e *engine, now time.Time) *Game {
+    g := New()
+    g.run.SetClock(func() time.Time { return now })
+    g.run.Install(e)
+    return g
+}</pre>
+      </article>
+
       <h2 id="must-not">Must not</h2>
       <ul>
         <li>Import <code>internal/host</code>, <code>internal/lobby</code>, or <code>internal/store</code> from a game package.</li>
@@ -1553,6 +1910,7 @@ h.Publish("tap")</pre>
         <li>Scan a games folder at runtime.</li>
         <li>Treat <code>/docs</code> as this contract. That URL is how to run the binary.</li>
         <li>Open a second EventSource on a page host already wired.</li>
+        <li>Write a second timer loop in <code>game.js</code>. Use <a href="#kit-countdown">Countdown</a>.</li>
       </ul>
       <p>The live package that exercises almost every hook is Testing in <code>internal/games/testing</code>.</p>
     </main>

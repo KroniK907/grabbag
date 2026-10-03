@@ -29,7 +29,7 @@ func (e *engine) timFaces() []face {
 // fillTIMBoard draws a This Is My round. The owner and Not theirs stay out
 // until the reveal.
 func (g *Game) fillTIMBoard(view *boardView) {
-	e := g.engine
+	e := g.run.Engine()
 	r := e.Round
 	view.TIM = true
 	view.PhotoURL = g.photoURL(e.Photos[r.Photo].ID)
@@ -72,7 +72,7 @@ func (g *Game) fillTIMBoard(view *boardView) {
 // whether the photo is theirs. A hidden owner gets the insider line and the
 // same vote screen as everyone else.
 func (g *Game) fillTIMPhone(view *phoneView, p games.Player) {
-	e := g.engine
+	e := g.run.Engine()
 	r := e.Round
 	view.TIM = true
 	view.PhotoURL = g.photoURL(e.Photos[r.Photo].ID)

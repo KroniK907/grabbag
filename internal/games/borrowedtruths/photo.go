@@ -61,7 +61,7 @@ func (g *Game) dropRunLocked() {
 // postPhoto takes one This Is My photo during facts. It answers 204, or a
 // status with a plain-text line the phone shows.
 func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -93,8 +93,8 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	if status, msg := g.photoGateLocked(p.ID); msg != "" {
 		http.Error(w, msg, status)
 		return
@@ -115,7 +115,7 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save the photo.", http.StatusInternalServerError)
 		return
 	}
-	old, msg := g.engine.SetPhoto(p.ID, id)
+	old, msg := g.run.Engine().SetPhoto(p.ID, id)
 	if msg != "" {
 		_ = os.Remove(filepath.Join(g.runDir, id))
 		http.Error(w, msg, http.StatusConflict)
@@ -124,26 +124,26 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 	if old != "" {
 		_ = os.Remove(filepath.Join(g.runDir, old))
 	}
-	g.publishFactsLocked()
+	g.run.Publish(eventFacts)
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // photoGate is the status and message that refuse an upload from id right
 // now, or "" when the upload may go ahead.
 func (g *Game) photoGate(id string) (int, string) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	return g.photoGateLocked(id)
 }
 
 func (g *Game) photoGateLocked(id string) (int, string) {
-	if g.engine == nil || !g.started {
+	if !g.run.Running() {
 		return http.StatusNotFound, "No match is running."
 	}
-	if g.paused {
+	if g.run.Paused() {
 		return http.StatusConflict, "The match is paused."
 	}
-	if msg := g.engine.photoRefusal(id); msg != "" {
+	if msg := g.run.Engine().photoRefusal(id); msg != "" {
 		return http.StatusConflict, msg
 	}
 	return 0, ""
@@ -169,12 +169,12 @@ func checkPhoto(data []byte) (int, string) {
 // getPhoto serves a photo only once it has been on the board.
 func (g *Game) getPhoto(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	g.mu.Lock()
+	g.run.Lock()
 	var path string
-	if g.engine != nil && g.runDir != "" && g.engine.photoShown(id) {
+	if g.run.Engine() != nil && g.runDir != "" && g.run.Engine().photoShown(id) {
 		path = filepath.Join(g.runDir, id)
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	if path == "" {
 		http.NotFound(w, r)
 		return

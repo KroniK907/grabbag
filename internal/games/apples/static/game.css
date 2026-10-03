@@ -884,7 +884,7 @@ html:has(.apples-tv) {
   flex: 0 0 28px;
   border: 2px solid var(--ui-brand);
   border-radius: 50%;
-  background: conic-gradient(var(--ui-accent-2) var(--apples-timer-turn, 1turn), transparent 0);
+  background: conic-gradient(var(--ui-accent-2) var(--countdown-turn, 1turn), transparent 0);
 }
 
 .apples-phone-scroll > .apples-timer {

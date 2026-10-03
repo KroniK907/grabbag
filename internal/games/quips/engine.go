@@ -3,6 +3,8 @@ package quips
 import (
 	"math/rand"
 	"time"
+
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 const (
@@ -129,10 +131,7 @@ type engine struct {
 	HoldAwards  map[string]int
 	Champions   []string
 	MatchOver   bool
-	TimerKind   string
-	TimerEnd    time.Time
-	TimerTotal  time.Duration
-	FrozenLeft  time.Duration
+	Timer       runtimekit.Timer
 	Paused      bool
 	rng         *rand.Rand
 	now         func() time.Time
@@ -217,11 +216,11 @@ func (e *engine) doCompose(cmd Command, now time.Time, out Outcome) Outcome {
 		out.PhoneErr[cmd.Actor] = "You cannot compose now."
 		return out
 	}
-	if e.TimerKind == timerLastIntro {
+	if e.Timer.Kind == timerLastIntro {
 		out.PhoneErr[cmd.Actor] = "Ready, set, go."
 		return out
 	}
-	if e.TimerKind == timerPlayIntro {
+	if e.Timer.Kind == timerPlayIntro {
 		out.PhoneErr[cmd.Actor] = "Get ready to play Quick Quips."
 		return out
 	}
@@ -249,13 +248,13 @@ func (e *engine) Advance(now time.Time) Outcome {
 	if e.Paused {
 		return out
 	}
-	if e.TimerKind == "" || e.TimerEnd.IsZero() {
+	if e.Timer.Kind == "" || e.Timer.End.IsZero() {
 		return out
 	}
-	if e.clock(now).Before(e.TimerEnd) {
+	if e.clock(now).Before(e.Timer.End) {
 		return out
 	}
-	switch e.TimerKind {
+	switch e.Timer.Kind {
 	case "write":
 		e.clearTimer()
 		e.timerSubmitAll()
