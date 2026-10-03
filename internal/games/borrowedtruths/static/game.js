@@ -87,6 +87,7 @@
         .then(function (res) {
           if (res.ok) {
             status.textContent = "Photo added.";
+            card.querySelector(".bt-photo-pick").firstChild.textContent = "Change photo";
             preview.src = url;
             preview.hidden = false;
             return;

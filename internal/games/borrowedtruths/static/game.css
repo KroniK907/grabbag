@@ -561,6 +561,7 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .phase-tim-reveal .bt-claimant:not(.is-owner) { opacity: .6; }
 .bt-none-count { font-family: var(--bt-display); font-size: 1.8cqw; }
 .bt-none-count b { color: var(--bt-count); font-weight: 400; }
+.bt-tim-crowd { display: flex; flex-wrap: wrap; gap: .4cqw 1.2cqw; font-size: 1.1cqw; opacity: .8; }
 
 .bt-tim-ask { grid-column: 2; grid-row: 2; align-self: start; }
 .bt-tim-stickers { grid-column: 2; grid-row: 2; margin-top: 7cqw; }

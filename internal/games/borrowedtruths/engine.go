@@ -149,7 +149,7 @@ func newEngine(s matchSettings, roster []rosterRow, bank []string, rng *rand.Ran
 		e.Players = append(e.Players, p)
 		e.byID[row.ID] = p
 	}
-	if s.LieSource != lieSourcePlayers {
+	if s.lieSource() != lieSourcePlayers {
 		for _, text := range bank {
 			e.Facts = append(e.Facts, fact{Text: text, Lie: true})
 		}
@@ -369,7 +369,7 @@ func (e *engine) SubmitFacts(id string, truths, lies []string) string {
 	for _, text := range truths {
 		e.Facts = append(e.Facts, fact{Owner: id, Text: strings.TrimSpace(text)})
 	}
-	if e.Settings.LieSource != lieSourceBank {
+	if e.Settings.lieSource() != lieSourceBank {
 		for _, text := range lies {
 			e.Facts = append(e.Facts, fact{Owner: id, Text: strings.TrimSpace(text), Lie: true})
 		}

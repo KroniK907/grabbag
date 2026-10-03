@@ -19,6 +19,14 @@ import (
 // a real photo lands well under it.
 const maxPhotoBytes = 2 << 20
 
+// maxPhotoSide and maxPhotoPixels bound the decoded image. A small file can
+// still claim huge dimensions, so the header is checked before the full
+// decode allocates.
+const (
+	maxPhotoSide   = 4096
+	maxPhotoPixels = 4096 * 3072
+)
+
 // runPrefix names the per-match photo folder under the game data dir.
 const runPrefix = "run-"
 
@@ -63,6 +71,11 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Sign in to play.", http.StatusUnauthorized)
 		return
 	}
+	// Refuse early so a player who cannot upload never costs a decode.
+	if status, msg := g.photoGate(p.ID); msg != "" {
+		http.Error(w, msg, status)
+		return
+	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxPhotoBytes+64<<10)
 	file, _, err := r.FormFile("photo")
 	if err != nil {
@@ -75,19 +88,15 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "That photo is over 2 MB.", http.StatusRequestEntityTooLarge)
 		return
 	}
-	if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
-		http.Error(w, "That file is not a photo.", http.StatusUnsupportedMediaType)
+	if status, msg := checkPhoto(data); msg != "" {
+		http.Error(w, msg, status)
 		return
 	}
 
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.engine == nil || !g.started {
-		http.NotFound(w, r)
-		return
-	}
-	if g.paused {
-		http.Error(w, "The match is paused.", http.StatusConflict)
+	if status, msg := g.photoGateLocked(p.ID); msg != "" {
+		http.Error(w, msg, status)
 		return
 	}
 	if g.runDir == "" {
@@ -117,6 +126,44 @@ func (g *Game) postPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	g.publishFactsLocked()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// photoGate is the status and message that refuse an upload from id right
+// now, or "" when the upload may go ahead.
+func (g *Game) photoGate(id string) (int, string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.photoGateLocked(id)
+}
+
+func (g *Game) photoGateLocked(id string) (int, string) {
+	if g.engine == nil || !g.started {
+		return http.StatusNotFound, "No match is running."
+	}
+	if g.paused {
+		return http.StatusConflict, "The match is paused."
+	}
+	if msg := g.engine.photoRefusal(id); msg != "" {
+		return http.StatusConflict, msg
+	}
+	return 0, ""
+}
+
+// checkPhoto reads the image header first and refuses oversized dimensions,
+// then decodes the whole image to prove it is a photo.
+func checkPhoto(data []byte) (int, string) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return http.StatusUnsupportedMediaType, "That file is not a photo."
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxPhotoSide || cfg.Height > maxPhotoSide ||
+		cfg.Width*cfg.Height > maxPhotoPixels {
+		return http.StatusRequestEntityTooLarge, "That photo is too big. Try a smaller one."
+	}
+	if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+		return http.StatusUnsupportedMediaType, "That file is not a photo."
+	}
+	return 0, ""
 }
 
 // getPhoto serves a photo only once it has been on the board.

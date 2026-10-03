@@ -61,7 +61,7 @@ func (h *fakeHelper) Resume()                                { h.paused = false;
 func (h *fakeHelper) Notify(string, string, string, int)     {}
 func (h *fakeHelper) Log(string)                             {}
 func (h *fakeHelper) Theme() string                          { return "neon-dark" }
-func (h *fakeHelper) HasAdmin(*http.Request) bool            { return false }
+func (h *fakeHelper) HasAdmin(r *http.Request) bool          { return r.Header.Get("X-Admin") == "1" }
 func (h *fakeHelper) Publish(name string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -235,5 +235,83 @@ func TestSettingsSaveAndLockDuringMatch(t *testing.T) {
 func TestNeverPausesOnDisconnect(t *testing.T) {
 	if games.PausesOnDisconnect(New()) {
 		t.Fatal("Borrowed Truths should keep playing when a phone drops")
+	}
+}
+
+func TestHostActionsAcceptAdminWithoutPlayer(t *testing.T) {
+	g, h, mux := startGame(t, 4)
+	send := func(player, path string, admin bool) int {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		req.Header.Set("X-Player", player)
+		if admin {
+			req.Header.Set("X-Admin", "1")
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, path := range []string{"/host/continue", "/host/extend", "/host/void", "/host/pause", "/host/resume"} {
+		if code := send("", path, false); code != http.StatusForbidden {
+			t.Fatalf("signed-out %s = %d", path, code)
+		}
+		if code := send("p2", path, false); code != http.StatusForbidden {
+			t.Fatalf("player %s = %d", path, code)
+		}
+	}
+	if code := send("", "/host/continue", true); code != http.StatusOK {
+		t.Fatalf("admin continue = %d", code)
+	}
+	g.mu.Lock()
+	phase := g.engine.Phase
+	g.mu.Unlock()
+	if phase == phaseFacts {
+		t.Fatal("admin continue did not close facts")
+	}
+	for _, path := range []string{"/host/extend", "/host/void"} {
+		if code := send("", path, true); code != http.StatusOK {
+			t.Fatalf("admin %s = %d", path, code)
+		}
+	}
+	if code := send("", "/host/pause", true); code != http.StatusOK || !h.paused {
+		t.Fatalf("admin pause = %d paused=%v", code, h.paused)
+	}
+	if code := send("p1", "/host/resume", false); code != http.StatusOK || h.paused {
+		t.Fatalf("claimed host resume = %d paused=%v", code, h.paused)
+	}
+}
+
+func TestZeroLiesDealsFromTheBank(t *testing.T) {
+	g := New()
+	h := newFakeHelper(4)
+	h.game = g
+	h.dir = t.TempDir()
+	_ = g.Load(h)
+	form := url.Values{
+		"truths": {"2"}, "lies": {"0"}, "lie_source": {"players"}, "mix_yours": {"0"}, "mix_borrowed": {"0"}, "mix_lie": {"1"},
+		"tells": {"0"}, "max_tells": {"12"}, "facts_sec": {"180"}, "private_sec": {"30"}, "question_sec": {"90"},
+		"vote_sec": {"20"}, "owner_vote_sec": {"15"}, "knew_void": {"half"}, "skips": {"1"},
+		"tim_rounds": {"0"}, "tim_placement": {"middle"}, "not_theirs": {"15"}, "look_sec": {"20"},
+		"claim_sec": {"30"}, "tim_question_sec": {"180"},
+	}
+	if rec := post(t, g.Settings(), "", "/match", form); rec.Code != http.StatusSeeOther {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body.String())
+	}
+	if err := g.Start(h); err != nil {
+		t.Fatal(err)
+	}
+	defer g.Shutdown()
+	mux := g.Play()
+	for _, p := range []string{"p1", "p2", "p3", "p4"} {
+		if rec := post(t, mux, p, "/facts", url.Values{"truth": {p + " a", p + " b"}}); !strings.Contains(rec.Body.String(), "Locked in.") &&
+			!strings.Contains(rec.Body.String(), "phase-private-read") {
+			t.Fatalf("facts %s: %s", p, rec.Body.String())
+		}
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	e := g.engine
+	if e.Phase != phasePrivate || e.Card == nil || e.Card.Kind != kindLie || e.Facts[e.Card.Fact].Owner != "" {
+		t.Fatalf("phase %s card %+v, want a bank lie in the private read", e.Phase, e.Card)
 	}
 }

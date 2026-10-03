@@ -32,11 +32,8 @@ type timRound struct {
 // SetPhoto stores a seated player's photo during facts. It returns the ID of
 // the photo it replaced, so the caller can delete that file.
 func (e *engine) SetPhoto(id, photoID string) (old string, msg string) {
-	if e.player(id) == nil {
-		return "", "You are not in this match."
-	}
-	if e.Phase != phaseFacts {
-		return "", "Photos are closed."
+	if msg := e.photoRefusal(id); msg != "" {
+		return "", msg
 	}
 	for i := range e.Photos {
 		if e.Photos[i].Owner == id {
@@ -47,6 +44,17 @@ func (e *engine) SetPhoto(id, photoID string) (old string, msg string) {
 	}
 	e.Photos = append(e.Photos, photo{ID: photoID, Owner: id})
 	return "", ""
+}
+
+// photoRefusal is why id may not upload a photo now, or "" when they may.
+func (e *engine) photoRefusal(id string) string {
+	if e.player(id) == nil {
+		return "You are not in this match."
+	}
+	if e.Phase != phaseFacts {
+		return "Photos are closed."
+	}
+	return ""
 }
 
 // HasPhoto reports whether a player has uploaded a photo.
