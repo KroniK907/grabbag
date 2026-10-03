@@ -73,7 +73,7 @@
         {{range .TIMOptions}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
           <input type="hidden" name="pick" value="{{.ID}}">
-          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
         </form>
         {{end}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
@@ -109,7 +109,7 @@
     {{range .TIMOptions}}
     <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
       <input type="hidden" name="pick" value="{{.ID}}">
-      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
     </form>
     {{end}}
     <form hx-post="/play/vote" hx-target="#bt-phone" hx-swap="outerHTML">
@@ -172,7 +172,7 @@
         {{range .Names}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
           <input type="hidden" name="pick" value="borrowed"><input type="hidden" name="owner" value="{{.ID}}">
-          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+          <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
         </form>
         {{end}}
       </div>
@@ -213,7 +213,7 @@
     {{range .Names}}
     <form hx-post="/play/owner-vote" hx-target="#bt-phone" hx-swap="outerHTML">
       <input type="hidden" name="target" value="{{.ID}}">
-      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span>{{.Name}}</button>
+      <button class="bt-name" type="submit"><span class="bt-av">{{avatar .Seed}}</span><span class="bt-name-text">{{.Name}}</span></button>
     </form>
     {{end}}
   </div>
