@@ -22,9 +22,9 @@ func TestBoardRosterPinsJudgeThenScore(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	judgeName := g.engine.Actors[g.engine.JudgeID].Name
-	g.mu.Unlock()
+	g.run.Lock()
+	judgeName := g.run.Engine().Actors[g.run.Engine().JudgeID].Name
+	g.run.Unlock()
 	first := boardRosterNames(t, g)
 	if len(first) < 3 || first[0] != judgeName {
 		t.Fatalf("judge %s not first: %v", judgeName, first)
@@ -63,7 +63,7 @@ func TestDrawWaitHidesOldPrompt(t *testing.T) {
 		other = "p2"
 	}
 	playPOST(g, "/draw", judge, nil)
-	prompt := g.engine.LivePrompt.Text
+	prompt := g.run.Engine().LivePrompt.Text
 	playPOST(g, "/slot", other, url.Values{"card": {firstHandCard(g, other)}})
 	playPOST(g, "/lock", other, nil)
 	for !allRevealed(g) {
@@ -115,7 +115,7 @@ func TestPhoneShowsHandWhileJudgeChooses(t *testing.T) {
 		t.Fatalf("missing blank prompt: %s", body)
 	}
 	card := firstHandCard(g, other)
-	if !strings.Contains(body, g.engine.Actors[other].Hand[0].Text) {
+	if !strings.Contains(body, g.run.Engine().Actors[other].Hand[0].Text) {
 		t.Fatalf("missing hand card: %s", body)
 	}
 	if strings.Contains(body, `hx-post="/play/slot"`) {
@@ -153,8 +153,8 @@ func TestPromptBlanksRenderAsFourUnderscores(t *testing.T) {
 	if !strings.Contains(body, "____") {
 		t.Fatalf("board missing four-underscore blank: %s", body)
 	}
-	if strings.Contains(body, expandBlanks(g.engine.LivePrompt.Text)) {
-		lib := g.engine.LivePrompt.Text
+	if strings.Contains(body, expandBlanks(g.run.Engine().LivePrompt.Text)) {
+		lib := g.run.Engine().LivePrompt.Text
 		if strings.Contains(lib, "_") && strings.Contains(body, ">"+lib+"<") {
 			t.Fatalf("board still shows library blank %q: %s", lib, body)
 		}
@@ -173,7 +173,7 @@ func TestFavoriteVoteBlocksJudgeConfirm(t *testing.T) {
 	h.sit("p2", "Sam")
 	seedRNG(g)
 	now := time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
-	g.now = func() time.Time { return now }
+	g.run.SetClock(func() time.Time { return now })
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
@@ -188,25 +188,23 @@ func TestFavoriteVoteBlocksJudgeConfirm(t *testing.T) {
 	for !allRevealed(g) {
 		playPOST(g, "/reveal", judge, nil)
 	}
-	if g.engine.TimerKind != "favorite-vote" {
-		t.Fatalf("timer = %s", g.engine.TimerKind)
+	if g.run.Engine().Timer.Kind != "favorite-vote" {
+		t.Fatalf("timer = %s", g.run.Engine().Timer.Kind)
 	}
 	conf := playPOST(g, "/confirm", judge, url.Values{"winner": {firstPacket(g)}})
 	if !strings.Contains(conf.Body.String(), "Favorites are still open.") {
 		t.Fatalf("confirm during favorites = %s", conf.Body.String())
 	}
 	now = now.Add(21 * time.Second)
-	g.mu.Lock()
-	g.fireTimerLocked()
-	g.mu.Unlock()
-	if g.engine.TimerKind != "" && g.engine.TimerKind != "judge-pick" {
-		t.Fatalf("after favorites timer = %s", g.engine.TimerKind)
+	g.run.Tick()
+	if g.run.Engine().Timer.Kind != "" && g.run.Engine().Timer.Kind != "judge-pick" {
+		t.Fatalf("after favorites timer = %s", g.run.Engine().Timer.Kind)
 	}
 	conf = playPOST(g, "/confirm", judge, url.Values{"winner": {firstPacket(g)}})
 	if strings.Contains(conf.Body.String(), "Favorites are still open.") {
 		t.Fatalf("confirm after favorites = %s", conf.Body.String())
 	}
-	if g.engine.WinnerID == "" {
+	if g.run.Engine().WinnerID == "" {
 		t.Fatal("winner was not set")
 	}
 }
@@ -222,14 +220,13 @@ func TestWinnerHoldZeroWaitsForHost(t *testing.T) {
 		WinnerID: "p1",
 		PhoneErr: map[string]string{},
 	}
-	g.mu.Lock()
-	g.started = true
-	g.engine = m
-	m.at = g.clock()
+	g.run.Install(m)
+	g.run.Lock()
+	m.at = g.run.Now()
 	m.finish()
-	g.mu.Unlock()
-	if m.TimerKind != "" {
-		t.Fatalf("zero hold armed %s", m.TimerKind)
+	g.run.Unlock()
+	if m.Timer.Kind != "" {
+		t.Fatalf("zero hold armed %s", m.Timer.Kind)
 	}
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
@@ -237,9 +234,7 @@ func TestWinnerHoldZeroWaitsForHost(t *testing.T) {
 	if !strings.Contains(body, ">Winner<") || !strings.Contains(body, `action="/play/finish"`) {
 		t.Fatalf("winner page = %s", body)
 	}
-	g.mu.Lock()
-	g.fireTimerLocked()
-	g.mu.Unlock()
+	g.run.Tick()
 	if h.finishN != 0 {
 		t.Fatal("zero hold auto-finished")
 	}

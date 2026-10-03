@@ -50,6 +50,7 @@ grabbag/
       applog/                 # in-memory log ring + optional host.log
     games/                    # compile-time loader + Game/Helper contract
       game.go
+      runtimekit/             # optional match runtime games may import; package runtimekit
       apples/                 # Apples for Humanity; package apples
         previews/             # saved JSON patches for UI preview variants
       quips/                  # Quick Quips; package quips
@@ -62,7 +63,7 @@ grabbag/
 
 `internal/ui` is one package. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
 
-Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-dark` (default) and `neon-light`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Lobby page templates compose those widgets. They do not restyle each screen from scratch.
+Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-dark` (default) and `neon-light`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Game timers are `ui-countdown` in `chrome.html` plus `internal/ui/static/countdown.js` (see [GAME_CONTRACT.md](GAME_CONTRACT.md#countdown)). Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
 `cmd/grabbag-uishots` imports only `internal/host` and chromedp. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
@@ -83,7 +84,9 @@ Each package that draws pages lists `ui.Scenario` values in a `preview.go` next 
 | `internal/host` | lobby, games, ui, store, platform, docs | - |
 | `docs` | stdlib only | host, lobby, games, ui, store, platform |
 | `internal/lobby` | ui, platform, store | host, games |
-| `internal/games` and `internal/games/<name>` | ui, platform, sibling-free game code | host, lobby, store, other games |
+| `internal/games` | ui, platform | host, lobby, store, game packages |
+| `internal/games/runtimekit` | games, ui, platform | host, lobby, store, game packages |
+| `internal/games/<name>` | games, runtimekit, ui, platform | host, lobby, store, other games |
 | `internal/ui` | platform | host, lobby, games, store |
 | `internal/store` | (stdlib / SQLite only) | host, lobby, games, ui |
 | `internal/platform/<name>` | other platform packages if needed | host, lobby, games, ui |
@@ -95,6 +98,8 @@ Games never open host/Lobby storage. Player and Lobby details reach a game throu
 ## Package names
 
 The `package` clause matches the last path element (`host`, `lobby`, `ui`, `store`, `games`, `docs`, and `platform/<name>` as the folder name).
+
+`internal/games/runtimekit` is the runtime kit, not a game. It does not call `games.Register`. Its package name is not `runtime` because that clashes with the stdlib.
 
 The only planned exception is `internal/games/testing`. Product name is Testing. Package name is `testinggame`. Do not use `package testing` (stdlib clash). Do not use `package diag` (likely clash with a later `internal/platform/diag`).
 

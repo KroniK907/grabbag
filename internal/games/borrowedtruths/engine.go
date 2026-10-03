@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 type phase string
@@ -121,8 +123,7 @@ type engine struct {
 	Notice     string
 
 	PhaseStart time.Time
-	TimerEnd   time.Time
-	TimerLeft  time.Duration
+	Timer      runtimekit.Timer
 	Extended   bool
 	Paused     bool
 
@@ -225,19 +226,11 @@ func (e *engine) enter(p phase, now time.Time) {
 	e.Phase = p
 	e.PhaseStart = now
 	e.Extended = false
-	e.clearTimer()
+	e.Timer.Clear()
 	// The look is always timed, even with timers off.
 	if sec := e.phaseSeconds(p); sec > 0 && (e.Settings.Timers || p == phaseLook) {
-		e.TimerEnd = now.Add(time.Duration(sec) * time.Second)
-		if e.Paused {
-			e.TimerLeft = time.Duration(sec) * time.Second
-		}
+		e.Timer.Arm("", time.Duration(sec)*time.Second, now, e.Paused)
 	}
-}
-
-func (e *engine) clearTimer() {
-	e.TimerEnd = time.Time{}
-	e.TimerLeft = 0
 }
 
 // SetPaused freezes or thaws the phase timer.
@@ -246,37 +239,29 @@ func (e *engine) SetPaused(paused bool, now time.Time) {
 		return
 	}
 	e.Paused = paused
-	if e.TimerEnd.IsZero() {
-		return
-	}
 	if paused {
-		e.TimerLeft = max(0, e.TimerEnd.Sub(now))
+		e.Timer.Freeze(now)
 		return
 	}
-	e.TimerEnd = now.Add(e.TimerLeft)
-	e.TimerLeft = 0
+	e.Timer.Thaw(now)
 }
 
 // Advance runs the phase timer. It reports whether the phase moved.
 func (e *engine) Advance(now time.Time) (finish, changed bool) {
-	if e.Paused || e.TimerEnd.IsZero() || now.Before(e.TimerEnd) {
+	if e.Paused || !e.Timer.Expired(now) {
 		return false, false
 	}
-	e.clearTimer()
+	e.Timer.Clear()
 	return e.Continue(now)
 }
 
 // Extend adds 30 seconds to a running timer, once per phase.
 func (e *engine) Extend(now time.Time) string {
-	if e.TimerEnd.IsZero() || e.Extended {
+	if !e.Timer.On() || e.Extended {
 		return "No time to add."
 	}
 	e.Extended = true
-	if e.Paused {
-		e.TimerLeft += 30 * time.Second
-	} else {
-		e.TimerEnd = e.TimerEnd.Add(30 * time.Second)
-	}
+	e.Timer.Extend(30 * time.Second)
 	return ""
 }
 
@@ -295,7 +280,7 @@ func (e *engine) Continue(now time.Time) (finish, changed bool) {
 	case phaseVote:
 		if !e.VoteClosed {
 			e.VoteClosed = true
-			e.clearTimer()
+			e.Timer.Clear()
 			return false, true
 		}
 		e.reveal(now)
@@ -327,7 +312,7 @@ func (e *engine) Continue(now time.Time) (finish, changed bool) {
 	case phaseTIMVote:
 		if !e.VoteClosed {
 			e.VoteClosed = true
-			e.clearTimer()
+			e.Timer.Clear()
 			return false, true
 		}
 		e.scoreTIM()
@@ -622,7 +607,7 @@ func (e *engine) Vote(id, pick string, seated bool) string {
 	e.Votes[id] = pick
 	if e.allIn(e.Votes) {
 		e.VoteClosed = true
-		e.clearTimer()
+		e.Timer.Clear()
 	}
 	return ""
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 // face is a player as the board and phones draw them.
@@ -35,16 +36,10 @@ type ribbonView struct {
 	Names []string
 }
 
-type timerView struct {
-	On      bool
-	EndUnix int64
-	Seconds int
-}
-
 // boardView is everything the TV may show. Card type, owner, and author are
 // filled only in the reveal phases, so the board cannot leak them early.
 type boardView struct {
-	pageView
+	runtimekit.Page
 	Paused    bool
 	Phase     string
 	TellNum   int
@@ -56,7 +51,7 @@ type boardView struct {
 	Prompt    string
 	Voters    []face
 	Locked    int
-	Timer     timerView
+	Timer     runtimekit.TimerView
 
 	Answer      string
 	AnswerTrue  bool
@@ -84,22 +79,22 @@ type boardView struct {
 }
 
 func (g *Game) boardView() boardView {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	view := g.boardViewLocked()
-	view.pageView = g.pageViewLocked("Borrowed Truths")
+	view.Page = g.run.PageLocked("Borrowed Truths")
 	return view
 }
 
 func (g *Game) boardViewLocked() boardView {
-	e := g.engine
-	view := boardView{Paused: g.paused}
+	e := g.run.Engine()
+	view := boardView{Paused: g.run.Paused()}
 	if e == nil {
 		return view
 	}
 	view.Phase = string(e.Phase)
 	view.Notice = e.Notice
-	view.Timer = e.timerView(g.clock())
+	view.Timer = e.Timer.View(g.run.Now())
 	view.TellTotal = e.TellCount()
 	view.TellNum = e.TellNum()
 	if t := e.teller(); t != nil && e.Phase != phaseFinal {
@@ -252,17 +247,6 @@ func faceOf(p *player) face {
 	return face{ID: p.ID, Name: p.Name, Seed: p.Seed}
 }
 
-func (e *engine) timerView(now time.Time) timerView {
-	if e.TimerEnd.IsZero() {
-		return timerView{}
-	}
-	left := e.TimerEnd.Sub(now)
-	if e.Paused {
-		left = e.TimerLeft
-	}
-	return timerView{On: true, EndUnix: e.TimerEnd.Unix(), Seconds: int(max(0, left.Round(time.Second)/time.Second))}
-}
-
 // Phone roles.
 const (
 	roleWriter   = "writer"
@@ -298,7 +282,7 @@ type pickOption struct {
 // phoneView is one player's column. Private fields are set only for the
 // player who may see them.
 type phoneView struct {
-	pageView
+	runtimekit.Page
 	Paused     bool
 	Phase      string
 	Role       string
@@ -307,7 +291,7 @@ type phoneView struct {
 	CardText   string
 	Badge      badgeView
 	Hint       string
-	Timer      timerView
+	Timer      runtimekit.TimerView
 
 	TruthSlots []int
 	LieSlots   []int
@@ -352,17 +336,17 @@ type phoneView struct {
 
 func (g *Game) phoneView(r *http.Request, msg string) phoneView {
 	var p games.Player
-	if h := g.helperNow(); h != nil {
+	if h := g.run.Helper(); h != nil {
 		p, _, _ = h.PlayerFromRequest(r)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	return g.phoneViewLocked(p, msg)
 }
 
 func (g *Game) phoneViewLocked(p games.Player, msg string) phoneView {
-	view := g.phoneViewFor(p, g.clock())
-	view.pageView = g.pageViewLocked("Borrowed Truths")
+	view := g.phoneViewFor(p, g.run.Now())
+	view.Page = g.run.PageLocked("Borrowed Truths")
 	view.Error = msg
 	return view
 }
@@ -380,14 +364,14 @@ var pickLabels = map[string]string{
 }
 
 func (g *Game) phoneViewFor(p games.Player, now time.Time) phoneView {
-	e := g.engine
-	view := phoneView{Paused: g.paused, Role: roleAudience, MaxChars: maxFactRunes}
+	e := g.run.Engine()
+	view := phoneView{Paused: g.run.Paused(), Role: roleAudience, MaxChars: maxFactRunes}
 	if e == nil {
 		return view
 	}
 	view.Phase = string(e.Phase)
-	view.Timer = e.timerView(now)
-	view.Host = e.hostView(p.ClaimedHost, g.paused)
+	view.Timer = e.Timer.View(now)
+	view.Host = e.hostView(p.ClaimedHost, g.run.Paused())
 	me := e.player(p.ID)
 	t := e.teller()
 	isTeller := me != nil && t != nil && t.ID == me.ID
@@ -567,7 +551,7 @@ func (e *engine) hostView(claimed, paused bool) hostView {
 		Show:       true,
 		Paused:     paused,
 		PhaseStart: e.PhaseStart.Unix(),
-		CanExtend:  !e.TimerEnd.IsZero() && !e.Extended,
+		CanExtend:  e.Timer.On() && !e.Extended,
 	}
 	switch e.Phase {
 	case phaseFacts:

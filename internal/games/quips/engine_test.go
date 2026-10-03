@@ -7,10 +7,10 @@ import (
 )
 
 func skipPlayIntro(eng *engine, now time.Time) time.Time {
-	if eng == nil || eng.TimerKind != timerPlayIntro {
+	if eng == nil || eng.Timer.Kind != timerPlayIntro {
 		return now
 	}
-	at := eng.TimerEnd
+	at := eng.Timer.End
 	if now.After(at) {
 		at = now
 	}
@@ -36,8 +36,8 @@ func TestEngineWriteGateAndTimer(t *testing.T) {
 	if err := eng.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(2)), clock); err != nil {
 		t.Fatal(err)
 	}
-	if eng.Phase != phaseWrite || eng.TimerKind != timerPlayIntro {
-		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	if eng.Phase != phaseWrite || eng.Timer.Kind != timerPlayIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.Timer.Kind)
 	}
 	clock = skipPlayIntro(eng, clock)
 	out := eng.Do(Command{Kind: CmdDraft, Actor: "p1", Slot: 0, Text: "first"}, clock)
@@ -58,8 +58,8 @@ sawLock:
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 0, Text: "alpha"}, clock)
 	eng.Do(Command{Kind: CmdDraft, Actor: "p2", Slot: 1, Text: "beta"}, clock)
 	out = eng.Do(Command{Kind: CmdLock, Actor: "p2", Drafts: []string{"alpha", "beta"}}, clock)
-	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
-		t.Fatalf("phase after all locks=%s timer=%s", eng.Phase, eng.TimerKind)
+	if eng.Phase != phaseVoteIntro || eng.Timer.Kind != timerVoteIntro {
+		t.Fatalf("phase after all locks=%s timer=%s", eng.Phase, eng.Timer.Kind)
 	}
 	if len(out.Events) == 0 {
 		t.Fatal("expected write-end publish event")
@@ -76,14 +76,14 @@ sawLock:
 	future := opened.Add(2 * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
-	if eng2.TimerKind != timerVoteIntro {
-		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	if eng2.Timer.Kind != timerVoteIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.Timer.Kind)
 	}
 	future = future.Add(time.Duration(voteIntroSec) * time.Second)
 	eng2.now = func() time.Time { return future }
 	out = eng2.Advance(future)
-	if eng2.TimerKind != timerVersusIntro {
-		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.TimerKind)
+	if eng2.Timer.Kind != timerVersusIntro {
+		t.Fatalf("timer phase=%s kind=%s", eng2.Phase, eng2.Timer.Kind)
 	}
 	shown := future.Add(time.Duration(versusIntroSec) * time.Second)
 	eng2.now = func() time.Time { return shown }
@@ -115,8 +115,8 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 	voteOpen := begin.Add(20 * time.Second)
 	lockPairAt(t, eng, "p1", []string{"a1", "a2"}, voteOpen)
 	lockPairAt(t, eng, "p2", []string{"b1", "b2"}, voteOpen)
-	if eng.Phase != phaseVoteIntro || eng.TimerKind != timerVoteIntro {
-		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.TimerKind)
+	if eng.Phase != phaseVoteIntro || eng.Timer.Kind != timerVoteIntro {
+		t.Fatalf("phase=%s timer=%s", eng.Phase, eng.Timer.Kind)
 	}
 	voteOpen = voteOpen.Add(time.Duration(voteIntroSec) * time.Second)
 	eng.Advance(voteOpen)
@@ -128,10 +128,10 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 		t.Fatalf("phase=%s want vote changed=%v", eng.Phase, out.Changed)
 	}
 	wantEnd := voteOpen.Add(15 * time.Second)
-	if !eng.TimerEnd.Equal(wantEnd) {
-		t.Fatalf("TimerEnd=%v want %v", eng.TimerEnd, wantEnd)
+	if !eng.Timer.End.Equal(wantEnd) {
+		t.Fatalf("TimerEnd=%v want %v", eng.Timer.End, wantEnd)
 	}
-	left := eng.TimerEnd.Sub(voteOpen)
+	left := eng.Timer.End.Sub(voteOpen)
 	if left < 14*time.Second || left > 16*time.Second {
 		t.Fatalf("remaining at vote open=%v", left)
 	}
@@ -143,7 +143,7 @@ func TestEngineVoteTimerArmsWhenVoteOpens(t *testing.T) {
 	if !out.Changed {
 		t.Fatal("vote timer should close segment")
 	}
-	if eng.Phase == phaseVote && eng.TimerKind == timerVote {
+	if eng.Phase == phaseVote && eng.Timer.Kind == timerVote {
 		t.Fatal("vote timer should clear after expiry")
 	}
 }

@@ -62,10 +62,10 @@ func TestBurnNormalizesPromptOnly(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	g := loadedGame(t, newFakeHelper(dir))
-	g.mu.Lock()
+	g.run.Lock()
 	g.burnPairLocked(kindPrompt, "  Hello  ")
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 
 	raw, err := os.ReadFile(filepath.Join(dir, "state", "burned.json"))
 	if err != nil {
@@ -113,10 +113,10 @@ func TestReshuffleOnUnloadWipesOnlyOnShutdown(t *testing.T) {
 	g := loadedGame(t, h)
 	h.admin = true
 	postSettings(g, "/reshuffle-on-unload", url.Values{"enabled": {"1"}})
-	g.mu.Lock()
+	g.run.Lock()
 	g.recordPlayedLocked("quips", "p0")
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	if err := g.Stop(); err != nil {
 		t.Fatal(err)
 	}
@@ -130,22 +130,22 @@ func TestReshuffleOnUnloadWipesOnlyOnShutdown(t *testing.T) {
 	if err := g.Load(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	if len(g.played) != 0 {
 		t.Fatalf("Shutdown left discard in memory: %#v", g.played)
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 }
 
 func TestRollingBurnDrawerKeepsThree(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	g := loadedGame(t, newFakeHelper(dir))
-	g.mu.Lock()
+	g.run.Lock()
 	for i := 0; i < 5; i++ {
 		g.pushBurnDrawerLocked(playPrompt{Text: "Prompt " + string(rune('A'+i))})
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	if len(g.burnDrawer) != 3 {
 		t.Fatalf("drawer = %d", len(g.burnDrawer))
 	}
@@ -163,11 +163,11 @@ func TestPartialReshuffleKeepsActiveSegmentPrompt(t *testing.T) {
 			{Prompt: playPrompt{LibraryID: "quips", CardID: "active", Text: "Active"}},
 		},
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	g.recordPlayedLocked("quips", "active")
 	g.recordPlayedLocked("quips", "old")
 	g.partialReshuffleDiscardLocked(eng)
-	g.mu.Unlock()
+	g.run.Unlock()
 	if len(g.played) != 1 {
 		t.Fatalf("played = %#v", g.played)
 	}

@@ -73,7 +73,7 @@ func (e *engine) confirm(winnerID string) error {
 	if e.Phase != phaseReveal || !e.allRevealed() {
 		return fmt.Errorf("Confirm waits until every answer is up.")
 	}
-	if e.TimerKind == timerFavoriteVote {
+	if e.Timer.Kind == timerFavoriteVote {
 		return fmt.Errorf("Favorites are still open.")
 	}
 	if !slices.ContainsFunc(e.Packets, func(p packet) bool { return p.ActorID == winnerID }) {

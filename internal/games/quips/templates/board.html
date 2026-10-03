@@ -57,11 +57,11 @@
       <span>Set</span>
       <span>Go</span>
     </p>
-    {{else if and .Matchup (not .TimerText)}}
+    {{else if and .Matchup (not .Timer.On)}}
     <div class="quips-board-clock is-pending" aria-hidden="true"><strong>0:00</strong></div>
-    {{else if and .TimerText (or (not .LastQuip) (not .LastIntro))}}
-    <div class="quips-board-clock" data-quips-timer data-timer-seconds="{{.TimerSeconds}}" data-timer-total="{{.TimerTotal}}" data-timer-end="{{.TimerEndUnix}}"{{if .Paused}} data-timer-paused="1"{{end}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}{{if .Matchup}} data-vote-clock="{{.MatchupKey}}"{{end}}>
-      <strong data-timer-value>{{.TimerText}}</strong>
+    {{else if and .Timer.On (or (not .LastQuip) (not .LastIntro))}}
+    <div class="quips-board-clock" {{template "ui-countdown" .Timer}}{{if .LastQuip}} data-last-clock="{{.Round}}"{{end}}{{if .Matchup}} data-vote-clock="{{.MatchupKey}}"{{end}}>
+      <strong data-countdown-value>{{.Timer.Clock}}</strong>
     </div>
     {{end}}
     {{if and .WritingBeat (not .LastQuip) (not .PlayIntro)}}

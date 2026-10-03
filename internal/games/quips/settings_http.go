@@ -25,24 +25,24 @@ func formEnabled(r *http.Request) bool {
 
 func (g *Game) writeSettingsOK(w http.ResponseWriter, r *http.Request) {
 	if hxRequest(r) {
-		g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+		g.run.Render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 		return
 	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
 func (g *Game) writeSettingsRefuse(w http.ResponseWriter, field, msg string) {
-	g.render(w, "settings.html", g.settingsView(settingsErr{Field: field, Msg: msg}), http.StatusOK)
+	g.run.Render(w, "settings.html", g.settingsView(settingsErr{Field: field, Msg: msg}), http.StatusOK)
 }
 
 func (g *Game) matchFrozen() bool {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.started
+	g.run.Lock()
+	defer g.run.Unlock()
+	return g.run.Running()
 }
 
 func (g *Game) mutateSettings(w http.ResponseWriter, r *http.Request, field string, apply func(*matchSettings) error) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -86,7 +86,7 @@ func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
 }
 
 func (g *Game) persistSettings() error {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return fmt.Errorf("game is not loaded")
 	}
@@ -230,7 +230,7 @@ func (g *Game) postShowMatchedWord(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g *Game) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return false
@@ -250,15 +250,15 @@ func (g *Game) postUnburn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	if g.burnCorrupt {
-		g.mu.Unlock()
+		g.run.Unlock()
 		g.writeSettingsRefuse(w, "unburn", "Burn list is unreadable")
 		return
 	}
 	g.unburnPairLocked(r.FormValue("kind"), r.FormValue("text"))
 	g.stripBurnedFromPoolLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	g.writeSettingsOK(w, r)
 }
 
@@ -277,20 +277,20 @@ func (g *Game) postReshuffleDiscard(w http.ResponseWriter, r *http.Request) {
 		g.writeSettingsRefuse(w, "reshuffle-discard", "This match is running. Setup is locked.")
 		return
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	if g.discardCorrupt {
-		g.mu.Unlock()
+		g.run.Unlock()
 		g.writeSettingsRefuse(w, "reshuffle-discard", "Discard list is unreadable")
 		return
 	}
 	if len(g.played) == 0 {
-		g.mu.Unlock()
+		g.run.Unlock()
 		g.writeSettingsRefuse(w, "reshuffle-discard", "")
 		return
 	}
 	g.wipeDiscardLocked()
 	g.drainJournalsLocked()
-	g.mu.Unlock()
+	g.run.Unlock()
 	g.writeSettingsOK(w, r)
 }
 

@@ -14,13 +14,13 @@ func (g *Game) overlayActive() bool {
 func (g *Game) showOverlayLocked(kind string) {
 	g.overlay = kind
 	g.overlayTooSmall = false
-	g.holdLocked()
+	g.run.Hold()
 }
 
 func (g *Game) clearOverlayLocked() {
 	g.overlay = ""
 	g.overlayTooSmall = false
-	g.holdLocked()
+	g.run.Hold()
 }
 
 // fulfillOverlayLocked empties the discard journal and retries the deal
@@ -29,8 +29,9 @@ func (g *Game) clearOverlayLocked() {
 func (g *Game) fulfillOverlayLocked() {
 	g.wipeDiscardLocked()
 	g.seatLocked()
-	out := g.engine.Reshuffled(g.overlay, g.clock())
-	g.applyOutcomeLocked(out)
+	e := g.run.Engine()
+	out := e.Reshuffled(g.overlay, g.run.Now())
+	g.run.Defer(g.resultLocked(e, out))
 	if out.TooSmall {
 		g.overlayTooSmall = true
 		return
@@ -41,7 +42,7 @@ func (g *Game) fulfillOverlayLocked() {
 // snapshotBurnDrawerLocked fills the host's burn drawer with the round's
 // prompt and answers once every answer is face up.
 func (g *Game) snapshotBurnDrawerLocked() {
-	e := g.engine
+	e := g.run.Engine()
 	if e == nil || e.LivePrompt == nil || len(e.Packets) == 0 || !e.allRevealed() {
 		return
 	}

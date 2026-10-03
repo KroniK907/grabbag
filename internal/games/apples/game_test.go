@@ -454,19 +454,19 @@ func TestExcludedTagsLeaveTheDeal(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	ids := map[string]bool{}
-	for _, p := range g.engine.Prompts {
+	for _, p := range g.run.Engine().Prompts {
 		ids[p.CardID] = true
 	}
-	if g.engine.LivePrompt != nil {
-		ids[g.engine.LivePrompt.CardID] = true
+	if g.run.Engine().LivePrompt != nil {
+		ids[g.run.Engine().LivePrompt.CardID] = true
 	}
-	for _, a := range g.engine.Answers {
+	for _, a := range g.run.Engine().Answers {
 		ids[a.CardID] = true
 	}
-	for _, actor := range g.engine.Actors {
+	for _, actor := range g.run.Engine().Actors {
 		for _, card := range actor.Hand {
 			ids[card.CardID] = true
 		}
@@ -500,19 +500,19 @@ func TestExcludedUntaggedLeaveTheDeal(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.run.Lock()
+	defer g.run.Unlock()
 	ids := map[string]bool{}
-	for _, p := range g.engine.Prompts {
+	for _, p := range g.run.Engine().Prompts {
 		ids[p.CardID] = true
 	}
-	if g.engine.LivePrompt != nil {
-		ids[g.engine.LivePrompt.CardID] = true
+	if g.run.Engine().LivePrompt != nil {
+		ids[g.run.Engine().LivePrompt.CardID] = true
 	}
-	for _, a := range g.engine.Answers {
+	for _, a := range g.run.Engine().Answers {
 		ids[a.CardID] = true
 	}
-	for _, actor := range g.engine.Actors {
+	for _, actor := range g.run.Engine().Actors {
 		for _, card := range actor.Hand {
 			ids[card.CardID] = true
 		}

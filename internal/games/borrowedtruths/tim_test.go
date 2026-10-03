@@ -168,13 +168,13 @@ func TestTIMStopsWithFewerThanThreePhotos(t *testing.T) {
 func TestTIMLookIsAlwaysTimedAndClaimsRunInOrder(t *testing.T) {
 	e := timEngine(t, 6, 6, func(s *matchSettings) { s.NotTheirsPct = 0 })
 	toTIM(t, e)
-	if e.TimerEnd.IsZero() || e.TimerEnd.Sub(e.PhaseStart) != 20*time.Second {
+	if !e.Timer.On() || e.Timer.End.Sub(e.PhaseStart) != 20*time.Second {
 		t.Fatal("look is not timed with timers off")
 	}
 	if _, changed := e.Advance(e.PhaseStart.Add(21 * time.Second)); !changed || e.Phase != phaseClaims {
 		t.Fatalf("phase after the look = %s", e.Phase)
 	}
-	if !e.TimerEnd.IsZero() {
+	if !!e.Timer.On() {
 		t.Fatal("claims are untimed with timers off")
 	}
 	for i := 0; i < 3; i++ {
@@ -311,7 +311,7 @@ func TestTIMBoardNeverLeaks(t *testing.T) {
 	s.NotTheirsPct = 100
 	s.MixYours, s.MixBorrowed, s.MixLie = 1, 0, 0
 	e := newEngine(s, testRoster(6), nil, rand.New(rand.NewSource(5)), t0)
-	g := &Game{engine: e, started: true, now: func() time.Time { return t0 }}
+	g := fixedGame(e, t0)
 	for _, p := range e.Players {
 		e.SubmitFacts(p.ID, []string{"a", "b"}, []string{"c"})
 		e.SetPhoto(p.ID, "secret-"+p.ID)
@@ -401,10 +401,10 @@ func TestPhotoUploadServeAndDelete(t *testing.T) {
 			t.Fatalf("upload %s = %d %s", p, rec.Code, rec.Body.String())
 		}
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	dir := g.runDir
-	id := g.engine.Photos[0].ID
-	g.mu.Unlock()
+	id := g.run.Engine().Photos[0].ID
+	g.run.Unlock()
 	files, _ := os.ReadDir(dir)
 	if len(files) != 2 {
 		t.Fatalf("%d files, want the replaced photo deleted", len(files))
@@ -417,9 +417,9 @@ func TestPhotoUploadServeAndDelete(t *testing.T) {
 	if get() != http.StatusNotFound {
 		t.Fatal("photo served before it was on the board")
 	}
-	g.mu.Lock()
-	g.engine.Photos[0].Shown = true
-	g.mu.Unlock()
+	g.run.Lock()
+	g.run.Engine().Photos[0].Shown = true
+	g.run.Unlock()
 	if get() != http.StatusOK {
 		t.Fatal("shown photo not served")
 	}
@@ -450,22 +450,22 @@ func TestPhotoRefusedBeforeDecode(t *testing.T) {
 		t.Fatalf("paused upload = %d", rec.Code)
 	}
 	_ = g.Resume()
-	g.mu.Lock()
-	g.engine.enter(phasePrivate, t0)
-	g.mu.Unlock()
+	g.run.Lock()
+	g.run.Engine().enter(phasePrivate, t0)
+	g.run.Unlock()
 	if rec := upload(t, mux, "p2", pngBytes(t)); rec.Code != http.StatusConflict {
 		t.Fatalf("upload after facts = %d", rec.Code)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if len(g.engine.Photos) != 0 {
-		t.Fatalf("%d photos stored, want none", len(g.engine.Photos))
+	g.run.Lock()
+	defer g.run.Unlock()
+	if len(g.run.Engine().Photos) != 0 {
+		t.Fatalf("%d photos stored, want none", len(g.run.Engine().Photos))
 	}
 }
 
 func TestTIMRevealShowsCrowdApart(t *testing.T) {
 	e := timEngine(t, 6, 6, func(s *matchSettings) { s.NotTheirsPct = 0 })
-	g := &Game{engine: e, started: true, now: func() time.Time { return t0 }}
+	g := fixedGame(e, t0)
 	toTIM(t, e)
 	for e.Phase != phaseTIMVote {
 		e.Continue(t0)

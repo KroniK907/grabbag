@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 	"github.com/KroniK907/grabbag/internal/ui"
 )
 
@@ -59,7 +60,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 					return err
 				}
 				view := pg.boardViewLocked()
-				view.pageView = previewPage(p, "Apples for Humanity")
+				view.Page = previewPage(p, "Apples for Humanity")
 				return ui.RenderScenario(w, pages, "board.html", view, p)
 			},
 		})
@@ -87,7 +88,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 						return err
 					}
 					view := pg.phoneViewLocked(who)
-					view.pageView = previewPage(p, "Apples for Humanity")
+					view.Page = previewPage(p, "Apples for Humanity")
 					return ui.RenderScenario(w, pages, "phone.html", view, p)
 				},
 			})
@@ -97,8 +98,8 @@ func (g *Game) Scenarios() []ui.Scenario {
 		ui.Scenario{
 			Surface: "phone", Name: "wait", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellPlayPhone,
 			Render: func(w io.Writer, p ui.Preview) error {
-				view := (&Game{}).phoneViewLocked(games.Player{ID: "p01", Seated: true})
-				view.pageView = previewPage(p, "Apples for Humanity")
+				view := New().phoneViewLocked(games.Player{ID: "p01", Seated: true})
+				view.Page = previewPage(p, "Apples for Humanity")
 				return ui.RenderScenario(w, pages, "phone.html", view, p)
 			},
 		},
@@ -128,7 +129,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 		},
 		ui.Scenario{
 			Surface: "settings", Name: "host-roles", Viewer: "operator", Frame: ui.FramePage, Shell: ui.ShellSettings,
-			Sample:  true,
+			Sample: true,
 			Render: func(w io.Writer, p ui.Preview) error {
 				s := factorySettings()
 				s.HostJudge = true
@@ -150,7 +151,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 
 func renderSettingsPreview(w io.Writer, p ui.Preview, settings matchSettings) error {
 	view := settingsView{
-		pageView:        previewPage(p, "Apples for Humanity"),
+		Page:            previewPage(p, "Apples for Humanity"),
 		Settings:        settings,
 		WildcardEnabled: true,
 		DiscardEmpty:    true,
@@ -159,8 +160,8 @@ func renderSettingsPreview(w io.Writer, p ui.Preview, settings matchSettings) er
 	return ui.RenderScenario(w, pages, "settings.html", view, p)
 }
 
-func previewPage(p ui.Preview, title string) pageView {
-	return pageView{
+func previewPage(p ui.Preview, title string) runtimekit.Page {
+	return runtimekit.Page{
 		Chrome:  ui.Chrome{Title: title, Theme: ui.NormalizeTheme(p.Theme)},
 		GameCSS: p.Asset("game.css?v=" + assetVersion),
 		GameJS:  p.Asset("game.js?v=" + assetVersion),
@@ -169,15 +170,15 @@ func previewPage(p ui.Preview, title string) pageView {
 
 func previewHowto(p ui.Preview, sheet bool) howtoView {
 	return howtoView{
-		pageView: previewPage(p, "How to play"), Sheet: sheet,
+		Page: previewPage(p, "How to play"), Sheet: sheet,
 		Skip: true, Voting: true, Wildcard: true, Multiplier: true, Timers: true,
 	}
 }
 
 func previewPicker(p ui.Preview) pickerView {
 	view := pickerView{
-		pageView: previewPage(p, "Deck Library"),
-		DataDir:  "/home/host/.local/share/grabbag/games/apples",
+		Page:    previewPage(p, "Deck Library"),
+		DataDir: "/home/host/.local/share/grabbag/games/apples",
 		Tags: []tagView{
 			{ID: "family", Label: "Family", Color: "#3aa675", Enabled: true},
 			{ID: "spicy", Label: "Spicy", Color: "#e0463c"},
@@ -294,7 +295,7 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 			s.piles.Prompts = []playPrompt{previewPrompt(0, 2)}
 		}
 	}
-	g := &Game{engine: e, now: func() time.Time { return previewNow }}
+	g := fixedGame(e, previewNow)
 	do := func(cmd command) error {
 		if out := e.Do(cmd, now); out.Err != nil {
 			return fmt.Errorf("apples preview %s: %w", stage, out.Err)

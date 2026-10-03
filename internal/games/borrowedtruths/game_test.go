@@ -145,12 +145,12 @@ func TestFactsOverHTTPThenHostContinue(t *testing.T) {
 	if rec := post(t, mux, "p1", "/host/continue", nil); rec.Code != http.StatusOK {
 		t.Fatalf("host continue = %d", rec.Code)
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if g.engine.Phase != phasePrivate || h.lastEvent() != event {
-		t.Fatalf("phase %s event %q", g.engine.Phase, h.lastEvent())
+	g.run.Lock()
+	defer g.run.Unlock()
+	if g.run.Engine().Phase != phasePrivate || h.lastEvent() != event {
+		t.Fatalf("phase %s event %q", g.run.Engine().Phase, h.lastEvent())
 	}
-	if c := g.engine.Card; c == nil || g.engine.Facts[c.Fact].Owner == "p1" {
+	if c := g.run.Engine().Card; c == nil || g.run.Engine().Facts[c.Fact].Owner == "p1" {
 		t.Fatal("dealt a card from a player with no facts")
 	}
 }
@@ -160,14 +160,14 @@ func TestTellerPhoneIsPrivateAndVoterPhoneIsNot(t *testing.T) {
 	for _, p := range []string{"p1", "p2", "p3", "p4"} {
 		post(t, mux, p, "/facts", url.Values{"truth": {p + " t1", p + " t2"}, "lie": {p + " lie"}})
 	}
-	g.mu.Lock()
-	teller := g.engine.teller().ID
-	text := g.engine.Facts[g.engine.Card.Fact].Text
+	g.run.Lock()
+	teller := g.run.Engine().teller().ID
+	text := g.run.Engine().Facts[g.run.Engine().Card.Fact].Text
 	var voter string
-	for _, p := range g.engine.voters() {
+	for _, p := range g.run.Engine().voters() {
 		voter = p.ID
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 
 	get := func(player string) string {
 		req := httptest.NewRequest(http.MethodGet, "/partials/phone", nil)
@@ -190,9 +190,9 @@ func TestTellerPhoneIsPrivateAndVoterPhoneIsNot(t *testing.T) {
 
 func TestHostEndGameFinishes(t *testing.T) {
 	g, h, mux := startGame(t, 4)
-	g.mu.Lock()
-	g.engine.enter(phaseFinal, t0)
-	g.mu.Unlock()
+	g.run.Lock()
+	g.run.Engine().enter(phaseFinal, t0)
+	g.run.Unlock()
 	post(t, mux, "p1", "/host/continue", nil)
 	if !h.finished {
 		t.Fatal("End game did not call Finish")
@@ -262,9 +262,9 @@ func TestHostActionsAcceptAdminWithoutPlayer(t *testing.T) {
 	if code := send("", "/host/continue", true); code != http.StatusOK {
 		t.Fatalf("admin continue = %d", code)
 	}
-	g.mu.Lock()
-	phase := g.engine.Phase
-	g.mu.Unlock()
+	g.run.Lock()
+	phase := g.run.Engine().Phase
+	g.run.Unlock()
 	if phase == phaseFacts {
 		t.Fatal("admin continue did not close facts")
 	}
@@ -308,9 +308,9 @@ func TestZeroLiesDealsFromTheBank(t *testing.T) {
 			t.Fatalf("facts %s: %s", p, rec.Body.String())
 		}
 	}
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	e := g.engine
+	g.run.Lock()
+	defer g.run.Unlock()
+	e := g.run.Engine()
 	if e.Phase != phasePrivate || e.Card == nil || e.Card.Kind != kindLie || e.Facts[e.Card.Fact].Owner != "" {
 		t.Fatalf("phase %s card %+v, want a bank lie in the private read", e.Phase, e.Card)
 	}

@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"slices"
 	"time"
+
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 const eventMatch = "apples"
@@ -141,10 +143,7 @@ type engine struct {
 	Votes           map[string]string
 	WinnerID        string
 	NamesShown      bool
-	TimerKind       string
-	TimerEnd        time.Time
-	TimerTotal      time.Duration
-	FrozenLeft      time.Duration
+	Timer           runtimekit.Timer
 	PhoneErr        map[string]string
 	// Live is the seated Lobby roster. Seated players missing from it sit out.
 	Live   map[string]bool
@@ -321,10 +320,10 @@ func (e *engine) pinHostJudge() bool {
 // Advance fires the running timer once it has expired.
 func (e *engine) Advance(now time.Time) outcome {
 	e.begin(now)
-	if e.Paused || e.TimerKind == "" || e.TimerEnd.IsZero() || e.at.Before(e.TimerEnd) {
+	if e.Paused || e.Timer.Kind == "" || e.Timer.End.IsZero() || e.at.Before(e.Timer.End) {
 		return e.done()
 	}
-	kind := e.TimerKind
+	kind := e.Timer.Kind
 	e.clearTimer()
 	switch kind {
 	case timerAutoDraw:

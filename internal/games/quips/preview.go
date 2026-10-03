@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 	"github.com/KroniK907/grabbag/internal/ui"
 )
 
@@ -49,7 +50,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 					return err
 				}
 				view := pg.boardViewLocked()
-				view.pageView = previewPage(p, "Quick Quips")
+				view.Page = previewPage(p, "Quick Quips")
 				return ui.RenderScenario(w, pages, "board.html", view, p)
 			},
 		})
@@ -65,7 +66,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 						return err
 					}
 					view := pg.phoneViewLocked(cast.player(viewer))
-					view.pageView = previewPage(p, "Quick Quips")
+					view.Page = previewPage(p, "Quick Quips")
 					return ui.RenderScenario(w, pages, "phone.html", view, p)
 				},
 			})
@@ -75,8 +76,8 @@ func (g *Game) Scenarios() []ui.Scenario {
 		ui.Scenario{
 			Surface: "phone", Name: "wait", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellPlayPhone,
 			Render: func(w io.Writer, p ui.Preview) error {
-				view := (&Game{}).phoneViewLocked(games.Player{ID: "p01", Seated: true})
-				view.pageView = previewPage(p, "Quick Quips")
+				view := New().phoneViewLocked(games.Player{ID: "p01", Seated: true})
+				view.Page = previewPage(p, "Quick Quips")
 				return ui.RenderScenario(w, pages, "phone.html", view, p)
 			},
 		},
@@ -96,7 +97,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 			Surface: "settings", Name: "match", Viewer: "operator", Frame: ui.FramePage, Shell: ui.ShellSettings,
 			Render: func(w io.Writer, p ui.Preview) error {
 				view := settingsView{
-					pageView:     previewPage(p, "Quick Quips settings"),
+					Page:         previewPage(p, "Quick Quips settings"),
 					Settings:     factorySettings(),
 					DiscardEmpty: true,
 					Burns:        []burnEntry{{Kind: kindPrompt, Text: previewPromptTexts[0]}},
@@ -116,8 +117,8 @@ func (g *Game) Scenarios() []ui.Scenario {
 	return out
 }
 
-func previewPage(p ui.Preview, title string) pageView {
-	return pageView{
+func previewPage(p ui.Preview, title string) runtimekit.Page {
+	return runtimekit.Page{
 		Chrome:  ui.Chrome{Title: title, Theme: ui.NormalizeTheme(p.Theme)},
 		GameCSS: p.Asset("game.css?v=" + assetVersion),
 		GameJS:  p.Asset("game.js?v=" + assetVersion),
@@ -126,9 +127,9 @@ func previewPage(p ui.Preview, title string) pageView {
 
 func previewPicker(p ui.Preview) pickerView {
 	view := pickerView{
-		pageView: previewPage(p, "Prompt Library"),
-		DataDir:  "/home/host/.local/share/grabbag/games/quips",
-		Failed:   []failedFile{{Filename: "broken-pack.json", Reason: "line 3: prompts must be a list"}},
+		Page:    previewPage(p, "Prompt Library"),
+		DataDir: "/home/host/.local/share/grabbag/games/quips",
+		Failed:  []failedFile{{Filename: "broken-pack.json", Reason: "line 3: prompts must be a list"}},
 	}
 	for li, lib := range []string{"Official", "House Prompts"} {
 		lv := libraryView{
@@ -193,16 +194,17 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 	if err := e.Begin(settings, rows, promptDeal{Pool: pool}, EngineHooks{}, rand.New(rand.NewSource(7)), previewNow); err != nil {
 		return nil, cast, fmt.Errorf("quips preview: begin: %w", err)
 	}
-	if e.TimerKind == timerPlayIntro || e.TimerKind == timerLastIntro {
+	if e.Timer.Kind == timerPlayIntro || e.Timer.Kind == timerLastIntro {
 		e.clearTimer()
 		if e.Settings.WriteSec > 0 {
 			e.armTimer(previewNow, "write", e.Settings.WriteSec)
 		}
 	}
-	g := &Game{engine: e, started: true, now: clock, burnDrawer: []burnFace{
+	g := fixedGame(e, clock)
+	g.burnDrawer = []burnFace{
 		{Kind: kindPrompt, Text: previewPromptTexts[1]},
 		{Kind: kindPrompt, Text: previewPromptTexts[2]},
-	}}
+	}
 	lock := func(id string) error {
 		w := e.Writers[id]
 		var msg string

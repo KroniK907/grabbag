@@ -15,25 +15,25 @@ import (
 const officialDumpURL = "https://raw.githubusercontent.com/crhallberg/json-against-humanity/latest/cah-all-full.json"
 
 func (g *Game) postImportOfficial(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
 	}
 	if g.matchFrozen() {
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: "Pack changes wait until the game ends."}), http.StatusOK)
+		g.run.Render(w, "picker.html", g.pickerView(pickerErr{Msg: "Pack changes wait until the game ends."}), http.StatusOK)
 		return
 	}
 	if err := g.importOfficial(h); err != nil {
-		g.mu.Lock()
+		g.run.Lock()
 		g.importErr = err.Error()
-		g.mu.Unlock()
-		g.render(w, "picker.html", g.pickerView(pickerErr{Msg: err.Error()}), http.StatusOK)
+		g.run.Unlock()
+		g.run.Render(w, "picker.html", g.pickerView(pickerErr{Msg: err.Error()}), http.StatusOK)
 		return
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	g.importErr = ""
-	g.mu.Unlock()
+	g.run.Unlock()
 	http.Redirect(w, r, "/play/picker", http.StatusSeeOther)
 }
 

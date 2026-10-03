@@ -232,43 +232,43 @@ func (e *engine) armTimer(now time.Time, kind string, sec int) {
 		return
 	}
 	if e.Paused {
-		e.TimerKind = kind
-		e.TimerTotal = time.Duration(sec) * time.Second
-		e.FrozenLeft = e.TimerTotal
-		e.TimerEnd = time.Time{}
+		e.Timer.Kind = kind
+		e.Timer.Total = time.Duration(sec) * time.Second
+		e.Timer.Left = e.Timer.Total
+		e.Timer.End = time.Time{}
 		return
 	}
-	e.TimerKind = kind
-	e.TimerTotal = time.Duration(sec) * time.Second
-	e.TimerEnd = e.clock(now).Add(e.TimerTotal)
-	e.FrozenLeft = 0
+	e.Timer.Kind = kind
+	e.Timer.Total = time.Duration(sec) * time.Second
+	e.Timer.End = e.clock(now).Add(e.Timer.Total)
+	e.Timer.Left = 0
 }
 
 func (e *engine) clearTimer() {
-	e.TimerKind = ""
-	e.TimerEnd = time.Time{}
-	e.TimerTotal = 0
-	e.FrozenLeft = 0
+	e.Timer.Kind = ""
+	e.Timer.End = time.Time{}
+	e.Timer.Total = 0
+	e.Timer.Left = 0
 }
 
 func (e *engine) freezeTimer(now time.Time) {
-	if e.TimerKind == "" || e.TimerEnd.IsZero() {
+	if e.Timer.Kind == "" || e.Timer.End.IsZero() {
 		return
 	}
-	left := e.TimerEnd.Sub(e.clock(now))
+	left := e.Timer.End.Sub(e.clock(now))
 	if left < 0 {
 		left = 0
 	}
-	e.FrozenLeft = left
-	e.TimerEnd = time.Time{}
+	e.Timer.Left = left
+	e.Timer.End = time.Time{}
 }
 
 func (e *engine) thawTimer(now time.Time) {
-	if e.TimerKind == "" || e.FrozenLeft <= 0 {
+	if e.Timer.Kind == "" || e.Timer.Left <= 0 {
 		return
 	}
-	e.TimerEnd = e.clock(now).Add(e.FrozenLeft)
-	e.FrozenLeft = 0
+	e.Timer.End = e.clock(now).Add(e.Timer.Left)
+	e.Timer.Left = 0
 }
 
 var (

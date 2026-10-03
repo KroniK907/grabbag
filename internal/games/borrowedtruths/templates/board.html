@@ -26,7 +26,7 @@
 {{end}}
 
 {{define "bt-timer"}}
-{{if .On}}<div class="bt-tape bt-timer" data-bt-timer data-end="{{.EndUnix}}" data-seconds="{{.Seconds}}"><span data-bt-timer-value>{{.Seconds}}s</span></div>{{end}}
+{{if .On}}<div class="bt-tape bt-timer" {{template "ui-countdown" .}}><span data-countdown-value>{{.Clock}}</span></div>{{end}}
 {{end}}
 
 {{define "board-frame"}}

@@ -296,7 +296,7 @@ func TestHostVoidScoresNothing(t *testing.T) {
 
 func TestTimersAdvanceAndExtend(t *testing.T) {
 	e := testEngine(t, 4, [3]int{1, 0, 0})
-	if !e.TimerEnd.IsZero() {
+	if !!e.Timer.On() {
 		t.Fatal("timers are off by default")
 	}
 	e.Settings.Timers = true
@@ -315,7 +315,7 @@ func TestTimersAdvanceAndExtend(t *testing.T) {
 	if _, changed := e.Advance(t0.Add(2*time.Minute + 21*time.Second)); !changed || e.Phase != phasePublic {
 		t.Fatalf("phase = %s, want public read when the timer ran out", e.Phase)
 	}
-	if !e.TimerEnd.IsZero() {
+	if !!e.Timer.On() {
 		t.Fatal("public read is untimed")
 	}
 }
@@ -344,7 +344,7 @@ func TestMatchRunsToFinal(t *testing.T) {
 // The board must not learn the card type, owner, or author before the reveal.
 func TestBoardNeverLeaksBeforeReveal(t *testing.T) {
 	e := testEngine(t, 5, [3]int{0, 1, 0})
-	g := &Game{engine: e, started: true, now: func() time.Time { return t0 }}
+	g := fixedGame(e, t0)
 	owner := e.player(e.insider())
 	for _, ph := range []phase{phasePrivate, phasePublic, phaseQuestion, phaseVote} {
 		if e.Phase != ph {
@@ -399,10 +399,10 @@ func TestPreviewStagesReachTheirPhase(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if g.engine.Phase != want[st.name] {
-				t.Fatalf("%s n=%d: phase %s", st.name, n, g.engine.Phase)
+			if g.run.Engine().Phase != want[st.name] {
+				t.Fatalf("%s n=%d: phase %s", st.name, n, g.run.Engine().Phase)
 			}
-			if st.name == "vote-closed" && !g.engine.VoteClosed {
+			if st.name == "vote-closed" && !g.run.Engine().VoteClosed {
 				t.Fatalf("vote-closed n=%d: vote still open", n)
 			}
 		}
@@ -420,7 +420,7 @@ func TestPreviewTIMStagesReachTheirPhase(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			e := g.engine
+			e := g.run.Engine()
 			if e.Phase != want[st] {
 				t.Fatalf("%s n=%d: phase %s", st, n, e.Phase)
 			}

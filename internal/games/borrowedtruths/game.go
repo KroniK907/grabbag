@@ -3,24 +3,21 @@
 package borrowedtruths
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
-	"io/fs"
-	"math/rand"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 const (
 	id           = "borrowedtruths"
-	assetVersion = "first-pass-2"
+	assetVersion = "first-pass-3"
 	// event is the one SSE name this game publishes after any run state change.
 	event = "borrowedtruths"
 	// eventFacts is a facts tick. Only the board listens, so phones mid-write
@@ -57,28 +54,51 @@ func init() {
 	games.Register(games.Factory{ID: id, New: func() games.Game { return New() }})
 }
 
-// Game is one Borrowed Truths instance.
+// Game is one Borrowed Truths instance. The runtime kit owns the lock, the
+// tick, and the POST pipeline. The engine owns the rules.
 type Game struct {
-	mu         sync.Mutex
-	helper     games.Helper
-	started    bool
-	paused     bool
-	engine     *engine
-	stopTick   chan struct{}
-	needFinish bool
-	needPause  bool
-	needResume bool
+	run *runtimekit.Runner[*engine]
 	// runDir holds this match's This Is My photos. Stop and Shutdown delete it.
 	runDir string
 	// photoSrc replaces photo URLs in previews, which have no files.
 	photoSrc func(id string) template.URL
-
-	rng *rand.Rand
-	now func() time.Time
 }
 
 // New constructs an unloaded Borrowed Truths package.
-func New() *Game { return &Game{} }
+func New() *Game {
+	g := &Game{}
+	g.run = runtimekit.New(runtimekit.Config[*engine]{
+		Game:         "Borrowed Truths",
+		Event:        event,
+		Pages:        pages,
+		AssetVersion: assetVersion,
+		Advance: func(e *engine, now time.Time) runtimekit.Result {
+			finish, changed := e.Advance(now)
+			return runtimekit.Result{Changed: changed, Finish: finish}
+		},
+		Hold: func(e *engine, paused bool, now time.Time) { e.SetPaused(paused, now) },
+		Gate: func(_ *engine, _ games.Player, paused bool) string {
+			if paused {
+				return "The match is paused."
+			}
+			return ""
+		},
+		Reply: func(_ *engine, p games.Player, _ *http.Request, msg string) (string, any) {
+			return "phone-frame", g.phoneViewLocked(p, msg)
+		},
+		Cleanup: func(*engine, bool) { g.dropRunLocked() },
+	})
+	return g
+}
+
+// fixedGame is a running Game on e with a frozen clock and no helper.
+// Previews and tests drive views from it.
+func fixedGame(e *engine, now time.Time) *Game {
+	g := New()
+	g.run.SetClock(func() time.Time { return now })
+	g.run.Install(e)
+	return g
+}
 
 // ID is the catalog id borrowedtruths.
 func (g *Game) ID() string { return id }
@@ -102,14 +122,9 @@ func (g *Game) MaxPlayers() int { return 20 }
 // same moment when it wakes. So a dropped phone never pauses the room.
 func (g *Game) PauseOnDisconnect() bool { return false }
 
-// Load stores the helper.
+// Load stores the helper and drops photo folders a crash left behind.
 func (g *Game) Load(h games.Helper) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.helper = h
-	g.started = false
-	g.paused = false
-	g.engine = nil
+	g.run.Load(h)
 	clearRuns(h.DataDir())
 	return nil
 }
@@ -124,28 +139,23 @@ func (g *Game) Settings() http.Handler {
 
 // Start snapshots the seated players and opens the facts phase.
 func (g *Game) Start(h games.Helper) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.helper = h
-	seated := h.Seated()
-	if len(seated) < g.MinPlayers() {
-		return fmt.Errorf("Borrowed Truths needs at least %d seated players.", g.MinPlayers())
-	}
-	rows := make([]rosterRow, 0, len(seated))
-	for _, p := range seated {
-		rows = append(rows, rosterRow{ID: p.ID, Name: p.DisplayName, Seed: p.AvatarSeed})
-	}
-	g.dropRunLocked()
-	g.engine = newEngine(g.loadSettings(h), rows, bank, g.rngLocked(), g.clock())
-	g.started = true
-	g.paused = false
-	g.startTickerLocked()
-	return nil
+	return g.run.Start(h, func(h games.Helper) (*engine, error) {
+		seated := h.Seated()
+		if len(seated) < g.MinPlayers() {
+			return nil, fmt.Errorf("Borrowed Truths needs at least %d seated players.", g.MinPlayers())
+		}
+		rows := make([]rosterRow, 0, len(seated))
+		for _, p := range seated {
+			rows = append(rows, rosterRow{ID: p.ID, Name: p.DisplayName, Seed: p.AvatarSeed})
+		}
+		g.dropRunLocked()
+		return newEngine(g.loadSettings(h), rows, bank, g.run.Rand(), g.run.Now()), nil
+	})
 }
 
 // Board is the TV document after Start.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board.html", g.boardView(), http.StatusOK)
+	g.run.Render(w, "board.html", g.boardView(), http.StatusOK)
 }
 
 // BoardButtons publishes How to play on the Lobby rail.
@@ -155,7 +165,7 @@ func (g *Game) BoardButtons() []games.BoardButton {
 
 // Phone is the player column after Start.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "phone.html", g.phoneView(r, ""), http.StatusOK)
+	g.run.Render(w, "phone.html", g.phoneView(r, ""), http.StatusOK)
 }
 
 // Play mounts the how-to page, partials, phone posts, and static assets.
@@ -176,195 +186,29 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /host/continue", g.postHostContinue)
 	mux.HandleFunc("POST /host/void", g.postHostVoid)
 	mux.HandleFunc("POST /host/extend", g.postHostExtend)
-	mux.HandleFunc("POST /host/pause", g.postHostPause)
-	mux.HandleFunc("POST /host/resume", g.postHostResume)
-	files, err := fs.Sub(staticFiles, "static")
-	if err != nil {
-		panic("borrowedtruths: embedded static directory is missing")
-	}
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(files))))
+	mux.HandleFunc("POST /host/pause", g.run.HostPause)
+	mux.HandleFunc("POST /host/resume", g.run.HostResume)
+	mux.Handle("GET /static/", runtimekit.Static(staticFiles))
 	return mux
 }
 
 // Pause freezes the phase timer and blocks phone posts.
-func (g *Game) Pause() error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.paused = true
-	if g.engine != nil {
-		g.engine.SetPaused(true, g.clock())
-	}
-	return nil
-}
+func (g *Game) Pause() error { return g.run.Pause() }
 
 // Resume thaws the phase timer.
-func (g *Game) Resume() error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.paused = false
-	if g.engine != nil {
-		g.engine.SetPaused(false, g.clock())
-	}
-	return nil
-}
+func (g *Game) Resume() error { return g.run.Resume() }
 
 // Stop drops the match. Facts and photos are run state, so they go with it.
 // KV stays.
-func (g *Game) Stop() error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.stopTickerLocked()
-	g.dropRunLocked()
-	g.started = false
-	g.paused = false
-	g.engine = nil
-	return nil
-}
+func (g *Game) Stop() error { return g.run.Stop() }
 
 // Shutdown unloads the helper.
-func (g *Game) Shutdown() error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.stopTickerLocked()
-	g.dropRunLocked()
-	g.helper = nil
-	g.started = false
-	g.paused = false
-	g.engine = nil
-	return nil
-}
-
-func (g *Game) helperNow() games.Helper {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.helper
-}
-
-func (g *Game) clock() time.Time {
-	if g.now != nil {
-		return g.now()
-	}
-	return time.Now()
-}
-
-func (g *Game) rngLocked() *rand.Rand {
-	if g.rng == nil {
-		g.rng = rand.New(rand.NewSource(time.Now().UnixNano()))
-	}
-	return g.rng
-}
-
-func (g *Game) publishLocked() {
-	if g.helper != nil {
-		g.helper.Publish(event)
-	}
-}
-
-// publishFactsLocked is a facts tick. Only the board listens, so a phone
-// mid-write is not swapped.
-func (g *Game) publishFactsLocked() {
-	if g.helper != nil {
-		g.helper.Publish(eventFacts)
-	}
-}
-
-func (g *Game) startTickerLocked() {
-	g.stopTickerLocked()
-	stop := make(chan struct{})
-	g.stopTick = stop
-	go func() {
-		tick := time.NewTicker(250 * time.Millisecond)
-		defer tick.Stop()
-		for {
-			select {
-			case <-stop:
-				return
-			case <-tick.C:
-				g.mu.Lock()
-				if g.engine != nil && g.started && !g.paused {
-					finish, changed := g.engine.Advance(g.clock())
-					g.afterLocked(finish, changed)
-				}
-				g.mu.Unlock()
-			}
-		}
-	}()
-}
-
-func (g *Game) stopTickerLocked() {
-	if g.stopTick != nil {
-		close(g.stopTick)
-		g.stopTick = nil
-	}
-}
-
-// afterLocked publishes a change and runs host calls that must happen with
-// the lock released.
-func (g *Game) afterLocked(finish, changed bool) {
-	if changed {
-		g.publishLocked()
-	}
-	if finish {
-		g.needFinish = true
-	}
-	h := g.helper
-	pause, resume, fin := g.needPause, g.needResume, g.needFinish
-	g.needPause, g.needResume, g.needFinish = false, false, false
-	if h == nil || !(pause || resume || fin) {
-		return
-	}
-	g.mu.Unlock()
-	if pause {
-		h.Pause()
-	}
-	if resume {
-		h.Resume()
-	}
-	if fin {
-		h.Finish()
-	}
-	g.mu.Lock()
-}
-
-func (g *Game) render(w http.ResponseWriter, name string, data any, status int) {
-	var buf bytes.Buffer
-	if err := pages.ExecuteTemplate(&buf, name, data); err != nil {
-		http.Error(w, fmt.Sprintf("Could not render Borrowed Truths (%s).", name), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(status)
-	_, _ = w.Write(buf.Bytes())
-}
+func (g *Game) Shutdown() error { return g.run.Shutdown() }
 
 func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
-	if g.helperNow() == nil {
+	if g.run.Helper() == nil {
 		http.NotFound(w, r)
 		return
 	}
-	g.render(w, "howto.html", g.pageView("How to play Borrowed Truths"), http.StatusOK)
-}
-
-type pageView struct {
-	ui.Chrome
-	GameCSS string
-	GameJS  string
-}
-
-func (g *Game) pageView(title string) pageView {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	return g.pageViewLocked(title)
-}
-
-func (g *Game) pageViewLocked(title string) pageView {
-	view := pageView{
-		Chrome:  ui.Chrome{Title: title, Theme: ui.DefaultTheme},
-		GameCSS: "/play/static/game.css?v=" + assetVersion,
-		GameJS:  "/play/static/game.js?v=" + assetVersion,
-	}
-	if g.helper != nil {
-		view.Chrome.Theme = ui.NormalizeTheme(g.helper.Theme())
-	}
-	return view
+	g.run.Render(w, "howto.html", g.run.Page("How to play Borrowed Truths"), http.StatusOK)
 }

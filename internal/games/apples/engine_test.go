@@ -77,8 +77,8 @@ func TestEngineBeginDealsHandsAndFillsBots(t *testing.T) {
 	if bots != 1 {
 		t.Fatalf("bots = %d, want 1", bots)
 	}
-	if e.Phase != phaseDrawWait || e.TimerKind != timerAutoDraw {
-		t.Fatalf("phase %s timer %s", e.Phase, e.TimerKind)
+	if e.Phase != phaseDrawWait || e.Timer.Kind != timerAutoDraw {
+		t.Fatalf("phase %s timer %s", e.Phase, e.Timer.Kind)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 const kvMatchSettings = "match-settings"
@@ -231,7 +232,7 @@ func (g *Game) saveSettings(h games.Helper, s matchSettings) error {
 }
 
 type settingsView struct {
-	pageView
+	runtimekit.Page
 	Frozen   bool
 	Settings matchSettings
 	Err      settingsErr
@@ -248,8 +249,8 @@ type numView struct {
 	Err         string
 }
 
-func newSettingsView(page pageView, s matchSettings, e settingsErr, frozen bool) settingsView {
-	view := settingsView{pageView: page, Frozen: frozen, Settings: s, Err: e, Nums: map[string]numView{}}
+func newSettingsView(page runtimekit.Page, s matchSettings, e settingsErr, frozen bool) settingsView {
+	view := settingsView{Page: page, Frozen: frozen, Settings: s, Err: e, Nums: map[string]numView{}}
 	for i := 0; i <= 12; i++ {
 		view.TIMCounts = append(view.TIMCounts, strconv.Itoa(i))
 	}
@@ -265,21 +266,21 @@ func newSettingsView(page pageView, s matchSettings, e settingsErr, frozen bool)
 
 func (g *Game) settingsView(e settingsErr) settingsView {
 	s := factorySettings()
-	if h := g.helperNow(); h != nil {
+	if h := g.run.Helper(); h != nil {
 		s = g.loadSettings(h)
 	}
-	g.mu.Lock()
-	frozen := g.started
-	g.mu.Unlock()
-	return newSettingsView(g.pageView("Borrowed Truths settings"), s, e, frozen)
+	g.run.Lock()
+	frozen := g.run.Running()
+	g.run.Unlock()
+	return newSettingsView(g.run.Page("Borrowed Truths settings"), s, e, frozen)
 }
 
 func (g *Game) getSettings(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+	g.run.Render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 }
 
 func (g *Game) postMatch(w http.ResponseWriter, r *http.Request) {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		http.NotFound(w, r)
 		return
@@ -288,24 +289,24 @@ func (g *Game) postMatch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the form.", http.StatusBadRequest)
 		return
 	}
-	g.mu.Lock()
-	frozen := g.started
-	g.mu.Unlock()
+	g.run.Lock()
+	frozen := g.run.Running()
+	g.run.Unlock()
 	if frozen {
-		g.render(w, "settings.html", g.settingsView(settingsErr{"", "This match is running. Setup is locked."}), http.StatusOK)
+		g.run.Render(w, "settings.html", g.settingsView(settingsErr{"", "This match is running. Setup is locked."}), http.StatusOK)
 		return
 	}
 	s := g.loadSettings(h)
 	if bad := applyForm(r, &s); bad != nil {
-		g.render(w, "settings.html", g.settingsView(*bad), http.StatusOK)
+		g.run.Render(w, "settings.html", g.settingsView(*bad), http.StatusOK)
 		return
 	}
 	if err := g.saveSettings(h, s); err != nil {
-		g.render(w, "settings.html", g.settingsView(settingsErr{"", "Could not save the settings."}), http.StatusOK)
+		g.run.Render(w, "settings.html", g.settingsView(settingsErr{"", "Could not save the settings."}), http.StatusOK)
 		return
 	}
 	if r.Header.Get("HX-Request") == "true" {
-		g.render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
+		g.run.Render(w, "settings.html", g.settingsView(settingsErr{}), http.StatusOK)
 		return
 	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)

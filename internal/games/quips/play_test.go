@@ -32,9 +32,9 @@ func TestDraftBannedRendersPhoneAlert(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	skipPlayIntro(g.engine, time.Now())
-	g.mu.Unlock()
+	g.run.Lock()
+	skipPlayIntro(g.run.Engine(), time.Now())
+	g.run.Unlock()
 	form := url.Values{"slot": {"0"}, "text": {"banana"}}
 	req := httptest.NewRequest(http.MethodPost, "/draft", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -68,9 +68,9 @@ func TestDraftPOSTReturns204(t *testing.T) {
 	if err := g.Start(h); err != nil {
 		t.Fatal(err)
 	}
-	g.mu.Lock()
-	skipPlayIntro(g.engine, time.Now())
-	g.mu.Unlock()
+	g.run.Lock()
+	skipPlayIntro(g.run.Engine(), time.Now())
+	g.run.Unlock()
 	form := url.Values{"slot": {"0"}, "text": {"draft text"}}
 	req := httptest.NewRequest(http.MethodPost, "/draft", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

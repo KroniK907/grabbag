@@ -33,6 +33,7 @@ Operator playbook is `/docs`.
 - [Player record](#player-record)
 - [Disconnect policy](#disconnect-policy)
 - [UI previews](#ui-previews)
+- [Runtime kit](#runtime-kit)
 - [Examples](#examples)
 - [Must not](#must-not)
 
@@ -300,6 +301,52 @@ Optional. A Game that also implements `games.Previewer` lists `ui.Scenario` valu
 | `Render` | Build the view from fixed data, then call `ui.RenderScenario`. Set `GameCSS` / `GameJS` from `Preview.Asset`. No disk, network, or wall clock. |
 
 Drive the real engine to each state where one exists, so previews cannot drift from play. Saved JSON merge patches go in `internal/games/<name>/previews/<surface>.<name>.<variant>.json` and load through `ui.WithVariants`. Add a `preview_test.go` that calls `uitest.RenderAll`.
+
+## Runtime kit
+
+Optional. `internal/games/runtimekit` is the match runtime most games would otherwise rebuild. Host never sees it. A game that wants its own runtime implements `games.Game` directly and does not import the kit. Apples for Humanity, Quick Quips, and Borrowed Truths use it. Testing does not.
+
+Split a game in two:
+
+- **Engine.** Rules and run state. No HTTP, no Helper, no goroutines. The clock comes in as an argument. A phase countdown is a `runtimekit.Timer` field.
+- **Game.** Holds a `*runtimekit.Runner[*engine]` built from a `runtimekit.Config`, plus views, templates, and extra routes. `Load`, `Start`, `Pause`, `Resume`, `Stop`, and `Shutdown` hand off to the Runner.
+
+The Runner owns:
+
+| Piece | What it does |
+|-------|--------------|
+| Lock | One mutex for run state. Hooks run with it held. Game code outside a hook calls `Lock` / `Unlock`. |
+| Tick | Calls `Config.Advance(e, now)` every `Config.Tick` (default 250ms) while a match runs and is not paused. |
+| `Act`, `HostAct` | Player or host POST: sign-in or host check, form parse, 404 with no match, `Config.Gate`, the action, publish, host calls, `Config.Reply` rendered after unlock. |
+| `HostPause`, `HostResume` | Ready-made phone host buttons. Resume skips the Gate. |
+| `Result` | `Err` is the phone error. `Changed` publishes `Config.Event`. `Events` publish too. `Pause`, `Resume`, `Finish` call Helper with the lock released, because host calls back into the Game. |
+| `Apply`, `Defer` | Apply a `Result` from game code outside a hook. `Defer` publishes now and holds the host calls for the next Apply or tick, for code that must keep the lock, such as a view. |
+| `Hold` | `Config.Hold(e, paused, now)` on Pause and Resume. Fold in any other hold, such as a reshuffle overlay, and call `Runner.Hold` when it changes. |
+| `Cleanup` | Runs on Stop and Shutdown before the engine is dropped. |
+| Pages | `Render`, `Page` / `PageLocked` (chrome, theme, asset links), `Static` for `GET /static/`. |
+| Tests and previews | `SetClock`, `SetRand`, and `Install(e)` for a running match with no helper and no tick. Call them without the lock. `Tick()` runs one tick now. |
+
+`Gate` is per game. Leave it nil to let actions run while paused. `Reply` gets the phone error and decides where it goes: a view field, or a per-player map on the engine.
+
+### Countdown
+
+Every game timer draws through one client script, `internal/ui/static/countdown.js`, which `ui-start` loads on every game document and phone.
+
+1. Keep the countdown in the engine as a `runtimekit.Timer`. `Hold` freezes it on pause.
+2. Put `Timer.View(now)` (a `runtimekit.TimerView`) on the board or phone view.
+3. In the template, call `ui-countdown` inside the element's opening tag and mark the text with `data-countdown-value`:
+
+```html
+{{if .Timer.On}}
+<div class="wordbox-timer" {{template "ui-countdown" .Timer}}>
+  <strong data-countdown-value>{{.Timer.Clock}}</strong>
+</div>
+{{end}}
+```
+
+The script paints `m:ss` every 250ms from `data-countdown-end`, or shows the rendered seconds while `data-countdown-frozen` is set or in a static preview. It sets `--countdown-left` (1 to 0) and `--countdown-turn` on the element for bars and conic rings. Seconds round up, so the last second shows `0:01`.
+
+A running countdown fires `grabbag:countdown-tick` when the shown second changes and `grabbag:countdown-done` once at zero. Both bubble with `detail.seconds` and `detail.kind` (`Timer.Kind`). Repaints of the same countdown fire nothing new, and a page that loads after the end fires nothing. Use these for sound or animation cues. Do not write a second timer loop in `game.js`.
 
 ## Examples
 

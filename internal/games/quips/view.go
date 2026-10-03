@@ -1,7 +1,9 @@
 package quips
 
+import "github.com/KroniK907/grabbag/internal/games/runtimekit"
+
 type settingsView struct {
-	pageView
+	runtimekit.Page
 	Frozen         bool
 	Shortage       []string
 	Settings       matchSettings
@@ -13,7 +15,7 @@ type settingsView struct {
 }
 
 type pickerView struct {
-	pageView
+	runtimekit.Page
 	DataDir      string
 	Frozen       bool
 	Shortage     []string
@@ -43,7 +45,7 @@ type packView struct {
 }
 
 func (g *Game) currentSettings() matchSettings {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return factorySettings()
 	}
@@ -54,25 +56,25 @@ func (g *Game) currentSettings() matchSettings {
 
 func (g *Game) settingsView(rowErr settingsErr) settingsView {
 	view := settingsView{
-		pageView: g.pageView("Quick Quips settings"),
+		Page:     g.run.Page("Quick Quips settings"),
 		Frozen:   g.matchFrozen(),
 		Shortage: g.shortageNow(),
 		Settings: g.currentSettings(),
 		Err:      rowErr,
 	}
-	g.mu.Lock()
+	g.run.Lock()
 	view.BurnCorrupt = g.burnCorrupt
 	view.DiscardCorrupt = g.discardCorrupt
 	view.DiscardEmpty = len(g.played) == 0
 	if !g.burnCorrupt {
 		view.Burns = g.lastBurns(10)
 	}
-	g.mu.Unlock()
+	g.run.Unlock()
 	return view
 }
 
 func (g *Game) shortageNow() []string {
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return nil
 	}
@@ -80,22 +82,22 @@ func (g *Game) shortageNow() []string {
 	cat := scanDataDir(h.DataDir())
 	piles := buildPromptPiles(cat, s)
 	n := len(h.Seated())
-	g.mu.Lock()
+	g.run.Lock()
 	noBurn := filterBurns(piles, g.burns)
 	help := burnedWouldHelp(piles, noBurn, s, n)
-	g.mu.Unlock()
+	g.run.Unlock()
 	return shortageLines(noBurn, s, n, help)
 }
 
 func (g *Game) pickerView(rowErr pickerErr) pickerView {
 	view := pickerView{
-		pageView:     g.pageView("Prompt Library"),
+		Page:         g.run.Page("Prompt Library"),
 		RowError:     rowErr.Msg,
 		ErrorLibrary: rowErr.LibraryID,
 		ErrorPack:    rowErr.PackID,
 		Shortage:     g.shortageNow(),
 	}
-	h := g.helperNow()
+	h := g.run.Helper()
 	if h == nil {
 		return view
 	}

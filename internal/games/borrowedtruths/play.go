@@ -5,64 +5,38 @@ import (
 	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
 // action is one phone post against the engine. It returns a phone error, or
 // "" when the post changed run state.
 type action func(e *engine, p games.Player, r *http.Request, now time.Time) string
 
-// withEngine runs a signed-in player's fn under the lock and answers with the
-// fresh phone column.
-func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, fn action) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return
-	}
-	p, ok, err := h.PlayerFromRequest(r)
-	if err != nil || !ok {
-		http.Error(w, "Sign in to play.", http.StatusUnauthorized)
-		return
-	}
-	g.runAction(w, r, p, fn)
-}
-
-// withHost is withEngine for host posts. An admin session needs no player
-// cookie, so p may be the zero Player.
-func (g *Game) withHost(w http.ResponseWriter, r *http.Request, fn action) {
-	p, ok := g.hostOnly(w, r)
-	if !ok {
-		return
-	}
-	g.runAction(w, r, p, fn)
-}
-
-func (g *Game) runAction(w http.ResponseWriter, r *http.Request, p games.Player, fn action) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Could not read the form.", http.StatusBadRequest)
-		return
-	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
-		http.NotFound(w, r)
-		return
-	}
-	msg := "The match is paused."
-	if !g.paused {
-		before := g.engine.Phase
-		msg = fn(g.engine, p, r, g.clock())
-		if msg == "" && before == phaseFacts && g.engine != nil && g.engine.Phase == phaseFacts {
-			// Facts ticks repaint only the board, so a half-typed phone is not swapped.
-			g.publishFactsLocked()
-			g.afterLocked(false, false)
-		} else {
-			g.afterLocked(false, msg == "")
+// step turns fn into a kit action. A change that leaves the match in facts
+// publishes only the facts tick, which repaints the board and leaves a
+// half-typed phone alone.
+func step(r *http.Request, fn action) runtimekit.Action[*engine] {
+	return func(e *engine, p games.Player, now time.Time) runtimekit.Result {
+		before := e.Phase
+		if msg := fn(e, p, r, now); msg != "" {
+			return runtimekit.Result{Err: msg}
 		}
+		if before == phaseFacts && e.Phase == phaseFacts {
+			return runtimekit.Result{Events: []string{eventFacts}}
+		}
+		return runtimekit.Result{Changed: true}
 	}
-	view := g.phoneViewLocked(p, msg)
-	g.mu.Unlock()
-	g.render(w, "phone-frame", view, http.StatusOK)
+}
+
+// withEngine runs a signed-in player's fn and answers with the fresh phone
+// column.
+func (g *Game) withEngine(w http.ResponseWriter, r *http.Request, fn action) {
+	g.run.Act(w, r, step(r, fn))
+}
+
+// withHost is withEngine for the claimed host or an admin session.
+func (g *Game) withHost(w http.ResponseWriter, r *http.Request, fn action) {
+	g.run.HostAct(w, r, step(r, fn))
 }
 
 func (g *Game) postFacts(w http.ResponseWriter, r *http.Request) {
@@ -113,36 +87,13 @@ func (g *Game) postReveal(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// hostOnly lets the claimed host or an admin session through. It returns the
-// request's player, which is the zero Player for an admin with no player
-// cookie.
-func (g *Game) hostOnly(w http.ResponseWriter, r *http.Request) (games.Player, bool) {
-	h := g.helperNow()
-	if h == nil {
-		http.NotFound(w, r)
-		return games.Player{}, false
-	}
-	p, ok, err := h.PlayerFromRequest(r)
-	if err != nil || !ok {
-		p = games.Player{}
-	}
-	if h.HasAdmin(r) || p.ClaimedHost {
-		return p, true
-	}
-	http.Error(w, "Host only.", http.StatusForbidden)
-	return games.Player{}, false
-}
-
 func (g *Game) postHostContinue(w http.ResponseWriter, r *http.Request) {
-	g.withHost(w, r, func(e *engine, _ games.Player, _ *http.Request, now time.Time) string {
+	g.run.HostAct(w, r, func(e *engine, _ games.Player, now time.Time) runtimekit.Result {
 		finish, changed := e.Continue(now)
-		if finish {
-			g.needFinish = true
-		}
 		if !changed && !finish {
-			return "Nothing to continue."
+			return runtimekit.Result{Err: "Nothing to continue."}
 		}
-		return ""
+		return runtimekit.Result{Changed: true, Finish: finish}
 	})
 }
 
@@ -158,36 +109,10 @@ func (g *Game) postHostExtend(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (g *Game) postHostPause(w http.ResponseWriter, r *http.Request) {
-	g.withHost(w, r, func(*engine, games.Player, *http.Request, time.Time) string {
-		g.needPause = true
-		return ""
-	})
-}
-
-// postHostResume is the one host post that runs while paused.
-func (g *Game) postHostResume(w http.ResponseWriter, r *http.Request) {
-	p, ok := g.hostOnly(w, r)
-	if !ok {
-		return
-	}
-	g.mu.Lock()
-	if g.engine == nil || !g.started {
-		g.mu.Unlock()
-		http.NotFound(w, r)
-		return
-	}
-	g.needResume = true
-	g.afterLocked(false, false)
-	view := g.phoneViewLocked(p, "")
-	g.mu.Unlock()
-	g.render(w, "phone-frame", view, http.StatusOK)
-}
-
 func (g *Game) getBoardPartial(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "board-frame", g.boardView(), http.StatusOK)
+	g.run.Render(w, "board-frame", g.boardView(), http.StatusOK)
 }
 
 func (g *Game) getPhonePartial(w http.ResponseWriter, r *http.Request) {
-	g.render(w, "phone-frame", g.phoneView(r, ""), http.StatusOK)
+	g.run.Render(w, "phone-frame", g.phoneView(r, ""), http.StatusOK)
 }

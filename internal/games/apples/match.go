@@ -2,40 +2,41 @@ package apples
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/games/runtimekit"
 )
 
-func (g *Game) beginMatchLocked(h games.Helper) error {
+// beginMatchLocked builds the match for Start. A deal that raises the
+// reshuffle overlay starts the match with its clock held.
+func (g *Game) beginMatchLocked(h games.Helper) (*engine, error) {
 	cat := scanDataDir(h.DataDir())
 	settings, ok := g.loadSettings(h)
 	settings = reconcileSettings(settings, ok, cat)
 	seated := h.Seated()
 	if len(seated) < 1 {
-		return fmt.Errorf("Start needs a seated player.")
+		return nil, fmt.Errorf("Start needs a seated player.")
 	}
 	if g.burnCorrupt {
-		return fmt.Errorf("Burn list is unreadable")
+		return nil, fmt.Errorf("Burn list is unreadable")
 	}
 	if g.discardCorrupt {
-		return fmt.Errorf("Discard list is unreadable")
+		return nil, fmt.Errorf("Discard list is unreadable")
 	}
 	noBurn := filterBurns(buildPiles(cat, settings), g.burns)
 	if msg := startShortage(noBurn, settings, len(seated)); msg != "" {
-		return fmt.Errorf("%s", msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 	if allDealableSpent(noBurn, settings.HandSize, g.played) {
 		g.wipeDiscardLocked()
 	}
-	g.engine = &engine{}
-	g.started = true
-	g.paused = false
-	out := g.engine.Begin(settings, rosterRows(seated), filterPlayed(noBurn, g.played), deckSupply{g}, g.rngLocked(), g.clock())
-	g.applyOutcomeLocked(out)
-	g.startTickerLocked()
-	return nil
+	e := &engine{}
+	now := g.run.Now()
+	g.resultLocked(e, e.Begin(settings, rosterRows(seated), filterPlayed(noBurn, g.played), deckSupply{g}, g.run.Rand(), now))
+	if g.overlayActive() {
+		e.SetPaused(true, now)
+	}
+	return e, nil
 }
 
 func rosterRows(players []games.Player) []rosterRow {
@@ -48,21 +49,25 @@ func rosterRows(players []games.Player) []rosterRow {
 
 // seatLocked refreshes the engine's live roster before it acts.
 func (g *Game) seatLocked() {
-	if g.engine != nil && g.helper != nil {
-		g.engine.SetSeated(rosterRows(g.helper.Seated()))
+	if e, h := g.run.Engine(), g.run.HelperLocked(); e != nil && h != nil {
+		e.SetSeated(rosterRows(h.Seated()))
 	}
 }
 
+// syncRosterLocked brings late sitters and leavers into the match. Views call
+// it too, so its host calls wait for the next Apply.
 func (g *Game) syncRosterLocked(h games.Helper) {
-	if g.engine == nil || !g.started {
+	if !g.run.Running() {
 		return
 	}
-	g.applyOutcomeLocked(g.engine.SyncRoster(rosterRows(h.Seated()), g.clock()))
+	e := g.run.Engine()
+	g.run.Defer(g.resultLocked(e, e.SyncRoster(rosterRows(h.Seated()), g.run.Now())))
 }
 
-// applyOutcomeLocked carries out the engine's side effects: journals,
-// wildcard saves, the burn drawer, the reshuffle overlay, and host calls.
-func (g *Game) applyOutcomeLocked(out outcome) {
+// resultLocked carries out the engine's side effects on e: journals,
+// wildcard saves, the burn drawer, and the reshuffle overlay. It returns the
+// publish and host calls for the kit. Err stays with the caller.
+func (g *Game) resultLocked(e *engine, out outcome) runtimekit.Result {
 	for _, row := range out.Played {
 		g.recordPlayedLocked(row.LibraryID, row.CardID)
 	}
@@ -71,10 +76,10 @@ func (g *Game) applyOutcomeLocked(out outcome) {
 	} else if len(out.Played) > 0 {
 		g.enqueueDiscardLocked()
 	}
-	if len(out.Wildcards) > 0 && g.helper != nil {
-		added := saveWildcards(g.helper.DataDir(), out.Wildcards)
-		if g.engine.Settings.WildcardDealPrevious {
-			g.engine.AddAnswers(added)
+	if h := g.run.HelperLocked(); len(out.Wildcards) > 0 && h != nil {
+		added := saveWildcards(h.DataDir(), out.Wildcards)
+		if e.Settings.WildcardDealPrevious {
+			e.AddAnswers(added)
 		}
 	}
 	if out.BurnDrawer {
@@ -83,43 +88,15 @@ func (g *Game) applyOutcomeLocked(out outcome) {
 	if out.Shortage != "" {
 		g.showOverlayLocked(out.Shortage)
 	}
-	if out.Publish {
-		g.publishLocked()
-	}
-	if out.Pause {
-		g.needPause = true
-	}
-	if out.Finish {
-		g.needFinish = true
-	}
-}
-
-func (g *Game) rngLocked() *rand.Rand {
-	if g.rng == nil {
-		g.rng = rand.New(rand.NewSource(time.Now().UnixNano()))
-	}
-	return g.rng
-}
-
-func (g *Game) clock() time.Time {
-	if g.now != nil {
-		return g.now()
-	}
-	return time.Now()
-}
-
-func (g *Game) publishLocked() {
-	if g.helper != nil {
-		g.helper.Publish(eventMatch)
-	}
+	return runtimekit.Result{Changed: out.Publish, Pause: out.Pause, Finish: out.Finish}
 }
 
 // deckSupply reads the library, burns, and discard journal for the engine.
-// Callers hold g.mu.
+// Callers hold the game lock.
 type deckSupply struct{ g *Game }
 
 func (s deckSupply) unplayed(settings matchSettings) enabledPiles {
-	h := s.g.helper
+	h := s.g.run.HelperLocked()
 	if h == nil {
 		return enabledPiles{}
 	}
@@ -129,10 +106,10 @@ func (s deckSupply) unplayed(settings matchSettings) enabledPiles {
 
 func (s deckSupply) recycleCovers(settings matchSettings, inHand map[string]bool, needP, needA int) bool {
 	g := s.g
-	if g.discardCorrupt || len(g.played) == 0 || g.helper == nil {
+	if g.discardCorrupt || len(g.played) == 0 || g.run.HelperLocked() == nil {
 		return false
 	}
-	cat := scanDataDir(g.helper.DataDir())
+	cat := scanDataDir(g.run.HelperLocked().DataDir())
 	piles := filterBurns(buildPiles(cat, settings), g.burns)
 	haveP, haveA := 0, 0
 	for _, p := range piles.Prompts {
@@ -149,8 +126,8 @@ func (s deckSupply) recycleCovers(settings matchSettings, inHand map[string]bool
 }
 
 func (s deckSupply) wildcardTexts() []string {
-	if s.g.helper == nil {
+	if s.g.run.HelperLocked() == nil {
 		return nil
 	}
-	return wildcardTexts(s.g.helper.DataDir())
+	return wildcardTexts(s.g.run.HelperLocked().DataDir())
 }
