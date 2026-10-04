@@ -80,20 +80,21 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 		!strings.Contains(phone, `hx-post="/settings/clear-room"`) {
 		t.Fatalf("host phone missing Keep/Clear modal: %q", phone)
 	}
-	drawerAt := strings.Index(phone, `id="host-drawer"`)
+	panel := lobbyRequestAll(t, handler, http.MethodGet, "/host-panel", nil, host, operatorCookie()).Body.String()
+	drawerAt := strings.Index(panel, `id="host-drawer"`)
 	if drawerAt < 0 {
 		t.Fatal("host phone missing drawer")
 	}
-	drawerEnd := strings.Index(phone[drawerAt:], "</aside>")
+	drawerEnd := strings.Index(panel[drawerAt:], "</aside>")
 	if drawerEnd < 0 {
 		t.Fatal("host drawer missing close tag")
 	}
-	drawer := phone[drawerAt : drawerAt+drawerEnd]
+	drawer := panel[drawerAt : drawerAt+drawerEnd]
 	if strings.Contains(drawer, `hx-post="/settings/keep"`) || strings.Contains(drawer, `hx-post="/settings/clear-room"`) {
 		t.Fatalf("host drawer still has Keep/Clear: %q", drawer)
 	}
-	if strings.Contains(phone, `hx-post="/settings/start"`) || strings.Contains(phone, `hx-post="/settings/sit"`) {
-		t.Fatalf("Start/sit shown while pending: %q", phone)
+	if strings.Contains(panel, `hx-post="/settings/start"`) || strings.Contains(panel, `hx-post="/settings/sit"`) {
+		t.Fatalf("Start/sit shown while pending: %q", panel)
 	}
 
 	guestPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()

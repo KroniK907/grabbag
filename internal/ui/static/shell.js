@@ -22,6 +22,13 @@
 // on <html> is the visual viewport height (it shrinks when a phone keyboard
 // opens), and html.shell-short is set below 760px.
 //
+// On / the shell owns the phone frame around the stage: the toolbar, Help,
+// Leave, the Help sheet, and the claimed host's panel. Each tenant fetch says
+// whether to show Help (help) and Leave (player), and carries the host panel
+// (host), which is swapped outside the stage so tenant fades never touch it.
+// live.css picks phone or gutter mode from the frame width; the shell copies
+// it to data-frame on #shell-frame for its own controls and for tests.
+//
 // Layout that CSS cannot do, such as fitting text to a box, goes in a
 // tenant's layout.js:
 //
@@ -62,6 +69,11 @@
   var retryNoticeKey = "shell-retry";
 
   var stage = null;
+  var frameEl = null;
+  var hostHTML = null;
+  var helpOpen = false;
+  var helpFetch = 0;
+  var hostPanelKey = "grabbag:host-panel";
   var surface = "";
   var boot = "";
   var registry = {};
@@ -435,6 +447,7 @@
     if (!stage) {
       return;
     }
+    syncFrame();
     var id = stage.getAttribute("data-tenant");
     var fn = layouts[id] && layouts[id][surface];
     if (typeof fn !== "function") {
@@ -767,6 +780,7 @@
         switching = true;
         connect(frame.stream);
       }
+      applyChrome(frame);
       var same = frame.tenant === mounted.tenant;
       if (!force && same && (frame.generation === mounted.generation || frame.html === mounted.html)) {
         mounted.generation = frame.generation;
@@ -793,6 +807,9 @@
         });
       })
       .then(function () {
+        if (frame.tenant !== mounted.tenant) {
+          closeHelp();
+        }
         unmountCurrent();
         dropOldCSS(frame);
         if (window.htmx) {
@@ -1026,6 +1043,149 @@
     scheduleLayout();
   }
 
+  // ---- Phone frame --------------------------------------------------------------------
+
+  // syncFrame copies live.css's frame mode to data-frame: gutter when the
+  // column has its gutters, phone when it fills the width.
+  function syncFrame() {
+    if (!frameEl) {
+      return;
+    }
+    var column = frameEl.querySelector(".shell-column");
+    var gutter = column && getComputedStyle(column).getPropertyValue("--shell-gutter").trim() === "1";
+    var mode = gutter ? "gutter" : "phone";
+    if (frameEl.getAttribute("data-frame") !== mode) {
+      frameEl.setAttribute("data-frame", mode);
+    }
+  }
+
+  // applyChrome shows Help and Leave for the fetched tenant and swaps the
+  // host panel when its markup changed. An open drawer stays open.
+  function applyChrome(frame) {
+    if (!frameEl) {
+      return;
+    }
+    var help = document.getElementById("shell-help-button");
+    if (help) {
+      help.hidden = !frame.help;
+    }
+    if (!frame.help) {
+      closeHelp();
+    }
+    var leave = document.getElementById("shell-leave");
+    if (leave) {
+      leave.hidden = !frame.player;
+    }
+    var html = frame.host || "";
+    if (html === hostHTML) {
+      return;
+    }
+    hostHTML = html;
+    var host = document.getElementById("shell-host");
+    if (!host) {
+      return;
+    }
+    var open = !!host.querySelector(".ui-drawer.is-open");
+    if (window.htmx) {
+      htmx.swap(host, html, { swapStyle: "innerHTML", swapDelay: 0, settleDelay: 0 });
+    } else {
+      host.innerHTML = html;
+    }
+    var drawer = host.querySelector(".ui-drawer");
+    if (open && drawer) {
+      drawer.classList.add("is-open");
+    }
+    scanNames(host);
+  }
+
+  // openHelp fetches the mounted tenant's help from GET /help and opens the
+  // sheet over it. The tenant stays mounted. A static preview already has
+  // its sheet body and only opens it.
+  function openHelp() {
+    var sheet = document.getElementById("shell-help");
+    var body = document.getElementById("shell-help-body");
+    if (!sheet || !body) {
+      return;
+    }
+    if (window.grabbagStatic) {
+      showHelp(sheet);
+      return;
+    }
+    var ticket = ++helpFetch;
+    fetch("/help", { credentials: "same-origin", cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("help returned " + res.status);
+        }
+        return res.text();
+      })
+      .then(function (html) {
+        if (ticket !== helpFetch) {
+          return;
+        }
+        if (window.htmx) {
+          htmx.swap(body, html, { swapStyle: "innerHTML", swapDelay: 0, settleDelay: 0 });
+        } else {
+          body.innerHTML = html;
+        }
+        body.scrollTop = 0;
+        showHelp(sheet);
+      })
+      .catch(function () {
+        if (window.grabbagShowNotice) {
+          window.grabbagShowNotice({ type: "error", message: "Couldn't load the help. Try again.", duration: -1 });
+        }
+      });
+  }
+
+  function showHelp(sheet) {
+    sheet.hidden = false;
+    helpOpen = true;
+    var close = sheet.querySelector(".shell-sheet-close");
+    if (close) {
+      close.focus();
+    }
+  }
+
+  function closeHelp() {
+    helpFetch++;
+    var sheet = document.getElementById("shell-help");
+    if (!sheet || sheet.hidden) {
+      helpOpen = false;
+      return;
+    }
+    sheet.hidden = true;
+    if (helpOpen) {
+      var button = document.getElementById("shell-help-button");
+      if (button && !button.hidden) {
+        button.focus();
+      }
+    }
+    helpOpen = false;
+  }
+
+  // toggleHostPanel collapses or reopens the wide-screen host panel and
+  // remembers the choice in this browser.
+  function toggleHostPanel() {
+    if (!frameEl) {
+      return;
+    }
+    var collapsed = frameEl.getAttribute("data-host-panel") !== "collapsed";
+    if (collapsed) {
+      frameEl.setAttribute("data-host-panel", "collapsed");
+    } else {
+      frameEl.removeAttribute("data-host-panel");
+    }
+    try {
+      if (collapsed) {
+        localStorage.setItem(hostPanelKey, "collapsed");
+      } else {
+        localStorage.removeItem(hostPanelKey);
+      }
+    } catch (e) {}
+    scheduleLayout();
+  }
+
   // ---- Start ------------------------------------------------------------------------
 
   function requestPath(evt) {
@@ -1041,6 +1201,14 @@
     }
     surface = stage.getAttribute("data-surface");
     boot = stage.getAttribute("data-boot");
+    frameEl = document.getElementById("shell-frame");
+    if (frameEl) {
+      listen(document, "keydown", function (evt) {
+        if (evt.key === "Escape" && document.getElementById("shell-help") && !document.getElementById("shell-help").hidden) {
+          closeHelp();
+        }
+      });
+    }
     // Sizing listeners come before the static return: the preview gallery
     // resizes a preview's frame in place, and that must refit it too.
     syncViewport();
@@ -1130,6 +1298,9 @@
     register: register,
     layout: registerLayout,
     hardReload: hardReload,
+    openHelp: openHelp,
+    closeHelp: closeHelp,
+    toggleHostPanel: toggleHostPanel,
     // current reports the mounted tenant and the stream: its URL and
     // whether it is open now.
     current: function () {

@@ -54,11 +54,12 @@ type Helper interface {
 // Game is a compiled-in package host can Load, Start, Stop, and Shutdown.
 // MinPlayers and MaxPlayers are 0 when the game does not declare a pair.
 //
-// A Game is a ui.Tenant. After Start the /board and / shells swap it in:
-// Board and Phone write HTML fragments, Assets lists game.css and game.js
-// (which calls grabbagShell.register), and Scenarios lists preview states.
+// A Game is a ui.HelpTenant. After Start the /board and / shells swap it in:
+// Board and Phone write HTML fragments, Help writes the phone shell's help
+// sheet, Assets lists game.css and game.js (which calls
+// grabbagShell.register), and Scenarios lists preview states.
 type Game interface {
-	ui.Tenant
+	ui.HelpTenant
 	ID() string
 	// Name is the player-facing label on the Lobby rail. ID stays the catalog key.
 	Name() string

@@ -30,6 +30,8 @@ const (
 
 // tenantFrame is the GET /tenant and GET /board/tenant body. The shell swaps
 // html in when tenant or generation moved on, and reloads when boot changed.
+// On the phone, help shows the Help button, player shows Leave, and host is
+// the claimed host's panel for the frame.
 type tenantFrame struct {
 	Tenant     string    `json:"tenant"`
 	Generation uint64    `json:"generation"`
@@ -39,6 +41,8 @@ type tenantFrame struct {
 	Stream     string    `json:"stream"`
 	Player     bool      `json:"player"`
 	Kicked     bool      `json:"kicked"`
+	Help       bool      `json:"help"`
+	Host       string    `json:"host"`
 	Assets     ui.Assets `json:"assets"`
 	HTML       string    `json:"html"`
 }
@@ -70,6 +74,7 @@ func (rt *runtime) registerShellRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /board", rt.shellDocument(ui.SurfaceBoard))
 	mux.HandleFunc("GET /tenant", rt.shellTenantFrame(ui.SurfacePhone))
 	mux.HandleFunc("GET /board/tenant", rt.shellTenantFrame(ui.SurfaceBoard))
+	mux.HandleFunc("GET /help", rt.shellHelp)
 	mux.Handle("GET "+streamLocked, rt.events.Only("tenant", "theme"))
 	mux.HandleFunc("POST /shell/error", rt.postShellError)
 }
@@ -122,7 +127,7 @@ func (rt *runtime) pickTenant(surface string, r *http.Request) shellTenant {
 }
 
 // renderTenant captures the tenant's fragment for surface. A game phone is
-// wrapped in the Lobby play-phone fragment (Leave and the host drawer).
+// wrapped in the Lobby play-phone fragment.
 func (rt *runtime) renderTenant(surface string, st shellTenant, r *http.Request) (template.HTML, error) {
 	var buf bytes.Buffer
 	rec := &capture{buf: &buf, header: make(http.Header)}
@@ -146,6 +151,43 @@ func (rt *runtime) renderTenant(surface string, st shellTenant, r *http.Request)
 	return template.HTML(buf.String()), nil
 }
 
+// hasHelp reports whether the phone shell shows Help for st.
+func hasHelp(surface string, st shellTenant) bool {
+	if surface != ui.SurfacePhone {
+		return false
+	}
+	_, ok := st.tenant.(ui.HelpTenant)
+	return ok
+}
+
+// renderHostPanel captures the claimed host's panel for the phone frame.
+// It is empty for everyone else and on the board.
+func (rt *runtime) renderHostPanel(surface string, r *http.Request) (template.HTML, error) {
+	if surface != ui.SurfacePhone {
+		return "", nil
+	}
+	var buf bytes.Buffer
+	rec := &capture{buf: &buf, header: make(http.Header)}
+	rt.room.HostPanel(rec, r)
+	if rec.status != 0 && rec.status != http.StatusOK {
+		return "", fmt.Errorf("host panel returned %d", rec.status)
+	}
+	return template.HTML(buf.String()), nil
+}
+
+// shellHelp serves GET /help: the Help body of the tenant the phone shell
+// shows to r. A tenant without help is 404.
+func (rt *runtime) shellHelp(w http.ResponseWriter, r *http.Request) {
+	st := rt.phoneTenant(r)
+	help, ok := st.tenant.(ui.HelpTenant)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	help.Help(w, r)
+}
+
 func shellTitle(surface string) string {
 	if surface == ui.SurfaceBoard {
 		return "GrabBag.gg board"
@@ -166,6 +208,12 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			http.Error(w, "Could not render the page.", http.StatusInternalServerError)
 			return
 		}
+		host, err := rt.renderHostPanel(surface, r)
+		if err != nil {
+			rt.log.Write("shell: " + err.Error())
+			http.Error(w, "Could not render the page.", http.StatusInternalServerError)
+			return
+		}
 		var page bytes.Buffer
 		err = ui.RenderShell(&page, ui.Shell{
 			Chrome: ui.Chrome{
@@ -179,6 +227,8 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			Boot:       rt.boot,
 			Stream:     st.stream,
 			Player:     st.player,
+			Help:       hasHelp(surface, st),
+			HostPanel:  host,
 			Assets:     st.tenant.Assets(),
 			Body:       body,
 		})
@@ -204,6 +254,12 @@ func (rt *runtime) shellTenantFrame(surface string) http.HandlerFunc {
 			http.Error(w, "Could not render the tenant.", http.StatusInternalServerError)
 			return
 		}
+		host, err := rt.renderHostPanel(surface, r)
+		if err != nil {
+			rt.log.Write("shell: " + err.Error())
+			http.Error(w, "Could not render the tenant.", http.StatusInternalServerError)
+			return
+		}
 		frame := tenantFrame{
 			Tenant:     st.id,
 			Generation: gen,
@@ -213,6 +269,8 @@ func (rt *runtime) shellTenantFrame(surface string) http.HandlerFunc {
 			Stream:     st.stream,
 			Player:     st.player,
 			Kicked:     st.kicked,
+			Help:       hasHelp(surface, st),
+			Host:       string(host),
 			Assets:     st.tenant.Assets(),
 			HTML:       string(body),
 		}

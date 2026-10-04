@@ -113,7 +113,10 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 	hostPlayer := cookieNamed(t, hostJoin, lobby.PlayerCookieName)
 	hostAdmin := cookieNamed(t, hostJoin, "grabbag_admin")
 
-	phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, hostPlayer, hostAdmin).Body.String()
+	if phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, hostPlayer, hostAdmin).Body.String(); strings.Contains(phone, `id="host-drawer"`) {
+		t.Fatalf("Lobby tenant renders the host drawer: %q", phone)
+	}
+	phone := lobbyRequestAll(t, handler, http.MethodGet, "/host-panel", nil, hostPlayer, hostAdmin).Body.String()
 	if !strings.Contains(phone, `id="host-drawer"`) ||
 		!strings.Contains(phone, `ui-drawer-handle`) ||
 		!strings.Contains(phone, `ui-drawer-scrim`) ||
@@ -236,7 +239,7 @@ func TestMakeHostAndTakeHost(t *testing.T) {
 	if oldHost.ClaimedHost {
 		t.Fatal("old host still claimed")
 	}
-	panel := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, guestCookie, admin).Body.String()
+	panel := lobbyRequestAll(t, handler, http.MethodGet, "/host-panel", nil, guestCookie, admin).Body.String()
 	if !strings.Contains(panel, `id="host-drawer"`) || !strings.Contains(panel, "Kick Players") {
 		t.Fatalf("new host phone = %q", panel)
 	}

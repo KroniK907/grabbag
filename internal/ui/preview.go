@@ -33,9 +33,14 @@ const ShellBoard = "board"
 const ShellPhone = "phone"
 
 // ShellPlayPhone marks a scenario whose Render writes a game phone body.
-// Host wraps it in the Lobby play-phone fragment (Leave and the host drawer),
-// then in the static phone shell, as it does for live phones.
+// Host wraps it in the Lobby play-phone fragment, then in the static phone
+// shell, as it does for live phones. A "host" Viewer also gets the Host panel
+// in the frame.
 const ShellPlayPhone = "play-phone"
+
+// ShellHelp marks a scenario whose Render writes a HelpTenant's Help body.
+// Host shows it in the static phone shell's open Help sheet.
+const ShellHelp = "help"
 
 // ShellSettings marks a scenario whose Render writes a game settings
 // fragment. Host inlines it under Game Settings on the Lobby /settings page.
@@ -66,8 +71,12 @@ type Scenario struct {
 	// Frame is FramePhone, FrameTV, or FramePage.
 	Frame string
 	// Shell is empty for a full document, or ShellBoard, ShellPhone,
-	// ShellPlayPhone, or ShellSettings.
+	// ShellPlayPhone, ShellHelp, or ShellSettings.
 	Shell string
+	// HostPanel writes the claimed host's panel for the phone frame, when
+	// this moment has one. Nil means none, except that host adds the Lobby's
+	// panel to ShellPlayPhone scenarios whose Viewer is "host".
+	HostPanel func(w io.Writer, p Preview) error
 	// MinPlayers > 0 turns on the seated-count sweep. MaxPlayers 0 means the
 	// package declares no cap and the sweep goes to LobbyMaxPlayers.
 	MinPlayers int

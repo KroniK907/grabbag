@@ -235,14 +235,14 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	if !strings.Contains(kickedBody, `hx-post="/lobby/join"`) {
 		t.Fatalf("post-Kick phone = %q, want Join", kickedBody)
 	}
-	if strings.Count(kickedBody, `class="ui-notch"`) != 0 {
-		t.Fatalf("post-Kick tenant drew %d notches (the shell draws it) in %q", strings.Count(kickedBody, `class="ui-notch"`), kickedBody)
+	if strings.Count(kickedBody, `class="shell-bar"`) != 0 {
+		t.Fatalf("post-Kick tenant drew %d toolbars (the shell draws it) in %q", strings.Count(kickedBody, `class="shell-bar"`), kickedBody)
 	}
 	if !strings.Contains(kickedBody, "The host kicked you") || !strings.Contains(kickedBody, ">Out.<") {
 		t.Fatalf("post-Kick missing kick copy: %q", kickedBody)
 	}
 	kickedPartial := lobbyRequest(t, handler, http.MethodGet, "/lobby/partials/phone", nil, guestCookie).Body.String()
-	if strings.Contains(kickedPartial, `class="ui-notch"`) || strings.Contains(kickedPartial, `class="ui-phone-wrap"`) {
+	if strings.Contains(kickedPartial, `class="shell-bar"`) || strings.Contains(kickedPartial, `id="shell-frame"`) {
 		t.Fatalf("kicked SSE fragment nested the phone chrome: %q", kickedPartial)
 	}
 	if !strings.Contains(kickedPartial, "The host kicked you") {

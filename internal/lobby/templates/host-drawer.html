@@ -7,11 +7,20 @@
   onclick="document.getElementById('host-drawer').classList.remove('is-open')"
 ></button>
 <aside id="host-drawer" class="ui-drawer" aria-label="Host panel">
-  <button
-    type="button"
-    class="ui-btn"
-    onclick="document.getElementById('host-drawer').classList.remove('is-open')"
-  >Back</button>
+  <div class="ui-drawer-top">
+    <button
+      type="button"
+      class="ui-btn ui-drawer-back"
+      onclick="document.getElementById('host-drawer').classList.remove('is-open')"
+    >Back</button>
+    <button
+      type="button"
+      class="ui-drawer-collapse"
+      aria-label="Collapse host panel"
+      title="Collapse host panel"
+      onclick="grabbagShell.toggleHostPanel()"
+    >&laquo;</button>
+  </div>
   {{if and .ShowGameLibrary (not .RestorePending) (not .Started)}}
   {{template "game-library-open" .}}
   {{end}}

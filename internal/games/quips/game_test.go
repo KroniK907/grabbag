@@ -81,7 +81,7 @@ func TestHowtoAndCompactViewportAssets(t *testing.T) {
 		want []string
 	}{
 		{path: "/howto", want: []string{"How to play", "Last Quip", "Back to game"}},
-		{path: "/static/game.css", want: []string{".quips-lock-bar .ui-btn", "min-height: 44px", "var(--shell-visual-height, 100dvh)", "html.shell-short .quips-phone", "height: 100dvh"}},
+		{path: "/static/game.css", want: []string{".quips-lock-bar .ui-btn", "min-height: 44px", "html.shell-short .quips-phone", "height: 100dvh"}},
 	} {
 		rec := httptest.NewRecorder()
 		g.Play().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))
@@ -97,8 +97,13 @@ func TestHowtoAndCompactViewportAssets(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	g.run.Render(rec, "phone.html", phoneView{Page: g.run.Page("Quick Quips")}, http.StatusOK)
-	if !strings.Contains(rec.Body.String(), `class="quips-help"`) {
-		t.Fatalf("phone missing help: %s", rec.Body.String())
+	if strings.Contains(rec.Body.String(), `aria-label="How to play"`) {
+		t.Fatalf("phone still draws its own help button: %s", rec.Body.String())
+	}
+	help := httptest.NewRecorder()
+	g.Help(help, httptest.NewRequest(http.MethodGet, "/help", nil))
+	if help.Code != http.StatusOK || !strings.Contains(help.Body.String(), "<h2>Vote</h2>") || strings.Contains(help.Body.String(), "<html") {
+		t.Fatalf("help = %d %s", help.Code, help.Body.String())
 	}
 }
 

@@ -223,3 +223,8 @@ func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
 	}
 	g.run.Render(w, "howto.html", g.run.Page("How to play Borrowed Truths"), http.StatusOK)
 }
+
+// Help writes the phone shell's help sheet.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.run.Render(w, "help", nil, http.StatusOK)
+}

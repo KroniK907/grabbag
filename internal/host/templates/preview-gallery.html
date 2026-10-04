@@ -148,7 +148,7 @@
   function viewport() {
     var v = $("device").value, d;
     if (v.indexOf("frame:") === 0) d = index.frames[v.slice(6)];
-    else d = index.devices.filter(function (x) { return x.id === v; })[0];
+    else d = index.devices.concat(index.screens || []).filter(function (x) { return x.id === v; })[0];
     d = d || index.frames.phone;
     var w = d.width, h = d.height;
     if ($("orient").value === "landscape") { w = d.height; h = d.width; }
@@ -208,7 +208,7 @@
     index = data;
     data.themes.forEach(function (t) { option($("theme"), t, t); });
     Object.keys(data.frames).forEach(function (k) { option($("device"), "frame:" + k, "Reference " + data.frames[k].label); });
-    data.devices.forEach(function (d) { option($("device"), d.id, d.label + " " + d.width + "×" + d.height); });
+    (data.screens || []).concat(data.devices).forEach(function (d) { option($("device"), d.id, d.label + " " + d.width + "×" + d.height); });
     data.textScales.forEach(function (s) { option($("text"), String(s), Math.round(s * 100) + "%"); });
     fillGames();
     var h = readHash();
