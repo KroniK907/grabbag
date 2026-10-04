@@ -81,8 +81,15 @@ func startFailureNotice(err error) string {
 	}
 }
 
+// operatorNotice tells the host why a request failed. A shell (htmx) request
+// already hears the notice on its stream, so it gets 204. A plain form post
+// gets the notice in a cookie and a redirect back.
 func (rt *runtime) operatorNotice(w http.ResponseWriter, r *http.Request, message string) {
 	line := rt.notify("host", "error", message, -1)
+	if isHX(r) {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if line != "" {
 		http.SetCookie(w, &http.Cookie{
 			Name:     noticeCookieName,

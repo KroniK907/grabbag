@@ -38,6 +38,7 @@ func (l *Lobby) keepRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.finishRestore(r.Context(), true)
+	l.tenantChanged(w, true)
 	l.writeSettingsOKTo(w, r, settingsReturn(r))
 }
 
@@ -49,7 +50,8 @@ func (l *Lobby) clearRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not clear the room.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, settingsReturn(r), http.StatusSeeOther)
+	l.tenantChanged(w, true)
+	finish(w, r, settingsReturn(r))
 }
 
 func (l *Lobby) finishRestore(ctx context.Context, keep bool) error {

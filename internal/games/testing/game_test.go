@@ -290,7 +290,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=info-2", `sse:round`, `hx-get="/board"`, `data-theme="neon-dark"`} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=info-2", `data-theme="neon-dark"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}

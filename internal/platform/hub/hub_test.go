@@ -81,3 +81,32 @@ func TestPublishKeepsBackToBackEvents(t *testing.T) {
 	readEvent(t, reader, "event: roster")
 	readEvent(t, reader, "event: round")
 }
+
+func TestOnlyDropsOtherEvents(t *testing.T) {
+	t.Parallel()
+
+	events := hub.New()
+	server := httptest.NewServer(events.Only("tenant", "theme"))
+	t.Cleanup(server.Close)
+
+	response, err := server.Client().Get(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	reader := bufio.NewReader(response.Body)
+	readEvent(t, reader, ": connected")
+
+	events.PublishData("log", "secret line")
+	events.PublishData("notice", `{"target":"board","message":"secret"}`)
+	events.Publish("roster")
+	events.PublishData("theme", "neon-light")
+	events.Publish("tenant")
+
+	theme := readEvent(t, reader, "event: theme")
+	if !strings.Contains(theme, "data: neon-light") {
+		t.Fatalf("theme event = %q", theme)
+	}
+	readEvent(t, reader, "event: tenant")
+}

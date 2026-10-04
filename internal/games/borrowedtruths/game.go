@@ -163,6 +163,10 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	return []games.BoardButton{{Label: "How to play", Path: "/play/howto"}}
 }
 
+// Assets is game.css and game.js for the shells. game.js registers the board
+// and phone lifecycles.
+func (g *Game) Assets() ui.Assets { return runtimekit.Assets(id, assetVersion) }
+
 // Phone is the player column after Start.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.run.Render(w, "phone.html", g.phoneView(r, ""), http.StatusOK)

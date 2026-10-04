@@ -11,13 +11,13 @@
   <p class="ui-alert" role="status">Host is deciding whether to keep this room. Ready waits until they Keep.</p>
   {{end}}
   <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
-  <form method="post" action="/lobby/reroll">
+  <form hx-post="/lobby/reroll" hx-target="#phone-inner" hx-swap="outerHTML">
     <button class="ui-btn" type="submit">Reroll face</button>
   </form>
   {{if .Seated}}
   {{if .ShowReady}}
   <p class="ui-muted">{{if .Ready}}You're ready. Tap the button to unready.{{else}}You're unready. Tap the button to ready up.{{end}}</p>
-  <form method="post" action="/lobby/ready">
+  <form hx-post="/lobby/ready" hx-target="#phone-inner" hx-swap="outerHTML">
     <button class="ui-plunger {{if .Ready}}is-ready{{else}}is-unready{{end}}" type="submit" aria-label="{{if .Ready}}Tap to unready{{else}}Tap to ready{{end}}">{{if .Ready}}Ready{{else}}Unready{{end}}</button>
   </form>
   {{else}}
@@ -25,22 +25,26 @@
   {{end}}
   {{else if .Waiting}}
   <p class="ui-muted">You are in line.</p>
-  <form method="post" action="/lobby/wait">
+  <form hx-post="/lobby/wait" hx-target="#phone-inner" hx-swap="outerHTML">
     <button class="ui-btn" type="submit">Leave wait list</button>
   </form>
   {{else}}
   <p class="ui-muted">You are watching. Join the wait line to take a seat.</p>
-  <form method="post" action="/lobby/wait">
+  <form hx-post="/lobby/wait" hx-target="#phone-inner" hx-swap="outerHTML">
     <button class="ui-btn" type="submit">Join wait list</button>
   </form>
   {{end}}
-  <form class="ui-leave-control" method="post" action="/lobby/leave">
-    <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room" onclick="return confirm('Leave this room?')">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
-      </svg>
-      <span class="ui-sr-only">Leave</span>
-    </button>
-  </form>
+  {{template "leave-control"}}
 </div>
+{{end}}
+
+{{define "leave-control"}}
+<form class="ui-leave-control" hx-post="/lobby/leave" hx-swap="none" hx-confirm="Leave this room?">
+  <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
+    </svg>
+    <span class="ui-sr-only">Leave</span>
+  </button>
+</form>
 {{end}}

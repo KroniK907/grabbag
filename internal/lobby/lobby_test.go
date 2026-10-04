@@ -63,11 +63,11 @@ func TestJoinMintsPlayerAndReconnects(t *testing.T) {
 		t.Fatalf("reconnect status = %d, want %d", reconnected.Code, http.StatusOK)
 	}
 	if !strings.Contains(reconnected.Body.String(), "Alice") ||
-		!strings.Contains(reconnected.Body.String(), `action="/lobby/leave"`) ||
+		!strings.Contains(reconnected.Body.String(), `hx-post="/lobby/leave"`) ||
 		!strings.Contains(reconnected.Body.String(), `class="ui-leave-button"`) {
 		t.Fatalf("reconnect body = %q", reconnected.Body.String())
 	}
-	if strings.Contains(reconnected.Body.String(), `action="/lobby/join"`) {
+	if strings.Contains(reconnected.Body.String(), `hx-post="/lobby/join"`) {
 		t.Fatal("live player cookie still showed Join")
 	}
 
@@ -426,27 +426,21 @@ func TestPagesRefetchPartialsOnRosterEventAndReconnect(t *testing.T) {
 	}
 }
 
+// assertLivePage checks a Lobby tenant fragment refetches its partial on the
+// shell's roster event and on reconnect. The shell owns the one EventSource,
+// so the fragment must not open its own.
 func assertLivePage(t *testing.T, body, partialPath string) {
 	t.Helper()
 	for _, want := range []string{
-		`src="/static/htmx.min.js?v=`,
-		`src="/static/sse.min.js?v=`,
-		`href="/static/live.css?v=`,
-		`hx-ext="sse"`,
-		`sse-connect="/lobby/events"`,
 		`hx-get="` + partialPath + `"`,
 		`hx-trigger="sse:roster, htmx:sseOpen from:body"`,
-		`hx-on::sse-error=`,
-		`hx-on::sse-open=`,
-		`window.grabbagLostHost`,
-		`id="connection-overlay" class="connection-overlay"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body does not contain %q: %s", want, body)
 		}
 	}
-	if got := strings.Count(body, `sse-connect="/lobby/events"`); got != 1 {
-		t.Fatalf("EventSource count = %d, want 1", got)
+	if strings.Contains(body, "sse-connect") || strings.Contains(body, "<html") {
+		t.Fatalf("tenant fragment opened a stream or a document: %s", body)
 	}
 }
 
@@ -494,9 +488,7 @@ func testLobby(t *testing.T) (*store.DB, http.Handler, *lobby.Lobby) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", room.Phone)
-	mux.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
-		room.Board(w, r, "http://192.168.10.24:8654/")
-	})
+	mux.HandleFunc("GET /board", room.Board)
 	room.Register(mux)
 	return db, mux, room
 }

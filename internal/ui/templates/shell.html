@@ -1,0 +1,54 @@
+{{/* ui-shell is the persistent /board or / document. The current tenant is
+rendered inside #shell-stage. static/shell.js swaps tenants in place after
+that, so this document only loads once per visit. */}}
+{{define "ui-shell"}}
+{{template "ui-head" .}}
+  {{range .Assets.External}}
+  <link rel="stylesheet" href="{{.}}" data-shell-external>
+  {{end}}
+  {{range .Assets.CSS}}
+  <link rel="stylesheet" href="{{.}}" data-shell-css="{{$.Tenant}}">
+  {{end}}
+  <script defer src="{{static "countdown.js"}}"></script>
+  <script defer src="{{static "notice.js"}}"></script>
+  {{if .Static}}
+  {{template "ui-static-script" .}}
+  {{else}}
+  <script defer src="{{static "htmx.min.js"}}"></script>
+  <script defer src="{{static "shell.js"}}"></script>
+  {{range .Assets.JS}}
+  <script defer src="{{.}}" data-shell-js="{{$.Tenant}}"></script>
+  {{end}}
+  {{end}}
+</head>
+<body class="ui-app ui-shell" data-shell-surface="{{.Surface}}">
+{{template "ui-overlay"}}
+{{template "notice-root" .}}
+<div id="shell-spin" class="shell-spin" role="status" hidden>
+  <div class="ui-spin" aria-hidden="true"></div>
+</div>
+{{if eq .Surface "phone"}}
+<div class="ui-phone-wrap">
+  <div class="ui-phone">
+    <div class="ui-notch">GrabBag.gg</div>
+    {{template "shell-stage" .}}
+  </div>
+</div>
+{{else}}
+{{template "shell-stage" .}}
+{{end}}
+{{template "ui-end"}}
+{{end}}
+
+{{define "shell-stage"}}
+<div
+  id="shell-stage"
+  class="shell-stage"
+  data-surface="{{.Surface}}"
+  data-tenant="{{.Tenant}}"
+  data-generation="{{.Generation}}"
+  data-boot="{{.Boot}}"
+  data-stream="{{.Stream}}"
+  {{if .Player}}data-player{{end}}
+>{{.Body}}</div>
+{{end}}

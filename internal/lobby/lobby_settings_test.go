@@ -121,7 +121,7 @@ func TestHostSitStandBumpAndQueuedSit(t *testing.T) {
 		!strings.Contains(phone, "Kick Players") ||
 		!strings.Contains(phone, `hx-post="/settings/kick"`) ||
 		!strings.Contains(phone, `id="kick-players-list"`) ||
-		!strings.Contains(phone, `action="/settings/stand"`) {
+		!strings.Contains(phone, `hx-post="/settings/stand"`) {
 		t.Fatalf("host phone missing drawer: %q", phone)
 	}
 	inner := lobbyRequestAll(t, handler, http.MethodGet, "/lobby/partials/phone", nil, hostPlayer, hostAdmin).Body.String()
@@ -215,7 +215,7 @@ func TestMakeHostAndTakeHost(t *testing.T) {
 		t.Fatalf("pending designation = %#v", maya)
 	}
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
-	if !strings.Contains(phone, "Take host") || !strings.Contains(phone, `action="/lobby/take-host"`) {
+	if !strings.Contains(phone, "Take host") || !strings.Contains(phone, `hx-post="/lobby/take-host"`) {
 		t.Fatalf("take host popup missing: %q", phone)
 	}
 
@@ -289,6 +289,7 @@ func TestSettingsKnobsUseHTMX(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/protect-host", form)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("HX-Request", "true")
+	req.Header.Set("HX-Target", "settings-knobs")
 	req.AddCookie(operatorCookie())
 	handler.ServeHTTP(rec, req)
 	body := rec.Body.String()

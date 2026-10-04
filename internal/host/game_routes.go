@@ -1,7 +1,6 @@
 package host
 
 import (
-	"bytes"
 	"net/http"
 	"strings"
 )
@@ -18,46 +17,12 @@ func (rt *runtime) registerGameRoutes(mux *http.ServeMux) {
 	mux.Handle("/play/", http.HandlerFunc(rt.play))
 }
 
-func (rt *runtime) phone(w http.ResponseWriter, r *http.Request) {
-	rt.mu.Lock()
-	started, game := rt.started, rt.game
-	rt.mu.Unlock()
-	if !started || game == nil {
-		rt.room.Phone(w, r)
-		return
-	}
-	_, ok, err := rt.room.PlayerFromRequest(r)
-	if err != nil || !ok {
-		rt.room.Phone(w, r)
-		return
-	}
-	var buf bytes.Buffer
-	rec := &capture{buf: &buf, header: make(http.Header)}
-	game.Phone(rec, r)
-	rt.wrapPhone(w, r, buf.Bytes())
-}
-
 func (rt *runtime) refusePending(w http.ResponseWriter) bool {
 	if rt.room == nil || !rt.room.RestorePending() {
 		return false
 	}
 	http.Error(w, "Keep or clear the room first.", http.StatusConflict)
 	return true
-}
-
-func (rt *runtime) board(w http.ResponseWriter, r *http.Request, joinURL string) {
-	if rt.room.RestorePending() {
-		rt.room.Board(w, r, joinURL)
-		return
-	}
-	rt.mu.Lock()
-	started, game := rt.started, rt.game
-	rt.mu.Unlock()
-	if !started || game == nil {
-		rt.room.Board(w, r, joinURL)
-		return
-	}
-	game.Board(w, r)
 }
 
 func (rt *runtime) postLoad(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +56,10 @@ func (rt *runtime) postLoad(w http.ResponseWriter, r *http.Request) {
 		rt.loadFailureNotice(w, r, "Could not load that game.")
 		return
 	}
+	if isHX(r) {
+		shellDone(w, r, "/")
+		return
+	}
 	rt.redirectReturn(w, r, "/")
 }
 
@@ -105,7 +74,7 @@ func (rt *runtime) postStart(w http.ResponseWriter, r *http.Request) {
 		rt.operatorNotice(w, r, startFailureNotice(err))
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	shellDone(w, r, "/")
 }
 
 func (rt *runtime) postStop(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +88,7 @@ func (rt *runtime) postStop(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not stop.", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	shellDone(w, r, "/")
 }
 
 func (rt *runtime) postShutdown(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +100,10 @@ func (rt *runtime) postShutdown(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := rt.shutdown(r.Context()); err != nil {
 		http.Error(w, "Could not unload the game.", http.StatusInternalServerError)
+		return
+	}
+	if isHX(r) {
+		shellDone(w, r, "/")
 		return
 	}
 	rt.redirectReturn(w, r, "/")

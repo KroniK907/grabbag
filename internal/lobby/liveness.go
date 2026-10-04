@@ -197,17 +197,15 @@ func (l *Lobby) readyToggle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	if !ok || !l.readyAllowed(r, player) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
+	if ok && l.readyAllowed(r, player) {
+		next := !l.isReady(player.ID)
+		l.setReady(player.ID, next)
+		l.events.Publish("roster")
+		if next {
+			l.maybeAutoStart(r.Context())
+		}
 	}
-	next := !l.isReady(player.ID)
-	l.setReady(player.ID, next)
-	l.events.Publish("roster")
-	if next {
-		l.maybeAutoStart(r.Context())
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.phoneDone(w, r)
 }
 
 func (l *Lobby) readyAllowed(r *http.Request, player Player) bool {

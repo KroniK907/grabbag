@@ -194,6 +194,10 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	}
 }
 
+// Assets is game.css and game.js for the shells. game.js registers the board
+// and phone lifecycles.
+func (g *Game) Assets() ui.Assets { return runtimekit.Assets(id, assetVersion) }
+
 // Phone is the seated, judge, audience, or wait-list column. Host currently
 // only mounts this for seated players (CoreHost #59).
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {

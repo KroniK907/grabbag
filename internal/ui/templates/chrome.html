@@ -1,4 +1,6 @@
-{{define "ui-start"}}
+{{/* ui-head is the shared <head> top: viewport, title, fonts, live.css,
+notices, and the countdown. Callers add their own scripts and close </head>. */}}
+{{define "ui-head"}}
 <!doctype html>
 <html lang="en" data-theme="{{.Theme}}">
 <head>
@@ -22,7 +24,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Russo+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{static "live.css"}}">
+{{end}}
+
+{{/* ui-start opens an operator document (/settings, pickers, how-to pages).
+These are normal pages that may reload. /board and / are shells: see
+shell.html. */}}
+{{define "ui-start"}}
+{{template "ui-head" .}}
   <script defer src="{{static "countdown.js"}}"></script>
+  <script defer src="{{static "notice.js"}}"></script>
   {{if .Static}}
   {{template "ui-static-script" .}}
 </head>
@@ -56,11 +66,18 @@
     applyTheme(data);
     try {
       var msg = JSON.parse(data);
-      if (msg && msg.target && msg.message) {
+      if (msg && msg.target && msg.message && window.grabbagEnqueueNotice) {
         window.grabbagEnqueueNotice(msg);
       }
     } catch (e) {}
   }, true);
+  function refetchTargets() {
+    var el = document.getElementById("notice-targets");
+    if (!el || !window.htmx) return;
+    htmx.ajax("GET", "/lobby/partials/notice-targets", {source: el, target: el, swap: "outerHTML"});
+  }
+  document.body.addEventListener("sse:"+"roster", refetchTargets);
+  document.body.addEventListener("sse:"+"round", refetchTargets);
   function beat() {
     fetch("/lobby/heartbeat", { method: "POST", credentials: "same-origin" });
   }
@@ -87,29 +104,7 @@ document.addEventListener("DOMContentLoaded", function () {
 {{end}}
 
 {{define "ui-start-quiet"}}
-<!doctype html>
-<html lang="en" data-theme="{{.Theme}}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <script>
-  (function () {
-    var meta = document.querySelector('meta[name="viewport"]');
-    if (!meta || !window.screen || !window.screen.width) {
-      return;
-    }
-    var screenW = window.screen.width;
-    var layoutW = document.documentElement.clientWidth;
-    if (layoutW > screenW * 1.15) {
-      meta.setAttribute("content", "width=" + screenW + ", initial-scale=1, viewport-fit=cover");
-    }
-  })();
-  </script>
-  <title>{{.Title}}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Russo+One&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{static "live.css"}}">
+{{template "ui-head" .}}
   {{if .Static}}{{template "ui-static-script" .}}{{end}}
 </head>
 <body class="ui-app">
@@ -130,6 +125,8 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 {{end}}
 
+{{/* notice-root is the toast markup. static/notice.js runs the queue and
+reads the targets from #notice-targets. */}}
 {{define "notice-root"}}
 <div id="notice-root" class="ui-notice-root" hidden>
   <div id="notice-toast" class="ui-notice" data-notice-type="info" data-notice-look="info">
@@ -139,96 +136,16 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 </div>
 {{template "notice-targets" .}}
-<script>
-(function () {
-  var waiting = [];
-  var showing = null;
-  var timer = null;
-  function targets() {
-    var el = document.getElementById("notice-targets");
-    if (!el) return [];
-    return (el.getAttribute("data-notice-targets") || "").split(/\s+/).filter(Boolean);
-  }
-  function lookFor(type) {
-    if (type === "error" || type === "warning" || type === "info") return type;
-    return "info";
-  }
-  function hide() {
-    var root = document.getElementById("notice-root");
-    if (root) root.hidden = true;
-    showing = null;
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  }
-  function paint(msg) {
-    var root = document.getElementById("notice-root");
-    var toast = document.getElementById("notice-toast");
-    var text = document.getElementById("notice-message");
-    if (!root || !toast || !text) return;
-    showing = msg;
-    toast.setAttribute("data-notice-type", msg.type || "info");
-    toast.setAttribute("data-notice-look", lookFor(msg.type));
-    toast.setAttribute("role", lookFor(msg.type) === "error" ? "alert" : "status");
-    text.textContent = msg.message || "";
-    root.hidden = false;
-    if (timer) clearTimeout(timer);
-    timer = null;
-    var sec = +msg.duration;
-    if (sec < 0 || isNaN(sec)) sec = 3;
-    if (sec > 0) {
-      timer = setTimeout(function () {
-        hide();
-        showNext();
-      }, sec * 1000);
-    }
-  }
-  function showNext() {
-    if (waiting.length === 0) return;
-    paint(waiting.shift());
-  }
-  window.grabbagEnqueueNotice = function (msg) {
-    if (!msg || !msg.target || !msg.message) return;
-    if (targets().indexOf(msg.target) < 0) return;
-    if (!showing) {
-      paint(msg);
-      return;
-    }
-    waiting.push(msg);
-    if (waiting.length > 4) waiting.shift();
-  };
-  var closeBtn = document.getElementById("notice-close");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", function () {
-      hide();
-      showNext();
-    });
-  }
-  function refetchTargets() {
-    var el = document.getElementById("notice-targets");
-    if (!el || !window.htmx) return;
-    htmx.ajax("GET", "/lobby/partials/notice-targets", {source: el, target: el, swap: "outerHTML"});
-  }
-  document.body.addEventListener("sse:"+"roster", refetchTargets);
-  document.body.addEventListener("sse:"+"round", refetchTargets);
-  var match = document.cookie.match(/(?:^|; )grabbag_notice=([^;]*)/);
-  if (match) {
-    document.cookie = "grabbag_notice=; Max-Age=0; Path=/";
-    try {
-      window.grabbagEnqueueNotice(JSON.parse(decodeURIComponent(match[1])));
-    } catch (e) {}
-  }
-})();
-</script>
 {{end}}
 
+{{/* notice-targets has no load trigger. The page already has the targets
+from the server, and a load trigger on an outerHTML swap fetches forever. */}}
 {{define "notice-targets"}}
 <div
   id="notice-targets"
   data-notice-targets="{{.NoticeTargets}}"
   hx-get="/lobby/partials/notice-targets"
-  hx-trigger="load, htmx:sseOpen from:body"
+  hx-trigger="htmx:sseOpen from:body"
   hx-swap="outerHTML"
 ></div>
 {{end}}
@@ -240,16 +157,6 @@ document.addEventListener("DOMContentLoaded", function () {
 >
 {{template "theme-sync-node" .}}
 </div>
-{{end}}
-
-{{define "round-swap"}}
-<div
-  id="round-swap"
-  hx-get="{{.}}"
-  hx-trigger="sse:round"
-  hx-swap="none"
-  hx-on:sse:round="location.reload()"
-></div>
 {{end}}
 
 {{define "theme-sync-node"}}

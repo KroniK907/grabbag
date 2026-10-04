@@ -1,40 +1,22 @@
-{{template "ui-start" .}}
-{{template "round-swap" "/"}}
-<div
-  hidden
-  hx-get="/lobby/presence"
-  hx-trigger="sse:roster"
-  hx-swap="none"
-  hx-on::response-error="if (event.detail.xhr.status === 410) location.reload()"
-></div>
-<div class="ui-phone-wrap">
-  <div class="ui-phone">
-    <div class="ui-notch">GrabBag.gg</div>
-    <div class="ui-phone-body">
-      <div class="ui-phone-stack">
-        {{.GameBody}}
-      </div>
-      <form class="ui-leave-control" method="post" action="/lobby/leave">
-        <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room" onclick="return confirm('Leave this room?')">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
-          </svg>
-          <span class="ui-sr-only">Leave</span>
-        </button>
-      </form>
-    </div>
-    {{if .HostPanel}}
-    <button
-      type="button"
-      class="ui-btn ui-drawer-handle"
-      aria-controls="host-drawer"
-      onclick="document.getElementById('host-drawer').classList.add('is-open')"
-    >Host</button>
-    {{template "host-drawer" .}}
-    {{if .ShowGameLibrary}}
-    {{template "game-library" .}}
-    {{end}}
-    {{end}}
+{{/* play-phone is a game's phone tenant as the shell shows it: the game's
+Phone body, Leave, and the claimed host's drawer. */}}
+{{define "play-phone"}}
+<div class="ui-phone-body">
+  <div class="ui-phone-stack">
+    {{.GameBody}}
   </div>
+  {{template "leave-control"}}
 </div>
-{{template "ui-end"}}
+{{if .HostPanel}}
+<button
+  type="button"
+  class="ui-btn ui-drawer-handle"
+  aria-controls="host-drawer"
+  onclick="document.getElementById('host-drawer').classList.add('is-open')"
+>Host</button>
+{{template "host-drawer" .}}
+{{if .ShowGameLibrary}}
+{{template "game-library" .}}
+{{end}}
+{{end}}
+{{end}}

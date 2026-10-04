@@ -62,6 +62,7 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 		AfterRestore: func(ctx context.Context, _ bool) {
 			rt.restore(ctx)
 		},
+		TenantChanged: rt.bump,
 	})
 	if err != nil {
 		return nil, nil, err
@@ -85,10 +86,7 @@ func newHandler(db *store.DB, lanJoinURL string, catalog []games.Factory) (http.
 	mux.HandleFunc("GET /docs", serveDocsIndex)
 	mux.HandleFunc("GET /docs/{name}", serveDocsFile)
 	protected := http.NewServeMux()
-	protected.HandleFunc("GET /{$}", rt.phone)
-	protected.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
-		rt.board(w, r, joinURLForRequest(r, lanJoinURL))
-	})
+	rt.registerShellRoutes(protected)
 	room.Register(protected)
 	rt.registerGameRoutes(protected)
 	mux.Handle("/", requireSetup(db, protected))

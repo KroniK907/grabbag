@@ -11,36 +11,42 @@ import (
 const previewJoinURL = "http://192.168.1.20:8654/"
 
 // Scenarios lists Lobby board, join, room, and settings states for the host
-// -dev-preview gallery. Views are built from fixed data; no SQL runs.
+// -dev-preview gallery. Views are built from fixed data; no SQL runs. Board,
+// join, and room scenarios are tenant fragments; host wraps them in the
+// static shell.
 func Scenarios() []ui.Scenario {
 	board := func(name string, min int, build func(p ui.Preview) boardData) ui.Scenario {
 		return ui.Scenario{
-			Surface: "board", Group: name, Name: name, Viewer: "tv", Frame: ui.FrameTV, MinPlayers: min,
+			Surface: "board", Group: name, Name: name, Viewer: "tv", Frame: ui.FrameTV, Shell: ui.ShellBoard, MinPlayers: min,
 			Render: func(w io.Writer, p ui.Preview) error {
-				return ui.RenderScenario(w, pageTemplates, "board.html", build(p), p)
+				return ui.RenderScenario(w, pageTemplates, "board-roster", build(p), p)
 			},
 		}
 	}
 	join := func(name string, sample bool, edit func(*joinView)) ui.Scenario {
 		return ui.Scenario{
-			Surface: "join", Group: name, Name: name, Viewer: "guest", Frame: ui.FramePhone, Sample: sample,
+			Surface: "join", Group: name, Name: name, Viewer: "guest", Frame: ui.FramePhone, Shell: ui.ShellPhone, Sample: sample,
 			Render: func(w io.Writer, p ui.Preview) error {
 				view := joinView{Chrome: ui.Page("GrabBag.gg"), DisplayName: "", AvatarSeed: "preview-seed"}
 				edit(&view)
-				return ui.RenderScenario(w, pageTemplates, "join.html", view, p)
+				return ui.RenderScenario(w, pageTemplates, "join-body", view, p)
 			},
 		}
 	}
 	room := func(name, viewer string, min int, sample bool, edit func(*roomView, ui.Preview)) ui.Scenario {
 		return ui.Scenario{
-			Surface: "room", Group: name, Name: name, Viewer: viewer, Frame: ui.FramePhone,
+			Surface: "room", Group: name, Name: name, Viewer: viewer, Frame: ui.FramePhone, Shell: ui.ShellPhone,
 			MinPlayers: min, Sample: sample,
 			Render: func(w io.Writer, p ui.Preview) error {
 				view := previewRoom(p, viewer)
 				edit(&view, p)
-				return ui.RenderScenario(w, pageTemplates, "room.html", view, p)
+				return ui.RenderScenario(w, pageTemplates, "room-body", view, p)
 			},
 		}
+	}
+	open := func(s ui.Scenario, ids string) ui.Scenario {
+		s.Open = ids
+		return s
 	}
 	none := func(*roomView, ui.Preview) {}
 	return []ui.Scenario{
@@ -65,11 +71,6 @@ func Scenarios() []ui.Scenario {
 			d.RestorePending, d.RestoreNames = true, ui.PreviewNames(p.Players)
 			return d
 		}),
-		board("admin-locked", 0, func(p ui.Preview) boardData {
-			d := previewBoard(0, 0, 8)
-			d.AdminLocked = true
-			return d
-		}),
 		join("new", true, func(v *joinView) {}),
 		join("returning", false, func(v *joinView) { v.DisplayName = "Alexandria-Rose" }),
 		join("password", false, func(v *joinView) { v.DisplayName = "Sam"; v.ShowPassword = true }),
@@ -82,12 +83,11 @@ func Scenarios() []ui.Scenario {
 			v.LoadedGameID, v.ShowReady, v.Ready, v.HelpPath = "apples", true, true, "/play/howto"
 		}),
 		room("host", "host", 1, true, none),
-		room("host-drawer", "host", 1, true, func(v *roomView, p ui.Preview) { v.OpenIDs = "host-drawer" }),
-		room("host-library", "host", 1, false, func(v *roomView, p ui.Preview) {
+		open(room("host-drawer", "host", 1, true, none), "host-drawer"),
+		open(room("host-library", "host", 1, false, func(v *roomView, p ui.Preview) {
 			v.ShowGameLibrary, v.Catalog = true, previewCatalog(p.Players)
 			v.LibraryReturn, v.LibraryElementID = "/", "game-library-phone"
-			v.OpenIDs = "game-library-phone"
-		}),
+		}), "game-library-phone"),
 		room("table-full", "host", 1, false, func(v *roomView, p ui.Preview) {
 			v.Player.Seated, v.TableFull = false, true
 			for _, pl := range v.Players {
@@ -115,14 +115,14 @@ func Scenarios() []ui.Scenario {
 	}
 }
 
-// RenderPlayPhone writes the Lobby play-phone document around a game phone
+// RenderPlayPhone writes the Lobby play-phone fragment around a game phone
 // body, the way host wraps live game phones. viewer "host" adds the host
-// drawer. The preview patches apply to the game body, not this shell.
+// drawer. The preview patches apply to the game body, not this wrapper. Host
+// puts the result in the static phone shell.
 func RenderPlayPhone(w io.Writer, p ui.Preview, viewer string, body template.HTML) error {
 	view := previewRoom(ui.Preview{Theme: p.Theme, Players: 8}, viewer)
 	view.Started, view.GameBody = true, body
-	view.OpenIDs = p.Open
-	return ui.RenderScenario(w, pageTemplates, "play-phone.html", view, ui.Preview{Theme: p.Theme, Open: p.Open})
+	return ui.RenderScenario(w, pageTemplates, "play-phone", view, ui.Preview{Theme: p.Theme})
 }
 
 // RenderSettings writes the Lobby /settings page with gameSettings inlined

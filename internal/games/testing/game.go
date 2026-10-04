@@ -107,6 +107,11 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	}}
 }
 
+// Assets is game.css for the shells.
+func (g *Game) Assets() ui.Assets {
+	return ui.Assets{CSS: []string{"/play/static/game.css?v=" + id + "-" + cssVersion}}
+}
+
 // Phone is the signed-in phone body. Host wraps Leave and the host drawer around it.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone.html", g.phoneData(r), http.StatusOK)

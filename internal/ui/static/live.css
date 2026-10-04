@@ -192,6 +192,38 @@ button {
   margin: 0 auto 12px;
 }
 
+/* Shell stage: the tenant lives here. display: contents keeps the tenant's
+   layout as if it sat straight in the phone or the body. Fades run on the
+   children. The shell sets the durations inline, and !important keeps a
+   tenant stylesheet from changing them. */
+.shell-stage {
+  display: contents;
+  --shell-fade-out: 150ms;
+  --shell-fade-in: 150ms;
+}
+
+.shell-stage.is-fading > * {
+  transition: opacity var(--shell-fade-in) ease !important;
+}
+
+.shell-stage.is-fading.is-out > * {
+  opacity: 0 !important;
+  transition-duration: var(--shell-fade-out) !important;
+}
+
+.shell-spin {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.shell-spin[hidden] {
+  display: none;
+}
+
 @keyframes ui-spin {
   to {
     transform: rotate(360deg);
@@ -290,7 +322,8 @@ button {
   z-index: 20;
 }
 
-.ui-phone > .ui-modal {
+.ui-phone > .ui-modal,
+.ui-phone > .shell-stage > .ui-modal {
   position: absolute;
 }
 

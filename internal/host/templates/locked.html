@@ -1,15 +1,10 @@
-{{if .AdminLocked}}
-{{template "ui-start-quiet" .}}
+{{/* locked is the admin-only board tenant. It says nothing about the room:
+no roster, no join code, no game. */}}
+{{define "locked"}}
 <div class="ui-page ui-page-compact">
   <div class="ui-card">
     <h1>Host screen only</h1>
     <p>The operator turned on admin-only board. Open Settings from a signed-in tab.</p>
   </div>
 </div>
-{{template "ui-end"}}
-{{else}}
-{{template "ui-start" .}}
-{{template "round-swap" "/board"}}
-{{template "board-roster" .}}
-{{template "ui-end"}}
 {{end}}

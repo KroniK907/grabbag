@@ -1,45 +1,41 @@
-{{template "ui-start" .}}
-{{template "round-swap" "/"}}
-<div class="ui-phone-wrap">
-  <div class="ui-phone">
-    <div class="ui-notch">GrabBag.gg</div>
-    <div class="ui-phone-body">
-      {{template "room-inner" .}}
-    </div>
-    {{if .HelpPath}}
-    <a class="ui-help" href="{{.HelpPath}}" aria-label="How to play">?</a>
-    {{end}}
-    {{if .HostPanel}}
-    {{/* Drawer sits outside #phone-inner so roster and later game swaps keep Host. */}}
-    <button
-      type="button"
-      class="ui-btn ui-drawer-handle"
-      aria-controls="host-drawer"
-      onclick="document.getElementById('host-drawer').classList.add('is-open')"
-    >Host</button>
-    {{template "host-drawer" .}}
-    {{if .ShowGameLibrary}}
-    {{template "game-library" .}}
-    {{end}}
-    {{if .RestorePending}}
-    {{template "restore-modal" .}}
-    {{end}}
-    {{end}}
-    {{if .TakeHost}}
-    <div class="ui-modal">
-      <div class="ui-card">
-        <h2>Take host</h2>
-        <p>Type the host password to take the booth.</p>
-        <form class="ui-stack" method="post" action="/lobby/take-host">
-          <label class="ui-field">
-            <span>Password</span>
-            <input name="password" type="password" required>
-          </label>
-          <button class="ui-btn" type="submit">Take host</button>
-        </form>
-      </div>
-    </div>
-    {{end}}
+{{/* room-body is the Lobby phone tenant for a signed-in player. The phone
+shell supplies the frame and notch around it. */}}
+{{define "room-body"}}
+<div class="ui-phone-body">
+  {{template "room-inner" .}}
+</div>
+{{if .HelpPath}}
+<a class="ui-help" href="{{.HelpPath}}" aria-label="How to play">?</a>
+{{end}}
+{{if .HostPanel}}
+{{/* Drawer sits outside #phone-inner so roster swaps keep Host. */}}
+<button
+  type="button"
+  class="ui-btn ui-drawer-handle"
+  aria-controls="host-drawer"
+  onclick="document.getElementById('host-drawer').classList.add('is-open')"
+>Host</button>
+{{template "host-drawer" .}}
+{{if .ShowGameLibrary}}
+{{template "game-library" .}}
+{{end}}
+{{if .RestorePending}}
+{{template "restore-modal" .}}
+{{end}}
+{{end}}
+{{if .TakeHost}}
+<div class="ui-modal">
+  <div class="ui-card">
+    <h2>Take host</h2>
+    <p>Type the host password to take the booth.</p>
+    <form class="ui-stack" hx-post="/lobby/take-host" hx-swap="none">
+      <label class="ui-field">
+        <span>Password</span>
+        <input name="password" type="password" required>
+      </label>
+      <button class="ui-btn" type="submit">Take host</button>
+    </form>
   </div>
 </div>
-{{template "ui-end"}}
+{{end}}
+{{end}}

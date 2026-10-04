@@ -1,11 +1,8 @@
+{{/* join-body is the Lobby phone tenant for a stranger: Join, or Out after
+a kick. */}}
 {{define "join-body"}}
-<div class="ui-phone-wrap">
-  <div class="ui-phone">
-    <div class="ui-notch">GrabBag.gg</div>
-    <div class="ui-phone-body">
-      {{template "join-inner" .}}
-    </div>
-  </div>
+<div class="ui-phone-body">
+  {{template "join-inner" .}}
 </div>
 {{end}}
 
@@ -26,12 +23,12 @@
   <div class="ui-you">Who are you?</div>
   {{end}}
   <div class="ui-token ui-token-self" style="--c: {{color .AvatarSeed}}">{{avatar .AvatarSeed}}</div>
-  <form method="post" action="/lobby/reroll">
+  <form hx-post="/lobby/reroll" hx-target="#phone-inner" hx-swap="outerHTML">
     <input type="hidden" name="display_name" value="{{.DisplayName}}">
     <input type="hidden" name="avatar_seed" value="{{.AvatarSeed}}">
     <button class="ui-btn" type="submit">Reroll face</button>
   </form>
-  <form method="post" action="/lobby/join" class="ui-stack">
+  <form hx-post="/lobby/join" hx-target="#phone-inner" hx-swap="outerHTML" class="ui-stack">
     <input type="hidden" name="avatar_seed" value="{{.AvatarSeed}}">
     <label class="ui-field">Name <input name="display_name" value="{{.DisplayName}}" required autofocus></label>
     {{if .ShowPassword}}
