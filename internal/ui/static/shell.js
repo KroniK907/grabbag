@@ -1138,7 +1138,22 @@
       });
   }
 
+  // setBackgroundInert takes the frame behind the Help sheet (toolbar,
+  // column, host panel) out of focus and pointer reach while the sheet is
+  // open, so Tab cannot land on a tenant control or Leave behind it. The
+  // tenant stays mounted.
+  function setBackgroundInert(on) {
+    if (!frameEl) {
+      return;
+    }
+    frameEl.querySelectorAll(":scope > .shell-main, :scope > #shell-host").forEach(function (el) {
+      el.inert = on;
+      el.toggleAttribute("inert", on);
+    });
+  }
+
   function showHelp(sheet) {
+    setBackgroundInert(true);
     sheet.hidden = false;
     helpOpen = true;
     var close = sheet.querySelector(".shell-sheet-close");
@@ -1155,6 +1170,7 @@
       return;
     }
     sheet.hidden = true;
+    setBackgroundInert(false);
     if (helpOpen) {
       var button = document.getElementById("shell-help-button");
       if (button && !button.hidden) {
