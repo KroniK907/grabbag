@@ -3,6 +3,7 @@ package uitest
 
 import (
 	"bytes"
+	"html/template"
 	"strings"
 	"testing"
 
@@ -11,7 +12,20 @@ import (
 
 // RenderAll renders every scenario at each Sweep count (or once without a
 // player dimension) in both themes and fails on any error or empty page.
+// Board and phone fragments are also rendered inside the static shell.
 func RenderAll(t *testing.T, list []ui.Scenario) {
+	t.Helper()
+	renderAll(t, "preview", list, ui.Assets{})
+}
+
+// RenderTenant is RenderAll for a tenant's Scenarios, with the tenant's
+// Assets linked in the shell.
+func RenderTenant(t *testing.T, id string, tenant ui.Tenant) {
+	t.Helper()
+	renderAll(t, id, tenant.Scenarios(), tenant.Assets())
+}
+
+func renderAll(t *testing.T, id string, list []ui.Scenario, assets ui.Assets) {
 	t.Helper()
 	if len(list) == 0 {
 		t.Fatal("no scenarios")
@@ -34,7 +48,7 @@ func RenderAll(t *testing.T, list []ui.Scenario) {
 		for _, n := range counts {
 			for _, theme := range []string{ui.ThemeNeonLight, ui.ThemeNeonDark} {
 				var buf bytes.Buffer
-				p := ui.Preview{Theme: theme, Players: n, Patches: s.Patches, Assets: "/dev/ui/assets/x/"}
+				p := ui.Preview{Theme: theme, Players: n, Patches: s.Patches, Assets: "/dev/ui/assets/x/", Open: s.Open}
 				if err := s.Render(&buf, p); err != nil {
 					t.Errorf("%s players=%d theme=%s: %v", key, n, theme, err)
 					continue
@@ -48,6 +62,25 @@ func RenderAll(t *testing.T, list []ui.Scenario) {
 				}
 				if strings.Contains(body, `sse-connect=`) {
 					t.Errorf("%s players=%d: preview connects to SSE", key, n)
+				}
+				surface := ui.ShellSurface(s.Shell)
+				if surface == "" {
+					continue
+				}
+				if strings.Contains(strings.ToLower(body), "<html") || strings.Contains(body, "<body") {
+					t.Errorf("%s players=%d: tenant fragment is a full document", key, n)
+				}
+				if strings.Contains(body, "<script") || strings.Contains(body, "<link") {
+					t.Errorf("%s players=%d: tenant fragment carries a script or stylesheet; list it in Assets", key, n)
+				}
+				var doc bytes.Buffer
+				if err := ui.RenderShell(&doc, ui.StaticShell(surface, id, p, assets, template.HTML(body))); err != nil {
+					t.Errorf("%s players=%d: shell: %v", key, n, err)
+					continue
+				}
+				page := doc.String()
+				if !strings.Contains(page, `id="shell-stage"`) || !strings.Contains(page, "window.grabbagStatic") || strings.Contains(page, "htmx.min.js") {
+					t.Errorf("%s players=%d: tenant did not render inside the static shell", key, n)
 				}
 			}
 		}

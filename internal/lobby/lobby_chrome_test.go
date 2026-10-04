@@ -1,6 +1,7 @@
 package lobby_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,11 +19,8 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 
 	join := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil)
 	body := join.Body.String()
-	if !strings.Contains(body, `data-theme="neon-dark"`) {
-		t.Fatalf("join default theme = %q", body)
-	}
-	if !strings.Contains(body, `/static/live.css?v=`+ui.AssetVersion) {
-		t.Fatalf("join CSS URL is not versioned: %q", body)
+	if strings.Contains(body, "<html") || strings.Contains(body, `method="post"`) {
+		t.Fatalf("join tenant is not an hx-post fragment: %q", body)
 	}
 	if !strings.Contains(body, "Reroll face") || !strings.Contains(body, `name="avatar_seed"`) {
 		t.Fatalf("join missing avatar reroll: %q", body)
@@ -74,8 +72,7 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 	}
 
 	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, `data-theme="neon-dark"`) ||
-		!strings.Contains(board, `class="ui-rail"`) ||
+	if !strings.Contains(board, `class="ui-rail"`) ||
 		!strings.Contains(board, `class="ui-cluster"`) ||
 		!strings.Contains(board, `class="ui-marquee"`) ||
 		!strings.Contains(board, "CLOSED") ||
@@ -89,8 +86,8 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 		strings.Contains(board, "<h2>Audience</h2>") {
 		t.Fatalf("board chrome = %q", board)
 	}
-	if !strings.Contains(board, `sse:round`) || !strings.Contains(board, `hx-get="/board"`) {
-		t.Fatalf("board missing round swap: %q", board)
+	if strings.Contains(board, "<html") || strings.Contains(board, "location.reload") {
+		t.Fatalf("board tenant is not a fragment: %q", board)
 	}
 	if !strings.Contains(board, string(ui.AvatarSVG(newSeed))) {
 		t.Fatal("board token did not render the stored avatar seed")
@@ -101,11 +98,10 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 
 	seated := lobbyRequest(t, handler, http.MethodGet, "/", nil, cookieNamed(t, joined, lobby.PlayerCookieName)).Body.String()
 	if strings.Contains(seated, `class="ui-plunger"`) ||
-		strings.Contains(seated, `action="/lobby/ready"`) ||
+		strings.Contains(seated, `hx-post="/lobby/ready"`) ||
 		!strings.Contains(seated, "Reroll face") ||
 		!strings.Contains(seated, `class="ui-token ui-token-self"`) ||
-		!strings.Contains(seated, `sse:round`) ||
-		!strings.Contains(seated, `hx-get="/"`) {
+		strings.Contains(seated, `sse:round`) {
 		t.Fatalf("seated phone = %q", seated)
 	}
 	before := playerFromCookie(t, room, cookieNamed(t, joined, lobby.PlayerCookieName))
@@ -128,7 +124,7 @@ func TestNeonCabinetBoardAndPhones(t *testing.T) {
 
 func TestSettingsThemeToggle(t *testing.T) {
 	t.Parallel()
-	_, handler, _ := testLobby(t)
+	_, handler, room := testLobby(t)
 
 	settings := lobbyRequest(t, handler, http.MethodGet, "/settings", nil, operatorCookie()).Body.String()
 	if !strings.Contains(settings, `data-theme="neon-dark"`) || !strings.Contains(settings, ">Dark</button>") {
@@ -165,9 +161,8 @@ func TestSettingsThemeToggle(t *testing.T) {
 	if !strings.Contains(lightSettings, `data-theme="neon-light"`) || !strings.Contains(lightSettings, ">Light</button>") {
 		t.Fatalf("settings after toggle = %q", lightSettings)
 	}
-	board := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if !strings.Contains(board, `data-theme="neon-light"`) {
-		t.Fatalf("board did not pick up light theme: %q", board)
+	if got := room.Theme(context.Background()); got != ui.ThemeNeonLight {
+		t.Fatalf("stored theme = %q, want neon-light", got)
 	}
 
 	live := httptest.NewRequest(http.MethodPost, "http://grabbag.test/settings/theme", nil)

@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "borrowedtruths"
-	assetVersion = "first-pass-3"
+	assetVersion = "shell-1"
 	// event is the one SSE name this game publishes after any run state change.
 	event = "borrowedtruths"
 	// eventFacts is a facts tick. Only the board listens, so phones mid-write
@@ -162,6 +162,17 @@ func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 func (g *Game) BoardButtons() []games.BoardButton {
 	return []games.BoardButton{{Label: "How to play", Path: "/play/howto"}}
 }
+
+// Assets is game.css, game.js, and the web fonts for the shells. game.js
+// registers the board and phone lifecycles.
+func (g *Game) Assets() ui.Assets {
+	a := runtimekit.Assets(id, assetVersion)
+	a.External = []string{fontsURL}
+	return a
+}
+
+// fontsURL is the Google Fonts sheet for the sticker-bomb look.
+const fontsURL = "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Dela+Gothic+One&family=Permanent+Marker&display=swap"
 
 // Phone is the player column after Start.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {

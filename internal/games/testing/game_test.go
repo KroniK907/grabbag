@@ -290,7 +290,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	html := board.Body.String()
-	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", "/play/static/game.css?v=info-2", `sse:round`, `hx-get="/board"`, `data-theme="neon-dark"`} {
+	for _, want := range []string{"Testing", "Ada", "connected", "25 ms", "End game", "sse:testing", "sse:tap", "sse:pause", "/play/partials/board", `hx-post="/play/end"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("board missing %q in %s", want, html)
 		}
@@ -311,7 +311,7 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	req.Header.Set("X-Player", "p1")
 	g.Phone(phone, req)
 	html = phone.Body.String()
-	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap", "/play/partials/phone", "sse:pause", "/play/static/game.css?v=info-2"} {
+	for _, want := range []string{"Ada", "25 ms", "End game", "/play/tap", "/play/partials/phone", "sse:pause", `hx-post="/play/end"`} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("phone missing %q in %s", want, html)
 		}
@@ -331,19 +331,28 @@ func TestBoardAndPhoneChrome(t *testing.T) {
 	}
 }
 
-func TestBoardStampsHelperTheme(t *testing.T) {
+func TestInfoStampsHelperThemeAndBoardIsAFragment(t *testing.T) {
 	t.Parallel()
-	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true})
-	h.theme = ui.ThemeNeonDark
+	h := newFakeHelper(games.Player{ID: "p1", DisplayName: "Ada", Seated: true, ClaimedHost: true})
+	h.theme = ui.ThemeNeonLight
 	g := startedGame(t, h)
+	info := play(g, http.MethodGet, "/info", "p1").Body.String()
+	if !strings.Contains(info, `data-theme="neon-light"`) {
+		t.Fatalf("info missing light theme: %s", info)
+	}
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
-	html := board.Body.String()
-	if !strings.Contains(html, `data-theme="neon-dark"`) {
-		t.Fatalf("board missing dark theme: %s", html)
+	if html := board.Body.String(); strings.Contains(html, "<html") || strings.Contains(html, "data-theme") || strings.Contains(html, "<link") {
+		t.Fatalf("board is not a tenant fragment: %s", html)
 	}
-	if strings.Contains(html, `data-theme="neon-light"`) {
-		t.Fatal("board still stamped light")
+
+	req := httptest.NewRequest(http.MethodPost, "/end", nil)
+	req.Header.Set("X-Player", "p1")
+	req.Header.Set("HX-Request", "true")
+	rec := httptest.NewRecorder()
+	g.Play().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent || rec.Header().Get("Location") != "" || h.finish == 0 {
+		t.Fatalf("htmx End = %d %q finished=%d", rec.Code, rec.Header().Get("Location"), h.finish)
 	}
 }
 

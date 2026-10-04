@@ -1,3 +1,5 @@
+// Borrowed Truths tenant: the host's elapsed clock, slap animations that
+// settle on a repaint of the same moment, and phone photo uploads.
 (function () {
   "use strict";
 
@@ -97,22 +99,29 @@
     img.src = url;
   }
 
-  if (!window.btPhotoBound) {
-    window.btPhotoBound = true;
-    document.addEventListener("change", function (ev) {
-      if (ev.target.matches && ev.target.matches("[data-bt-photo-input]")) {
-        uploadPhoto(ev.target);
-      }
-    });
-  }
-
-  if (!window.btTimer) {
-    window.btTimer = window.setInterval(paint, 250);
-    document.body.addEventListener("htmx:afterSwap", function () {
+  // Both surfaces run the host's elapsed clock and settle the slap
+  // animations. The phone also takes photo uploads.
+  function mount(root, ctx) {
+    ctx.every(250, paint);
+    ctx.on(document.body, "htmx:afterSwap", function () {
       paint();
       settle();
     });
+    paint();
+    settle();
   }
-  paint();
-  settle();
+
+  grabbagShell.register("borrowedtruths", {
+    board: { mount: mount },
+    phone: {
+      mount: function (root, ctx) {
+        ctx.on(document, "change", function (ev) {
+          if (ev.target.matches && ev.target.matches("[data-bt-photo-input]")) {
+            uploadPhoto(ev.target);
+          }
+        });
+        mount(root, ctx);
+      },
+    },
+  });
 })();

@@ -64,7 +64,7 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	if !strings.Contains(board, "Waiting for the host to decide to keep or clear this room") ||
 		!strings.Contains(board, "Ada") ||
 		!strings.Contains(board, "Bea") ||
-		strings.Contains(board, `action="/settings/keep"`) {
+		strings.Contains(board, `hx-post="/settings/keep"`) {
 		t.Fatalf("board overlay = %q", board)
 	}
 	if !strings.Contains(board, `class="keep-overlay"`) {
@@ -72,12 +72,12 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 	}
 
 	phone := lobbyRequestAll(t, handler, http.MethodGet, "/", nil, host, operatorCookie()).Body.String()
-	if !strings.Contains(phone, "keep this room") || strings.Contains(phone, `action="/lobby/ready"`) {
+	if !strings.Contains(phone, "keep this room") || strings.Contains(phone, `hx-post="/lobby/ready"`) {
 		t.Fatalf("restored phone = %q", phone)
 	}
 	if !strings.Contains(phone, `id="restore-modal"`) ||
-		!strings.Contains(phone, `action="/settings/keep"`) ||
-		!strings.Contains(phone, `action="/settings/clear-room"`) {
+		!strings.Contains(phone, `hx-post="/settings/keep"`) ||
+		!strings.Contains(phone, `hx-post="/settings/clear-room"`) {
 		t.Fatalf("host phone missing Keep/Clear modal: %q", phone)
 	}
 	drawerAt := strings.Index(phone, `id="host-drawer"`)
@@ -89,22 +89,22 @@ func testRestartAsksKeepOrClearAndFreezesWrites(t *testing.T) {
 		t.Fatal("host drawer missing close tag")
 	}
 	drawer := phone[drawerAt : drawerAt+drawerEnd]
-	if strings.Contains(drawer, `action="/settings/keep"`) || strings.Contains(drawer, `action="/settings/clear-room"`) {
+	if strings.Contains(drawer, `hx-post="/settings/keep"`) || strings.Contains(drawer, `hx-post="/settings/clear-room"`) {
 		t.Fatalf("host drawer still has Keep/Clear: %q", drawer)
 	}
-	if strings.Contains(phone, `action="/settings/start"`) || strings.Contains(phone, `action="/settings/sit"`) {
+	if strings.Contains(phone, `hx-post="/settings/start"`) || strings.Contains(phone, `hx-post="/settings/sit"`) {
 		t.Fatalf("Start/sit shown while pending: %q", phone)
 	}
 
 	guestPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
 	if strings.Contains(guestPhone, `id="restore-modal"`) ||
-		strings.Contains(guestPhone, `action="/settings/keep"`) ||
-		strings.Contains(guestPhone, `action="/settings/clear-room"`) {
+		strings.Contains(guestPhone, `hx-post="/settings/keep"`) ||
+		strings.Contains(guestPhone, `hx-post="/settings/clear-room"`) {
 		t.Fatalf("guest phone has Keep/Clear: %q", guestPhone)
 	}
 
 	guest := lobbyRequest(t, handler, http.MethodGet, "/", nil, nil).Body.String()
-	if !strings.Contains(guest, `action="/lobby/join"`) {
+	if !strings.Contains(guest, `hx-post="/lobby/join"`) {
 		t.Fatalf("anonymous phone = %q", guest)
 	}
 
@@ -200,16 +200,18 @@ func testNightClearLeavesSettingsAndClosesRoom(t *testing.T) {
 
 func testAdminOnlyBoardOmitsRoster(t *testing.T) {
 	t.Helper()
-	_, handler, _ := testLobby(t)
+	_, handler, room := testLobby(t)
 	joinNamed(t, handler, "Ada", "correct horse")
 	lobbyRequest(t, handler, http.MethodPost, "/settings/admin-only-board", url.Values{"enabled": {"1"}}, operatorCookie())
 
+	// Host swaps in the locked tenant. The Lobby board and its partial still
+	// drop the roster for a request without an admin session.
 	locked := lobbyRequest(t, handler, http.MethodGet, "/board", nil, nil).Body.String()
-	if strings.Contains(locked, "Ada") || strings.Contains(locked, `sse-connect="/lobby/events"`) {
+	if strings.Contains(locked, "Ada") {
 		t.Fatalf("locked board leaked roster: %q", locked)
 	}
-	if !strings.Contains(locked, "Host screen only") {
-		t.Fatalf("locked board = %q", locked)
+	if on, err := room.AdminOnlyBoard(context.Background()); err != nil || !on {
+		t.Fatalf("AdminOnlyBoard = %v, %v", on, err)
 	}
 	adminBoard := lobbyRequest(t, handler, http.MethodGet, "/board", nil, operatorCookie()).Body.String()
 	if !strings.Contains(adminBoard, "Ada") {

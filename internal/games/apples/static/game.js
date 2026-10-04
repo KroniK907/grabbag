@@ -1,7 +1,8 @@
+// Apples for Humanity tenant. The board fits the answer cards to the screen
+// and cues the judge and the favorite vote. The phone tracks the visual
+// viewport and keeps the hand's scroll across repaints.
 (function () {
   "use strict";
-
-  var savedScroll = 0;
 
   function syncVisualViewport() {
     var viewport = window.visualViewport;
@@ -13,37 +14,6 @@
     document.documentElement.classList.toggle("apples-compact-height", height < 760);
   }
 
-  if (!window.grabbagApplesScroll) {
-    window.grabbagApplesScroll = true;
-    document.body.addEventListener("htmx:beforeSwap", function (evt) {
-      var target = evt.detail && evt.detail.target;
-      if (!target || target.id !== "apples-phone") {
-        return;
-      }
-      var scroll = target.querySelector(".apples-hand-scroll") || target.querySelector(".apples-phone-scroll");
-      if (scroll) {
-        savedScroll = scroll.scrollTop;
-      }
-    });
-    document.body.addEventListener("htmx:afterSwap", function (evt) {
-      var el = evt.detail && evt.detail.elt;
-      if (!el || el.id !== "apples-phone") {
-        return;
-      }
-      var scroll = el.querySelector(".apples-hand-scroll") || el.querySelector(".apples-phone-scroll");
-      if (scroll) {
-        scroll.scrollTop = savedScroll;
-      }
-    });
-  }
-  if (!window.grabbagApplesViewport) {
-    window.grabbagApplesViewport = true;
-    window.addEventListener("resize", syncVisualViewport);
-    window.addEventListener("orientationchange", syncVisualViewport);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", syncVisualViewport);
-    }
-  }
   function boardGrid(count) {
     if (count < 6) {
       return { cols: count, rows: 1 };
@@ -166,36 +136,83 @@
     cards.forEach(fitBoardSlot);
   }
 
-  function watchBoardCards() {
-    layoutBoardCards();
-    var center = document.querySelector(".apples-tv .apples-board-center");
-    if (!center || !window.ResizeObserver) {
-      return;
-    }
-    if (window.grabbagApplesBoardObserver) {
-      window.grabbagApplesBoardObserver.disconnect();
-    }
-    window.grabbagApplesBoardObserver = new ResizeObserver(layoutBoardCards);
-    window.grabbagApplesBoardObserver.observe(center);
+  function markBoard() {
+    markJudgeArrival();
+    markVoteCue();
   }
 
-  if (!window.grabbagApplesBoardLayout) {
-    window.grabbagApplesBoardLayout = true;
-    window.addEventListener("resize", layoutBoardCards);
-    document.body.addEventListener("htmx:afterSwap", function (evt) {
-      var el = evt.detail && evt.detail.elt;
-      if (el && el.id === "apples-board") {
-        watchBoardCards();
-        markJudgeArrival();
-        markVoteCue();
-      }
-    });
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(layoutBoardCards);
-    }
-  }
-  syncVisualViewport();
-  watchBoardCards();
-  markJudgeArrival();
-  markVoteCue();
+  grabbagShell.register("apples", {
+    board: {
+      mount: function (root, ctx) {
+        // The center is replaced on every board swap, so watch the new one.
+        var observer = window.ResizeObserver ? new ResizeObserver(layoutBoardCards) : null;
+        function watch() {
+          layoutBoardCards();
+          var center = root.querySelector(".apples-tv .apples-board-center");
+          if (observer && center) {
+            observer.disconnect();
+            observer.observe(center);
+          }
+        }
+        ctx.cleanup(function () {
+          if (observer) {
+            observer.disconnect();
+          }
+        });
+        ctx.on(window, "resize", layoutBoardCards);
+        ctx.on(document.body, "htmx:afterSwap", function (evt) {
+          var el = evt.detail && evt.detail.elt;
+          if (el && el.id === "apples-board") {
+            watch();
+            markBoard();
+          }
+        });
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function () {
+            if (!ctx.signal.aborted) {
+              layoutBoardCards();
+            }
+          });
+        }
+        watch();
+        markBoard();
+      },
+    },
+    phone: {
+      mount: function (root, ctx) {
+        var savedScroll = 0;
+        ctx.on(window, "resize", syncVisualViewport);
+        ctx.on(window, "orientationchange", syncVisualViewport);
+        if (window.visualViewport) {
+          ctx.on(window.visualViewport, "resize", syncVisualViewport);
+        }
+        // Keep the hand scrolled where it was across a phone repaint.
+        ctx.on(document.body, "htmx:beforeSwap", function (evt) {
+          var target = evt.detail && evt.detail.target;
+          if (!target || target.id !== "apples-phone") {
+            return;
+          }
+          var scroll = target.querySelector(".apples-hand-scroll") || target.querySelector(".apples-phone-scroll");
+          if (scroll) {
+            savedScroll = scroll.scrollTop;
+          }
+        });
+        ctx.on(document.body, "htmx:afterSwap", function (evt) {
+          var el = evt.detail && evt.detail.elt;
+          if (!el || el.id !== "apples-phone") {
+            return;
+          }
+          var scroll = el.querySelector(".apples-hand-scroll") || el.querySelector(".apples-phone-scroll");
+          if (scroll) {
+            scroll.scrollTop = savedScroll;
+          }
+        });
+        ctx.cleanup(function () {
+          document.documentElement.style.removeProperty("--apples-visual-height");
+          document.documentElement.classList.remove("apples-compact-height");
+        });
+        syncVisualViewport();
+      },
+    },
+  });
 })();

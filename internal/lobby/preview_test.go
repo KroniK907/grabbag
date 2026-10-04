@@ -22,12 +22,12 @@ func TestRenderPlayPhoneWrapsBodyStatic(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := buf.String()
-	for _, want := range []string{"<p>game body</p>", "window.grabbagStatic", `data-theme="neon-dark"`, `id="host-drawer"`} {
+	for _, want := range []string{"<p>game body</p>", `id="host-drawer"`, `hx-post="/lobby/leave"`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("play phone missing %q", want)
 		}
 	}
-	if strings.Contains(body, "sse-connect") {
-		t.Error("static play phone connects to SSE")
+	if strings.Contains(body, "sse-connect") || strings.Contains(body, "<html") {
+		t.Error("play phone is not a static fragment")
 	}
 }

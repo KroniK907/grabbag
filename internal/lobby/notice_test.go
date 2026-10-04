@@ -21,12 +21,13 @@ func TestNoticeChromeOnSettings(t *testing.T) {
 
 func TestClaimedHostPhoneMatchesHostTarget(t *testing.T) {
 	t.Parallel()
-	_, handler, _ := testLobby(t)
+	_, handler, room := testLobby(t)
 	cookie := joinNamed(t, handler, "Host", "correct horse")
-	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, cookie).Body.String()
-	if !strings.Contains(phone, `id="notice-root"`) ||
-		!strings.Contains(phone, `data-notice-targets="host seated"`) {
-		t.Fatalf("claimed-host phone targets = %q", phone)
+	req := httptest.NewRequest(http.MethodGet, "http://grabbag.test/tenant", nil)
+	req.Header.Set("Referer", "http://grabbag.test/")
+	req.AddCookie(cookie)
+	if got := room.NoticeTargets(req); got != "host seated" {
+		t.Fatalf("claimed-host phone targets = %q", got)
 	}
 }
 

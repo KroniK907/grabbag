@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "match-27"
+	assetVersion = "shell-1"
 )
 
 //go:embed templates/*.html
@@ -193,6 +193,10 @@ func (g *Game) BoardButtons() []games.BoardButton {
 		{Label: "Deck Library", Path: "/play/picker", HostOnly: true},
 	}
 }
+
+// Assets is game.css and game.js for the shells. game.js registers the board
+// and phone lifecycles.
+func (g *Game) Assets() ui.Assets { return runtimekit.Assets(id, assetVersion) }
 
 // Phone is the seated, judge, audience, or wait-list column. Host currently
 // only mounts this for seated players (CoreHost #59).

@@ -39,7 +39,7 @@ func TestSetupLifecycle(t *testing.T) {
 	if !strings.Contains(contract.Body.String(), "On this page") ||
 		!strings.Contains(contract.Body.String(), "PlayerFromRequest") ||
 		!strings.Contains(contract.Body.String(), "func Register(f Factory)") ||
-		!strings.Contains(contract.Body.String(), `sse-connect="/lobby/events"`) ||
+		!strings.Contains(contract.Body.String(), "grabbagShell.register") ||
 		!strings.Contains(contract.Body.String(), "data: update") {
 		t.Fatalf("game contract docs = %q", contract.Body.String())
 	}

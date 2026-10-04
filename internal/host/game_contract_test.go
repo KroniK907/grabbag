@@ -52,8 +52,8 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	if strings.Contains(board, "FAKE-BOARD") {
 		t.Fatal("board handed to the game before Start")
 	}
-	if !strings.Contains(board, `sse:round`) || !strings.Contains(board, `hx-get="/board"`) {
-		t.Fatalf("lobby board missing round swap: %q", board)
+	if !strings.Contains(board, `id="shell-stage"`) || !strings.Contains(board, `data-tenant="lobby"`) || strings.Contains(board, "location.reload") {
+		t.Fatalf("lobby board is not the board shell: %q", board)
 	}
 
 	start := requestWithCookie(t, handler, http.MethodPost, "/settings/start", nil, admin)
@@ -70,11 +70,11 @@ func TestGameContractLoadStartStopAndDrawerPick(t *testing.T) {
 	}
 	phone = requestWithCookie(t, handler, http.MethodGet, "/", nil, admin)
 	body = phone.Body.String()
-	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `action="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") || !strings.Contains(body, ">Stop<") {
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `hx-post="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") || !strings.Contains(body, ">Stop<") {
 		t.Fatalf("in-game phone = %q", body)
 	}
-	if !strings.Contains(body, `hx-get="/lobby/presence"`) {
-		t.Fatalf("in-game phone missing presence watch: %q", body)
+	if !strings.Contains(body, `data-tenant="fake"`) || !strings.Contains(body, "data-player") {
+		t.Fatalf("in-game phone shell does not mark the game tenant and player: %q", body)
 	}
 	if !strings.Contains(body, ">Pause<") || strings.Contains(body, ">Resume<") {
 		t.Fatalf("in-game drawer pause = %q", body)
@@ -283,7 +283,7 @@ func TestStartedWaitPhoneGetsGameBody(t *testing.T) {
 	waitCookies := waitJoin.Result().Cookies()
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, waitCookies)
 	body := phone.Body.String()
-	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `action="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") {
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `hx-post="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") {
 		t.Fatalf("wait phone missing game wrap: %q", body)
 	}
 	if strings.Contains(body, "You are in line.") {
@@ -306,7 +306,7 @@ func TestStartedAudiencePhoneGetsGameBody(t *testing.T) {
 	}
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, cookies)
 	body := phone.Body.String()
-	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `action="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") {
+	if !strings.Contains(body, "FAKE-PHONE") || !strings.Contains(body, `hx-post="/lobby/leave"`) || !strings.Contains(body, ">Leave<") || strings.Contains(body, "ui-gear") {
 		t.Fatalf("audience phone missing game wrap: %q", body)
 	}
 	if strings.Contains(body, "You are watching") {

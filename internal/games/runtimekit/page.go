@@ -55,3 +55,16 @@ func Static(files fs.FS) http.Handler {
 	}
 	return http.StripPrefix("/static/", http.FileServer(http.FS(sub)))
 }
+
+// Assets is the shell asset list for a game that ships static/game.css and
+// static/game.js, served by Static under Play. The URLs are under host's
+// /games/<id>/static/, which serves that game's files whichever game is
+// loaded, so a phone that is slow to fetch never gets another game's script.
+func Assets(id, version string) ui.Assets {
+	base := games.StaticPath(id)
+	q := "?v=" + version
+	return ui.Assets{
+		CSS: []string{base + "game.css" + q},
+		JS:  []string{base + "game.js" + q},
+	}
+}

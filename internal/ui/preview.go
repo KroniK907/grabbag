@@ -23,8 +23,18 @@ const (
 	FramePage = "page"
 )
 
+// ShellBoard marks a scenario whose Render writes a tenant's board fragment.
+// Host wraps it in the static board shell with the tenant's CSS.
+const ShellBoard = "board"
+
+// ShellPhone marks a scenario whose Render writes a tenant's whole phone
+// fragment (the Lobby join and room screens). Host wraps it in the static
+// phone shell.
+const ShellPhone = "phone"
+
 // ShellPlayPhone marks a scenario whose Render writes a game phone body.
-// Host wraps it in the Lobby play-phone document, as it does for live phones.
+// Host wraps it in the Lobby play-phone fragment (Leave and the host drawer),
+// then in the static phone shell, as it does for live phones.
 const ShellPlayPhone = "play-phone"
 
 // ShellSettings marks a scenario whose Render writes a game settings
@@ -55,7 +65,8 @@ type Scenario struct {
 	Viewer string
 	// Frame is FramePhone, FrameTV, or FramePage.
 	Frame string
-	// Shell is empty for a full document, ShellPlayPhone, or ShellSettings.
+	// Shell is empty for a full document, or ShellBoard, ShellPhone,
+	// ShellPlayPhone, or ShellSettings.
 	Shell string
 	// MinPlayers > 0 turns on the seated-count sweep. MaxPlayers 0 means the
 	// package declares no cap and the sweep goes to LobbyMaxPlayers.
@@ -63,6 +74,9 @@ type Scenario struct {
 	MaxPlayers int
 	// Sample puts the scenario in the device and text-size matrix.
 	Sample bool
+	// Open is a space-separated list of element ids the static shell opens
+	// when the preview request names none, such as a drawer.
+	Open string
 	// Patches are saved JSON merge patches applied before the request patch.
 	Patches [][]byte
 	// Render writes the page. It must not touch disk, the network, or clocks.

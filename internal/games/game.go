@@ -53,7 +53,12 @@ type Helper interface {
 
 // Game is a compiled-in package host can Load, Start, Stop, and Shutdown.
 // MinPlayers and MaxPlayers are 0 when the game does not declare a pair.
+//
+// A Game is a ui.Tenant. After Start the /board and / shells swap it in:
+// Board and Phone write HTML fragments, Assets lists game.css and game.js
+// (which calls grabbagShell.register), and Scenarios lists preview states.
 type Game interface {
+	ui.Tenant
 	ID() string
 	// Name is the player-facing label on the Lobby rail. ID stays the catalog key.
 	Name() string
@@ -64,8 +69,6 @@ type Game interface {
 	Load(h Helper) error
 	Settings() http.Handler
 	Start(h Helper) error
-	Board(w http.ResponseWriter, r *http.Request)
-	Phone(w http.ResponseWriter, r *http.Request)
 	Play() http.Handler
 	Pause() error
 	Resume() error
@@ -73,17 +76,9 @@ type Game interface {
 	Shutdown() error
 	// BoardButtons is up to three Lobby /board rail links under the audience
 	// count. Empty Path or Label is skipped. HostOnly omits the control from
-	// HTML unless the request has an admin session. After Start the game owns
-	// /board, so these only paint while Lobby still renders the TV.
+	// HTML unless the request has an admin session. After Start the game is
+	// the /board tenant, so these only paint while the Lobby is.
 	BoardButtons() []BoardButton
-}
-
-// Previewer is optional. A Game that implements it lists UI scenarios that
-// host serves at /dev/ui when started with -dev-preview. Scenarios render
-// from fixed data on a fresh New() value: no Load, no Helper, no disk.
-// Scenario.Render must set GameCSS and GameJS links from Preview.Asset.
-type Previewer interface {
-	Scenarios() []ui.Scenario
 }
 
 // DisconnectPolicy is optional. A Game that implements it tells host whether
@@ -108,6 +103,13 @@ type BoardButton struct {
 	Label    string
 	Path     string
 	HostOnly bool
+}
+
+// StaticPath is the URL prefix host serves a game's Play() static/ files
+// under, for its shell Assets: /games/<id>/static/. Unlike /play/static/, it
+// serves that game's files whichever game is loaded.
+func StaticPath(id string) string {
+	return "/games/" + id + "/static/"
 }
 
 // Factory constructs one Game value. Catalog is compile-time only.

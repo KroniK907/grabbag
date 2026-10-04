@@ -20,7 +20,7 @@ const (
 	eventTick     = "testing"
 	eventTap      = "tap"
 	flashFor      = 700 * time.Millisecond
-	cssVersion    = "info-2"
+	cssVersion    = "shell-1"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
@@ -94,7 +94,7 @@ func (g *Game) Start(h games.Helper) error {
 	return nil
 }
 
-// Board is the Testing TV document.
+// Board is the Testing TV fragment.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "board.html", g.boardData(r), http.StatusOK)
 }
@@ -105,6 +105,12 @@ func (g *Game) BoardButtons() []games.BoardButton {
 		Label: "About Testing",
 		Path:  "/play/info",
 	}}
+}
+
+// Assets is game.css and the game.js that registers Testing with the shells.
+func (g *Game) Assets() ui.Assets {
+	base, q := games.StaticPath(id), "?v="+cssVersion
+	return ui.Assets{CSS: []string{base + "game.css" + q}, JS: []string{base + "game.js" + q}}
 }
 
 // Phone is the signed-in phone body. Host wraps Leave and the host drawer around it.
@@ -270,7 +276,12 @@ func (g *Game) postEnd(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	// Finish publishes round, and every shell swaps back to the Lobby.
 	h.Finish()
+	if r.Header.Get("HX-Request") != "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	next := "/"
 	if r.FormValue("return") == "/board" {
 		next = "/board"

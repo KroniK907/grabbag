@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/KroniK907/grabbag/internal/games"
 	"github.com/KroniK907/grabbag/internal/lobby"
@@ -31,6 +32,14 @@ type runtime struct {
 	events  *hub.Hub
 	log     *applog.Logger
 	catalog map[string]games.Factory
+	// static is each catalog game's Play() handler, used only for its
+	// static/ files at games.StaticPath.
+	static map[string]http.Handler
+
+	// boot is this process's id. Shells reload when it changes.
+	boot string
+	// generation moves on whenever what a shell shows may have changed.
+	generation atomic.Uint64
 
 	mu       sync.Mutex
 	game     games.Game
@@ -41,9 +50,13 @@ type runtime struct {
 
 func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime {
 	index := make(map[string]games.Factory, len(catalog))
+	static := make(map[string]http.Handler, len(catalog))
 	for _, f := range catalog {
 		if f.ID != "" && f.New != nil {
 			index[f.ID] = f
+			if play := f.New().Play(); play != nil {
+				static[f.ID] = play
+			}
 		}
 	}
 	return &runtime{
@@ -51,6 +64,8 @@ func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime
 		events:  events,
 		log:     applog.New(events, filepath.Join(db.Dir(), "host.log")),
 		catalog: index,
+		static:  static,
+		boot:    newBootID(),
 	}
 }
 
@@ -251,7 +266,10 @@ func (rt *runtime) load(ctx context.Context, id string) error {
 		_ = rt.room.ApplyReadyReset(ctx, lobby.ReadyResetSwitch)
 	}
 	rt.log.Write("Load " + id)
+	rt.bump()
 	rt.events.Publish("roster")
+	// The board rail and the host drawer show the loaded game.
+	rt.events.Publish("tenant")
 	return nil
 }
 
@@ -283,6 +301,7 @@ func (rt *runtime) start(ctx context.Context) error {
 	rt.started = true
 	rt.paused = false
 	rt.log.Write("Start " + rt.loadedID)
+	rt.bump()
 	rt.events.Publish("roster")
 	rt.events.Publish("round")
 	return nil
@@ -310,6 +329,7 @@ func (rt *runtime) stop(ctx context.Context, graceful bool) error {
 		return err
 	}
 	rt.log.Write("Stop " + rt.loadedID)
+	rt.bump()
 	rt.events.Publish("roster")
 	rt.events.Publish("round")
 	return nil
@@ -339,6 +359,7 @@ func (rt *runtime) shutdown(ctx context.Context) error {
 		return err
 	}
 	rt.log.Write("Shutdown")
+	rt.bump()
 	rt.events.Publish("roster")
 	rt.events.Publish("round")
 	return nil
@@ -463,7 +484,3 @@ func (c *capture) Write(p []byte) (int, error) {
 }
 
 func (c *capture) WriteHeader(status int) { c.status = status }
-
-func (rt *runtime) wrapPhone(w http.ResponseWriter, r *http.Request, inner []byte) {
-	rt.room.WritePlayPhone(w, r, template.HTML(inner))
-}

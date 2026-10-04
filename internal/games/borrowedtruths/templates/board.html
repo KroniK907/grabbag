@@ -1,13 +1,12 @@
-{{template "ui-start" .}}
-{{template "round-swap" "/board"}}
-{{template "bt-assets" .}}
+{{/* The Borrowed Truths board tenant fragment. The shell loads the fonts,
+game.css, and game.js from Assets. */}}
 {{template "board-frame" .}}
-{{template "ui-end"}}
 
+{{/* bt-assets styles a normal page, such as How to play. Keep the fonts URL
+the same as fontsURL in game.go. */}}
 {{define "bt-assets"}}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Dela+Gothic+One&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="{{.GameCSS}}">
-<script defer src="{{.GameJS}}"></script>
 {{end}}
 
 {{define "bt-hello"}}

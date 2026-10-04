@@ -1,3 +1,6 @@
+// Quick Quips tenant. The board marks a new matchup, clock, or winner as it
+// arrives. The phone tracks the visual viewport (the keyboard shrinks it)
+// and keeps the quip character counters live while typing.
 (function () {
   "use strict";
 
@@ -15,12 +18,13 @@
     document.documentElement.classList.toggle("quips-compact-height", height < 760);
   }
 
-  function bindComposeCards() {
-    document.querySelectorAll(".quips-compose-card textarea").forEach(function (ta) {
+  function bindComposeCards(root) {
+    root.querySelectorAll(".quips-compose-card textarea").forEach(function (ta) {
       if (ta.dataset.quipsComposeBound === "1") {
         return;
       }
       ta.dataset.quipsComposeBound = "1";
+      // The textarea goes away with its swap, and its listener with it.
       ta.addEventListener("input", function () {
         var card = ta.closest(".quips-compose-card");
         if (card) {
@@ -32,7 +36,7 @@
           var remain = Math.max(0, max - runeLen(ta.value));
           cap.textContent = remain + " / " + max;
         }
-        var scroll = document.querySelector("#quips-phone .quips-phone-scroll");
+        var scroll = root.querySelector("#quips-phone .quips-phone-scroll");
         if (scroll && scroll.querySelector(".quips-compose-card")) {
           var alert = scroll.querySelector(".ui-alert");
           if (alert) {
@@ -43,92 +47,59 @@
     });
   }
 
-  function markWinner() {
+  // arrive adds cls to the first el matching selector the first time its
+  // key attribute takes a new value, so a repaint of the same moment does
+  // not replay the animation.
+  var seen = {};
+  function arrive(root, selector, attr, cls) {
+    var el = root.querySelector(selector);
+    if (!el) {
+      return;
+    }
+    var key = el.getAttribute(attr) || "";
+    if (seen[selector] === key) {
+      return;
+    }
+    seen[selector] = key;
+    el.classList.add(cls);
+  }
+
+  function markBoard(root) {
     if (window.grabbagStatic) {
       return;
     }
-    var board = document.querySelector(".quips-final[data-winner]");
-    if (!board) {
-      return;
-    }
-    var key = board.getAttribute("data-winner") || "";
-    if (window.grabbagQuipsWinner === key) {
-      return;
-    }
-    window.grabbagQuipsWinner = key;
-    board.classList.add("is-arriving");
+    arrive(root, ".quips-quip-row.is-matchup", "data-matchup", "is-arriving");
+    arrive(root, ".quips-board-clock[data-vote-clock]", "data-vote-clock", "is-fading");
+    arrive(root, ".quips-board-clock[data-last-clock]", "data-last-clock", "is-arriving");
+    arrive(root, ".quips-final[data-winner]", "data-winner", "is-arriving");
   }
 
-  function markLastClock() {
-    if (window.grabbagStatic) {
-      return;
-    }
-    var clock = document.querySelector(".quips-board-clock[data-last-clock]");
-    if (!clock) {
-      return;
-    }
-    var key = clock.getAttribute("data-last-clock") || "";
-    if (window.grabbagQuipsLastClock === key) {
-      return;
-    }
-    window.grabbagQuipsLastClock = key;
-    clock.classList.add("is-arriving");
-  }
-
-  function markVoteClock() {
-    if (window.grabbagStatic) {
-      return;
-    }
-    var clock = document.querySelector(".quips-board-clock[data-vote-clock]");
-    if (!clock) {
-      return;
-    }
-    var key = clock.getAttribute("data-vote-clock") || "";
-    if (window.grabbagQuipsVoteClock === key) {
-      return;
-    }
-    window.grabbagQuipsVoteClock = key;
-    clock.classList.add("is-fading");
-  }
-
-  function markMatchup() {
-    if (window.grabbagStatic) {
-      return;
-    }
-    var row = document.querySelector(".quips-quip-row.is-matchup");
-    if (!row) {
-      return;
-    }
-    var key = row.getAttribute("data-matchup") || "";
-    if (window.grabbagQuipsMatchup === key) {
-      return;
-    }
-    window.grabbagQuipsMatchup = key;
-    row.classList.add("is-arriving");
-  }
-
-  if (!window.grabbagQuipsSwap) {
-    window.grabbagQuipsSwap = true;
-    document.body.addEventListener("htmx:afterSwap", function () {
-      bindComposeCards();
-      markMatchup();
-      markVoteClock();
-      markLastClock();
-      markWinner();
-    });
-  }
-  if (!window.grabbagQuipsViewport) {
-    window.grabbagQuipsViewport = true;
-    window.addEventListener("resize", syncVisualViewport);
-    window.addEventListener("orientationchange", syncVisualViewport);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", syncVisualViewport);
-    }
-  }
-  syncVisualViewport();
-  bindComposeCards();
-  markMatchup();
-  markVoteClock();
-  markLastClock();
-  markWinner();
+  grabbagShell.register("quips", {
+    board: {
+      mount: function (root, ctx) {
+        ctx.on(document.body, "htmx:afterSwap", function () {
+          markBoard(root);
+        });
+        markBoard(root);
+      },
+    },
+    phone: {
+      mount: function (root, ctx) {
+        ctx.on(window, "resize", syncVisualViewport);
+        ctx.on(window, "orientationchange", syncVisualViewport);
+        if (window.visualViewport) {
+          ctx.on(window.visualViewport, "resize", syncVisualViewport);
+        }
+        ctx.on(document.body, "htmx:afterSwap", function () {
+          bindComposeCards(root);
+        });
+        ctx.cleanup(function () {
+          document.documentElement.style.removeProperty("--quips-visual-height");
+          document.documentElement.classList.remove("quips-compact-height");
+        });
+        syncVisualViewport();
+        bindComposeCards(root);
+      },
+    },
+  });
 })();

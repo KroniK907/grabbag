@@ -17,12 +17,12 @@
   {{end}}
   {{if not .RestorePending}}
   {{if .ShowStart}}
-  <form method="post" action="/settings/start">
+  <form hx-post="/settings/start" hx-swap="none">
     <button class="ui-btn" type="submit">Start</button>
   </form>
   {{end}}
   {{if and .LoadedGameID (not .Started)}}
-  <form method="post" action="/settings/auto-start">
+  <form hx-post="/settings/auto-start" hx-swap="none">
     <span>Auto-start</span>
     {{if .AutoStart}}
     <input type="hidden" name="enabled" value="0">
@@ -51,25 +51,25 @@
     <button class="ui-btn" type="submit">Pause</button>
   </form>
   {{end}}
-  <form method="post" action="/settings/stop">
+  <form hx-post="/settings/stop" hx-swap="none">
     <button class="ui-btn" type="submit">Stop</button>
   </form>
   </div>
   {{end}}
   {{if .Seated}}
-  <form method="post" action="/settings/stand">
+  <form hx-post="/settings/stand" hx-swap="none">
     <button class="ui-btn" type="submit">Stand (watch)</button>
   </form>
   {{else if .TableFull}}
   <p class="ui-muted">Pick who to bump.</p>
   {{range .BumpCandidates}}
-  <form method="post" action="/settings/sit">
+  <form hx-post="/settings/sit" hx-swap="none">
     <input type="hidden" name="bump_player_id" value="{{.ID}}">
     <button class="ui-btn" type="submit">Sit, bump {{.DisplayName}}</button>
   </form>
   {{end}}
   {{else}}
-  <form method="post" action="/settings/sit">
+  <form hx-post="/settings/sit" hx-swap="none">
     <button class="ui-btn" type="submit">Sit</button>
   </form>
   {{end}}

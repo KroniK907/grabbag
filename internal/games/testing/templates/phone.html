@@ -1,4 +1,3 @@
-<link rel="stylesheet" href="{{.GameCSS}}">
 {{template "phone-frame" .}}
 
 {{define "phone-frame"}}
@@ -14,7 +13,7 @@
     <button class="ui-plunger" type="button" hx-post="/play/tap" hx-swap="none">Tap</button>
   </form>
   {{if .ShowEnd}}
-  <form method="post" action="/play/end">
+  <form hx-post="/play/end" hx-swap="none">
     <button class="ui-btn ui-btn-danger" type="submit">End game</button>
   </form>
   {{end}}

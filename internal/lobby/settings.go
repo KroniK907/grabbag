@@ -128,7 +128,8 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	return view, nil
 }
 
-// WritePlayPhone wraps a running game body with Leave and the host drawer.
+// WritePlayPhone writes a game's phone tenant fragment: the game body with
+// Leave and the claimed host's drawer around it.
 func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body template.HTML) {
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil || !ok {
@@ -141,7 +142,7 @@ func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body temp
 		return
 	}
 	view.GameBody = body
-	l.render(w, "play-phone.html", view, http.StatusOK)
+	l.render(w, "play-phone", view, http.StatusOK)
 }
 
 func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +225,8 @@ func (l *Lobby) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, l.cookie(r, l.adminCookieName, sessionID))
+	// A locked board in this browser unlocks.
+	l.tenantChanged(w, true)
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
@@ -245,6 +248,7 @@ func (l *Lobby) logout(w http.ResponseWriter, r *http.Request) {
 		Secure:   l.secureCookie(r),
 		SameSite: http.SameSiteLaxMode,
 	})
+	l.tenantChanged(w, true)
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 
@@ -400,6 +404,8 @@ func (l *Lobby) setAutoStart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not save auto-start.", http.StatusInternalServerError)
 		return
 	}
+	// The host drawer shows the switch.
+	l.tenantChanged(w, true)
 	l.writeSettingsOKTo(w, r, settingsReturn(r))
 }
 
@@ -412,15 +418,17 @@ func (l *Lobby) setKickTimeout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Lobby) setProtectHost(w http.ResponseWriter, r *http.Request) {
-	l.setBoolSetting(w, r, "protect_host", "Could not save protect-host.")
+	l.setBoolSetting(w, r, "protect_host", "Could not save protect-host.", false)
 }
 
+// setAdminOnlyBoard flips the board between the Lobby or game and the
+// locked tenant, live on every board.
 func (l *Lobby) setAdminOnlyBoard(w http.ResponseWriter, r *http.Request) {
-	l.setBoolSetting(w, r, "admin_only_board", "Could not save admin-only board.")
+	l.setBoolSetting(w, r, "admin_only_board", "Could not save admin-only board.", true)
 }
 
 func (l *Lobby) setSeatDisconnectedWaiters(w http.ResponseWriter, r *http.Request) {
-	l.setBoolSetting(w, r, "seat_disconnected_waiters", "Could not save seat disconnected waiters.")
+	l.setBoolSetting(w, r, "seat_disconnected_waiters", "Could not save seat disconnected waiters.", false)
 }
 
 func (l *Lobby) setResetReady(w http.ResponseWriter, r *http.Request) {
@@ -465,7 +473,9 @@ func (l *Lobby) setIntSetting(w http.ResponseWriter, r *http.Request, field, col
 	l.writeSettingsOK(w, r)
 }
 
-func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, fail string) {
+// setBoolSetting writes one on/off room_state column. tenant marks a switch
+// that changes what shells show.
+func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, fail string, tenant bool) {
 	if !l.requireAdmin(w, r) {
 		return
 	}
@@ -477,6 +487,9 @@ func (l *Lobby) setBoolSetting(w http.ResponseWriter, r *http.Request, column, f
 	if _, err := l.sql.ExecContext(r.Context(), `UPDATE room_state SET `+column+` = ? WHERE id = 1`, boolToInt(on)); err != nil {
 		http.Error(w, fail, http.StatusInternalServerError)
 		return
+	}
+	if tenant {
+		l.tenantChanged(w, true)
 	}
 	l.writeSettingsOK(w, r)
 }
@@ -492,13 +505,24 @@ func hxRequest(r *http.Request) bool {
 	return r.Header.Get("HX-Request") != ""
 }
 
+// settingsTarget reports an htmx request from the /settings knobs.
+func settingsTarget(r *http.Request) bool {
+	return strings.TrimPrefix(r.Header.Get("HX-Target"), "#") == "settings-knobs"
+}
+
 func (l *Lobby) writeSettingsOK(w http.ResponseWriter, r *http.Request) {
 	l.writeSettingsOKTo(w, r, "/settings")
 }
 
+// writeSettingsOKTo ends a settings write. /settings swaps #settings-knobs.
+// A shell form (the host drawer, the restore modal) gets 204.
 func (l *Lobby) writeSettingsOKTo(w http.ResponseWriter, r *http.Request, fallback string) {
 	if !hxRequest(r) {
 		http.Redirect(w, r, fallback, http.StatusSeeOther)
+		return
+	}
+	if !settingsTarget(r) {
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	data, err := l.settingsView(r, "")
@@ -536,14 +560,15 @@ func (l *Lobby) hostStand(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := l.changeHostSeat(r.Context(), player, "stand", ""); err != nil {
 		if errors.Is(err, errHostBusy) {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			finish(w, r, "/")
 			return
 		}
 		http.Error(w, "Could not stand.", http.StatusInternalServerError)
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.tenantChanged(w, false)
+	finish(w, r, "/")
 }
 
 func (l *Lobby) hostSit(w http.ResponseWriter, r *http.Request) {
@@ -564,7 +589,7 @@ func (l *Lobby) hostSit(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := l.changeHostSeat(r.Context(), player, "sit", r.PostFormValue("bump_player_id")); err != nil {
 		if errors.Is(err, errHostBusy) {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			finish(w, r, "/")
 			return
 		}
 		if errors.Is(err, errBumpRequired) {
@@ -575,7 +600,8 @@ func (l *Lobby) hostSit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.tenantChanged(w, false)
+	finish(w, r, "/")
 }
 
 func (l *Lobby) makeHost(w http.ResponseWriter, r *http.Request) {
@@ -603,6 +629,7 @@ func (l *Lobby) makeHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.events.Publish("roster")
+	l.tenantChanged(w, true)
 	l.writeSettingsOK(w, r)
 }
 
@@ -616,7 +643,7 @@ func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		finish(w, r, "/")
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -630,7 +657,8 @@ func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if errors.Is(err, errTakeHostDenied) {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			l.tenantChanged(w, false)
+			finish(w, r, "/")
 			return
 		}
 		http.Error(w, "Could not take host.", http.StatusInternalServerError)
@@ -638,7 +666,8 @@ func (l *Lobby) takeHost(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, l.cookie(r, l.adminCookieName, sessionID))
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.tenantChanged(w, false)
+	finish(w, r, "/")
 }
 
 func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, error) {

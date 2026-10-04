@@ -26,7 +26,7 @@
     {{else}}
     <div class="ui-game-library-grid">
       {{range .Catalog}}
-      <form method="post" action="/settings/load" class="ui-game-card-form">
+      <form hx-post="/settings/load" hx-swap="none" class="ui-game-card-form">
         <input type="hidden" name="game_id" value="{{.ID}}">
         <input type="hidden" name="return_to" value="{{$.LibraryReturn}}">
         <button type="submit" class="ui-game-card{{if .Loaded}} is-loaded{{end}}{{if .Warning}} has-warning{{end}}">
@@ -41,13 +41,9 @@
     </div>
     {{if .LoadedGameID}}
     <footer class="ui-game-library-foot">
-      <form method="post" action="/settings/shutdown" class="ui-game-unload-form">
+      <form hx-post="/settings/shutdown" hx-swap="none" hx-confirm="Unload the current game? Saved game data stays on disk." class="ui-game-unload-form">
         <input type="hidden" name="return_to" value="{{.LibraryReturn}}">
-        <button
-          type="submit"
-          class="ui-btn ui-btn-danger"
-          onclick="return confirm('Unload the current game? Saved game data stays on disk.');"
-        >Unload game</button>
+        <button type="submit" class="ui-btn ui-btn-danger">Unload game</button>
       </form>
     </footer>
     {{end}}

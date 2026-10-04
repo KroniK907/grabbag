@@ -45,6 +45,22 @@ func (h *Hub) PublishData(name, data string) {
 
 // ServeHTTP keeps an SSE connection open until the request is canceled.
 func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.serve(w, r, nil)
+}
+
+// Only returns a stream that carries just the named events. Everything else
+// published on the hub never reaches it.
+func (h *Hub) Only(names ...string) http.Handler {
+	allow := make(map[string]bool, len(names))
+	for _, name := range names {
+		allow[name] = true
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.serve(w, r, allow)
+	})
+}
+
+func (h *Hub) serve(w http.ResponseWriter, r *http.Request, allow map[string]bool) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming is unavailable.", http.StatusInternalServerError)
@@ -75,6 +91,9 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			name, data, ok := strings.Cut(payload, "\n")
 			if !ok {
 				name, data = payload, "update"
+			}
+			if allow != nil && !allow[name] {
+				continue
 			}
 			_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", name, data)
 			flusher.Flush()

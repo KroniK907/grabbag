@@ -89,7 +89,10 @@ type previewPackage struct {
 	id        string
 	name      string
 	scenarios []ui.Scenario
-	assets    http.Handler
+	// static serves the package's static/ files at /dev/ui/assets/<id>/.
+	static http.Handler
+	// tenant is the package's shell asset list, linked in the static shell.
+	tenant ui.Assets
 }
 
 type previewServer struct {
@@ -112,18 +115,10 @@ func withPreview(next http.Handler) http.Handler {
 }
 
 func newPreviewHandler(catalog []games.Factory) http.Handler {
-	s := &previewServer{}
-	s.packages = append(s.packages, previewPackage{id: "lobby", name: "Lobby", scenarios: lobby.Scenarios()})
-	for _, f := range catalog {
-		g := f.New()
-		pv, ok := g.(games.Previewer)
-		if !ok {
-			continue
-		}
-		s.packages = append(s.packages, previewPackage{id: f.ID, name: g.Name(), scenarios: pv.Scenarios(), assets: g.Play()})
-	}
+	s := newPreviewServer(catalog)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
+	mux.Handle("GET /lobby/static/", lobby.StaticHandler())
 	mux.HandleFunc("GET /dev/ui/{$}", s.gallery)
 	mux.HandleFunc("GET /dev/ui/index.json", s.index)
 	mux.HandleFunc("GET /dev/ui/s/{pkg}/{surface}/{name}", s.scenario)
@@ -201,7 +196,7 @@ func (s *previewServer) scenario(w http.ResponseWriter, r *http.Request) {
 		Open:    r.URL.Query().Get("open"),
 	}
 	var page bytes.Buffer
-	if err := renderPreview(&page, sc, p, pkg.id); err != nil {
+	if err := renderPreview(&page, sc, p, pkg); err != nil {
 		http.Error(w, "Preview failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -210,7 +205,10 @@ func (s *previewServer) scenario(w http.ResponseWriter, r *http.Request) {
 	_, _ = page.WriteTo(w)
 }
 
-func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkgID string) error {
+// renderPreview writes one scenario page. Board and phone fragments go in
+// the static shell with the package's CSS, the way the live shells show them
+// but with no scripts and no mount.
+func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkg previewPackage) error {
 	if sc.Shell == "" {
 		return sc.Render(w, p)
 	}
@@ -221,23 +219,49 @@ func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkgID string) erro
 		return err
 	}
 	switch sc.Shell {
-	case ui.ShellPlayPhone:
-		return lobby.RenderPlayPhone(w, p, sc.Viewer, template.HTML(body.String()))
 	case ui.ShellSettings:
-		return lobby.RenderSettings(w, p, pkgID, template.HTML(body.String()))
-	default:
+		return lobby.RenderSettings(w, p, pkg.id, template.HTML(body.String()))
+	case ui.ShellPlayPhone:
+		var wrapped bytes.Buffer
+		if err := lobby.RenderPlayPhone(&wrapped, p, sc.Viewer, template.HTML(body.String())); err != nil {
+			return err
+		}
+		body = wrapped
+	}
+	surface := ui.ShellSurface(sc.Shell)
+	if surface == "" {
 		_, err := body.WriteTo(w)
 		return err
 	}
+	shell := p
+	if shell.Open == "" {
+		shell.Open = sc.Open
+	}
+	return ui.RenderShell(w, ui.StaticShell(surface, pkg.id, shell, pkg.tenant, template.HTML(body.String())))
+}
+
+// previewAssets points a game's /games/<id>/static/ links at the gallery's copy.
+func previewAssets(id string, a ui.Assets) ui.Assets {
+	rewrite := func(list []string) []string {
+		out := make([]string, 0, len(list))
+		for _, u := range list {
+			if rest, ok := strings.CutPrefix(u, games.StaticPath(id)); ok {
+				u = PreviewPath + "assets/" + id + "/" + rest
+			}
+			out = append(out, u)
+		}
+		return out
+	}
+	return ui.Assets{CSS: rewrite(a.CSS), JS: rewrite(a.JS), External: a.External}
 }
 
 func (s *previewServer) asset(w http.ResponseWriter, r *http.Request) {
 	for _, pkg := range s.packages {
-		if pkg.id == r.PathValue("pkg") && pkg.assets != nil {
+		if pkg.id == r.PathValue("pkg") && pkg.static != nil {
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = "/static/" + r.PathValue("file")
 			r2.URL.RawPath = ""
-			pkg.assets.ServeHTTP(w, r2)
+			pkg.static.ServeHTTP(w, r2)
 			return
 		}
 	}
@@ -319,4 +343,21 @@ func (s *previewServer) render(w http.ResponseWriter, name string, data any) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = buf.WriteTo(w)
+}
+
+// newPreviewServer lists the Lobby, the locked board, and every catalog
+// game with their scenarios and assets.
+func newPreviewServer(catalog []games.Factory) *previewServer {
+	s := &previewServer{}
+	s.packages = append(s.packages,
+		previewPackage{id: lobbyTenantID, name: "Lobby", scenarios: lobby.Scenarios(), tenant: (&lobby.Lobby{}).Assets()},
+		previewPackage{id: lockedTenantID, name: "Locked board", scenarios: lockedTenant{}.Scenarios()},
+	)
+	for _, f := range catalog {
+		g := f.New()
+		pkg := previewPackage{id: f.ID, name: g.Name(), scenarios: g.Scenarios(), static: g.Play()}
+		pkg.tenant = previewAssets(f.ID, g.Assets())
+		s.packages = append(s.packages, pkg)
+	}
+	return s
 }

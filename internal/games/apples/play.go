@@ -229,6 +229,11 @@ func (g *Game) postFinish(w http.ResponseWriter, r *http.Request) {
 	}
 	g.run.Apply(runtimekit.Result{Finish: true})
 	g.run.Unlock()
+	// Finish publishes round, and every shell swaps back to the Lobby.
+	if r.Header.Get("HX-Request") != "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	next := "/"
 	if r.FormValue("return") == "/board" {
 		next = "/board"

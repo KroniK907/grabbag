@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"strings"
 	"sync"
@@ -45,6 +46,9 @@ var (
 
 //go:embed templates/*.html
 var templateFiles embed.FS
+
+//go:embed static/*
+var staticFiles embed.FS
 
 var pageTemplates = ui.MustParse(templateFiles, "templates/*.html")
 
@@ -117,6 +121,10 @@ type Config struct {
 	StartRound      func(context.Context) error
 	AfterDisconnect func(context.Context, Player)
 	AfterRestore    func(context.Context, bool)
+	// TenantChanged runs when a request changed what a shell shows, such as
+	// Join, Leave, Stand, or the admin-only board switch. Host bumps its
+	// tenant generation.
+	TenantChanged func()
 }
 
 // Player is a live roster row.
@@ -148,6 +156,7 @@ type Lobby struct {
 	startRound      func(context.Context) error
 	afterDisconnect func(context.Context, Player)
 	afterRestore    func(context.Context, bool)
+	tenantHook      func()
 	live            *liveMem
 	restoreMu       sync.Mutex
 	restorePending  bool
@@ -185,6 +194,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 		startRound:      config.StartRound,
 		afterDisconnect: config.AfterDisconnect,
 		afterRestore:    config.AfterRestore,
+		tenantHook:      config.TenantChanged,
 		live:            newLiveMem(config.Clock),
 	}
 	if err := room.ensureSchema(); err != nil {
@@ -202,6 +212,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 // Register adds Lobby-owned stream, partial, and phone write routes to mux.
 func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
+	mux.Handle("GET /lobby/static/", StaticHandler())
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("GET /lobby/presence", l.presence)
@@ -245,8 +256,9 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /lobby/take-host", l.takeHost)
 }
 
-// Phone writes the current Lobby phone body. A live player cookie opens the
-// in-room body. Other requests get Join, with stale cookie details prefilled.
+// Phone writes the Lobby phone tenant fragment. A live player cookie opens
+// the in-room screen. Other requests get Join, with stale cookie details
+// prefilled.
 func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 	player, ok, err := l.PlayerFromRequest(r)
 	if err != nil {
@@ -259,27 +271,84 @@ func (l *Lobby) Phone(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 			return
 		}
-		l.render(w, "room.html", view, http.StatusOK)
+		l.render(w, "room-body", view, http.StatusOK)
 		return
 	}
-	l.writeJoin(w, r, "join.html", "", "", http.StatusOK)
+	l.writeJoin(w, r, "join-body", "", "", "", http.StatusOK)
 }
 
-// Board writes neon cabinet chrome: left rail (QR, join URL, open/closed,
-// seat and audience counts), seated tokens with the claimed host first, and the wait marquee.
-func (l *Lobby) Board(w http.ResponseWriter, r *http.Request, joinURL string) {
+// Board writes the Lobby board tenant fragment: left rail (QR, join URL,
+// open/closed, seat and audience counts), seated tokens with the claimed host
+// first, and the wait marquee. The join URL is the advertised hostname, or
+// Config.JoinURL when none is stored.
+func (l *Lobby) Board(w http.ResponseWriter, r *http.Request) {
 	data, err := l.boardView(r)
 	if err != nil {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	if joinURL != "" {
-		data.JoinURL = joinURL
+	data.JoinURL = l.advertisedURL(r)
+	l.render(w, "board-roster", data, http.StatusOK)
+}
+
+// Assets is lobby.js. The Lobby's styles are host chrome in live.css.
+func (l *Lobby) Assets() ui.Assets {
+	return ui.Assets{JS: []string{"/lobby/static/lobby.js?v=" + ui.AssetVersion}}
+}
+
+// Scenarios is the Lobby preview list. See the package func Scenarios.
+func (l *Lobby) Scenarios() []ui.Scenario { return Scenarios() }
+
+// NoticeTargets is the space-separated toast targets for the page r was
+// sent from: board, host, seated, waiting, or audience.
+func (l *Lobby) NoticeTargets(r *http.Request) string { return l.noticeTargetList(r) }
+
+// AdminOnlyBoard reports the operator's admin-only board switch.
+func (l *Lobby) AdminOnlyBoard(ctx context.Context) (bool, error) { return l.adminOnlyBoard(ctx) }
+
+// Kicked reports a player cookie whose roster row is gone: the host kicked
+// that phone or cleared the room.
+func (l *Lobby) Kicked(r *http.Request) bool {
+	state, ok := playerCookieFromRequest(r)
+	if !ok || state.ID == "" {
+		return false
 	}
-	if advertised := l.advertisedURL(r); advertised != "" {
-		data.JoinURL = advertised
+	_, live, err := l.PlayerFromRequest(r)
+	return err == nil && !live
+}
+
+// tenantChanged records that this request changed what a shell shows. It
+// bumps the host generation and asks the requesting shell to refetch with
+// HX-Trigger. room also tells every shell on the room stream, for changes
+// made from one page that other screens show.
+func (l *Lobby) tenantChanged(w http.ResponseWriter, room bool) {
+	if l.tenantHook != nil {
+		l.tenantHook()
 	}
-	l.render(w, "board.html", data, http.StatusOK)
+	w.Header().Set("HX-Trigger", ui.TenantTrigger)
+	if room {
+		l.events.Publish("tenant")
+	}
+}
+
+// finish ends a shell POST. htmx gets 204, and the shell acts on any
+// HX-Trigger. A plain form post still gets a 303 to target.
+func finish(w http.ResponseWriter, r *http.Request, target string) {
+	if hxRequest(r) {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	http.Redirect(w, r, target, http.StatusSeeOther)
+}
+
+// StaticHandler serves lobby.js and the rest of the Lobby's static/ files at
+// /lobby/static/.
+func StaticHandler() http.Handler {
+	files, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic("lobby: embedded static directory is missing")
+	}
+	return http.StripPrefix("/lobby/static/", http.FileServerFS(files))
 }
 
 type boardData struct {
@@ -370,13 +439,7 @@ type roomView struct {
 }
 
 func (l *Lobby) boardRoster(w http.ResponseWriter, r *http.Request) {
-	data, err := l.boardView(r)
-	if err != nil {
-		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
-		return
-	}
-	data.JoinURL = l.advertisedURL(r)
-	l.render(w, "board-roster", data, http.StatusOK)
+	l.Board(w, r)
 }
 
 func (l *Lobby) advertisedURL(r *http.Request) string {
@@ -494,7 +557,7 @@ func (l *Lobby) phoneBody(w http.ResponseWriter, r *http.Request) {
 		l.render(w, "room-inner", view, http.StatusOK)
 		return
 	}
-	l.writeJoin(w, r, "join-inner", "", "", http.StatusOK)
+	l.writeJoin(w, r, "join-inner", "", "", "", http.StatusOK)
 }
 
 func (l *Lobby) presence(w http.ResponseWriter, r *http.Request) {
@@ -543,16 +606,17 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	} else if ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		l.tenantChanged(w, false)
+		finish(w, r, "/")
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		l.writeJoin(w, r, "join.html", "", "Could not read the form.", http.StatusBadRequest)
+		l.joinError(w, r, "", "Could not read the form.", http.StatusBadRequest)
 		return
 	}
 	name := strings.TrimSpace(r.PostFormValue("display_name"))
 	if name == "" {
-		l.writeJoin(w, r, "join.html", name, "Name is required.", http.StatusBadRequest)
+		l.joinError(w, r, name, "Name is required.", http.StatusBadRequest)
 		return
 	}
 
@@ -570,11 +634,11 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, errNameRequired):
-			l.writeJoin(w, r, "join.html", name, "Name is required.", http.StatusBadRequest)
+			l.joinError(w, r, name, "Name is required.", http.StatusBadRequest)
 		case errors.Is(err, errNameTaken):
-			l.writeJoin(w, r, "join.html", name, "That name is already in use.", http.StatusConflict)
+			l.joinError(w, r, name, "That name is already in use.", http.StatusConflict)
 		case errors.Is(err, errPasswordMismatch):
-			l.writeJoin(w, r, "join.html", name, "Admin password is incorrect.", http.StatusUnauthorized)
+			l.joinError(w, r, name, "Admin password is incorrect.", http.StatusUnauthorized)
 		default:
 			http.Error(w, "Could not join the room.", http.StatusInternalServerError)
 		}
@@ -596,7 +660,17 @@ func (l *Lobby) join(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, l.cookie(r, l.adminCookieName, result.adminSessionID))
 	}
 	l.events.Publish("roster")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.tenantChanged(w, false)
+	finish(w, r, "/")
+}
+
+// joinError shows Join again with message. htmx only swaps a 2xx response,
+// so an htmx request gets 200 and the error in the form.
+func (l *Lobby) joinError(w http.ResponseWriter, r *http.Request, name, message string, status int) {
+	if hxRequest(r) {
+		status = http.StatusOK
+	}
+	l.writeJoin(w, r, "join-inner", name, "", message, status)
 }
 
 func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
@@ -609,7 +683,8 @@ func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !ok {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		l.tenantChanged(w, false)
+		finish(w, r, "/")
 		return
 	}
 	if err := l.removePlayer(r.Context(), player.ID); err != nil {
@@ -618,7 +693,8 @@ func (l *Lobby) leave(w http.ResponseWriter, r *http.Request) {
 	}
 	l.events.Publish("roster")
 	http.SetCookie(w, l.clearCookie(r, PlayerCookieName))
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.tenantChanged(w, false)
+	finish(w, r, "/")
 }
 
 type joinResult struct {
@@ -939,7 +1015,15 @@ func (l *Lobby) reroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, l.cookie(r, PlayerCookieName, value))
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	if !hxRequest(r) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if ok {
+		l.phoneBody(w, r)
+		return
+	}
+	l.writeJoin(w, r, "join-inner", name, seed, "", http.StatusOK)
 }
 
 func (l *Lobby) setAvatarSeed(ctx context.Context, playerID, seed string) error {
@@ -963,20 +1047,24 @@ func (l *Lobby) waitToggle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not read the roster.", http.StatusInternalServerError)
 		return
 	}
-	if !ok {
+	if ok && !player.Seated {
+		if err := l.toggleWait(r.Context(), player); err != nil {
+			http.Error(w, "Could not update the wait list.", http.StatusInternalServerError)
+			return
+		}
+		l.events.Publish("roster")
+	}
+	l.phoneDone(w, r)
+}
+
+// phoneDone ends a Lobby phone POST. htmx gets the fresh #phone-inner. A
+// plain form post gets a 303 to /.
+func (l *Lobby) phoneDone(w http.ResponseWriter, r *http.Request) {
+	if !hxRequest(r) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	if player.Seated {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	if err := l.toggleWait(r.Context(), player); err != nil {
-		http.Error(w, "Could not update the wait list.", http.StatusInternalServerError)
-		return
-	}
-	l.events.Publish("roster")
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	l.phoneBody(w, r)
 }
 
 func (l *Lobby) requireAdmin(w http.ResponseWriter, r *http.Request) bool {
@@ -1236,11 +1324,14 @@ func boolToInt(v bool) int {
 	return 0
 }
 
+// writeJoin renders a Join template. seed overrides the avatar seed from the
+// form or cookie, for a reroll whose new cookie the request does not carry.
 func (l *Lobby) writeJoin(
 	w http.ResponseWriter,
 	r *http.Request,
 	templateName string,
 	submittedName string,
+	seed string,
 	message string,
 	status int,
 ) {
@@ -1248,7 +1339,9 @@ func (l *Lobby) writeJoin(
 	if submittedName != "" {
 		state.DisplayName = submittedName
 	}
-	seed := strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	if seed == "" {
+		seed = strings.TrimSpace(r.PostFormValue("avatar_seed"))
+	}
 	if seed == "" {
 		seed = state.AvatarSeed
 	}

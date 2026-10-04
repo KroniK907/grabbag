@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "playtest-3"
+	assetVersion = "shell-1"
 )
 
 //go:embed templates/*.html
@@ -147,7 +147,7 @@ func (g *Game) Start(h games.Helper) error {
 	return g.run.Start(h, g.beginMatchLocked)
 }
 
-// Board is the TV document after Start.
+// Board is the TV fragment after Start.
 func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
 	g.run.Render(w, "board.html", g.boardView(), http.StatusOK)
 }
@@ -159,6 +159,10 @@ func (g *Game) BoardButtons() []games.BoardButton {
 		{Label: "Prompt Library", Path: "/play/picker", HostOnly: true},
 	}
 }
+
+// Assets is game.css and game.js for the shells. game.js registers the board
+// and phone lifecycles.
+func (g *Game) Assets() ui.Assets { return runtimekit.Assets(id, assetVersion) }
 
 // Phone is the seated player column after Start.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {

@@ -57,7 +57,7 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie).Body.String()
 	if !strings.Contains(phone, "Guest") ||
-		!strings.Contains(phone, `action="/lobby/wait"`) ||
+		!strings.Contains(phone, `hx-post="/lobby/wait"`) ||
 		!strings.Contains(phone, "Leave wait list") ||
 		strings.Contains(phone, "ui-plunger") ||
 		strings.Contains(phone, "READY") {
@@ -66,7 +66,7 @@ func testClosedJoinToWait(t *testing.T, handler http.Handler, room *lobby.Lobby)
 	hostPhone := lobbyRequest(t, handler, http.MethodGet, "/", nil, hostCookie).Body.String()
 	if !strings.Contains(hostPhone, "Host") ||
 		strings.Contains(hostPhone, `class="ui-plunger"`) ||
-		strings.Contains(hostPhone, `action="/lobby/wait"`) {
+		strings.Contains(hostPhone, `hx-post="/lobby/wait"`) {
 		t.Fatalf("seated host phone body = %q", hostPhone)
 	}
 }
@@ -232,11 +232,11 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 
 	kickedJoin := lobbyRequest(t, handler, http.MethodGet, "/", nil, guestCookie)
 	kickedBody := kickedJoin.Body.String()
-	if !strings.Contains(kickedBody, `action="/lobby/join"`) {
+	if !strings.Contains(kickedBody, `hx-post="/lobby/join"`) {
 		t.Fatalf("post-Kick phone = %q, want Join", kickedBody)
 	}
-	if strings.Count(kickedBody, `class="ui-notch"`) != 1 {
-		t.Fatalf("post-Kick notches = %d in %q", strings.Count(kickedBody, `class="ui-notch"`), kickedBody)
+	if strings.Count(kickedBody, `class="ui-notch"`) != 0 {
+		t.Fatalf("post-Kick tenant drew %d notches (the shell draws it) in %q", strings.Count(kickedBody, `class="ui-notch"`), kickedBody)
 	}
 	if !strings.Contains(kickedBody, "The host kicked you") || !strings.Contains(kickedBody, ">Out.<") {
 		t.Fatalf("post-Kick missing kick copy: %q", kickedBody)
@@ -483,9 +483,7 @@ func lobbyHandler(t *testing.T, db *store.DB) (http.Handler, *lobby.Lobby) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", room.Phone)
-	mux.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
-		room.Board(w, r, "http://192.168.10.24:8654/")
-	})
+	mux.HandleFunc("GET /board", room.Board)
 	room.Register(mux)
 	return mux, room
 }

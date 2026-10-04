@@ -37,12 +37,14 @@ grabbag/
     agent/
       CODEBASE.md             # this file
   internal/
-    host/                     # process, mux, register Lobby + games
+    host/                     # process, mux, shells, register Lobby + games
+      shelltest/              # chromedp tests of the /board and / shells
     lobby/
       templates/
+      static/                 # lobby.js (the Lobby tenant's registration)
     ui/
-      static/                 # host chrome CSS/JS (theme tokens + widgets)
-      templates/              # shared chrome defines (ui-start, overlay)
+      static/                 # host chrome CSS/JS (theme, widgets, shell.js)
+      templates/              # shared chrome defines (ui-start, ui-shell, overlay)
       uitest/                 # test helper: render every preview scenario
     store/                    # host/Lobby persistence, game_kv, path helpers
     platform/                 # host-wide packages
@@ -63,13 +65,15 @@ grabbag/
 
 `internal/ui` is one package. Lobby vs game chrome can be files or subfolders inside it. Split into separate packages later if a second game or an external author API makes the cut obvious.
 
-Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`). Palettes are `html[data-theme]` token sets. The host ships `neon-dark` (default) and `neon-light`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Game timers are `ui-countdown` in `chrome.html` plus `internal/ui/static/countdown.js` (see [GAME_CONTRACT.md](GAME_CONTRACT.md#countdown)). Lobby page templates compose those widgets. They do not restyle each screen from scratch.
+Shared widgets are CSS classes in `internal/ui/static/live.css` (`ui-btn`, `ui-field`, `ui-header`, `ui-board`, and the rest) plus `internal/ui/templates/chrome.html` (`ui-start`, `ui-start-quiet`, `ui-overlay`).
+
+`/board` and `/` are persistent shells: `internal/ui/templates/shell.html` (`ui-shell`) and `internal/ui/static/shell.js` (`grabbagShell`). They load once and swap tenants in place. `ui.Tenant` (`Board`, `Phone`, `Assets`, `Scenarios`) is the Go side. The Lobby, every game, and the host's `locked` board are tenants. Host renders the shells and the `GET /tenant` and `GET /board/tenant` frames in `internal/host/shell.go`. Inside a shell every form is `hx-post` and nothing reloads except `grabbagShell.hardReload` for a kick or a host restart. `ui-start` is for operator pages (`/settings`, pickers, how-to pages), which may reload. `internal/ui/static/notice.js` is the toast queue both use. The contract is [GAME_CONTRACT.md](GAME_CONTRACT.md#shells). Palettes are `html[data-theme]` token sets. The host ships `neon-dark` (default) and `neon-light`. Pages pass `ui.Chrome`. Avatars and join QR are `ui.AvatarSVG` and `ui.QRCodeSVG`. Game timers are `ui-countdown` in `chrome.html` plus `internal/ui/static/countdown.js` (see [GAME_CONTRACT.md](GAME_CONTRACT.md#countdown)). Lobby page templates compose those widgets. They do not restyle each screen from scratch.
 
 `cmd/grabbag-uishots` imports only `internal/host` and chromedp. Tray details are [Research: Windows Go launch and tray](https://github.com/KroniK907/grabbag/issues/5). Host files on disk are [Research: host on-disk store](https://github.com/KroniK907/grabbag/issues/6). The game contract shape is [Grill: Lobby vs game package](https://github.com/KroniK907/grabbag/issues/9). The method tables and load checklist are [GAME_CONTRACT.md](GAME_CONTRACT.md).
 
 ### UI previews
 
-Each package that draws pages lists `ui.Scenario` values in a `preview.go` next to its views: `lobby.Scenarios()`, and `Scenarios()` on each Game (`games.Previewer`). A scenario renders the real template from fixed data, with `ui.Chrome.Static` set so the page loads no htmx, SSE, or heartbeat. Host mounts the gallery at `/dev/ui/` only with `-dev-preview`. `cmd/grabbag-uishots` serves the same handler in-process and screenshots it. It is the only package that imports chromedp. The full rules are in [GAME_CONTRACT.md](GAME_CONTRACT.md#ui-previews).
+Each package that draws pages lists `ui.Scenario` values in a `preview.go` next to its views: `lobby.Scenarios()`, and `Scenarios()` on each tenant (`ui.Tenant`). A scenario renders the real template from fixed data. Board and phone fragments go inside the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, or transitions, and the tenant mounts once so layout code runs. Host mounts the gallery at `/dev/ui/` only with `-dev-preview`. `cmd/grabbag-uishots` serves the same handler in-process and screenshots it. It and the test-only `internal/host/shelltest` are the only packages that import chromedp. The full rules are in [GAME_CONTRACT.md](GAME_CONTRACT.md#ui-previews).
 
 `-dev-bench` (`internal/host/bench.go`) runs a throwaway room in its own data dir with password `devbench`. `/dev/bench/` shows the board, `/settings`, and 3 to 6 live phones on one page. Seat 1 joins as host. Each phone gets its own port (`-port`+1 through +6), and the host renames `grabbag_` cookies per seat port so one browser can hold every player.
 
@@ -81,6 +85,7 @@ Each package that draws pages lists `ui.Scenario` values in a `preview.go` next 
 |------|------------|-----------------|
 | `cmd/grabbag` | `internal/host` | everything else |
 | `cmd/grabbag-uishots` | `internal/host`, chromedp | everything else |
+| `internal/host/shelltest` (tests only) | `internal/host`, `internal/games`, `internal/store`, chromedp | everything else |
 | `internal/host` | lobby, games, ui, store, platform, docs | - |
 | `docs` | stdlib only | host, lobby, games, ui, store, platform |
 | `internal/lobby` | ui, platform, store | host, games |

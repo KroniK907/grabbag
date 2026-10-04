@@ -79,7 +79,7 @@ func TestReadyToggleAndBoardCheck(t *testing.T) {
 	host := joinNamed(t, handler, "Host", "correct horse")
 
 	phone := lobbyRequest(t, handler, http.MethodGet, "/", nil, host).Body.String()
-	if !strings.Contains(phone, `action="/lobby/ready"`) || !strings.Contains(phone, `is-unready`) || !strings.Contains(phone, ">Unready<") {
+	if !strings.Contains(phone, `hx-post="/lobby/ready"`) || !strings.Contains(phone, `is-unready`) || !strings.Contains(phone, ">Unready<") {
 		t.Fatalf("seated ready missing: %q", phone)
 	}
 
@@ -412,9 +412,7 @@ func openTestLobby(t *testing.T, dir string, wrap func(*lobby.Config)) (*store.D
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", room.Phone)
-	mux.HandleFunc("GET /board", func(w http.ResponseWriter, r *http.Request) {
-		room.Board(w, r, "http://192.168.10.24:8654/")
-	})
+	mux.HandleFunc("GET /board", room.Board)
 	room.Register(mux)
 	return db, mux, room
 }

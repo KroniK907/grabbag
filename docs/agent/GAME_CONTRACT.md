@@ -29,6 +29,7 @@ Operator playbook is `/docs`.
 - [Helper hooks](#helper-hooks)
 - [HTTP mounts](#http-mounts)
 - [Extra pages](#extra-pages)
+- [Shells](#shells)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
 - [Disconnect policy](#disconnect-policy)
@@ -62,29 +63,37 @@ lifecycle_order:
 host_calls_on_game:
   - ID Name MinPlayers MaxPlayers
   - Load Settings Start
-  - Board BoardButtons Phone Play
+  - Board BoardButtons Phone Play   # Board and Phone write fragments
+  - Assets Scenarios                # ui.Tenant, embedded in games.Game
   - Pause Resume Stop Shutdown
 game_calls_on_helper:
   - Seated Waiting Audience Player PlayerFromRequest
   - DataDir KVGet KVSet
   - Finish Pause Resume Publish Log
   - Theme HasAdmin
+shells:
+  documents: [/, /board]           # load once; tenants swap inside #shell-stage
+  tenant_fetch: [GET /tenant, GET /board/tenant]
+  tenants: [lobby, locked, <game id>]
+  js: grabbagShell.register(id, {board: {mount, unmount}, phone: {mount, unmount}})
+  refetch_on: [sse round, sse tenant, "HX-Trigger: grabbag:tenant", sse reconnect]
+  reloads_only: [hardReload("kicked"), hardReload("host-restarted")]
 mounts:
-  phone_document: /
-  board_document: /board
+  phone_shell: /
+  board_shell: /board
   operator: /settings
   game_settings: /settings/game/   # after Load
   game_play: /play/                # GET after Load; POST only after Start
 urls_game_must_not_own: ["/", "/board", "/settings"]
 nil_ok: [Settings, Play]
 optional:
-  games.Previewer: Scenarios() []ui.Scenario  # -dev-preview gallery at /dev/ui/
   games.DisconnectPolicy: PauseOnDisconnect() bool  # false opts out of auto-pause on seated disconnect
 sse:
   endpoint: GET /lobby/events
-  connect: body hx-ext=sse sse-connect=/lobby/events on ui-start
+  connect: the shell owns the one EventSource; operator pages use ui-start
+  locked_board: GET /shell/events/locked  # tenant and theme only
   helper: Publish(name)  # data payload is always "update"
-  reserved: [roster, round, pause, theme, log, notice]
+  reserved: [roster, round, tenant, pause, theme, log, notice]
   pattern: named event then hx-get current HTML, not a delta
   drop: slow pages miss events (non-blocking send, buffer 16)
 ```
@@ -93,7 +102,7 @@ sse:
 
 Lobby owns roster, join, wait list, audience, seats, identity, operator knobs, and the start gate. Games read those facts through Helper. They never write them.
 
-A game owns run logic, per-player run state keyed by Lobby player id, optional extra pages, and the `/board` document plus the inner `/` phone body after Start.
+A game owns run logic, per-player run state keyed by Lobby player id, optional extra pages, and after Start the board and phone fragments the shells show.
 
 Host drives Load, Start, Stop, and Shutdown. Load is in-process. No folder scan. No child process.
 
@@ -155,14 +164,16 @@ Host calls these on the Game value.
 | `Load(h Helper) error` | after construct | Store `h`. Read KV if knobs persist. Return nil on success. |
 | `Settings() http.Handler` | after Load | Fragment mux stripped at `/settings/game`. Nil is fine. |
 | `Start(h Helper) error` | operator or auto-start | Store `h` again. Begin ticks or round state. |
-| `Board(w, r)` | GET `/board` after Start | Full HTML document. Stamp theme from `h.Theme()`. |
+| `Board(w, r)` | board shell after Start | HTML fragment. No `<html>`, `<link>`, or `<script>`. The shell owns the document and the theme. |
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
-| `Phone(w, r)` | GET `/` after Start, any signed-in player | Inner body only. Host wraps Leave and the claimed-host drawer. Unknown cookies stay on Lobby join. |
+| `Phone(w, r)` | phone shell after Start, any signed-in player | Inner body fragment. Host wraps Leave and the claimed-host drawer. Unknown cookies stay on Lobby join. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
 | `Pause() error` | operator or auto-pause on seated disconnect (unless the game opts out, see [Disconnect policy](#disconnect-policy)) | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
 | `Stop() error` | round end | Drop in-memory run state. Keep KV. Keep helper. |
 | `Shutdown() error` | unload | Drop helper. Stop goroutines. |
+| `Assets() ui.Assets` | whenever a shell shows the game | `{CSS, JS, External}` for both surfaces. `runtimekit.Assets(id, version)` builds `game.css` and `game.js` under `games.StaticPath(id)` (`/games/<id>/static/`), which host serves from that game's `Play()` static files whichever game is loaded. External is web fonts and the like. |
+| `Scenarios() []ui.Scenario` | `/dev/ui/` gallery, uishots, tests | Preview states. See [UI previews](#ui-previews). |
 
 ## Helper hooks
 
@@ -184,20 +195,21 @@ Host implements Helper. Games do not parse cookies, open `host.sqlite`, or write
 | `Publish(name)` | | Named SSE on the room hub. One EventSource per page. A slow page may miss an event. Clients fetch current state. |
 | `Notify(target, typ, message, seconds)` | | Host toast. `target` is `board`, `host`, `seated`, `audience`, or `waiting`. Reserved SSE name `notice` with JSON `target`, `type`, `message`, `duration`. Empty message or unknown target is a no-op. Does not write the log. `seconds`: 0 until close, negative is 3s, above 30 clamps to 30. |
 | `Log(line)` | | Prefixed with `<ID>: ` in the host log ring. No-op if nothing is loaded. |
-| `Theme()` | `string` | `neon-light` or `neon-dark`. Stamp full documents so first paint matches `/settings`. |
+| `Theme()` | `string` | `neon-light` or `neon-dark`. Stamp extra full documents (`/play/info`) so first paint matches `/settings`. Fragments inherit the shell's theme. |
 | `HasAdmin(r)` | `bool` | Valid admin session. Use for board End game. Do not read the admin cookie yourself. |
 
 ## HTTP mounts
 
-Public paths stay host-owned. Lobby vs game is a state swap on `/` and `/board`.
+Public paths stay host-owned. Lobby vs game is a tenant swap inside the `/` and `/board` shells.
 
 | Path | Owner after Load | Owner after Start |
 |------|------------------|-------------------|
-| `/` | Lobby phone | Game `Phone` body inside host chrome, any signed-in player |
-| `/board` | Lobby TV, plus `BoardButtons` | Game `Board` full document |
+| `/` | phone shell, Lobby tenant | phone shell, game `Phone` wrapped by host, any signed-in player |
+| `/board` | board shell, Lobby tenant plus `BoardButtons` | board shell, game `Board` |
 | `/settings` | Host operator | Host operator, Game Settings fragment inlined |
 | `/settings/game/*` | `Settings()` mux | same |
 | `/play/*` | GET from `Play()` | GET and POST from `Play()` |
+| `/games/<id>/static/*` | every catalog game's `Play()` `static/` files, loaded or not | same |
 
 Forms in the settings fragment must post under `/settings/game/...`. Play forms post under `/play/...`.
 
@@ -213,13 +225,62 @@ Operator-only extra GET pages check `HasAdmin` in the game. Signed-out GET is pl
 
 Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby `HostOnly` button `Deck Library`, pack enable POSTs to `/settings/game/`. Success is `303` to `/play/picker`. A failed write or a refused-after-Start toggle returns `200` HTML so the checkboxes match stored state. `GET /play/howto` is a public extra document (Lobby `How to play` button, no `HasAdmin`). The in-round phone `?` loads `GET /play/howto-sheet`. Quick Quips uses the same picker mount as Prompt Library (`GET /play/picker`, `HostOnly`).
 
+## Shells
+
+`/board` (TV) and `/` (phones) are persistent shell documents. They load once. The shell owns the document, the one SSE connection, theme, notices, the connection overlay, and the heartbeat. Tenants (the Lobby, each game, and the host's `locked` board) swap in and out of `#shell-stage`. Go side: `ui.Tenant` is `Board`, `Phone`, `Assets`, `Scenarios`.
+
+A transition fetches `GET /board/tenant` or `GET /tenant`: JSON with the fragment, assets, tenant id, a host generation, and the host boot ID. The shell loads assets it lacks, fades out, unmounts, swaps, mounts, and fades in (TV Lobby to game and back: 1.5s out, 0.5s in; other TV swaps 200ms; phones 150ms; instant under `prefers-reduced-motion`). Transitions run one at a time, the latest wins, older generations are dropped, and a fetch for the same id and generation (or the same HTML) swaps nothing.
+
+### Register
+
+`game.js` calls `register` at the top level and does nothing else there:
+
+```js
+grabbagShell.register("wordbox", {
+  board: { mount(root, ctx) { ctx.on(document, "htmx:afterSwap", onSwap); ctx.every(1000, tick); } },
+  phone: { mount(root, ctx) { ctx.on(window, "resize", sync); }, unmount() {} },
+});
+```
+
+`unmount` is optional. The Lobby registers as `lobby` from `/lobby/static/lobby.js`.
+
+### ctx
+
+| Member | What it is |
+|--------|-----------|
+| `root`, `surface`, `tenant` | The stage, `board` or `phone`, and your id. |
+| `signal` | `AbortSignal` that aborts when unmount begins. |
+| `on(target, type, fn, opts)` | `addEventListener` with `signal`. Returns `off()`. |
+| `every(ms, fn)`, `after(ms, fn)` | Timers cleared on unmount. Return `cancel()`. |
+| `frame(fn)` | `requestAnimationFrame` loop. Return `false` to stop. Stops on unmount. |
+| `cleanup(fn)` | Your own teardown. |
+| `audio` | Reserved for board audio. |
+
+Unmount order: abort `signal`, cancel ctx timers and frames, run `cleanup` callbacks newest first, call your `unmount()`, then the shell removes your CSS and swaps the markup. Listeners on elements inside your fragment and `hx-*` attributes need nothing. A `document` or `window` listener, timer, or frame you start outside ctx fails the browser suite's leak check.
+
+### No reloads
+
+Inside a shell nothing reloads. Every form is `hx-post`, never `<form method="post">`, and nothing calls `location.reload`. Answer htmx with a partial, or 204 when an event or the tenant trigger repaints. Do not redirect an htmx POST; htmx follows it and fetches a shell document. The shell reloads only through `grabbagShell.hardReload(reason)`, for `kicked` (a kick or a room clear) and `host-restarted` (a new boot ID after an SSE reconnect). A reconnect with the same boot ID refetches the tenant and theme, remounts, restarts the heartbeat, and hides the overlay without a reload. The overlay shows only after 3s down.
+
+Extra pages (`/play/howto`, pickers, `/settings`, `/setup`) are normal documents and may reload.
+
+### Changing the tenant
+
+The shell refetches on the `round` and `tenant` SSE events, on reconnect, and on `HX-Trigger: grabbag:tenant`. Host sends the trigger and bumps the generation for Start, Stop, Load, Unload, Join, Leave, Stand, Sit, take-host, sign-in, auto-start, Keep and Clear, and the admin-only board switch. A game ends the round with `Helper.Finish`, which publishes `round`.
+
+If a mount throws, the shell logs it to `/settings/log` through `POST /shell/error` and leaves the server-rendered fragment. If a tenant fetch fails, the current tenant stays and the shell retries (1, 2, 4, then every 10s) and says so after about 10s.
+
+### Locked board
+
+With admin-only board on, a board request with no admin session gets the `locked` tenant (a "Host screen only" card). The locked shell connects to `GET /shell/events/locked`, which carries only `tenant` and `theme`, never `log`, `notice`, or `roster`. Turning the switch off, or signing in from that browser, swaps it live and moves it to the full stream.
+
 ## Live SSE
 
-One EventSource per page. Host chrome (`ui-start`) sets `hx-ext="sse"` and `sse-connect="/lobby/events"` on `body`. `GET /lobby/events` is the in-process hub. `ui-start-quiet` (setup and `/docs`) does not connect.
+One EventSource per page. On the shells it is the shell's own connection to `GET /lobby/events`, the in-process hub. For each named event the shell fires `sse:<name>` on every element whose `hx-trigger` lists it, as HTMX's SSE extension does. Operator pages use `ui-start`, which sets `hx-ext="sse"` and `sse-connect="/lobby/events"` on `body`. `ui-start-quiet` (setup and `/docs`) does not connect.
 
 `Helper.Publish(name)` writes an SSE event with that name and data `update`. Games cannot set the data line. Host uses `PublishData` for `theme` (palette id), `log` (the log line), and `notice` (toast JSON). Put scores and names in a GET partial, not in the event body. Toasts are fire-and-forget. A missed `notice` is not replayed.
 
-The page does not apply a delta from the event. It hears the name, then `hx-get`s current HTML. Include `htmx:sseOpen from:body` on those triggers so a reconnect refetches.
+The page does not apply a delta from the event. It hears the name, then `hx-get`s current HTML. Include `htmx:sseOpen from:body` on those triggers; it fires when the shell's stream first opens. After a drop the shell remounts the whole tenant.
 
 A subscriber channel buffers 16 events. A further publish to a slow page is dropped. Design for missed ticks. The next event, or `sseOpen`, should paint the truth.
 
@@ -232,13 +293,14 @@ Do not publish these for game ticks. Host already owns them.
 | Name | Who publishes | Typical refresh |
 |------|---------------|-----------------|
 | `roster` | host, Lobby, or a game knob that other pages should reread | roster partials |
-| `round` | host on Start, Stop, Shutdown | reload `/` or `/board` via `round-swap` |
+| `round` | host on Start, Stop, Shutdown | shells refetch their tenant |
+| `tenant` | host and Lobby when what shells show changed | shells refetch their tenant |
 | `pause` | host on Pause and Resume | pause chrome and game partials |
 | `theme` | host | `html[data-theme]` |
 | `log` | host log ring | settings log tail |
 | `notice` | host via `Helper.Notify` | chrome toast; client filters by target |
 
-Publishing `roster` is fine when a settings knob changes a board that also shows Lobby facts. Publishing `round` from a game reloads the whole document. Do not do that for a score tick.
+Publishing `roster` is fine when a settings knob changes a board that also shows Lobby facts. Publishing `round` or `tenant` from a game makes every shell refetch its tenant. Do not do that for a score tick.
 
 ### Your own names
 
@@ -255,7 +317,7 @@ Call `h.Publish("tap")` after you mutate run state. In the template, listen on t
 ></div>
 ```
 
-Register `GET /partials/board-list` on `Play()`. Do not add a second `sse-connect`. Do not open `EventSource` in your own script. Full board documents that use `ui-start` should also include `{{template "round-swap" "/board"}}` so Stop returns the TV to Lobby.
+Register `GET /partials/board-list` on `Play()`. Do not add `sse-connect`. Do not open `EventSource` in your own script.
 
 ## Player record
 
@@ -287,7 +349,9 @@ Operator Pause from `/settings` and `Helper.Pause` still reach every game.
 
 ## UI previews
 
-Optional. A Game that also implements `games.Previewer` lists `ui.Scenario` values. Host serves them at `/dev/ui/` when started with `-dev-preview`, and `cmd/grabbag-uishots` screenshots them. Host calls `Scenarios()` on a fresh `New()` value. There is no Load, no Helper, and no data dir.
+Every tenant lists `ui.Scenario` values from `Scenarios()`. Host serves them at `/dev/ui/` when started with `-dev-preview`, and `cmd/grabbag-uishots` screenshots them. Host calls `Scenarios()` on a fresh `New()` value. There is no Load, no Helper, and no data dir.
+
+Board and phone scenarios are tenant fragments. Host wraps each in the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, or transitions, with the tenant's `Assets()` linked. The static shell mounts the tenant once so layout code runs; skip animations when `window.grabbagStatic` is set. `uitest.RenderTenant` renders every scenario inside the shell and fails on a fragment that is a full document or carries `<script>` or `<link>`.
 
 | Scenario field | Rule |
 |----------------|------|
@@ -295,12 +359,13 @@ Optional. A Game that also implements `games.Previewer` lists `ui.Scenario` valu
 | `Group` | Same value on the board and every phone of one moment. Drives the table view. |
 | `Viewer` | `tv`, `judge`, `seated`, `host`, `audience`, `guest`, or `operator`. |
 | `Frame` | `ui.FramePhone`, `ui.FrameTV`, or `ui.FramePage`. |
-| `Shell` | Empty for a full document. `ui.ShellPlayPhone` for a phone body host wraps in the Lobby play phone. `ui.ShellSettings` for a settings fragment host inlines on `/settings`. |
+| `Shell` | Empty for a full document (extra pages). `ui.ShellBoard` for a board fragment. `ui.ShellPhone` for a whole phone tenant fragment (the Lobby). `ui.ShellPlayPhone` for a game phone body host wraps in the Lobby play-phone fragment. `ui.ShellSettings` for a settings fragment host inlines on `/settings`. |
+| `Open` | Element ids the static shell opens when the request names none, such as a drawer. |
 | `MinPlayers`, `MaxPlayers` | `MinPlayers > 0` turns on the seated sweep: min, middle, 12, max. `MaxPlayers 0` sweeps to the Lobby cap, 64. |
 | `Sample` | Include in the phone and tablet device matrix. Keep it to one or two phone screens per game. |
-| `Render` | Build the view from fixed data, then call `ui.RenderScenario`. Set `GameCSS` / `GameJS` from `Preview.Asset`. No disk, network, or wall clock. |
+| `Render` | Build the view from fixed data, then call `ui.RenderScenario`. Extra pages set `GameCSS` from `Preview.Asset`. No disk, network, or wall clock. |
 
-Drive the real engine to each state where one exists, so previews cannot drift from play. Saved JSON merge patches go in `internal/games/<name>/previews/<surface>.<name>.<variant>.json` and load through `ui.WithVariants`. Add a `preview_test.go` that calls `uitest.RenderAll`.
+Drive the real engine to each state where one exists, so previews cannot drift from play. Saved JSON merge patches go in `internal/games/<name>/previews/<surface>.<name>.<variant>.json` and load through `ui.WithVariants`. Add a `preview_test.go` that calls `uitest.RenderTenant(t, id, New())`.
 
 ## Runtime kit
 
@@ -323,14 +388,14 @@ The Runner owns:
 | `Apply`, `Defer` | Apply a `Result` from game code outside a hook. `Defer` publishes now and holds the host calls for the next Apply or tick, for code that must keep the lock, such as a view. |
 | `Hold` | `Config.Hold(e, paused, now)` on Pause and Resume. Fold in any other hold, such as a reshuffle overlay, and call `Runner.Hold` when it changes. |
 | `Cleanup` | Runs on Stop and Shutdown before the engine is dropped. |
-| Pages | `Render`, `Page` / `PageLocked` (chrome, theme, asset links), `Static` for `GET /static/`. |
+| Pages | `Render`, `Page` / `PageLocked` (chrome, theme, asset links for extra pages), `Static` for `GET /static/`, `Assets(id, version)` for `Game.Assets`. |
 | Tests and previews | `SetClock`, `SetRand`, and `Install(e)` for a running match with no helper and no tick. Call them without the lock. `Tick()` runs one tick now. |
 
 `Gate` is per game. Leave it nil to let actions run while paused. `Reply` gets the phone error and decides where it goes: a view field, or a per-player map on the engine.
 
 ### Countdown
 
-Every game timer draws through one client script, `internal/ui/static/countdown.js`, which `ui-start` loads on every game document and phone.
+Every game timer draws through one client script, `internal/ui/static/countdown.js`, which the shells and `ui-start` load.
 
 1. Keep the countdown in the engine as a `runtimekit.Timer`. `Hold` freezes it on pause.
 2. Put `Timer.View(now)` (a `runtimekit.TimerView`) on the board or phone view.
@@ -419,22 +484,22 @@ func (g *Game) postHideLatency(w http.ResponseWriter, r *http.Request) {
 
 The live package that does this is Testing (`internal/games/testing`).
 
-### Phone body vs board document
+### Phone and board fragments
 
 `Phone` writes the inner column. Do not send `<html>`. Host wraps Leave and the Host drawer.
 
-`Board` writes a full document. Testing stamps chrome and listens for `sse:pause` plus its own `sse:tap` / `sse:testing` events.
+`Board` writes a fragment too. Testing's listens for `sse:pause` plus its own `sse:tap` / `sse:testing` events. The shell loads `game.css` and `game.js` from `Assets`.
 
 ### End the round from the game
 
 ```go
 if h.HasAdmin(r) || player.ClaimedHost {
 	h.Finish()
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	w.WriteHeader(http.StatusNoContent)
 }
 ```
 
-Board End in Testing also posts `return=/board` so the TV lands on `/board`.
+The End game form is `<form hx-post="/play/end" hx-swap="none">`. Finish publishes `round`, and every shell swaps back to the Lobby.
 
 ### Lobby rail button before Start
 
@@ -463,6 +528,9 @@ The Testing list listens with `hx-trigger="sse:testing, sse:tap, sse:roster, htm
 - Write seats, name, wait, audience, or claimed-host.
 - Parse the player cookie or the admin cookie.
 - Register `/`, `/board`, or `/settings` as mux roots.
+- Send a full document, `<link>`, or `<script>` from `Board` or `Phone`.
+- Use `<form method="post">` or `location.reload` inside a shell.
+- Leave a `document` or `window` listener, timer, or frame running after unmount. Use `ctx`.
 - Clear KV on Stop or Shutdown (operator clear does that).
 - Scan a games folder at runtime.
 - Treat `/docs` as this contract. That URL is how to run the binary. The human API reference is `/docs/game-contract.html`.

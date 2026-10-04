@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/ui"
 )
 
 type fakeGame struct {
@@ -15,12 +16,12 @@ type fakeGame struct {
 	buttons                 []games.BoardButton
 }
 
-func (f *fakeGame) ID() string      { return "fake" }
+func (f *fakeGame) ID() string   { return "fake" }
 func (f *fakeGame) Name() string { return "fake" }
 
 func (f *fakeGame) Description() string { return "Fake game for host contract tests." }
-func (f *fakeGame) MinPlayers() int { return f.min }
-func (f *fakeGame) MaxPlayers() int { return f.max }
+func (f *fakeGame) MinPlayers() int     { return f.min }
+func (f *fakeGame) MaxPlayers() int     { return f.max }
 
 func (f *fakeGame) Load(h games.Helper) error {
 	f.helper = h
@@ -70,6 +71,10 @@ func (f *fakeGame) Board(w http.ResponseWriter, r *http.Request) {
 func (f *fakeGame) Phone(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("FAKE-PHONE"))
 }
+
+func (f *fakeGame) Assets() ui.Assets { return ui.Assets{CSS: []string{"/games/fake/static/fake.css"}} }
+
+func (f *fakeGame) Scenarios() []ui.Scenario { return nil }
 
 func (f *fakeGame) Play() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

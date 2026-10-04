@@ -1,8 +1,5 @@
-{{template "ui-start" .}}
-{{template "round-swap" "/board"}}
-<link rel="stylesheet" href="{{.GameCSS}}">
+{{/* The Testing board tenant fragment. The shell links game.css. */}}
 {{template "board-frame" .}}
-{{template "ui-end"}}
 
 {{define "board-frame"}}
 <div
@@ -15,8 +12,7 @@
   <h1>Testing</h1>
   {{template "board-list" .}}
   {{if .ShowEnd}}
-  <form class="testing-end" method="post" action="/play/end">
-    <input type="hidden" name="return" value="/board">
+  <form class="testing-end" hx-post="/play/end" hx-swap="none">
     <button class="ui-btn ui-btn-danger" type="submit">End game</button>
   </form>
   {{end}}
