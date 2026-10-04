@@ -82,6 +82,42 @@ func TestShellDocumentsRenderTheCurrentTenant(t *testing.T) {
 	}
 }
 
+// TestOnlyTheBoardGetsAudio is GM-001: the board shell loads the engine and
+// its mixer levels, and phones load no audio at all.
+func TestOnlyTheBoardGetsAudio(t *testing.T) {
+	t.Parallel()
+	_, handler, _, _ := testGameHandler(t, 0, 0)
+	admin := finishAndJoinHost(t, handler)
+	hxPost(t, handler, "/settings/audio", url.Values{"layer": {"music"}, "volume": {"35"}}, admin)
+
+	board := requestWithCookie(t, handler, http.MethodGet, "/board", nil, admin).Body.String()
+	for _, want := range []string{`src="/static/audio.js?v=`, `data-audio="{`, `&#34;volume&#34;:35`, `id="shell-sound"`} {
+		if !strings.Contains(board, want) {
+			t.Fatalf("board shell missing %q", want)
+		}
+	}
+	if !strings.Contains(board[:strings.Index(board, "shell.js")], "audio.js") {
+		t.Fatal("audio.js must load before shell.js, which boots it")
+	}
+	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
+	for _, bad := range []string{"audio.js", "data-audio", "shell-sound"} {
+		if strings.Contains(phone, bad) {
+			t.Fatalf("phone shell has %q", bad)
+		}
+	}
+
+	frame := getFrame(t, handler, "/board/tenant", admin)
+	var levels struct {
+		Music struct{ Volume int } `json:"music"`
+	}
+	if err := json.Unmarshal(frame.Audio, &levels); err != nil || levels.Music.Volume != 35 {
+		t.Fatalf("board frame audio = %s (%v)", frame.Audio, err)
+	}
+	if got := getFrame(t, handler, "/tenant", admin).Audio; len(got) != 0 {
+		t.Fatalf("phone frame audio = %s", got)
+	}
+}
+
 func TestTenantFrameFollowsStartAndStop(t *testing.T) {
 	t.Parallel()
 	_, handler, rt, _ := testGameHandler(t, 0, 0)
@@ -230,7 +266,7 @@ func TestLockedBoardTenant(t *testing.T) {
 	}
 }
 
-func TestLockedStreamCarriesOnlyTenantAndTheme(t *testing.T) {
+func TestLockedStreamCarriesOnlyTenantThemeAndAudio(t *testing.T) {
 	t.Parallel()
 	_, handler, rt, _ := testGameHandler(t, 0, 0)
 	finishAndJoinHost(t, handler)
@@ -253,9 +289,10 @@ func TestLockedStreamCarriesOnlyTenantAndTheme(t *testing.T) {
 	rt.events.Publish("roster")
 	rt.events.PublishData("theme", "neon-light")
 	rt.events.Publish("tenant")
+	rt.events.PublishData("audio", rt.room.AudioLevelsJSON(context.Background()))
 
 	var got []string
-	for len(got) < 2 {
+	for len(got) < 3 {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			t.Fatal(err)
@@ -267,7 +304,7 @@ func TestLockedStreamCarriesOnlyTenantAndTheme(t *testing.T) {
 			got = append(got, name)
 		}
 	}
-	if got[0] != "theme" || got[1] != "tenant" {
+	if got[0] != "theme" || got[1] != "tenant" || got[2] != "audio" {
 		t.Fatalf("locked stream events = %v", got)
 	}
 }

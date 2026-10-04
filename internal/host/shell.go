@@ -21,8 +21,8 @@ const (
 	lockedTenantID = "locked"
 )
 
-// Shell SSE streams. A locked board only hears tenant changes and theme
-// flips, so it never sees the roster, the log, or a notice.
+// Shell SSE streams. A locked board only hears tenant changes, theme flips,
+// and the audio mixer, so it never sees the roster, the log, or a notice.
 const (
 	streamRoom   = "/lobby/events"
 	streamLocked = "/shell/events/locked"
@@ -31,16 +31,18 @@ const (
 // tenantFrame is the GET /tenant and GET /board/tenant body. The shell swaps
 // html in when tenant or generation moved on, and reloads when boot changed.
 type tenantFrame struct {
-	Tenant     string    `json:"tenant"`
-	Generation uint64    `json:"generation"`
-	Boot       string    `json:"boot"`
-	Theme      string    `json:"theme"`
-	Notices    string    `json:"notices"`
-	Stream     string    `json:"stream"`
-	Player     bool      `json:"player"`
-	Kicked     bool      `json:"kicked"`
-	Assets     ui.Assets `json:"assets"`
-	HTML       string    `json:"html"`
+	Tenant     string `json:"tenant"`
+	Generation uint64 `json:"generation"`
+	Boot       string `json:"boot"`
+	Theme      string `json:"theme"`
+	Notices    string `json:"notices"`
+	Stream     string `json:"stream"`
+	Player     bool   `json:"player"`
+	Kicked     bool   `json:"kicked"`
+	// Audio is the board mixer levels. Board frames only.
+	Audio  json.RawMessage `json:"audio,omitempty"`
+	Assets ui.Assets       `json:"assets"`
+	HTML   string          `json:"html"`
 }
 
 // shellTenant is the tenant one request sees on one surface.
@@ -70,7 +72,7 @@ func (rt *runtime) registerShellRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /board", rt.shellDocument(ui.SurfaceBoard))
 	mux.HandleFunc("GET /tenant", rt.shellTenantFrame(ui.SurfacePhone))
 	mux.HandleFunc("GET /board/tenant", rt.shellTenantFrame(ui.SurfaceBoard))
-	mux.Handle("GET "+streamLocked, rt.events.Only("tenant", "theme"))
+	mux.Handle("GET "+streamLocked, rt.events.Only("tenant", "theme", "audio", "audio-test"))
 	mux.HandleFunc("POST /shell/error", rt.postShellError)
 }
 
@@ -166,6 +168,10 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			http.Error(w, "Could not render the page.", http.StatusInternalServerError)
 			return
 		}
+		var audio string
+		if surface == ui.SurfaceBoard {
+			audio = rt.room.AudioLevelsJSON(r.Context())
+		}
 		var page bytes.Buffer
 		err = ui.RenderShell(&page, ui.Shell{
 			Chrome: ui.Chrome{
@@ -179,6 +185,7 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			Boot:       rt.boot,
 			Stream:     st.stream,
 			Player:     st.player,
+			Audio:      audio,
 			Assets:     st.tenant.Assets(),
 			Body:       body,
 		})
@@ -215,6 +222,9 @@ func (rt *runtime) shellTenantFrame(surface string) http.HandlerFunc {
 			Kicked:     st.kicked,
 			Assets:     st.tenant.Assets(),
 			HTML:       string(body),
+		}
+		if surface == ui.SurfaceBoard {
+			frame.Audio = json.RawMessage(rt.room.AudioLevelsJSON(r.Context()))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")

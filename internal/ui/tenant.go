@@ -59,6 +59,9 @@ type Shell struct {
 	Stream string
 	// Player is true when a phone shell rendered for a signed-in player.
 	Player bool
+	// Audio is the board's mixer levels as JSON, read by audio.js. Board
+	// only; phones load no audio.
+	Audio  string
 	Assets Assets
 	Body   template.HTML
 }

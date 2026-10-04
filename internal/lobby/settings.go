@@ -722,6 +722,10 @@ func (l *Lobby) settingsView(r *http.Request, seatErr string) (settingsData, err
 		return settingsData{}, err
 	}
 	data.AutoStart = autoStart
+	data.Audio, err = l.audioView(ctx)
+	if err != nil {
+		return settingsData{}, err
+	}
 	if l.settingsExtras != nil {
 		extra := l.settingsExtras(ctx)
 		data.GameIDs = extra.GameIDs
