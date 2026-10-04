@@ -558,8 +558,9 @@
   };
 
   // applySnapshot ramps every target the old and new snapshots touch over
-  // seconds. Targets the new one leaves out go back to off.
-  Engine.prototype.applySnapshot = function (name, seconds, scope) {
+  // seconds, starting now or at context time at. Targets the new one leaves
+  // out go back to off.
+  Engine.prototype.applySnapshot = function (name, seconds, scope, at) {
     if (!this.audio) {
       return resolved();
     }
@@ -573,7 +574,7 @@
     }
     var prev = this.snapshot ? this.snapshot.def : {};
     var next = def || {};
-    var t = this.now();
+    var t = Math.max(this.now(), num(at, 0));
     var over = Math.max(0, num(seconds, 0.5));
     var self = this;
     var targets = {};
@@ -916,7 +917,7 @@
       }
       var a = engine.audio;
       var geo = self.geo(def.region);
-      var t = engine.now() + START_DELAY;
+      var t = Math.max(engine.now() + START_DELAY, num(opts.at, 0));
       var src = a.createBufferSource();
       src.buffer = geo.buffer;
       var gain = a.createGain();
@@ -1310,8 +1311,8 @@
 
     var pending = this.pending;
     this.pending = [];
-    pending.forEach(function (fn) {
-      fn();
+    pending.forEach(function (p) {
+      p.run();
     });
     engine.wake();
     return t;
@@ -1367,13 +1368,19 @@
     });
   };
 
-  // later runs fn now, or once the cue starts if it is still loading.
+  // later runs fn now, or once the cue starts if it is still loading. If the
+  // cue is dropped before it starts, the promise resolves with nothing.
   Instance.prototype.later = function (fn) {
     if (this.state === "loading") {
       var self = this;
       return new Promise(function (resolve) {
-        self.pending.push(function () {
-          resolve(fn());
+        self.pending.push({
+          run: function () {
+            resolve(fn());
+          },
+          skip: function () {
+            resolve();
+          },
         });
       });
     }
@@ -1614,7 +1621,13 @@
         list.splice(i, 1);
       }
     });
+    // Changes queued while loading settle as no-ops, so a caller waiting
+    // on one is never left hanging.
+    var pending = this.pending;
     this.pending = [];
+    pending.forEach(function (p) {
+      p.skip();
+    });
     this.finish();
   };
 
@@ -1700,23 +1713,28 @@
       if (!s) {
         return;
       }
-      var when = typeof at === "number" ? at : null;
+      // Every action in one step lands at the same time: the free
+      // timeline's bar, or the step's sync point. A variant switch waits
+      // for the bar by default; other actions run now.
+      var variant = !s.fade && typeof s.to === "string";
+      var t = instant ? self.engine.now()
+        : typeof at === "number" ? at
+        : self.when(s.at || at || (variant ? "bar" : "now"));
       if (s.fade) {
         var part = self.parts[s.fade];
         if (!part) {
           warn(self.scope.tenant + ": cue " + self.name + " has no channel " + s.fade);
           return;
         }
-        var t = instant ? self.engine.now() : when !== null ? when : self.when(s.at || at || "now");
         part.strip.fade.set(Math.max(0, num(s.to, 1)), t, instant ? 0 : Math.max(0, num(s.over, 1)));
-      } else if (typeof s.to === "string") {
-        self.switchTo(s.to, when !== null ? when : s.at || at || "bar", num(s.over, 1), instant);
+      } else if (variant) {
+        self.switchTo(s.to, t, num(s.over, 1), instant);
       }
       if (s.snapshot !== undefined && !instant) {
-        self.engine.applySnapshot(s.snapshot, num(s.over, 0.5), self.scope);
+        self.engine.applySnapshot(s.snapshot, num(s.over, 0.5), self.scope, t);
       }
       if (s.sting && !instant) {
-        self.scope.sting(s.sting);
+        self.scope.sting(s.sting, { at: t });
       }
     });
     this.step = steps;

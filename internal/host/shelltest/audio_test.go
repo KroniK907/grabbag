@@ -195,7 +195,7 @@ func TestAudioScheduling(t *testing.T) {
 }
 
 // schedulingCases is how many check() calls schedulingHarness makes.
-const schedulingCases = 12
+const schedulingCases = 13
 
 // schedulingHarness runs every case and returns [{name, ok, msg}] as JSON.
 // render() suspends the offline context every 48 ms of render time, runs the
@@ -428,6 +428,35 @@ const schedulingHarness = `(async () => {
     if (steps.some((s) => s.at > 20.2 && s.at < 26)) return "a step ran while held";
   });
 
+  await check("a step's sting and snapshot land on its bar", async () => {
+    let started;
+    const env = await render(4, (e) => {
+      e.audio.define({
+        files: {
+          m: tone(e.ctx, [{ secs: 4, amp: 0.5, freq: 100 }]),
+          fx: tone(e.ctx, [{ secs: 0.3, amp: 0.9, freq: 1500 }]),
+        },
+        regions: { a: { file: "m" }, blip: { file: "fx" } },
+        stings: { blip: { region: "blip" } },
+        cues: {
+          song: {
+            bpm: 120, variants: { a: ["a"] },
+            timelines: { t: { kind: "free", script: { 1: { snapshot: "telephone", over: 0, sting: "blip" } } } },
+          },
+        },
+      });
+      e.at(0.1, () => { e.audio.cue("song").start({ timeline: "t" }); e.audio.cue("song").started.then((t) => (started = t)); });
+    });
+    const bar = started + 2;
+    const before = amp(env.data, bar - 0.08, bar - 0.01);
+    if (!near(before, 0.5, 0.05)) return "just before the bar heard " + before + ", want the unfiltered 0.5";
+    let onset = -1;
+    for (let i = Math.floor((bar - 0.3) * RATE); i < env.data.length; i++) {
+      if (Math.abs(env.data[i]) > 0.7) { onset = i / RATE; break; }
+    }
+    if (!near(onset, bar, 0.005)) return "sting heard at " + onset + ", want the bar at " + bar;
+  });
+
   await check("telephone snapshot filters the music layer", async () => {
     const env = await render(4, (e) => {
       e.audio.define({
@@ -497,12 +526,13 @@ const schedulingHarness = `(async () => {
     const errors = [];
     const saved = console.error;
     console.error = (...a) => errors.push(a.join(" "));
-    let started = "pending", ended = "pending";
+    let started = "pending", ended = "pending", changed = "pending";
     try {
       await render(1, (e) => {
         e.audio.define({ files: { x: "nope.ogg" }, regions: { a: { file: "x" } }, cues: { c: { variants: { a: ["a"] } } } });
         e.at(0.1, () => {
           e.audio.cue("c").start().started.then(() => (started = "ok"));
+          e.audio.cue("c").to("b").then(() => (changed = "ok"));
           e.audio.cue("c").end().then(() => (ended = "ok"));
           e.audio.cue("missing").start();
           e.audio.sting("missing");
@@ -513,6 +543,17 @@ const schedulingHarness = `(async () => {
       console.error = saved;
     }
     if (started !== "ok" || ended !== "ok") return "promises " + started + " / " + ended;
+    // A change queued while the cue loads settles when the load fails.
+    let queued = "pending";
+    await render(1, (e) => {
+      e.audio.define({ files: { x: "nope.ogg" }, regions: { a: { file: "x" } }, cues: { c: { variants: { a: ["a"] } } } });
+      e.at(0.1, () => {
+        e.audio.cue("c").start();
+        e.audio.cue("c").to("b").then(() => (queued = "ok"));
+      });
+    });
+    await new Promise((r) => setTimeout(r, 300));
+    if (changed !== "ok" || queued !== "ok") return "queued changes " + changed + " / " + queued;
     if (!errors.some((m) => m.includes("unknown cue missing"))) return "no console error for an unknown cue";
   });
 
