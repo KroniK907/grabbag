@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -140,6 +141,11 @@ func (r *room) open(name, path string) *tab {
 func (r *room) openURL(name, target string) *tab {
 	r.t.Helper()
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(r.chrome))
+	if os.Getenv("CI") != "" {
+		// GitHub's Ubuntu runners block the user namespaces Chromium's sandbox
+		// needs. The test browser only loads this test's own local server.
+		opts = append(opts, chromedp.NoSandbox)
+	}
 	alloc, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
 	r.t.Cleanup(cancelAlloc)
 	ctx, cancel := chromedp.NewContext(alloc)
