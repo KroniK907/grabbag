@@ -67,6 +67,7 @@
   var registry = {};
   var layouts = {};
   var layoutQueued = false;
+  var layoutObserver = null;
   var loadedJS = {};
   var scriptOwners = {};
   var mounted = null;
@@ -446,6 +447,22 @@
     }
   }
 
+  // observeStage refits when a top-level tenant element changes size. Window
+  // resize alone is not enough: viewport units such as dvh can settle after
+  // the resize event, and a tenant can resize itself.
+  function observeStage() {
+    if (!window.ResizeObserver || !stage) {
+      return;
+    }
+    if (!layoutObserver) {
+      layoutObserver = new ResizeObserver(scheduleLayout);
+    }
+    layoutObserver.disconnect();
+    Array.prototype.forEach.call(stage.children, function (el) {
+      layoutObserver.observe(el);
+    });
+  }
+
   // scheduleLayout coalesces layout requests into one run. It uses a timer,
   // not a frame: a background or headless tab may not draw frames for a while.
   function scheduleLayout() {
@@ -800,6 +817,7 @@
         };
         scanNames(stage);
         mountCurrent();
+        observeStage();
         runLayout();
         return fadeIn(fade.in);
       });
@@ -1023,18 +1041,21 @@
     }
     surface = stage.getAttribute("data-surface");
     boot = stage.getAttribute("data-boot");
+    // Sizing listeners come before the static return: the preview gallery
+    // resizes a preview's frame in place, and that must refit it too.
     syncViewport();
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(scheduleLayout);
-    }
-    if (window.grabbagStatic) {
-      runLayout();
-      return;
-    }
     listen(window, "resize", syncViewport);
     listen(window, "orientationchange", syncViewport);
     if (window.visualViewport) {
       listen(window.visualViewport, "resize", syncViewport);
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(scheduleLayout);
+    }
+    observeStage();
+    if (window.grabbagStatic) {
+      runLayout();
+      return;
     }
     // Process swapped markup in the same tick as the swap. With htmx's 20ms
     // settle delay a tap in that gap submits an unprocessed form natively,
@@ -1084,6 +1105,7 @@
     });
     listen(document.body, "htmx:afterSettle", function (evt) {
       scanNames(evt.target);
+      observeStage();
       runLayout();
     });
     listen(document.body, "htmx:responseError", function (evt) {

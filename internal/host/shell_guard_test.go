@@ -152,7 +152,7 @@ func TestLayoutScriptsArePure(t *testing.T) {
 	checked := 0
 	for _, f := range games.Catalog() {
 		g := f.New()
-		play := http.StripPrefix("/play", g.Play())
+		play := http.StripPrefix(strings.TrimSuffix(games.StaticPath(f.ID), "/static/"), g.Play())
 		for _, u := range g.Assets().Layout {
 			rec := httptest.NewRecorder()
 			play.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))

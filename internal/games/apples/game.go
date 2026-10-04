@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "shell-3"
+	assetVersion = "shell-4"
 )
 
 //go:embed templates/*.html
@@ -199,7 +199,7 @@ func (g *Game) BoardButtons() []games.BoardButton {
 // text, also in previews.
 func (g *Game) Assets() ui.Assets {
 	a := runtimekit.Assets(id, assetVersion)
-	a.Layout = []string{"/play/static/layout.js?v=" + id + "-" + assetVersion}
+	a.Layout = []string{games.StaticPath(id) + "layout.js?v=" + assetVersion}
 	return a
 }
 

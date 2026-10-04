@@ -658,3 +658,34 @@ func TestFirstOpenAfterAnOutageReconciles(t *testing.T) {
 		t.Fatalf("board after outage and restart: loads=%d reloads=%v", h.Loads, h.Reloads)
 	}
 }
+
+// TestStaticPreviewRefitsOnResize loads an Apples reveal preview, then
+// resizes the page in place the way the gallery resizes its frame. The
+// shell's viewport values and the card text fit must follow.
+func TestStaticPreviewRefitsOnResize(t *testing.T) {
+	bin := chromeBinary()
+	if bin == "" || testing.Short() {
+		t.Skip("no Chromium, or -short")
+	}
+	server := httptest.NewServer(host.PreviewHandler())
+	t.Cleanup(server.Close)
+	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(bin))
+	if os.Getenv("CI") != "" {
+		opts = append(opts, chromedp.NoSandbox)
+	}
+	alloc, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
+	t.Cleanup(cancelAlloc)
+	ctx, cancel := chromedp.NewContext(alloc)
+	t.Cleanup(cancel)
+	tb := &tab{r: &room{t: t}, name: "preview", ctx: ctx}
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 800),
+		chromedp.Navigate(server.URL+"/dev/ui/s/apples/board/reveal?players=7")); err != nil {
+		t.Fatal(err)
+	}
+	tb.waitFor(`getComputedStyle(document.documentElement).getPropertyValue("--shell-visual-height") === "800px"`)
+	if err := chromedp.Run(ctx, chromedp.EmulateViewport(854, 480)); err != nil {
+		t.Fatal(err)
+	}
+	tb.waitFor(`getComputedStyle(document.documentElement).getPropertyValue("--shell-visual-height") === "480px" && document.documentElement.classList.contains("shell-short")`)
+	tb.waitFor(`[...document.querySelectorAll(".apples-tv .apples-slot:not(.down) .apples-slot-copy")].every((c) => c.scrollHeight <= c.clientHeight + 1 && c.scrollWidth <= c.clientWidth + 1)`)
+}

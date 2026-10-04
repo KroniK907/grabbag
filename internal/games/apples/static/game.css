@@ -252,6 +252,9 @@
   --cols: 1;
   --cap: 1fr;
   --gap: clamp(14px, 1.6vw, 28px);
+  /* Basis 0, not auto: the rows are a share of this height, so it must not
+     grow with the cards' text, or fitting the text would move the boxes. */
+  flex: 1 1 0;
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, var(--cap)));
   grid-template-rows: calc((100% - var(--gap)) / 2);
