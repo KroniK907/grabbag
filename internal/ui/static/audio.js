@@ -691,6 +691,7 @@
     this.handles = {};
     this.instances = [];
     this.touched = {}; // layers this scope filtered directly
+    this.musicStings = []; // playing music-layer stings, faded on leave
     this.leaving = false;
     this.released = false;
     this.api = this.makeAPI();
@@ -817,7 +818,11 @@
 
   Scope.prototype.loadFile = function (name, src) {
     var engine = this.engine;
-    var entry = { state: "loading", buffer: null, promise: null };
+    var have = this.files[name];
+    if (have && have.src === src && have.state !== "failed") {
+      return; // a repeat define, e.g. after a same-tenant swap
+    }
+    var entry = { state: "loading", buffer: null, promise: null, src: src };
     this.files[name] = entry;
     var label = this.tenant + ": file " + name;
     if (!engine.audio) {
@@ -926,10 +931,21 @@
       gain.connect(layer.input);
       src.start(t, geo.start, geo.dur);
       engine.addVoice(src);
+      var voice = { src: src, gain: gain };
+      var music = (def.layer || "effects") === "music";
+      if (music) {
+        self.musicStings.push(voice);
+      }
       var ended = src.onended;
       src.onended = function () {
         ended();
         gain.disconnect();
+        if (music) {
+          var i = self.musicStings.indexOf(voice);
+          if (i >= 0) {
+            self.musicStings.splice(i, 1);
+          }
+        }
       };
       if (geo.markers) {
         keys(geo.markers).forEach(function (m) {
@@ -973,6 +989,23 @@
     this.instances.slice().forEach(function (inst) {
       inst.stop({ over: over });
     });
+    this.fadeMusicStings(over);
+  };
+
+  // fadeMusicStings fades the music-layer stings still playing, so a one-shot
+  // theme crossfades with the next tenant's music like a cue does. Effects
+  // stings play out.
+  Scope.prototype.fadeMusicStings = function (over) {
+    var t = this.engine.now();
+    this.musicStings.slice().forEach(function (voice) {
+      var g = voice.gain.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + over);
+      try {
+        voice.src.stop(t + over);
+      } catch (e) {}
+    });
   };
 
   // release runs on unmount: cues fade to silence (GM-027), timeline
@@ -986,6 +1019,9 @@
     this.instances.slice().forEach(function (inst) {
       inst.stop({ over: CROSSFADE });
     });
+    if (!this.leaving) {
+      this.fadeMusicStings(CROSSFADE);
+    }
     if (engine.snapshot && engine.snapshot.owner === this) {
       engine.applySnapshot(null, 0.5, null);
     }

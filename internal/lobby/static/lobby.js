@@ -25,13 +25,18 @@
     ctx.audio.define({
       files: { lobby: "audio/lobby.ogg" },
       regions: {
-        lobby: { file: "lobby", start: 0, end: 16, loopStart: 0, loopEnd: 16 },
+        lobby: { file: "lobby" },
       },
       cues: {
-        lobby: { layer: "music", bpm: 120, beatsPerBar: 4, variants: { main: ["lobby"] } },
+        lobby: { layer: "music", variants: { main: ["lobby"] } },
       },
     });
-    ctx.audio.cue("lobby").start({ over: 1.5 });
+    // A Lobby repaint (picking a game) remounts with the same scope, so the
+    // music is already playing and carries on.
+    var cue = ctx.audio.cue("lobby");
+    if (!cue.playing) {
+      cue.start({ over: 1.5 });
+    }
   }
 
   grabbagShell.register("lobby", {

@@ -80,6 +80,8 @@ Leave the console window open. GrabBag.gg binds port **8654** unless you pass `-
 go run ./cmd/grabbag -port 9000
 ```
 
+It listens on every network interface so phones can join. To keep it on this machine only, for example behind a preview proxy that holds the same port outside, pass `-host 127.0.0.1`.
+
 On the host machine, open `http://127.0.0.1:8654`. First visit is setup. Pick an admin password (at least 8 characters), tap Finish, fullscreen `/board` on the TV.
 
 Phones use the URL or QR on the board. They must not use `127.0.0.1`. That address is this device, so a phone would look for GrabBag.gg inside itself.

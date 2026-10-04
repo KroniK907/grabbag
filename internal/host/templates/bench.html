@@ -13,8 +13,12 @@
   .bar select, .bar button { font: inherit; padding: 3px 8px; border: 1px solid #c9ccd6; border-radius: 4px; background: #fff; cursor: pointer; }
   .meta { color: #6a6f80; }
   .bar a.nav { padding: 3px 8px; border: 1px solid #c9ccd6; border-radius: 4px; color: inherit; text-decoration: none; }
-  .top { display: grid; grid-template-columns: minmax(0, 1fr) 420px 380px; gap: 10px; padding: 10px 10px 0; min-height: 0; }
+  .top { display: grid; grid-auto-flow: column; grid-template-columns: minmax(0, 1fr); grid-auto-columns: auto; gap: 10px; padding: 10px 10px 0; min-height: 0; }
   .seats { display: grid; grid-template-columns: repeat({{.Count}}, minmax(0, 1fr)); gap: 10px; padding: 10px; min-height: 0; }
+  #pane-settings { width: 420px; }
+  #pane-audio { width: 380px; }
+  .pane[hidden] { display: none; }
+  .bar label.toggle { display: flex; gap: 4px; align-items: center; cursor: pointer; }
   .pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0; }
   .pane header { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 600; color: #3b3f4d; padding: 0 2px 3px; }
   .pane header span { display: flex; gap: 10px; }
@@ -40,6 +44,8 @@
     <select id="players">{{range .Choices}}<option value="{{.}}"{{if eq . $.Count}} selected{{end}}>{{.}}</option>{{end}}</select>
   </label>
   <button type="button" id="reload">Reload all</button>
+  <label class="toggle"><input type="checkbox" data-pane="pane-settings" checked> Settings</label>
+  <label class="toggle"><input type="checkbox" data-pane="pane-audio" checked> Audio</label>
   <a class="nav" href="/dev/ui/">UI gallery</a>
   <span class="meta">Player 1 is the host. Admin password <code>{{.Password}}</code>. The room resets when the process restarts. Lowering the count leaves the extra players in the room until they leave.</span>
 </div>
@@ -48,11 +54,11 @@
     <header>Board <span><button type="button" class="reload-one">reload</button><a href="/board" target="_blank">open</a></span></header>
     <div class="fit" data-w="1920" data-h="1080"><iframe src="/board" title="Board"></iframe></div>
   </section>
-  <section class="pane">
+  <section class="pane" id="pane-settings">
     <header>Settings <span><button type="button" class="reload-one">reload</button><a href="/dev/bench/settings" target="_blank">open</a></span></header>
     <div class="fit plain"><iframe src="/dev/bench/settings" title="Settings"></iframe></div>
   </section>
-  <section class="pane">
+  <section class="pane" id="pane-audio">
     <header>Board audio <span><button type="button" id="audio-clear">clear log</button></span></header>
     <div class="audio" id="audio-panel">
       <pre id="audio-state" class="muted">Waiting for the board...</pre>
@@ -90,6 +96,19 @@
   };
   const ro = new ResizeObserver((entries) => entries.forEach((e) => fit(e.target)));
   document.querySelectorAll(".fit[data-w]").forEach((b) => ro.observe(b));
+  // The Settings and Audio panes can be hidden to give the board room. The
+  // choice is saved per browser; a narrow screen starts with both hidden.
+  for (const box of document.querySelectorAll("[data-pane]")) {
+    const pane = document.getElementById(box.dataset.pane);
+    const key = "bench-" + box.dataset.pane;
+    const saved = localStorage.getItem(key);
+    box.checked = saved === null ? innerWidth >= 1200 : saved === "1";
+    pane.hidden = !box.checked;
+    box.addEventListener("change", () => {
+      pane.hidden = !box.checked;
+      localStorage.setItem(key, box.checked ? "1" : "0");
+    });
+  }
   document.getElementById("players").addEventListener("change", (e) => {
     location.search = "?players=" + e.target.value;
   });

@@ -18,7 +18,7 @@ import (
 const listenPort = "8654"
 
 // Main opens the default host store and listens on every local interface,
-// including loopback. The board page advertises the request hostname when
+// including loopback, unless -host names one address. The board page advertises the request hostname when
 // that host is public, and the first usable LAN IPv4 otherwise. That
 // advertised URL does not change the listen address.
 func Main() {
@@ -33,18 +33,22 @@ func Main() {
 
 // options are the host command-line flags.
 type options struct {
+	host       string // listen address; "" is every interface
 	port       string
 	devPreview bool
 	devBench   bool
 }
 
-// parseFlags reads -port, -dev-preview, and -dev-bench. The default port is listenPort.
+// parseFlags reads -host, -port, -dev-preview, and -dev-bench. The default
+// port is listenPort. -host 127.0.0.1 keeps the room off the network, so a
+// preview proxy (hatch) can hold the same port on the outside interfaces.
 // The value must be a TCP port from 1 through 65535. -dev-preview mounts the
 // UI scenario gallery at PreviewPath. -dev-bench runs a throwaway room with
 // every screen on one page at BenchPath.
 func parseFlags(args []string) (options, error) {
 	fs := flag.NewFlagSet("grabbag", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
+	host := fs.String("host", "", "address to listen on (default: every interface)")
 	port := fs.String("port", listenPort, "TCP port to listen on")
 	devPreview := fs.Bool("dev-preview", false, "serve the UI scenario gallery at /dev/ui/")
 	devBench := fs.Bool("dev-bench", false, "run a throwaway room with board, settings, and phones on one page at /dev/bench/")
@@ -55,7 +59,10 @@ func parseFlags(args []string) (options, error) {
 	if err != nil || n < 1 || n > 65535 {
 		return options{}, fmt.Errorf("host: -port must be 1 through 65535, got %q", *port)
 	}
-	return options{port: strconv.Itoa(n), devPreview: *devPreview, devBench: *devBench}, nil
+	if *host != "" && net.ParseIP(*host) == nil && *host != "localhost" {
+		return options{}, fmt.Errorf("host: -host must be an IP address or localhost, got %q", *host)
+	}
+	return options{host: *host, port: strconv.Itoa(n), devPreview: *devPreview, devBench: *devBench}, nil
 }
 
 func run(opts options) error {
@@ -84,7 +91,7 @@ func run(opts options) error {
 		joinURL = advertisedJoinURL(ip, port)
 	}
 
-	listener, err := listenOn("", port)
+	listener, err := listenOn(opts.host, port)
 	if err != nil {
 		return err
 	}
@@ -113,8 +120,8 @@ func advertisedJoinURL(ip net.IP, port string) string {
 	return "http://" + net.JoinHostPort(ip.String(), port) + "/"
 }
 
-// listenOn binds TCP on host:port. Production uses host "" (all interfaces)
-// so phones on the LAN can join. Tests bind 127.0.0.1 so Windows Firewall
+// listenOn binds TCP on host:port. Production defaults to host "" (all
+// interfaces) so phones on the LAN can join. Tests bind 127.0.0.1 so Windows Firewall
 // does not prompt for each throwaway test binary.
 func listenOn(host, port string) (net.Listener, error) {
 	addr := net.JoinHostPort(host, port)
