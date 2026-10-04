@@ -415,6 +415,9 @@
     }
   }
 
+  // addLink adds a stylesheet and settles once it loads. A sheet that fails
+  // is removed, so the next transition tries it again instead of finding a
+  // dead <link> and skipping it.
   function addLink(href, attr, value) {
     return new Promise(function (resolve) {
       var link = document.createElement("link");
@@ -422,7 +425,10 @@
       link.href = href;
       link.setAttribute(attr, value);
       link.onload = resolve;
-      link.onerror = resolve;
+      link.onerror = function () {
+        link.remove();
+        resolve();
+      };
       document.head.appendChild(link);
     });
   }
@@ -436,6 +442,7 @@
       script.setAttribute("data-shell-js", tenant);
       script.onload = resolve;
       script.onerror = function () {
+        script.remove();
         reject(new Error("could not load " + src));
       };
       document.head.appendChild(script);
@@ -464,7 +471,12 @@
     (assets.js || []).forEach(function (src) {
       var key = frame.tenant + " " + src;
       if (!loadedJS[key]) {
-        loadedJS[key] = addScript(src, frame.tenant);
+        // A failed load is forgotten, so a reconnect or the next Start
+        // fetches the script again.
+        loadedJS[key] = addScript(src, frame.tenant).catch(function (err) {
+          delete loadedJS[key];
+          throw err;
+        });
       }
       jobs.push(loadedJS[key]);
     });
@@ -852,6 +864,7 @@
   }
 
   function onOpen() {
+    var recovered = down;
     down = false;
     retryDelay = 1000;
     if (downTimer) {
@@ -859,7 +872,10 @@
       downTimer = null;
     }
     overlay(false);
-    if (!opened || switching) {
+    // The first open is quiet unless the stream failed before it: then the
+    // host may have restarted during that outage, so reconcile like any
+    // reconnect.
+    if ((!opened && !recovered) || switching) {
       opened = true;
       switching = false;
       if (window.htmx) {
@@ -867,6 +883,7 @@
       }
       return;
     }
+    opened = true;
     // A reconnect: the host may have restarted, and events may be lost.
     beat();
     request(true);

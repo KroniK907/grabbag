@@ -42,12 +42,15 @@ func chromeBinary() string {
 
 // room is one running host. Each tab is its own headless browser.
 type room struct {
-	t        *testing.T
-	server   *httptest.Server
-	db       *store.DB
-	handler  atomic.Pointer[http.Handler]
-	operator []*http.Cookie
-	chrome   string
+	t       *testing.T
+	server  *httptest.Server
+	db      *store.DB
+	handler atomic.Pointer[http.Handler]
+	// intercept, when set, answers a request instead of the host. It
+	// returns false to pass the request on.
+	intercept atomic.Pointer[func(http.ResponseWriter, *http.Request) bool]
+	operator  []*http.Cookie
+	chrome    string
 }
 
 // restart swaps in a fresh host handler on the same store and port, as a
@@ -91,6 +94,9 @@ func newRoom(t *testing.T) *room {
 	r := &room{t: t, db: db, chrome: bin}
 	r.handler.Store(&handler)
 	r.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if f := r.intercept.Load(); f != nil && (*f)(w, req) {
+			return
+		}
 		(*r.handler.Load()).ServeHTTP(w, req)
 	}))
 	t.Cleanup(r.server.Close)
@@ -587,4 +593,68 @@ func TestJoinWhileTheFormIsReplaced(t *testing.T) {
 	})()`)
 	bea.waitFor(`document.getElementById("shell-stage").hasAttribute("data-player") && document.querySelector(".ui-you").textContent === "Bea"`)
 	bea.assertSteady()
+}
+
+// TestFailedScriptLoadIsRetried fails every game.js request during the first
+// Start. After Stop, the next Start must fetch the script again and the game
+// must register, with no new "did not register" error.
+func TestFailedScriptLoadIsRetried(t *testing.T) {
+	tt := newTable(t)
+	var failing atomic.Bool
+	failing.Store(true)
+	fail := func(w http.ResponseWriter, req *http.Request) bool {
+		if failing.Load() && strings.HasSuffix(req.URL.Path, "/games/quips/static/game.js") {
+			http.Error(w, "flaky", http.StatusServiceUnavailable)
+			return true
+		}
+		return false
+	}
+	tt.r.intercept.Store(&fail)
+	tt.load("quips")
+	tt.start("quips")
+	tt.board.waitFor(`grabbagShell.record.errors.some((e) => e.phase === "register" && e.tenant === "quips")`)
+	failing.Store(false)
+	tt.stop()
+	var before int
+	tt.board.eval(`grabbagShell.record.errors.filter((e) => e.phase === "register").length`, &before)
+	tt.start("quips")
+	tt.board.waitFor(`grabbagShell.record.mounts.filter((m) => m.tenant === "quips").length >= 2`)
+	var after int
+	tt.board.eval(`grabbagShell.record.errors.filter((e) => e.phase === "register").length`, &after)
+	if after != before {
+		t.Fatalf("quips did not register after the retry: register errors %d -> %d", before, after)
+	}
+}
+
+// TestFirstOpenAfterAnOutageReconciles keeps the board's stream down from
+// the start, restarts the host, then lets the stream through. The first
+// open must compare boot IDs and reload for host-restarted.
+func TestFirstOpenAfterAnOutageReconciles(t *testing.T) {
+	r := newRoom(t)
+	var blocked atomic.Bool
+	blocked.Store(true)
+	block := func(w http.ResponseWriter, req *http.Request) bool {
+		if blocked.Load() && req.URL.Path == "/lobby/events" {
+			http.Error(w, "down", http.StatusServiceUnavailable)
+			return true
+		}
+		return false
+	}
+	r.intercept.Store(&block)
+	board := r.open("board", "/board")
+	time.Sleep(300 * time.Millisecond)
+	r.restart()
+	blocked.Store(false)
+	deadline := time.Now().Add(20 * time.Second)
+	var ok bool
+	for time.Now().Before(deadline) {
+		err := chromedp.Run(board.ctx, chromedp.Evaluate(`sessionStorage.getItem("grabbagShellLoads") === "2" && !!window.grabbagShell && grabbagShell.current() !== null`, &ok))
+		if err == nil && ok {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if h := board.health(); !ok || len(h.Reloads) != 1 || h.Reloads[0] != "host-restarted" {
+		t.Fatalf("board after outage and restart: loads=%d reloads=%v", h.Loads, h.Reloads)
+	}
 }

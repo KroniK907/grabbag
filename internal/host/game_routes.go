@@ -15,6 +15,7 @@ func (rt *runtime) registerGameRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings/clear-game-data", rt.postClearKV)
 	mux.Handle("/settings/game/", http.HandlerFunc(rt.gameSettings))
 	mux.Handle("/play/", http.HandlerFunc(rt.play))
+	mux.HandleFunc("GET /games/{id}/static/{file...}", rt.gameStatic)
 }
 
 func (rt *runtime) refusePending(w http.ResponseWriter) bool {
@@ -183,6 +184,21 @@ func (rt *runtime) play(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.StripPrefix("/play", game.Play()).ServeHTTP(w, r)
+}
+
+// gameStatic serves one catalog game's static/ files at
+// games.StaticPath(id), whichever game is loaded. Shell Assets point here, so
+// a frame for one game can never load another game's CSS or JS.
+func (rt *runtime) gameStatic(w http.ResponseWriter, r *http.Request) {
+	files, ok := rt.static[r.PathValue("id")]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	r2 := r.Clone(r.Context())
+	r2.URL.Path = "/static/" + r.PathValue("file")
+	r2.URL.RawPath = ""
+	files.ServeHTTP(w, r2)
 }
 
 func (rt *runtime) hasAdmin(r *http.Request) bool {

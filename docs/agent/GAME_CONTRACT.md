@@ -172,7 +172,7 @@ Host calls these on the Game value.
 | `Resume() error` | operator | Restart ticks. May no-op. |
 | `Stop() error` | round end | Drop in-memory run state. Keep KV. Keep helper. |
 | `Shutdown() error` | unload | Drop helper. Stop goroutines. |
-| `Assets() ui.Assets` | whenever a shell shows the game | `{CSS, JS, External}` for both surfaces. `runtimekit.Assets(id, version)` builds `/play/static/game.css` and `game.js` with the id in the query. External is web fonts and the like. |
+| `Assets() ui.Assets` | whenever a shell shows the game | `{CSS, JS, External}` for both surfaces. `runtimekit.Assets(id, version)` builds `game.css` and `game.js` under `games.StaticPath(id)` (`/games/<id>/static/`), which host serves from that game's `Play()` static files whichever game is loaded. External is web fonts and the like. |
 | `Scenarios() []ui.Scenario` | `/dev/ui/` gallery, uishots, tests | Preview states. See [UI previews](#ui-previews). |
 
 ## Helper hooks
@@ -209,6 +209,7 @@ Public paths stay host-owned. Lobby vs game is a tenant swap inside the `/` and 
 | `/settings` | Host operator | Host operator, Game Settings fragment inlined |
 | `/settings/game/*` | `Settings()` mux | same |
 | `/play/*` | GET from `Play()` | GET and POST from `Play()` |
+| `/games/<id>/static/*` | every catalog game's `Play()` `static/` files, loaded or not | same |
 
 Forms in the settings fragment must post under `/settings/game/...`. Play forms post under `/play/...`.
 

@@ -73,7 +73,7 @@ func TestTenantScriptsRegisterBothSurfaces(t *testing.T) {
 		if len(js) == 0 {
 			t.Errorf("%s lists no JS asset; every game registers with the shell", f.ID)
 		}
-		play := http.StripPrefix("/play", g.Play())
+		play := http.StripPrefix(strings.TrimSuffix(games.StaticPath(f.ID), "/static/"), g.Play())
 		for _, u := range js {
 			scripts = append(scripts, script{tenant: f.ID, url: u, serve: play})
 		}

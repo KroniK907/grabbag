@@ -881,9 +881,9 @@ type Assets struct {
         <h4>Parameters</h4>
         <p>None.</p>
         <h4>Return value</h4>
-        <p>One list covers both surfaces. <code>CSS</code> and <code>JS</code> are usually <code>/play/static/game.css</code> and <code>game.js</code> with a version query. <code>External</code> is third-party stylesheets such as web fonts.</p>
+        <p>One list covers both surfaces. <code>CSS</code> and <code>JS</code> are usually <code>game.css</code> and <code>game.js</code> under <code>games.StaticPath(id)</code> (<code>/games/&lt;id&gt;/static/</code>) with a version query. Host serves that path from your <code>Play()</code> static files whichever game is loaded, so a slow phone never gets another game's script. <code>External</code> is third-party stylesheets such as web fonts.</p>
         <h4>Description</h4>
-        <p>The shell loads each file once per visit. It removes your CSS when it unmounts you and keeps External sheets. Your JS must call <a href="#shell-register">grabbagShell.register</a> and do nothing else at the top level. Put the game id in the query so two games never share a URL. <code>runtimekit.Assets(id, version)</code> builds the usual pair.</p>
+        <p>The shell loads each file once per visit. It removes your CSS when it unmounts you and keeps External sheets. Your JS must call <a href="#shell-register">grabbagShell.register</a> and do nothing else at the top level. <code>runtimekit.Assets(id, version)</code> builds the usual pair.</p>
         <h4>Examples</h4>
         <h5>Runtime kit game with web fonts</h5>
         <pre class="ex">func (g *Game) Assets() ui.Assets {

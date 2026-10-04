@@ -32,6 +32,9 @@ type runtime struct {
 	events  *hub.Hub
 	log     *applog.Logger
 	catalog map[string]games.Factory
+	// static is each catalog game's Play() handler, used only for its
+	// static/ files at games.StaticPath.
+	static map[string]http.Handler
 
 	// boot is this process's id. Shells reload when it changes.
 	boot string
@@ -47,9 +50,13 @@ type runtime struct {
 
 func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime {
 	index := make(map[string]games.Factory, len(catalog))
+	static := make(map[string]http.Handler, len(catalog))
 	for _, f := range catalog {
 		if f.ID != "" && f.New != nil {
 			index[f.ID] = f
+			if play := f.New().Play(); play != nil {
+				static[f.ID] = play
+			}
 		}
 	}
 	return &runtime{
@@ -57,6 +64,7 @@ func newRuntime(db *store.DB, events *hub.Hub, catalog []games.Factory) *runtime
 		events:  events,
 		log:     applog.New(events, filepath.Join(db.Dir(), "host.log")),
 		catalog: index,
+		static:  static,
 		boot:    newBootID(),
 	}
 }

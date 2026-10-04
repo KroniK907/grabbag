@@ -105,6 +105,13 @@ type BoardButton struct {
 	HostOnly bool
 }
 
+// StaticPath is the URL prefix host serves a game's Play() static/ files
+// under, for its shell Assets: /games/<id>/static/. Unlike /play/static/, it
+// serves that game's files whichever game is loaded.
+func StaticPath(id string) string {
+	return "/games/" + id + "/static/"
+}
+
 // Factory constructs one Game value. Catalog is compile-time only.
 type Factory struct {
 	ID  string

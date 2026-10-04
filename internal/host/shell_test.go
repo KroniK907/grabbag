@@ -10,6 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/KroniK907/grabbag/internal/games"
+	"github.com/KroniK907/grabbag/internal/store"
 )
 
 func getFrame(t *testing.T, handler http.Handler, path string, cookies []*http.Cookie) tenantFrame {
@@ -117,7 +120,7 @@ func TestTenantFrameFollowsStartAndStop(t *testing.T) {
 	if game.Tenant != "fake" || game.Generation <= loaded.Generation || !strings.Contains(game.HTML, "FAKE-BOARD") {
 		t.Fatalf("started board frame = %+v", game)
 	}
-	if len(game.Assets.CSS) != 1 || game.Assets.CSS[0] != "/play/static/fake.css" {
+	if len(game.Assets.CSS) != 1 || game.Assets.CSS[0] != "/games/fake/static/fake.css" {
 		t.Fatalf("game assets = %+v", game.Assets)
 	}
 	gamePhone := getFrame(t, handler, "/tenant", admin)
@@ -300,5 +303,34 @@ func TestBootIDDiffersPerProcess(t *testing.T) {
 	_, _, b, _ := testGameHandler(t, 0, 0)
 	if a.boot == "" || a.boot == b.boot {
 		t.Fatalf("boot ids %q and %q", a.boot, b.boot)
+	}
+}
+
+// TestGameStaticServesTheRequestedGame checks /games/<id>/static/ serves
+// that game's files whichever game is loaded, so a slow phone never gets
+// another game's script under the first game's URL.
+func TestGameStaticServesTheRequestedGame(t *testing.T) {
+	t.Parallel()
+	db, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	handler, _, err := newHandler(db, "", games.Catalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin := finishAndJoinHost(t, handler)
+	for _, loaded := range []string{"quips", "testing"} {
+		requestWithCookie(t, handler, http.MethodPost, "/settings/load", url.Values{"game_id": {loaded}}, admin)
+		for _, id := range []string{"apples", "quips", "testing", "borrowedtruths"} {
+			rec := requestWithCookie(t, handler, http.MethodGet, games.StaticPath(id)+"game.js", nil, admin)
+			if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `grabbagShell.register("`+id+`"`) {
+				t.Fatalf("with %s loaded, %s game.js = %d, registers %s? %v", loaded, id, rec.Code, id, strings.Contains(rec.Body.String(), id))
+			}
+		}
+	}
+	if rec := requestWithCookie(t, handler, http.MethodGet, "/games/nope/static/game.js", nil, admin); rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown game static = %d", rec.Code)
 	}
 }

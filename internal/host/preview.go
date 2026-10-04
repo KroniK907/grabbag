@@ -240,12 +240,12 @@ func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkg previewPackage
 	return ui.RenderShell(w, ui.StaticShell(surface, pkg.id, shell, pkg.tenant, template.HTML(body.String())))
 }
 
-// previewAssets points a game's /play/static/ links at the gallery's copy.
+// previewAssets points a game's /games/<id>/static/ links at the gallery's copy.
 func previewAssets(id string, a ui.Assets) ui.Assets {
 	rewrite := func(list []string) []string {
 		out := make([]string, 0, len(list))
 		for _, u := range list {
-			if rest, ok := strings.CutPrefix(u, "/play/static/"); ok {
+			if rest, ok := strings.CutPrefix(u, games.StaticPath(id)); ok {
 				u = PreviewPath + "assets/" + id + "/" + rest
 			}
 			out = append(out, u)

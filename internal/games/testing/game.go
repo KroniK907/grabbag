@@ -109,8 +109,8 @@ func (g *Game) BoardButtons() []games.BoardButton {
 
 // Assets is game.css and the game.js that registers Testing with the shells.
 func (g *Game) Assets() ui.Assets {
-	q := "?v=" + id + "-" + cssVersion
-	return ui.Assets{CSS: []string{"/play/static/game.css" + q}, JS: []string{"/play/static/game.js" + q}}
+	base, q := games.StaticPath(id), "?v="+cssVersion
+	return ui.Assets{CSS: []string{base + "game.css" + q}, JS: []string{base + "game.js" + q}}
 }
 
 // Phone is the signed-in phone body. Host wraps Leave and the host drawer around it.
