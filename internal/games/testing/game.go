@@ -20,7 +20,7 @@ const (
 	eventTick     = "testing"
 	eventTap      = "tap"
 	flashFor      = 700 * time.Millisecond
-	cssVersion    = "shell-1"
+	cssVersion    = "frame-1"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
