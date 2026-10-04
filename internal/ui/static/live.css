@@ -950,8 +950,8 @@ button {
    Tenants size against the column with container queries (container name
    "column"), never against the frame mode. */
 .shell-frame {
-  --shell-bar: 44px;
-  --shell-control: 36px;
+  --shell-bar: 48px;
+  --shell-control: 44px;
   --ui-side-tab-bottom: 28px;
   --ui-side-tab-span: 8rem;
   --ui-side-tab-gap: 10px;
@@ -1036,13 +1036,24 @@ body.ui-shell:has(.shell-frame) {
   border-radius: 50%;
   background: var(--ui-accent);
   color: #fff;
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 800;
 }
 
 .shell-leave {
   right: calc(var(--shell-control-inset) + var(--shell-gutter, 0) * (var(--shell-control-gutter) - var(--shell-control-inset)));
   width: auto;
+}
+
+.shell-leave .ui-leave-button {
+  width: var(--shell-control);
+  height: var(--shell-control);
+  padding: 9px;
+}
+
+.shell-leave .ui-leave-button svg {
+  width: 24px;
+  height: 24px;
 }
 
 .shell-help-button[hidden],
