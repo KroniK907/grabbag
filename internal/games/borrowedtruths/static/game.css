@@ -479,6 +479,97 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-help p,
 .bt-howto p { margin: 0; line-height: 1.5; }
 
+/* Opening intro. game.js lays it over the board once, as the game starts,
+   for the length of the theme (--bt-intro). Beats are fractions of it. */
+.bt-intro {
+  --at: calc(var(--bt-intro, 23s) / 100);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  container-type: inline-size;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2cqw;
+  overflow: hidden;
+  pointer-events: none;
+  animation: bt-fade-out calc(var(--at) * 7) ease-in calc(var(--at) * 93) both;
+}
+.bt-intro-logo {
+  display: grid;
+  justify-items: center;
+  gap: .6cqw;
+  animation: bt-intro-lift calc(var(--at) * 4) ease-in-out calc(var(--at) * 20) both;
+}
+.bt-intro-logo span {
+  background: var(--bt-truth);
+  color: var(--bt-on-truth);
+  font-family: var(--bt-display);
+  font-size: 5.5cqw;
+  line-height: 1;
+  padding: 1cqw 2.4cqw;
+  border: .6cqw solid #fff;
+  outline: .2cqw solid var(--bt-edge);
+  border-radius: 2cqw;
+  box-shadow: .8cqw 1cqw 0 rgb(0 0 0 / .35);
+  rotate: -4deg;
+  animation: bt-slap .45s cubic-bezier(.2, .9, .3, 1.3) calc(var(--at) * 2) both;
+}
+.bt-intro-logo span + span { rotate: 3deg; animation-delay: calc(var(--at) * 6); }
+.bt-intro-cards { display: flex; gap: 2.5cqw; }
+.bt-intro-card {
+  display: grid;
+  place-items: center;
+  width: 12cqw;
+  aspect-ratio: 3 / 4;
+  font-family: var(--bt-display);
+  font-size: 2.6cqw;
+  border: .5cqw solid #fff;
+  outline: .15cqw solid var(--bt-edge);
+  border-radius: 2cqw;
+  box-shadow: .6cqw .7cqw 0 rgb(0 0 0 / .35);
+  animation:
+    bt-slap .4s cubic-bezier(.2, .9, .3, 1.3) calc(var(--at) * 26) both,
+    bt-intro-shuffle calc(var(--at) * 22) ease-in-out calc(var(--at) * 52) both;
+}
+.bt-intro-card.is-true { background: var(--bt-truth); color: var(--bt-on-truth); rotate: -3deg; }
+.bt-intro-card.is-true + .is-true { rotate: 2deg; animation-delay: calc(var(--at) * 30), calc(var(--at) * 52); animation-direction: normal, reverse; }
+.bt-intro-card.is-lie {
+  background: var(--bt-lie);
+  color: var(--bt-on-lie);
+  rotate: 4deg;
+  animation:
+    bt-slap .4s cubic-bezier(.2, .9, .3, 1.3) calc(var(--at) * 34) both,
+    bt-intro-borrow calc(var(--at) * 22) ease-in-out calc(var(--at) * 52) both;
+}
+.bt-intro-tape {
+  font-size: 2.4cqw;
+  animation: bt-tape .35s ease-out calc(var(--at) * 44) both;
+}
+.bt-intro-ask {
+  font-family: var(--bt-hand);
+  font-size: 4.5cqw;
+  color: var(--bt-truth);
+  rotate: -2deg;
+  animation: bt-slap .45s cubic-bezier(.2, .9, .3, 1.3) calc(var(--at) * 78) both;
+}
+@keyframes bt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bt-intro-lift { from { scale: 1.4; } to { scale: 1; } }
+@keyframes bt-intro-shuffle {
+  0%, 100% { translate: 0 0; }
+  25% { translate: 14.5cqw -2cqw; }
+  50% { translate: -14.5cqw 2cqw; }
+  75% { translate: 14.5cqw 0; }
+}
+/* The lie trades places with the truths and comes out wearing yellow. */
+@keyframes bt-intro-borrow {
+  0% { translate: 0 0; }
+  25% { translate: -29cqw 2cqw; }
+  50% { translate: -14.5cqw -2cqw; background: var(--bt-lie); color: var(--bt-on-lie); }
+  75% { translate: -29cqw 0; }
+  100% { translate: 0 0; background: var(--bt-truth); color: var(--bt-on-truth); }
+}
+
 /* Motion is there for the reveal. */
 @keyframes bt-slap {
   0% { opacity: 0; scale: 1.25; }
@@ -494,6 +585,20 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 
 @media (prefers-reduced-motion: reduce) {
   .bt-wall *, .bt-wall *::after { animation: none !important; transition: none !important; }
+}
+/* With reduced motion the intro still tells its story on the theme's beats,
+   as plain fades: no slaps, lifts, or shuffle. */
+@media (prefers-reduced-motion: reduce) {
+  .bt-intro .bt-intro-logo span,
+  .bt-intro .bt-intro-card,
+  .bt-intro .bt-intro-tape,
+  .bt-intro .bt-intro-ask { animation: bt-fade .8s ease-out calc(var(--at) * 2) both !important; }
+  .bt-intro .bt-intro-logo span + span { animation-delay: calc(var(--at) * 6) !important; }
+  .bt-intro .bt-intro-card { animation-delay: calc(var(--at) * 26) !important; }
+  .bt-intro .bt-intro-card + .bt-intro-card { animation-delay: calc(var(--at) * 30) !important; }
+  .bt-intro .bt-intro-card.is-lie { animation-delay: calc(var(--at) * 34) !important; }
+  .bt-intro .bt-intro-tape { animation-delay: calc(var(--at) * 44) !important; }
+  .bt-intro .bt-intro-ask { animation-delay: calc(var(--at) * 78) !important; }
 }
 
 .bt-board.is-settled *,

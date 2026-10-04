@@ -299,7 +299,8 @@
 
   // ---- ctx -----------------------------------------------------------------
 
-  function makeCtx(root, tenant, base) {
+  // carried is the audio scope a same-tenant swap hands on, or null.
+  function makeCtx(root, tenant, base, carried) {
     var abort = new AbortController();
     var timers = [];
     var frames = [];
@@ -307,10 +308,13 @@
     var stopped = false;
     // The audio scope is released last, after the tenant's own cleanups,
     // which may still call it.
-    var sound = audio ? audio.scope(tenant, root, base) : null;
+    var handedOff = false;
+    var sound = carried || (audio ? audio.scope(tenant, root, base) : null);
     if (sound) {
       cleanups.push(function () {
-        sound.release();
+        if (!handedOff) {
+          sound.release();
+        }
       });
     }
     var ctx = {
@@ -364,6 +368,12 @@
         cleanups.push(fn);
       },
     };
+    // handOffSound keeps the audio scope alive through teardown and returns
+    // it for the next ctx of the same tenant.
+    ctx.handOffSound = function () {
+      handedOff = true;
+      return sound;
+    };
     ctx.teardown = function () {
       stopped = true;
       abort.abort();
@@ -388,7 +398,7 @@
 
   // ---- Mount ----------------------------------------------------------------
 
-  function mountCurrent() {
+  function mountCurrent(carried) {
     var id = mounted.tenant;
     var def = registry[id];
     var life = def && def[surface];
@@ -398,12 +408,15 @@
       record.mounts.push({ tenant: id, generation: mounted.generation, surface: surface });
     }
     if (!life || typeof life.mount !== "function") {
+      if (carried) {
+        carried.release();
+      }
       if (mounted.needsJS && !def) {
         report(id, "register", "tenant has scripts but did not call grabbagShell.register");
       }
       return;
     }
-    var ctx = makeCtx(stage, id, mounted.base);
+    var ctx = makeCtx(stage, id, mounted.base, carried);
     try {
       life.mount(stage, ctx);
       mounted.ctx = ctx;
@@ -416,12 +429,18 @@
 
   // unmountCurrent follows the contract order: abort the signal, stop timers
   // and frames, run cleanups newest first, then the tenant's unmount.
-  function unmountCurrent() {
+  // With keepSound it returns the tenant's audio scope instead of releasing
+  // it, so a same-tenant swap does not restart the music.
+  function unmountCurrent(keepSound) {
     if (!mounted) {
-      return;
+      return null;
     }
     var id = mounted.tenant;
+    var sound = null;
     if (mounted.ctx) {
+      if (keepSound) {
+        sound = mounted.ctx.handOffSound();
+      }
       mounted.ctx.teardown();
       if (typeof mounted.life.unmount === "function") {
         try {
@@ -434,6 +453,7 @@
     mounted.ctx = null;
     mounted.life = null;
     leakCheck(id);
+    return sound;
   }
 
   function register(id, def) {
@@ -822,8 +842,10 @@
       report(frame.tenant, "assets", err);
     });
     // The outgoing tenant's music fades with the board (GM-013). With no
-    // fade, unmount releases it with the default crossfade.
-    if (audio && fade.out) {
+    // fade, unmount releases it with the default crossfade. A same-tenant
+    // swap keeps the tenant's audio playing.
+    var same = frame.tenant === mounted.tenant;
+    if (audio && fade.out && !same) {
       audio.leave(fade.out / 1000);
     }
     return fadeOut(fade.out)
@@ -840,7 +862,7 @@
         if (frame.tenant !== mounted.tenant) {
           closeHelp();
         }
-        unmountCurrent();
+        var carried = unmountCurrent(same);
         dropOldCSS(frame);
         if (window.htmx) {
           htmx.swap(stage, frame.html, { swapStyle: "innerHTML", swapDelay: 0, settleDelay: 0 });
@@ -864,7 +886,7 @@
           base: scriptBase(frame.assets && frame.assets.js),
         };
         scanNames(stage);
-        mountCurrent();
+        mountCurrent(carried);
         observeStage();
         runLayout();
         return fadeIn(fade.in);

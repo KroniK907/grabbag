@@ -32,6 +32,7 @@ the same as fontsURL in game.go. */}}
 <div
   id="bt-board"
   class="bt-wall bt-board phase-{{.Phase}}{{if .Paused}} is-paused{{end}}"
+  {{if .Started}}data-intro="{{.Started}}"{{end}}
   data-moment="{{.Phase}} {{.TellNum}} {{.CardText}} {{.PhotoURL}} {{.Notice}}"
   hx-get="/play/partials/board"
   hx-trigger="sse:borrowedtruths, sse:borrowedtruths-facts, sse:pause, sse:roster, htmx:sseOpen from:body"

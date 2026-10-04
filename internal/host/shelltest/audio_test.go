@@ -92,6 +92,23 @@ func TestBoardMusicFollowsTheTenant(t *testing.T) {
 	board.assertSteady()
 }
 
+// TestPickingAGameKeepsTheLobbyMusic: loading a game repaints the Lobby on
+// the board. The same lobby cue keeps playing; it does not restart or
+// crossfade into itself.
+func TestPickingAGameKeepsTheLobbyMusic(t *testing.T) {
+	r := newRoom(t)
+	board := r.open("board", "/board")
+	host := r.joinPhone("Host", password)
+	board.waitFor(lobbyPlaying)
+	board.run(`window.__lobbyCue = grabbagAudio.board.instances.find((i) => i.name === "lobby"); window.__gen = document.getElementById("shell-stage").dataset.generation`)
+
+	tt := &table{r: r, board: board, host: host, phones: []*tab{host}}
+	tt.load("testing")
+	board.waitFor(`document.getElementById("shell-stage").dataset.generation !== __gen`)
+	board.waitFor(`(() => { const live = grabbagAudio.board.instances.filter((i) => i.name === "lobby" && i.live()); return live.length === 1 && live[0] === __lobbyCue; })()`)
+	board.assertSteady()
+}
+
 // TestSettingsMixerReachesTheBoard is GM-009 and GM-011: a slider or mute
 // change on /settings reaches the board at once, and the test buttons play
 // a sample there.

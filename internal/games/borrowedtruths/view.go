@@ -42,6 +42,7 @@ type boardView struct {
 	runtimekit.Page
 	Paused    bool
 	Phase     string
+	Started   int64 // facts phase start, Unix seconds; drives the intro
 	TellNum   int
 	TellTotal int
 	Teller    face
@@ -93,6 +94,9 @@ func (g *Game) boardViewLocked() boardView {
 		return view
 	}
 	view.Phase = string(e.Phase)
+	if e.Phase == phaseFacts {
+		view.Started = e.PhaseStart.Unix()
+	}
 	view.Notice = e.Notice
 	view.Timer = e.Timer.View(g.run.Now())
 	view.TellTotal = e.TellCount()

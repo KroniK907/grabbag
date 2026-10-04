@@ -60,6 +60,17 @@ func TestParseFlags(t *testing.T) {
 		t.Fatalf("flags = %+v, want port 9000 with preview", got)
 	}
 
+	got, err = parseFlags([]string{"-host", "127.0.0.1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.host != "127.0.0.1" {
+		t.Fatalf("flags = %+v, want host 127.0.0.1", got)
+	}
+	if _, err := parseFlags([]string{"-host", "not a host"}); err == nil {
+		t.Fatal("expected an error for a bad -host")
+	}
+
 	if _, err := parseFlags([]string{"-port", "0"}); err == nil {
 		t.Fatal("expected an error for port 0")
 	}
