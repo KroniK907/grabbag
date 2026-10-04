@@ -12,7 +12,7 @@ import (
 func (g *Game) Scenarios() []ui.Scenario {
 	board := func(name string, paused bool) ui.Scenario {
 		return ui.Scenario{
-			Surface: "board", Group: name, Name: name, Viewer: "tv", Frame: ui.FrameTV, MinPlayers: 1,
+			Surface: "board", Group: name, Name: name, Viewer: "tv", Frame: ui.FrameTV, Shell: ui.ShellBoard, MinPlayers: 1,
 			Render: func(w io.Writer, p ui.Preview) error {
 				view := boardView{
 					Chrome:  ui.Chrome{Title: "Testing"},

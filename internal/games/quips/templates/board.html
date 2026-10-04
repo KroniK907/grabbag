@@ -1,8 +1,5 @@
-{{template "ui-start" .}}
-<link rel="stylesheet" href="{{.GameCSS}}">
-<script defer src="{{.GameJS}}"></script>
+{{/* The Quick Quips board tenant fragment. The shell loads game.css and game.js. */}}
 {{template "board-frame" .}}
-{{template "ui-end"}}
 
 {{define "board-frame"}}
 <div

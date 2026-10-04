@@ -43,7 +43,7 @@ func (g *Game) Scenarios() []ui.Scenario {
 		st := st
 		list = append(list, ui.Scenario{
 			Surface: "board", Group: st.name, Name: st.name, Viewer: "tv",
-			Frame: ui.FrameTV, MinPlayers: st.minPlayer,
+			Frame: ui.FrameTV, Shell: ui.ShellBoard, MinPlayers: st.minPlayer,
 			Render: func(w io.Writer, p ui.Preview) error {
 				pg, _, err := previewMatch(st.name, p.Players)
 				if err != nil {
