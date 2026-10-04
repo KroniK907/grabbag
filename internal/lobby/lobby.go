@@ -212,7 +212,7 @@ func New(db *store.DB, config Config) (*Lobby, error) {
 // Register adds Lobby-owned stream, partial, and phone write routes to mux.
 func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /lobby/events", l.events.ServeHTTP)
-	mux.Handle("GET /lobby/static/", http.StripPrefix("/lobby/static/", staticHandler()))
+	mux.Handle("GET /lobby/static/", StaticHandler())
 	mux.HandleFunc("GET /lobby/partials/board-roster", l.boardRoster)
 	mux.HandleFunc("GET /lobby/partials/phone", l.phoneBody)
 	mux.HandleFunc("GET /lobby/presence", l.presence)
@@ -341,12 +341,14 @@ func finish(w http.ResponseWriter, r *http.Request, target string) {
 	http.Redirect(w, r, target, http.StatusSeeOther)
 }
 
-func staticHandler() http.Handler {
+// StaticHandler serves lobby.js and the rest of the Lobby's static/ files at
+// /lobby/static/.
+func StaticHandler() http.Handler {
 	files, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		panic("lobby: embedded static directory is missing")
 	}
-	return http.FileServerFS(files)
+	return http.StripPrefix("/lobby/static/", http.FileServerFS(files))
 }
 
 type boardData struct {

@@ -15,10 +15,10 @@ that, so this document only loads once per visit. */}}
   {{template "ui-static-script" .}}
   {{else}}
   <script defer src="{{static "htmx.min.js"}}"></script>
+  {{end}}
   <script defer src="{{static "shell.js"}}"></script>
   {{range .Assets.JS}}
   <script defer src="{{.}}" data-shell-js="{{$.Tenant}}"></script>
-  {{end}}
   {{end}}
 </head>
 <body class="ui-app ui-shell" data-shell-surface="{{.Surface}}">

@@ -45,7 +45,8 @@ type Assets struct {
 
 // Shell is one persistent shell document with its first tenant already
 // rendered inside it. Static renders a frozen preview: no htmx, no SSE, no
-// heartbeat, no transitions, and no tenant scripts.
+// heartbeat, and no transitions. The tenant still mounts, so layout code in
+// its script runs the way it does live.
 type Shell struct {
 	Chrome
 	Surface    string
@@ -72,14 +73,14 @@ func RenderShell(w io.Writer, s Shell) error {
 	return err
 }
 
-// StaticShell is the frozen preview shell around one scenario fragment. It
-// links the tenant's stylesheets but no scripts, so nothing mounts.
+// StaticShell is the frozen preview shell around one scenario fragment. The
+// tenant mounts once, with no stream, so previews lay out like live screens.
 func StaticShell(surface, tenant string, p Preview, assets Assets, body template.HTML) Shell {
 	return Shell{
 		Chrome:  Chrome{Title: "GrabBag.gg preview", Theme: NormalizeTheme(p.Theme), Static: true, OpenIDs: p.Open},
 		Surface: surface,
 		Tenant:  tenant,
-		Assets:  Assets{CSS: assets.CSS, External: assets.External},
+		Assets:  assets,
 		Body:    body,
 	}
 }

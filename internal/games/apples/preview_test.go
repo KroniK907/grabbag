@@ -90,5 +90,5 @@ func TestHostRolePreviews(t *testing.T) {
 
 func TestScenariosRenderAtEverySweepCount(t *testing.T) {
 	t.Parallel()
-	uitest.RenderAll(t, apples.New().Scenarios())
+	uitest.RenderTenant(t, "apples", apples.New())
 }

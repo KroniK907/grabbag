@@ -18,6 +18,9 @@
 // wins, and stale generations are dropped. Only two things reload the page,
 // both through hardReload: a kick and a host restart (a new boot ID).
 //
+// In a static preview (window.grabbagStatic) the shell only mounts the
+// tenant once, so layout code runs.
+//
 // Test mode (window.grabbagShellTest set before this file runs) records
 // mounts, SSE event names, reloads, errors, and leaks: document and window
 // listeners, timers, and animation frames a tenant script started and did
@@ -921,11 +924,18 @@
 
   function start() {
     stage = document.getElementById("shell-stage");
-    if (!stage || window.grabbagStatic) {
+    if (!stage) {
       return;
     }
     surface = stage.getAttribute("data-surface");
     boot = stage.getAttribute("data-boot");
+    if (window.grabbagStatic) {
+      // A frozen preview mounts the tenant so its layout code runs, and
+      // nothing else: no stream, no heartbeat, no transitions.
+      mounted = { tenant: stage.getAttribute("data-tenant"), generation: 0, html: null, player: false };
+      mountCurrent();
+      return;
+    }
     // Process swapped markup in the same tick as the swap. With htmx's 20ms
     // settle delay a tap in that gap submits an unprocessed form natively,
     // and a Join form would put the host password in the URL.

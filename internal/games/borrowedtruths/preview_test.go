@@ -9,5 +9,5 @@ import (
 
 func TestScenariosRenderAtEverySweepCount(t *testing.T) {
 	t.Parallel()
-	uitest.RenderAll(t, borrowedtruths.New().Scenarios())
+	uitest.RenderTenant(t, "borrowedtruths", borrowedtruths.New())
 }

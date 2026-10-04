@@ -128,6 +128,7 @@ func newPreviewHandler(catalog []games.Factory) http.Handler {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
+	mux.Handle("GET /lobby/static/", lobby.StaticHandler())
 	mux.HandleFunc("GET /dev/ui/{$}", s.gallery)
 	mux.HandleFunc("GET /dev/ui/index.json", s.index)
 	mux.HandleFunc("GET /dev/ui/s/{pkg}/{surface}/{name}", s.scenario)

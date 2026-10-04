@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="{{.GameCSS}}">
-<script defer src="{{.GameJS}}"></script>
 {{template "phone-frame" .}}
 
 {{define "phone-frame"}}
@@ -38,7 +36,7 @@
         <h1 class="display">Winner</h1>
         <p>{{.WinnerName}}</p>
         {{if .CanFinish}}
-        <form method="post" action="/play/finish">
+        <form hx-post="/play/finish" hx-swap="none">
           <button class="ui-btn" type="submit">Back to lobby</button>
         </form>
         {{end}}

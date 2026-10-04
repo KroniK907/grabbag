@@ -231,20 +231,20 @@ func TestWinnerHoldZeroWaitsForHost(t *testing.T) {
 	board := httptest.NewRecorder()
 	g.Board(board, httptest.NewRequest(http.MethodGet, "/board", nil))
 	body := board.Body.String()
-	if !strings.Contains(body, ">Winner<") || !strings.Contains(body, `action="/play/finish"`) {
+	if !strings.Contains(body, ">Winner<") || !strings.Contains(body, `hx-post="/play/finish"`) {
 		t.Fatalf("winner page = %s", body)
 	}
 	g.run.Tick()
 	if h.finishN != 0 {
 		t.Fatal("zero hold auto-finished")
 	}
-	req := httptest.NewRequest(http.MethodPost, "/finish", strings.NewReader("return=/board"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := httptest.NewRequest(http.MethodPost, "/finish", nil)
 	req.Header.Set("X-Player", "p1")
+	req.Header.Set("HX-Request", "true")
 	rec := httptest.NewRecorder()
 	g.Play().ServeHTTP(rec, req)
-	if rec.Code != http.StatusSeeOther {
-		t.Fatalf("finish = %d %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusNoContent || rec.Header().Get("Location") != "" {
+		t.Fatalf("htmx finish = %d %q %s", rec.Code, rec.Header().Get("Location"), rec.Body.String())
 	}
 	if h.finishN != 1 {
 		t.Fatalf("Finish calls = %d", h.finishN)

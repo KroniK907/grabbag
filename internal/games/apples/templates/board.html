@@ -1,8 +1,5 @@
-{{template "ui-start" .}}
-<link rel="stylesheet" href="{{.GameCSS}}">
-<script defer src="{{.GameJS}}"></script>
+{{/* The Apples for Humanity board tenant fragment. The shell loads game.css and game.js. */}}
 {{template "board-frame" .}}
-{{template "ui-end"}}
 
 {{define "board-frame"}}
 <div
@@ -34,8 +31,7 @@
       <p class="apples-final-winner">{{.WinnerName}}</p>
       <p class="apples-final-score">{{.WinnerScore}}</p>
       {{if .CanFinish}}
-      <form method="post" action="/play/finish">
-        <input type="hidden" name="return" value="/board">
+      <form hx-post="/play/finish" hx-swap="none">
         <button class="ui-btn" type="submit">Back to lobby</button>
       </form>
       {{end}}

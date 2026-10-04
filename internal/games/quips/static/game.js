@@ -65,6 +65,9 @@
   }
 
   function markBoard(root) {
+    if (window.grabbagStatic) {
+      return;
+    }
     arrive(root, ".quips-quip-row.is-matchup", "data-matchup", "is-arriving");
     arrive(root, ".quips-board-clock[data-vote-clock]", "data-vote-clock", "is-fading");
     arrive(root, ".quips-board-clock[data-last-clock]", "data-last-clock", "is-arriving");
