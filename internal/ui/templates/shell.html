@@ -70,8 +70,8 @@ mode from the frame width, and shell.js copies it to data-frame. */}}
   } catch (e) {}
   </script>
   {{end}}
-  <div id="shell-host" class="shell-host">{{.HostPanel}}</div>
-  <div class="shell-main">
+  <div id="shell-host" class="shell-host"{{if .HelpSheet}} inert{{end}}>{{.HostPanel}}</div>
+  <div class="shell-main"{{if .HelpSheet}} inert{{end}}>
     <header class="shell-bar">
       <div class="shell-brand">GrabBag.gg</div>
       <button
