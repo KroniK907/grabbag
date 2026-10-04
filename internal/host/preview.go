@@ -48,6 +48,15 @@ var PreviewDevices = []PreviewDevice{
 	{ID: "galaxy-tab-s9", Label: "Galaxy Tab S9", Width: 800, Height: 1280, Scale: 2, Mobile: true, Tablet: true, UA: "android"},
 }
 
+// PreviewScreens are the big-screen viewports for phone scenarios, next to
+// the phone reference frame: iPad portrait and landscape, and a desktop
+// browser. The phone frame goes edge to edge on all of them.
+var PreviewScreens = []PreviewDevice{
+	{ID: "ipad-portrait", Label: "iPad portrait", Width: 820, Height: 1180, Scale: 2, Mobile: true, Tablet: true, UA: "ios"},
+	{ID: "ipad-landscape", Label: "iPad landscape", Width: 1180, Height: 820, Scale: 2, Mobile: true, Tablet: true, UA: "ios"},
+	{ID: "desktop", Label: "Desktop", Width: 1440, Height: 900, Scale: 1},
+}
+
 // PreviewTextScales are the browser text sizes the device matrix runs.
 var PreviewTextScales = []float64{1, 1.15, 1.3, 1.5, 2}
 
@@ -80,6 +89,7 @@ type PreviewScenario struct {
 type PreviewIndex struct {
 	Scenarios  []PreviewScenario        `json:"scenarios"`
 	Devices    []PreviewDevice          `json:"devices"`
+	Screens    []PreviewDevice          `json:"screens"`
 	TextScales []float64                `json:"textScales"`
 	Frames     map[string]PreviewDevice `json:"frames"`
 	Themes     []string                 `json:"themes"`
@@ -148,7 +158,7 @@ func previewScenarioPath(pkg string, sc ui.Scenario) string {
 
 func (s *previewServer) index(w http.ResponseWriter, r *http.Request) {
 	doc := PreviewIndex{
-		Devices: PreviewDevices, TextScales: PreviewTextScales, Frames: PreviewFrames,
+		Devices: PreviewDevices, Screens: PreviewScreens, TextScales: PreviewTextScales, Frames: PreviewFrames,
 		Themes: []string{ui.ThemeNeonLight, ui.ThemeNeonDark},
 	}
 	for _, pkg := range s.packages {
@@ -207,7 +217,8 @@ func (s *previewServer) scenario(w http.ResponseWriter, r *http.Request) {
 
 // renderPreview writes one scenario page. Board and phone fragments go in
 // the static shell with the package's CSS, the way the live shells show them
-// but with no scripts and no mount.
+// but with no scripts and no mount. A phone gets the frame a live phone would:
+// Leave, Help for a game, and the host panel for a host viewer.
 func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkg previewPackage) error {
 	if sc.Shell == "" {
 		return sc.Render(w, p)
@@ -223,21 +234,31 @@ func renderPreview(w io.Writer, sc ui.Scenario, p ui.Preview, pkg previewPackage
 		return lobby.RenderSettings(w, p, pkg.id, template.HTML(body.String()))
 	case ui.ShellPlayPhone:
 		var wrapped bytes.Buffer
-		if err := lobby.RenderPlayPhone(&wrapped, p, sc.Viewer, template.HTML(body.String())); err != nil {
+		if err := lobby.RenderPlayPhone(&wrapped, p, template.HTML(body.String())); err != nil {
 			return err
 		}
 		body = wrapped
 	}
-	surface := ui.ShellSurface(sc.Shell)
-	if surface == "" {
+	if ui.ShellSurface(sc.Shell) == "" {
 		_, err := body.WriteTo(w)
 		return err
+	}
+	var host bytes.Buffer
+	switch {
+	case sc.HostPanel != nil:
+		if err := sc.HostPanel(&host, inner); err != nil {
+			return err
+		}
+	case sc.Shell == ui.ShellPlayPhone && sc.Viewer == "host":
+		if err := lobby.RenderHostPanel(&host, inner); err != nil {
+			return err
+		}
 	}
 	shell := p
 	if shell.Open == "" {
 		shell.Open = sc.Open
 	}
-	return ui.RenderShell(w, ui.StaticShell(surface, pkg.id, shell, pkg.tenant, template.HTML(body.String())))
+	return ui.RenderShell(w, sc.ScenarioShell(pkg.id, shell, pkg.tenant, template.HTML(body.String()), template.HTML(host.String())))
 }
 
 // previewAssets points a game's /games/<id>/static/ links at the gallery's copy.

@@ -8,6 +8,8 @@
 //	sweep      every player-count scenario at min, middle, 12, and max
 //	devices    Sample scenarios at the realistic max on every phone and
 //	           tablet (tablets in both orientations) at every text size
+//	screens    every phone scenario at iPad portrait, iPad landscape, and
+//	           desktop sizes, at its default table size
 //
 // Text sizes follow -text-mode. In device mode an Android shot scales every
 // font size, as the OS font-size setting does in Chrome, and an iOS shot
@@ -69,7 +71,7 @@ func main() {
 func parseFlags(args []string) (config, error) {
 	fs := flag.NewFlagSet("grabbag-uishots", flag.ContinueOnError)
 	out := fs.String("out", "shots", "output directory")
-	sets := fs.String("set", "scenarios,sweep,devices", "comma list of sets: scenarios, sweep, devices")
+	sets := fs.String("set", "scenarios,sweep,devices,screens", "comma list of sets: scenarios, sweep, devices, screens")
 	only := fs.String("only", "", "comma list of package/surface/name globs, such as apples/phone/* or lobby/*/*")
 	themes := fs.String("themes", "neon-dark,neon-light", "themes for the scenarios set; sweep and devices use the first")
 	chrome := fs.String("chrome", "", "Chromium or Chrome binary; empty finds chromium-browser, chromium, or google-chrome")
@@ -92,7 +94,7 @@ func parseFlags(args []string) (config, error) {
 	}
 	for _, s := range splitList(*sets) {
 		switch s {
-		case "scenarios", "sweep", "devices":
+		case "scenarios", "sweep", "devices", "screens":
 			cfg.sets[s] = true
 		default:
 			return config{}, fmt.Errorf("grabbag-uishots: unknown set %q", s)

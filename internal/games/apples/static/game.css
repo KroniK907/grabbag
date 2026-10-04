@@ -547,22 +547,6 @@
   filter: brightness(0.7);
 }
 
-.apples-help {
-  position: absolute;
-  top: 26px;
-  left: 8px;
-  z-index: 8;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--ui-accent);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 800;
-}
-
 .apples-phone-scroll {
   min-height: 0;
   flex: 1 1 auto;
@@ -958,56 +942,14 @@ html:has(.apples-tv) {
   z-index: 4;
 }
 
+.apples-help {
+  text-align: left;
+}
+
 .apples-howto {
   max-width: 42rem;
   margin: 0 auto;
   padding: 28px 18px 64px;
-}
-
-.apples-howto-bar {
-  position: sticky;
-  top: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  background: var(--ui-board-bg);
-  z-index: 6;
-}
-
-.apples-howto-scroll {
-  min-height: 0;
-  flex: 1 1 auto;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  text-align: left;
-}
-
-.apples-howto-sheet {
-  position: absolute;
-  inset: 22px 0 0;
-  z-index: 10;
-  width: 100%;
-  height: auto;
-  padding: 0 16px 20px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--ui-phone-bg);
-}
-
-.apples-howto-sheet .apples-howto-bar {
-  flex: 0 0 auto;
-  width: 100%;
-}
-
-.apples-howto-sheet .apples-howto-bar h1 {
-  margin: 0;
-}
-
-.apples-howto-sheet .apples-howto-bar .ui-btn {
-  width: auto;
 }
 
 .apples-burn-handle {
@@ -1022,7 +964,7 @@ html:has(.apples-tv) {
   letter-spacing: 0.08em;
 }
 
-.ui-phone:has(.ui-drawer-handle) .apples-burn-handle {
+.shell-frame:has(.ui-drawer-handle) .apples-burn-handle {
   bottom: calc(var(--ui-side-tab-bottom, 28px) + var(--ui-side-tab-span, 8rem) + var(--ui-side-tab-gap, 10px));
 }
 
@@ -1153,23 +1095,7 @@ html:has(.apples-tv) {
   }
 }
 
-@media (max-width: 520px), (hover: none) and (pointer: coarse) {
-  .ui-phone-wrap:has(.apples-phone) {
-    min-height: var(--shell-visual-height, 100dvh);
-  }
-
-  .ui-phone:has(.apples-phone) {
-    height: var(--shell-visual-height, 100dvh);
-    min-height: 0;
-  }
-
-  .ui-phone:has(.apples-phone) .ui-phone-body {
-    height: calc(var(--shell-visual-height, 100dvh) - 22px);
-    min-height: 0;
-  }
-}
-
-html.shell-short .ui-phone:has(.apples-phone) .ui-phone-body {
+html.shell-short .ui-phone-body:has(.apples-phone) {
   padding-top: 8px;
   padding-bottom: 8px;
 }

@@ -104,15 +104,15 @@ func (g *Game) Scenarios() []ui.Scenario {
 			},
 		},
 		ui.Scenario{
-			Surface: "phone", Name: "howto-sheet", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellPlayPhone,
+			Surface: "phone", Name: "help", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellHelp,
 			Render: func(w io.Writer, p ui.Preview) error {
-				return ui.RenderScenario(w, pages, "howto-sheet", previewHowto(p, true), p)
+				return ui.RenderScenario(w, pages, "help", previewHowto(p), p)
 			},
 		},
 		ui.Scenario{
 			Surface: "page", Name: "howto", Viewer: "guest", Frame: ui.FramePage,
 			Render: func(w io.Writer, p ui.Preview) error {
-				return ui.RenderScenario(w, pages, "howto.html", previewHowto(p, false), p)
+				return ui.RenderScenario(w, pages, "howto.html", previewHowto(p), p)
 			},
 		},
 		ui.Scenario{
@@ -168,9 +168,9 @@ func previewPage(p ui.Preview, title string) runtimekit.Page {
 	}
 }
 
-func previewHowto(p ui.Preview, sheet bool) howtoView {
+func previewHowto(p ui.Preview) howtoView {
 	return howtoView{
-		Page: previewPage(p, "How to play"), Sheet: sheet,
+		Page: previewPage(p, "How to play"),
 		Skip: true, Voting: true, Wildcard: true, Multiplier: true, Timers: true,
 	}
 }

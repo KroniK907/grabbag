@@ -34,6 +34,16 @@ type Tenant interface {
 	Scenarios() []Scenario
 }
 
+// HelpTenant is a Tenant with a help sheet. The phone shell draws a Help
+// button for it and opens the sheet over the mounted tenant, which stays
+// mounted. Every game is a HelpTenant. The Lobby and the locked board are not.
+type HelpTenant interface {
+	Tenant
+	// Help writes the sheet's body: the rules as an HTML fragment. The shell
+	// owns the sheet, its title, and its close button.
+	Help(w http.ResponseWriter, r *http.Request)
+}
+
 // Assets is a tenant's browser files. JS files call grabbagShell.register.
 // Layout files call grabbagShell.layout with pure sizing functions; they also
 // run in static previews, where JS does not. External is third-party
@@ -57,10 +67,20 @@ type Shell struct {
 	Boot       string
 	// Stream is the SSE URL the shell connects to.
 	Stream string
-	// Player is true when a phone shell rendered for a signed-in player.
+	// Player is true when a phone shell rendered for a signed-in player. The
+	// phone frame shows Leave for one.
 	Player bool
-	Assets Assets
-	Body   template.HTML
+	// Help is true when the tenant is a HelpTenant. The phone frame shows
+	// the Help button for one.
+	Help bool
+	// HostPanel is the claimed host's panel. The phone frame holds it outside
+	// #shell-stage, so tenant swaps do not fade it. Empty for everyone else.
+	HostPanel template.HTML
+	// HelpSheet opens the Help sheet with this body. Only static previews
+	// set it; a live shell fetches GET /help when Help is tapped.
+	HelpSheet template.HTML
+	Assets    Assets
+	Body      template.HTML
 }
 
 var shellTemplates = template.Must(template.New("shell").Funcs(Funcs()).ParseFS(chromeTemplates, "templates/chrome.html", "templates/shell.html"))
@@ -88,13 +108,31 @@ func StaticShell(surface, tenant string, p Preview, assets Assets, body template
 	}
 }
 
+// ScenarioShell is StaticShell for scenario s, with the phone frame filled
+// in the way a live shell would show that moment: Leave for a signed-in
+// viewer, Help for a game, hostPanel in the frame, and a ShellHelp body in
+// the open Help sheet over an empty stage.
+func (s Scenario) ScenarioShell(tenant string, p Preview, assets Assets, body, hostPanel template.HTML) Shell {
+	shell := StaticShell(ShellSurface(s.Shell), tenant, p, assets, body)
+	if shell.Surface != SurfacePhone {
+		return shell
+	}
+	shell.Player = s.Viewer != "guest"
+	shell.Help = s.Shell == ShellPlayPhone || s.Shell == ShellHelp
+	shell.HostPanel = hostPanel
+	if s.Shell == ShellHelp {
+		shell.HelpSheet, shell.Body = body, ""
+	}
+	return shell
+}
+
 // ShellSurface is the shell a scenario's Shell value renders inside, or ""
 // when the scenario is not a shell tenant fragment.
 func ShellSurface(shell string) string {
 	switch shell {
 	case ShellBoard:
 		return SurfaceBoard
-	case ShellPhone, ShellPlayPhone:
+	case ShellPhone, ShellPlayPhone, ShellHelp:
 		return SurfacePhone
 	}
 	return ""

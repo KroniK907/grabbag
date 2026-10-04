@@ -143,8 +143,14 @@ func (r *room) open(name, path string) *tab {
 	return r.openURL(name, r.server.URL+path)
 }
 
-// openURL is open for a full URL.
-func (r *room) openURL(name, target string) *tab {
+// openSized is open in a browser window of w by h CSS pixels.
+func (r *room) openSized(name, path string, w, h int64) *tab {
+	r.t.Helper()
+	return r.openURL(name, r.server.URL+path, chromedp.EmulateViewport(w, h))
+}
+
+// openURL is open for a full URL. before runs ahead of the navigation.
+func (r *room) openURL(name, target string, before ...chromedp.Action) *tab {
 	r.t.Helper()
 	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(r.chrome))
 	if os.Getenv("CI") != "" {
@@ -157,14 +163,14 @@ func (r *room) openURL(name, target string) *tab {
 	ctx, cancel := chromedp.NewContext(alloc)
 	r.t.Cleanup(cancel)
 	tb := &tab{r: r, name: name, ctx: ctx}
-	err := chromedp.Run(ctx,
+	actions := append([]chromedp.Action{
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			_, err := page.AddScriptToEvaluateOnNewDocument(testModeJS).Do(ctx)
 			return err
 		}),
 		emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-reduced-motion", Value: "reduce"}}),
-		chromedp.Navigate(target),
-	)
+	}, before...)
+	err := chromedp.Run(ctx, append(actions, chromedp.Navigate(target))...)
 	if err != nil {
 		r.t.Fatalf("%s: open %s: %v", name, target, err)
 	}
@@ -286,7 +292,12 @@ func joinRaw(list []json.RawMessage) string {
 // joinPhone opens a phone and joins through the Join form.
 func (r *room) joinPhone(name, pass string) *tab {
 	r.t.Helper()
-	tb := r.open(name, "/")
+	return r.join(r.open(name, "/"), name, pass)
+}
+
+// join fills and sends the Join form on tb.
+func (r *room) join(tb *tab, name, pass string) *tab {
+	r.t.Helper()
 	tb.waitFor(`!!document.querySelector('form[hx-post="/lobby/join"]')`)
 	fill := fmt.Sprintf(`(() => {
 		const f = document.querySelector('form[hx-post="/lobby/join"]');
@@ -370,7 +381,7 @@ func TestLobbyStartEndStartEveryGame(t *testing.T) {
 			}
 			tt.board.waitFor(fmt.Sprintf(`!!document.querySelector("#shell-stage #%s-board")`, prefix))
 			for _, tb := range tt.phones {
-				tb.waitFor(fmt.Sprintf(`!!document.querySelector("#shell-stage #%s-phone") && !!document.querySelector("#shell-stage #host-drawer, #shell-stage .ui-leave-control")`, prefix))
+				tb.waitFor(fmt.Sprintf(`!!document.querySelector("#shell-stage #%s-phone") && !document.getElementById("shell-leave").hidden && !document.getElementById("shell-help-button").hidden`, prefix))
 			}
 			if id == "testing" {
 				tt.phones[1].run(`document.querySelector(".ui-plunger").click()`)
@@ -669,15 +680,8 @@ func TestStaticPreviewRefitsOnResize(t *testing.T) {
 	}
 	server := httptest.NewServer(host.PreviewHandler())
 	t.Cleanup(server.Close)
-	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(bin))
-	if os.Getenv("CI") != "" {
-		opts = append(opts, chromedp.NoSandbox)
-	}
-	alloc, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
-	t.Cleanup(cancelAlloc)
-	ctx, cancel := chromedp.NewContext(alloc)
-	t.Cleanup(cancel)
-	tb := &tab{r: &room{t: t}, name: "preview", ctx: ctx}
+	tb := previewTab(t, bin)
+	ctx := tb.ctx
 	if err := chromedp.Run(ctx, chromedp.EmulateViewport(1280, 800),
 		chromedp.Navigate(server.URL+"/dev/ui/s/apples/board/reveal?players=7")); err != nil {
 		t.Fatal(err)
@@ -688,4 +692,193 @@ func TestStaticPreviewRefitsOnResize(t *testing.T) {
 	}
 	tb.waitFor(`getComputedStyle(document.documentElement).getPropertyValue("--shell-visual-height") === "480px" && document.documentElement.classList.contains("shell-short")`)
 	tb.waitFor(`[...document.querySelectorAll(".apples-tv .apples-slot:not(.down) .apples-slot-copy")].every((c) => c.scrollHeight <= c.clientHeight + 1 && c.scrollWidth <= c.clientWidth + 1)`)
+}
+
+// previewTab is a browser with no room, for static preview pages.
+func previewTab(t *testing.T, bin string) *tab {
+	t.Helper()
+	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(bin))
+	if os.Getenv("CI") != "" {
+		opts = append(opts, chromedp.NoSandbox)
+	}
+	alloc, cancelAlloc := chromedp.NewExecAllocator(context.Background(), opts...)
+	t.Cleanup(cancelAlloc)
+	ctx, cancel := chromedp.NewContext(alloc)
+	t.Cleanup(cancel)
+	return &tab{r: &room{t: t}, name: "preview", ctx: ctx}
+}
+
+// frameBox is where the phone frame put the column and its controls.
+type frameBox struct {
+	Mode      string  `json:"mode"`
+	Width     float64 `json:"width"`
+	Column    rect    `json:"column"`
+	Bar       rect    `json:"bar"`
+	Help      rect    `json:"help"`
+	Leave     rect    `json:"leave"`
+	Container float64 `json:"container"`
+}
+
+type rect struct {
+	Left   float64 `json:"left"`
+	Right  float64 `json:"right"`
+	Top    float64 `json:"top"`
+	Bottom float64 `json:"bottom"`
+}
+
+const frameBoxJS = `JSON.stringify((() => {
+	const box = (el) => { const r = el.getBoundingClientRect(); return {left: r.left, right: r.right, top: r.top, bottom: r.bottom}; };
+	const column = document.querySelector(".shell-column");
+	return {
+		mode: document.getElementById("shell-frame").getAttribute("data-frame"),
+		width: document.documentElement.clientWidth,
+		column: box(column),
+		bar: box(document.querySelector(".shell-bar")),
+		help: box(document.getElementById("shell-help-button")),
+		leave: box(document.getElementById("shell-leave")),
+		container: document.getElementById("shell-stage").getBoundingClientRect().width,
+	};
+})())`
+
+func (tb *tab) frameBox() frameBox {
+	tb.r.t.Helper()
+	var raw string
+	tb.eval(frameBoxJS, &raw)
+	var b frameBox
+	if err := json.Unmarshal([]byte(raw), &b); err != nil {
+		tb.r.t.Fatal(err)
+	}
+	return b
+}
+
+// TestPhoneFrameColumnAtEverySize checks GM-005 and GM-006 on a game phone
+// preview: the column is 720px with 64px gutters when there is room and
+// fills the width when there is not, and Help and Leave sit in the toolbar
+// or the gutters without overlapping the column. A screen with
+// data-column="wide" gets a 1200px column.
+func TestPhoneFrameColumnAtEverySize(t *testing.T) {
+	bin := chromeBinary()
+	if bin == "" || testing.Short() {
+		t.Skip("no Chromium, or -short")
+	}
+	server := httptest.NewServer(host.PreviewHandler())
+	t.Cleanup(server.Close)
+	tb := previewTab(t, bin)
+	if err := chromedp.Run(tb.ctx, chromedp.EmulateViewport(393, 852),
+		chromedp.Navigate(server.URL+"/dev/ui/s/testing/phone/live-seated")); err != nil {
+		t.Fatal(err)
+	}
+	sizes := []struct {
+		name   string
+		w, h   int64
+		wide   bool
+		mode   string
+		column float64
+	}{
+		{"phone", 393, 852, false, "phone", 393},
+		{"ipad-portrait", 820, 1180, false, "phone", 820},
+		{"ipad-landscape", 1180, 820, false, "gutter", 720},
+		{"desktop", 1440, 900, false, "gutter", 720},
+		{"ipad-landscape-wide", 1180, 820, true, "phone", 1180},
+		{"desktop-wide", 1440, 900, true, "gutter", 1200},
+	}
+	for _, sz := range sizes {
+		if err := chromedp.Run(tb.ctx, chromedp.EmulateViewport(sz.w, sz.h)); err != nil {
+			t.Fatal(err)
+		}
+		tb.run(fmt.Sprintf(`document.querySelector("#shell-stage > *").toggleAttribute("data-column", %t); if (%t) document.querySelector("#shell-stage > *").setAttribute("data-column", "wide")`, sz.wide, sz.wide))
+		tb.waitFor(fmt.Sprintf(`document.documentElement.clientWidth === %d && Math.round(document.querySelector(".shell-column").getBoundingClientRect().width) === %d && document.getElementById("shell-frame").getAttribute("data-frame") === %q`, sz.w, int(sz.column), sz.mode))
+		b := tb.frameBox()
+		if b.Container != b.Column.Right-b.Column.Left {
+			t.Errorf("%s: stage %v is not the column %v", sz.name, b.Container, b.Column)
+		}
+		if sz.mode == "gutter" {
+			if b.Column.Left < 64 || b.Width-b.Column.Right < 64 {
+				t.Errorf("%s: gutters under 64px: %+v", sz.name, b)
+			}
+			if b.Help.Right > b.Column.Left || b.Leave.Left < b.Column.Right {
+				t.Errorf("%s: Help or Leave overlaps the column: %+v", sz.name, b)
+			}
+			if b.Help.Top < b.Bar.Bottom || b.Leave.Top < b.Bar.Bottom {
+				t.Errorf("%s: Help or Leave still in the toolbar: %+v", sz.name, b)
+			}
+		} else {
+			if b.Column.Left != 0 || b.Column.Right != b.Width {
+				t.Errorf("%s: phone column does not fill the width: %+v", sz.name, b)
+			}
+			if b.Help.Bottom > b.Bar.Bottom || b.Leave.Bottom > b.Bar.Bottom || b.Help.Left < 0 || b.Leave.Right > b.Width {
+				t.Errorf("%s: Help or Leave outside the toolbar: %+v", sz.name, b)
+			}
+		}
+	}
+}
+
+// TestHostPanelStaysOpenOnWideScreens checks GM-011: from 1170px the
+// claimed host's panel stays open on the left without a drawer handle,
+// other players get no panel, and collapsing it survives a reload.
+func TestHostPanelStaysOpenOnWideScreens(t *testing.T) {
+	r := newRoom(t)
+	hostPhone := r.join(r.openSized("Host", "/", 1440, 900), "Host", password)
+	bea := r.join(r.openSized("Bea", "/", 1440, 900), "Bea", "")
+	const panelOpen = `(() => {
+		const host = document.getElementById("shell-host").getBoundingClientRect();
+		const drawer = document.getElementById("host-drawer");
+		const handle = document.querySelector(".ui-drawer-handle");
+		return Math.round(host.width) === 320 && host.left === 0 && !!drawer && drawer.getBoundingClientRect().width > 300 &&
+			getComputedStyle(handle).display === "none" && document.querySelector(".shell-column").getBoundingClientRect().left >= 320 + 64;
+	})()`
+	hostPhone.waitFor(panelOpen)
+	bea.waitFor(`document.getElementById("shell-host").innerHTML.trim() === "" && document.querySelector(".shell-column").getBoundingClientRect().left === (document.documentElement.clientWidth - 720) / 2`)
+
+	hostPhone.run(`document.querySelector(".ui-drawer-collapse").click()`)
+	const collapsed = `document.getElementById("shell-frame").getAttribute("data-host-panel") === "collapsed" &&
+		Math.round(document.getElementById("shell-host").getBoundingClientRect().width) === 44 &&
+		getComputedStyle(document.getElementById("host-drawer")).display === "none"`
+	hostPhone.waitFor(collapsed)
+	if err := chromedp.Run(hostPhone.ctx, chromedp.Reload()); err != nil {
+		t.Fatal(err)
+	}
+	hostPhone.waitFor(`window.grabbagShell && grabbagShell.current() !== null`)
+	hostPhone.waitFor(collapsed)
+	hostPhone.run(`document.querySelector(".ui-drawer-expand").click()`)
+	hostPhone.waitFor(panelOpen)
+
+	// Under 1170px it is the slide-out drawer again.
+	if err := chromedp.Run(hostPhone.ctx, chromedp.EmulateViewport(1000, 800)); err != nil {
+		t.Fatal(err)
+	}
+	hostPhone.waitFor(`getComputedStyle(document.querySelector(".ui-drawer-handle")).display !== "none" && document.getElementById("host-drawer").getBoundingClientRect().right <= 0`)
+	bea.assertSteady()
+}
+
+// TestHelpSheetKeepsTheTenantMounted checks GM-009 and GM-010: Help shows
+// for a game and not the Lobby, the sheet opens over the game, and ✕, Esc,
+// and the backdrop close it, with no unmount.
+func TestHelpSheetKeepsTheTenantMounted(t *testing.T) {
+	tt := newTable(t)
+	bea := tt.phones[1]
+	bea.waitFor(`document.getElementById("shell-help-button").hidden`)
+	tt.load("testing")
+	tt.start("testing")
+	bea.waitFor(`!document.getElementById("shell-help-button").hidden`)
+	var mounts int
+	bea.eval(`grabbagShell.record.mounts.length`, &mounts)
+	for _, closer := range []string{
+		`document.querySelector(".shell-sheet-close").click()`,
+		`document.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape"}))`,
+		`document.querySelector(".shell-sheet-scrim").click()`,
+	} {
+		bea.run(`document.getElementById("shell-help-button").click()`)
+		bea.waitFor(`!document.getElementById("shell-help").hidden && document.getElementById("shell-help-body").textContent.includes("Latency")`)
+		bea.run(closer)
+		bea.waitFor(`document.getElementById("shell-help").hidden && !!document.querySelector("#shell-stage #testing-phone")`)
+	}
+	var after int
+	bea.eval(`grabbagShell.record.mounts.length`, &after)
+	if after != mounts {
+		t.Fatalf("help remounted the tenant: %d mounts, then %d", mounts, after)
+	}
+	tt.stop()
+	bea.waitFor(`document.getElementById("shell-help-button").hidden`)
+	bea.assertSteady()
 }

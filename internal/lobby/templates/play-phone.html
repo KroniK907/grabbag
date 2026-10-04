@@ -1,22 +1,9 @@
 {{/* play-phone is a game's phone tenant as the shell shows it: the game's
-Phone body, Leave, and the claimed host's drawer. */}}
+Phone body in the column. Leave and the host panel are in the shell frame. */}}
 {{define "play-phone"}}
-<div class="ui-phone-body">
+<div class="ui-phone-body ui-play-body">
   <div class="ui-phone-stack">
     {{.GameBody}}
   </div>
-  {{template "leave-control"}}
 </div>
-{{if .HostPanel}}
-<button
-  type="button"
-  class="ui-btn ui-drawer-handle"
-  aria-controls="host-drawer"
-  onclick="document.getElementById('host-drawer').classList.add('is-open')"
->Host</button>
-{{template "host-drawer" .}}
-{{if .ShowGameLibrary}}
-{{template "game-library" .}}
-{{end}}
-{{end}}
 {{end}}

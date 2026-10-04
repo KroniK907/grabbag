@@ -34,17 +34,5 @@
     <button class="ui-btn" type="submit">Join wait list</button>
   </form>
   {{end}}
-  {{template "leave-control"}}
 </div>
-{{end}}
-
-{{define "leave-control"}}
-<form class="ui-leave-control" hx-post="/lobby/leave" hx-swap="none" hx-confirm="Leave this room?">
-  <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room">
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
-    </svg>
-    <span class="ui-sr-only">Leave</span>
-  </button>
-</form>
 {{end}}

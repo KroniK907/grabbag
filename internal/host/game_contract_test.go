@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -204,9 +205,14 @@ func TestLobbyShowsHowtoHelp(t *testing.T) {
 	if !strings.Contains(tv, `class="ui-help"`) || !strings.Contains(tv, `href="/play/howto"`) {
 		t.Fatalf("lobby board missing help: %q", tv)
 	}
+	// The Lobby is not a HelpTenant: it links the loaded game's how-to page
+	// in its column, and the shell draws no Help button.
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
-	if !strings.Contains(phone, `class="ui-help"`) || !strings.Contains(phone, `href="/play/howto"`) {
-		t.Fatalf("lobby phone missing help: %q", phone)
+	if !strings.Contains(phone, `href="/play/howto">How to play</a>`) {
+		t.Fatalf("lobby phone missing the how-to link: %q", phone)
+	}
+	if !strings.Contains(phone, `id="shell-help-button"`) || !regexp.MustCompile(`id="shell-help-button"[^>]*\shidden`).MatchString(phone) {
+		t.Fatalf("lobby phone shows the shell Help button: %q", phone)
 	}
 }
 

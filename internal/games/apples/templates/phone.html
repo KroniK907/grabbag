@@ -8,9 +8,6 @@
   hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
-  {{if .Help}}
-  <a class="apples-help" href="/play/howto-sheet" hx-get="/play/howto-sheet" hx-target="#apples-phone" hx-swap="outerHTML" aria-label="How to play">?</a>
-  {{end}}
   {{if .Overlay}}
   <div class="apples-reshuffle-sheet">
     <p>{{.OverlayCopy}}</p>

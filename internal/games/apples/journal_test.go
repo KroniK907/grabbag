@@ -274,13 +274,14 @@ func TestPhoneHelpAfterStart(t *testing.T) {
 	req.Header.Set("X-Player", "p1")
 	rec := httptest.NewRecorder()
 	g.Phone(rec, req)
-	if !strings.Contains(rec.Body.String(), `aria-label="How to play"`) {
-		t.Fatal(rec.Body.String())
+	if strings.Contains(rec.Body.String(), `aria-label="How to play"`) {
+		t.Fatalf("phone still draws its own help button: %s", rec.Body.String())
 	}
 	sheet := httptest.NewRecorder()
-	g.Play().ServeHTTP(sheet, httptest.NewRequest(http.MethodGet, "/howto-sheet", nil))
-	if sheet.Code != http.StatusOK || !strings.Contains(sheet.Body.String(), "Close") || !strings.Contains(sheet.Body.String(), "apples-howto-sheet") {
-		t.Fatalf("sheet = %d %s", sheet.Code, sheet.Body.String())
+	g.Help(sheet, req)
+	body := sheet.Body.String()
+	if sheet.Code != http.StatusOK || !strings.Contains(body, "<h2>Judge</h2>") || strings.Contains(body, "<html") || strings.Contains(body, "Close") {
+		t.Fatalf("help = %d %s", sheet.Code, body)
 	}
 }
 

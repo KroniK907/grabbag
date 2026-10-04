@@ -1,27 +1,14 @@
 {{/* room-body is the Lobby phone tenant for a signed-in player. The phone
-shell supplies the frame and notch around it. */}}
+shell supplies the frame, Leave, and the host panel around it. */}}
 {{define "room-body"}}
 <div class="ui-phone-body">
   {{template "room-inner" .}}
+  {{if .HelpPath}}
+  <a class="ui-btn ui-btn-inline" href="{{.HelpPath}}">How to play</a>
+  {{end}}
 </div>
-{{if .HelpPath}}
-<a class="ui-help" href="{{.HelpPath}}" aria-label="How to play">?</a>
-{{end}}
-{{if .HostPanel}}
-{{/* Drawer sits outside #phone-inner so roster swaps keep Host. */}}
-<button
-  type="button"
-  class="ui-btn ui-drawer-handle"
-  aria-controls="host-drawer"
-  onclick="document.getElementById('host-drawer').classList.add('is-open')"
->Host</button>
-{{template "host-drawer" .}}
-{{if .ShowGameLibrary}}
-{{template "game-library" .}}
-{{end}}
-{{if .RestorePending}}
+{{if and .HostPanel .RestorePending}}
 {{template "restore-modal" .}}
-{{end}}
 {{end}}
 {{if .TakeHost}}
 <div class="ui-modal">
@@ -37,5 +24,27 @@ shell supplies the frame and notch around it. */}}
     </form>
   </div>
 </div>
+{{end}}
+{{end}}
+
+{{/* host-panel is the claimed host's controls in the phone frame, outside
+the stage: a slide-out drawer under 1170px, a panel that stays open from
+1170px. The game library opens from it. */}}
+{{define "host-panel"}}
+<button
+  type="button"
+  class="ui-btn ui-drawer-handle"
+  aria-controls="host-drawer"
+  onclick="document.getElementById('host-drawer').classList.add('is-open')"
+>Host</button>
+{{template "host-drawer" .}}
+<button
+  type="button"
+  class="ui-drawer-expand"
+  aria-controls="host-drawer"
+  onclick="grabbagShell.toggleHostPanel()"
+>Host</button>
+{{if .ShowGameLibrary}}
+{{template "game-library" .}}
 {{end}}
 {{end}}

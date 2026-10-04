@@ -128,12 +128,22 @@ func (l *Lobby) phoneView(r *http.Request, player Player) (roomView, error) {
 	return view, nil
 }
 
-// WritePlayPhone writes a game's phone tenant fragment: the game body with
-// Leave and the claimed host's drawer around it.
+// WritePlayPhone writes a game's phone tenant fragment: the game body in
+// the column wrapper. Leave and the host panel are in the shell frame.
 func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body template.HTML) {
+	l.render(w, "play-phone", roomView{GameBody: body}, http.StatusOK)
+}
+
+// HostPanel writes the claimed host's panel for the phone shell's frame:
+// the drawer, or the panel that stays open on wide screens, and the game
+// library. Anyone else gets an empty body.
+func (l *Lobby) HostPanel(w http.ResponseWriter, r *http.Request) {
 	player, ok, err := l.PlayerFromRequest(r)
-	if err != nil || !ok {
+	if err != nil {
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
 		return
 	}
 	view, err := l.phoneView(r, player)
@@ -141,8 +151,10 @@ func (l *Lobby) WritePlayPhone(w http.ResponseWriter, r *http.Request, body temp
 		http.Error(w, "Could not read the room.", http.StatusInternalServerError)
 		return
 	}
-	view.GameBody = body
-	l.render(w, "play-phone", view, http.StatusOK)
+	if !view.HostPanel {
+		return
+	}
+	l.render(w, "host-panel", view, http.StatusOK)
 }
 
 func (l *Lobby) settings(w http.ResponseWriter, r *http.Request) {

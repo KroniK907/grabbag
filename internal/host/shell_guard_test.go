@@ -174,3 +174,31 @@ func TestLayoutScriptsArePure(t *testing.T) {
 		t.Fatal("no layout scripts checked; Apples ships one")
 	}
 }
+
+// TestTenantsLeaveTheFrameToTheShell renders every phone tenant scenario
+// fragment. Leave and the Host drawer belong to the shell frame (GM-012), so
+// no tenant fragment may carry them.
+func TestTenantsLeaveTheFrameToTheShell(t *testing.T) {
+	t.Parallel()
+	checked := 0
+	for _, pkg := range newPreviewHandlerPackages() {
+		for _, sc := range pkg.scenarios {
+			if ui.ShellSurface(sc.Shell) != ui.SurfacePhone {
+				continue
+			}
+			var buf strings.Builder
+			if err := sc.Render(&buf, ui.Preview{Players: sc.DefaultPlayers(), Patches: sc.Patches, Assets: "/x/"}); err != nil {
+				t.Fatalf("%s/%s/%s: %v", pkg.id, sc.Surface, sc.Name, err)
+			}
+			for _, banned := range []string{`hx-post="/lobby/leave"`, `id="host-drawer"`, "ui-drawer-handle"} {
+				if strings.Contains(buf.String(), banned) {
+					t.Errorf("%s/%s/%s: tenant fragment has %s", pkg.id, sc.Surface, sc.Name, banned)
+				}
+			}
+			checked++
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no phone scenarios checked")
+	}
+}

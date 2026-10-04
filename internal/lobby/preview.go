@@ -34,7 +34,7 @@ func Scenarios() []ui.Scenario {
 		}
 	}
 	room := func(name, viewer string, min int, sample bool, edit func(*roomView, ui.Preview)) ui.Scenario {
-		return ui.Scenario{
+		s := ui.Scenario{
 			Surface: "room", Group: name, Name: name, Viewer: viewer, Frame: ui.FramePhone, Shell: ui.ShellPhone,
 			MinPlayers: min, Sample: sample,
 			Render: func(w io.Writer, p ui.Preview) error {
@@ -43,6 +43,14 @@ func Scenarios() []ui.Scenario {
 				return ui.RenderScenario(w, pageTemplates, "room-body", view, p)
 			},
 		}
+		if viewer == "host" {
+			s.HostPanel = func(w io.Writer, p ui.Preview) error {
+				view := previewRoom(p, viewer)
+				edit(&view, p)
+				return ui.RenderScenario(w, pageTemplates, "host-panel", view, ui.Preview{Theme: p.Theme})
+			}
+		}
+		return s
 	}
 	open := func(s ui.Scenario, ids string) ui.Scenario {
 		s.Open = ids
@@ -116,13 +124,19 @@ func Scenarios() []ui.Scenario {
 }
 
 // RenderPlayPhone writes the Lobby play-phone fragment around a game phone
-// body, the way host wraps live game phones. viewer "host" adds the host
-// drawer. The preview patches apply to the game body, not this wrapper. Host
-// puts the result in the static phone shell.
-func RenderPlayPhone(w io.Writer, p ui.Preview, viewer string, body template.HTML) error {
-	view := previewRoom(ui.Preview{Theme: p.Theme, Players: 8}, viewer)
-	view.Started, view.GameBody = true, body
-	return ui.RenderScenario(w, pageTemplates, "play-phone", view, ui.Preview{Theme: p.Theme})
+// body, the way host wraps live game phones. The preview patches apply to
+// the game body, not this wrapper. Host puts the result in the static phone
+// shell.
+func RenderPlayPhone(w io.Writer, p ui.Preview, body template.HTML) error {
+	return ui.RenderScenario(w, pageTemplates, "play-phone", roomView{GameBody: body}, ui.Preview{Theme: p.Theme})
+}
+
+// RenderHostPanel writes the claimed host's panel for a game in progress,
+// for the static phone shell's frame.
+func RenderHostPanel(w io.Writer, p ui.Preview) error {
+	view := previewRoom(ui.Preview{Theme: p.Theme, Players: 8}, "host")
+	view.Started = true
+	return ui.RenderScenario(w, pageTemplates, "host-panel", view, ui.Preview{Theme: p.Theme})
 }
 
 // RenderSettings writes the Lobby /settings page with gameSettings inlined

@@ -1,12 +1,7 @@
-{{define "howto-sheet"}}
-<div id="apples-phone" class="apples-phone apples-howto-sheet">
-  <header class="apples-howto-bar">
-    <h1>How to play</h1>
-    <a class="ui-btn" href="/play/partials/phone" hx-get="/play/partials/phone" hx-target="#apples-phone" hx-swap="outerHTML">Close</a>
-  </header>
-  <div class="apples-howto-scroll">
-    {{template "howto-body" .}}
-  </div>
+{{/* help is the Help sheet body. The phone shell owns the sheet. */}}
+{{define "help"}}
+<div class="apples-help">
+  {{template "howto-body" .}}
 </div>
 {{end}}
 
