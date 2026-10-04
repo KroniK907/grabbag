@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "shell-1"
+	assetVersion = "shell-4"
 )
 
 //go:embed templates/*.html
@@ -194,9 +194,14 @@ func (g *Game) BoardButtons() []games.BoardButton {
 	}
 }
 
-// Assets is game.css and game.js for the shells. game.js registers the board
-// and phone lifecycles.
-func (g *Game) Assets() ui.Assets { return runtimekit.Assets(id, assetVersion) }
+// Assets is game.css, game.js, and layout.js for the shells. game.js
+// registers the board and phone lifecycles; layout.js fits the answer cards'
+// text, also in previews.
+func (g *Game) Assets() ui.Assets {
+	a := runtimekit.Assets(id, assetVersion)
+	a.Layout = []string{games.StaticPath(id) + "layout.js?v=" + assetVersion}
+	return a
+}
 
 // Phone is the seated, judge, audience, or wait-list column. Host currently
 // only mounts this for seated players (CoreHost #59).

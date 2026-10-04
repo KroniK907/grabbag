@@ -1,21 +1,11 @@
 // Quick Quips tenant. The board marks a new matchup, clock, or winner as it
-// arrives. The phone tracks the visual viewport (the keyboard shrinks it)
-// and keeps the quip character counters live while typing.
+// arrives. The phone keeps the quip character counters live while typing.
+// The shell tracks the visual viewport (--shell-visual-height).
 (function () {
   "use strict";
 
   function runeLen(text) {
     return Array.from(text).length;
-  }
-
-  function syncVisualViewport() {
-    var viewport = window.visualViewport;
-    var height = viewport ? viewport.height : window.innerHeight;
-    if (!height) {
-      return;
-    }
-    document.documentElement.style.setProperty("--quips-visual-height", Math.round(height) + "px");
-    document.documentElement.classList.toggle("quips-compact-height", height < 760);
   }
 
   function bindComposeCards(root) {
@@ -85,19 +75,9 @@
     },
     phone: {
       mount: function (root, ctx) {
-        ctx.on(window, "resize", syncVisualViewport);
-        ctx.on(window, "orientationchange", syncVisualViewport);
-        if (window.visualViewport) {
-          ctx.on(window.visualViewport, "resize", syncVisualViewport);
-        }
         ctx.on(document.body, "htmx:afterSwap", function () {
           bindComposeCards(root);
         });
-        ctx.cleanup(function () {
-          document.documentElement.style.removeProperty("--quips-visual-height");
-          document.documentElement.classList.remove("quips-compact-height");
-        });
-        syncVisualViewport();
         bindComposeCards(root);
       },
     },

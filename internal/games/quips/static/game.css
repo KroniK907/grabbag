@@ -967,56 +967,56 @@
 
 @media (max-width: 520px), (hover: none) and (pointer: coarse) {
   .ui-phone-wrap:has(.quips-phone) {
-    min-height: var(--quips-visual-height, 100dvh);
+    min-height: var(--shell-visual-height, 100dvh);
   }
 
   .ui-phone:has(.quips-phone) {
-    height: var(--quips-visual-height, 100dvh);
+    height: var(--shell-visual-height, 100dvh);
     min-height: 0;
   }
 
   .ui-phone:has(.quips-phone) .ui-phone-body {
-    height: calc(var(--quips-visual-height, 100dvh) - 22px);
+    height: calc(var(--shell-visual-height, 100dvh) - 22px);
     min-height: 0;
   }
 }
 
-html.quips-compact-height .ui-phone:has(.quips-phone) .ui-phone-body {
+html.shell-short .ui-phone:has(.quips-phone) .ui-phone-body {
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-html.quips-compact-height .quips-phone {
+html.shell-short .quips-phone {
   padding-top: 5px;
 }
 
-html.quips-compact-height .quips-phone-scroll {
+html.shell-short .quips-phone-scroll {
   gap: 7px;
   padding-bottom: 5px;
 }
 
-html.quips-compact-height .quips-compose-card {
+html.shell-short .quips-compose-card {
   padding: 8px;
 }
 
-html.quips-compact-height .quips-compose-card .quips-prompt {
+html.shell-short .quips-compose-card .quips-prompt {
   margin: 0 0 5px;
   line-height: 1.15;
 }
 
-html.quips-compact-height .quips-compose-card textarea {
+html.shell-short .quips-compose-card textarea {
   min-height: 64px;
 }
 
-html.quips-compact-height .quips-cap {
+html.shell-short .quips-cap {
   margin-top: 3px;
 }
 
-html.quips-compact-height .quips-lock-bar {
+html.shell-short .quips-lock-bar {
   padding: 5px 12px 1px;
 }
 
-html.quips-compact-height .quips-lock-bar .ui-btn {
+html.shell-short .quips-lock-bar .ui-btn {
   min-height: 44px;
   padding: 7px 10px;
   font-size: 1.125rem;

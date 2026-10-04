@@ -79,7 +79,7 @@ func renderAll(t *testing.T, id string, list []ui.Scenario, assets ui.Assets) {
 					continue
 				}
 				page := doc.String()
-				if !strings.Contains(page, `id="shell-stage"`) || !strings.Contains(page, "window.grabbagStatic") || strings.Contains(page, "htmx.min.js") {
+				if !strings.Contains(page, `id="shell-stage"`) || !strings.Contains(page, "window.grabbagStatic") || strings.Contains(page, "htmx.min.js") || strings.Contains(page, "data-shell-js") {
 					t.Errorf("%s players=%d: tenant did not render inside the static shell", key, n)
 				}
 			}

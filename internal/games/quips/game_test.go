@@ -81,8 +81,7 @@ func TestHowtoAndCompactViewportAssets(t *testing.T) {
 		want []string
 	}{
 		{path: "/howto", want: []string{"How to play", "Last Quip", "Back to game"}},
-		{path: "/static/game.js", want: []string{"visualViewport", "--quips-visual-height", "quips-compact-height", "height < 760"}},
-		{path: "/static/game.css", want: []string{".quips-lock-bar .ui-btn", "min-height: 44px", "var(--quips-visual-height, 100dvh)", "height: 100dvh"}},
+		{path: "/static/game.css", want: []string{".quips-lock-bar .ui-btn", "min-height: 44px", "var(--shell-visual-height, 100dvh)", "html.shell-short .quips-phone", "height: 100dvh"}},
 	} {
 		rec := httptest.NewRecorder()
 		g.Play().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))

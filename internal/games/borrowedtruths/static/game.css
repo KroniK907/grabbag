@@ -502,7 +502,9 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 }
 
 .bt-board.is-settled *,
-.bt-board.is-settled *::after { animation: none !important; }
+.bt-board.is-settled *::after,
+html[data-static] .bt-board *,
+html[data-static] .bt-board *::after { animation: none !important; }
 
 /* Big rooms: shrink the voter stickers and the standings so 20 fit. */
 .bt-stickers:has(> :nth-child(9)) { grid-template-columns: repeat(auto-fill, minmax(5.6cqw, 1fr)); gap: .6cqw .5cqw; }

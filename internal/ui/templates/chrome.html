@@ -91,6 +91,7 @@ shell.html. */}}
 {{define "ui-static-script"}}
 <script>
 window.grabbagStatic = true;
+document.documentElement.setAttribute("data-static", "");
 document.addEventListener("DOMContentLoaded", function () {
   "{{.OpenIDs}}".split(/\s+/).filter(Boolean).forEach(function (id) {
     var el = document.getElementById(id);

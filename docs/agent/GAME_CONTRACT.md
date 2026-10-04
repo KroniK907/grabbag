@@ -76,6 +76,8 @@ shells:
   tenant_fetch: [GET /tenant, GET /board/tenant]
   tenants: [lobby, locked, <game id>]
   js: grabbagShell.register(id, {board: {mount, unmount}, phone: {mount, unmount}})
+  layout: grabbagShell.layout(id, {board(root), phone(root)})  # optional; pure sizing, runs in previews too
+  viewport: --shell-visual-height and html.shell-short on <html>
   refetch_on: [sse round, sse tenant, "HX-Trigger: grabbag:tenant", sse reconnect]
   reloads_only: [hardReload("kicked"), hardReload("host-restarted")]
 mounts:
@@ -172,7 +174,7 @@ Host calls these on the Game value.
 | `Resume() error` | operator | Restart ticks. May no-op. |
 | `Stop() error` | round end | Drop in-memory run state. Keep KV. Keep helper. |
 | `Shutdown() error` | unload | Drop helper. Stop goroutines. |
-| `Assets() ui.Assets` | whenever a shell shows the game | `{CSS, JS, External}` for both surfaces. `runtimekit.Assets(id, version)` builds `game.css` and `game.js` under `games.StaticPath(id)` (`/games/<id>/static/`), which host serves from that game's `Play()` static files whichever game is loaded. External is web fonts and the like. |
+| `Assets() ui.Assets` | whenever a shell shows the game | `{CSS, JS, Layout, External}` for both surfaces. `runtimekit.Assets(id, version)` builds `game.css` and `game.js` under `games.StaticPath(id)` (`/games/<id>/static/`), which host serves from that game's `Play()` static files whichever game is loaded. Layout is optional `layout.js` (see [Layout](#layout)). External is web fonts and the like. |
 | `Scenarios() []ui.Scenario` | `/dev/ui/` gallery, uishots, tests | Preview states. See [UI previews](#ui-previews). |
 
 ## Helper hooks
@@ -243,6 +245,20 @@ grabbagShell.register("wordbox", {
 ```
 
 `unmount` is optional. The Lobby registers as `lobby` from `/lobby/static/lobby.js`.
+
+### Layout
+
+Lay screens out in CSS. The shell sets `--shell-visual-height` (the visible height, which shrinks when a phone keyboard opens) and `html.shell-short` (under 760px) on `<html>`, live and in previews, so phone layouts need no script for that. Card grids can follow their count with `:has(> :nth-child(n))`.
+
+Sizing CSS cannot do, such as fitting text to a box, goes in an optional `layout.js` listed in `Assets.Layout`:
+
+```js
+grabbagShell.layout("apples", {
+  board: function (root) { /* measure and set styles inside root */ },
+});
+```
+
+Layout functions only measure and set styles. The shell runs them after mount, after every swap, on resize, and once fonts load, and also in static previews, where `game.js` does not load. A Go guard rejects listeners, timers, frames, observers, network, htmx, and navigation in layout files. Apples' text fitter is the one user.
 
 ### ctx
 
@@ -351,7 +367,7 @@ Operator Pause from `/settings` and `Helper.Pause` still reach every game.
 
 Every tenant lists `ui.Scenario` values from `Scenarios()`. Host serves them at `/dev/ui/` when started with `-dev-preview`, and `cmd/grabbag-uishots` screenshots them. Host calls `Scenarios()` on a fresh `New()` value. There is no Load, no Helper, and no data dir.
 
-Board and phone scenarios are tenant fragments. Host wraps each in the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, or transitions, with the tenant's `Assets()` linked. The static shell mounts the tenant once so layout code runs; skip animations when `window.grabbagStatic` is set. `uitest.RenderTenant` renders every scenario inside the shell and fails on a fragment that is a full document or carries `<script>` or `<link>`.
+Board and phone scenarios are tenant fragments. Host wraps each in the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, transitions, or `game.js`, so nothing mounts. It links the tenant's CSS and runs its [layout](#layout), and `<html data-static>` lets CSS freeze an animation that would make screenshots differ run to run. `uitest.RenderTenant` renders every scenario inside the shell and fails on a fragment that is a full document or carries `<script>` or `<link>`.
 
 | Scenario field | Rule |
 |----------------|------|

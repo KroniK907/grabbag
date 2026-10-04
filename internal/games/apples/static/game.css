@@ -244,15 +244,45 @@
   overflow-y: auto;
 }
 
+/* TV answer cards. The grid follows the card count with :has(): up to five
+   cards sit in one row as tall as half the area, capped in width so one or
+   two cards do not stretch across the TV; six or more fill two rows, with at
+   most seven columns. static/layout.js fits each card's text. */
 .apples-tv .apples-slots {
+  --cols: 1;
+  --cap: 1fr;
+  --gap: clamp(14px, 1.6vw, 28px);
+  /* Basis 0, not auto: the rows are a share of this height, so it must not
+     grow with the cards' text, or fitting the text would move the boxes. */
+  flex: 1 1 0;
   display: grid;
-  align-content: stretch;
+  grid-template-columns: repeat(var(--cols), minmax(0, var(--cap)));
+  grid-template-rows: calc((100% - var(--gap)) / 2);
+  align-content: center;
   justify-content: center;
   align-items: stretch;
-  gap: clamp(14px, 1.6vw, 28px);
+  gap: var(--gap);
   padding: clamp(16px, 2vh, 32px) clamp(20px, 2.2vw, 40px);
   overflow: hidden;
 }
+
+.apples-tv .apples-slots:has(> :nth-child(2):last-child) { --cols: 2; --cap: min(38%, 640px); }
+.apples-tv .apples-slots:has(> :nth-child(3):last-child) { --cols: 3; --cap: min(30%, 500px); }
+.apples-tv .apples-slots:has(> :nth-child(4):last-child) { --cols: 4; --cap: min(30%, 500px); }
+.apples-tv .apples-slots:has(> :nth-child(5):last-child) { --cols: 5; }
+.apples-tv .apples-slots:has(> :nth-child(1):last-child) { --cap: min(50%, 780px); }
+
+.apples-tv .apples-slots:has(> :nth-child(6)) {
+  --cols: 3;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+}
+
+.apples-tv .apples-slots:has(> :nth-child(7)) { --cols: 4; }
+.apples-tv .apples-slots:has(> :nth-child(9)) { --cols: 5; }
+.apples-tv .apples-slots:has(> :nth-child(11)) { --cols: 6; }
+.apples-tv .apples-slots:has(> :nth-child(13)) { --cols: 7; }
+
 
 .apples-slot {
   position: relative;
@@ -1125,66 +1155,66 @@ html:has(.apples-tv) {
 
 @media (max-width: 520px), (hover: none) and (pointer: coarse) {
   .ui-phone-wrap:has(.apples-phone) {
-    min-height: var(--apples-visual-height, 100dvh);
+    min-height: var(--shell-visual-height, 100dvh);
   }
 
   .ui-phone:has(.apples-phone) {
-    height: var(--apples-visual-height, 100dvh);
+    height: var(--shell-visual-height, 100dvh);
     min-height: 0;
   }
 
   .ui-phone:has(.apples-phone) .ui-phone-body {
-    height: calc(var(--apples-visual-height, 100dvh) - 22px);
+    height: calc(var(--shell-visual-height, 100dvh) - 22px);
     min-height: 0;
   }
 }
 
-html.apples-compact-height .ui-phone:has(.apples-phone) .ui-phone-body {
+html.shell-short .ui-phone:has(.apples-phone) .ui-phone-body {
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-html.apples-compact-height .apples-phone {
+html.shell-short .apples-phone {
   padding-bottom: 4px;
 }
 
-html.apples-compact-height .apples-phone-scroll {
+html.shell-short .apples-phone-scroll {
   gap: 6px;
   padding-bottom: 5px;
 }
 
-html.apples-compact-height .apples-play-dock {
+html.shell-short .apples-play-dock {
   gap: 5px;
   padding-bottom: 3px;
 }
 
-html.apples-compact-height .apples-phone .apples-prompt {
+html.shell-short .apples-phone .apples-prompt {
   padding: 7px 10px;
   font-size: clamp(1rem, 4.8vw, 1.25rem);
   line-height: 1.12;
 }
 
-html.apples-compact-height .apples-phone .apples-hole {
+html.shell-short .apples-phone .apples-hole {
   min-height: 54px;
   padding: 8px;
 }
 
-html.apples-compact-height .apples-hand {
+html.shell-short .apples-hand {
   gap: 6px;
 }
 
-html.apples-compact-height .apples-card-button {
+html.shell-short .apples-card-button {
   min-height: 50px;
   padding: 7px 10px;
   box-shadow: 0 3px 0 var(--ui-accent-2-shadow);
 }
 
-html.apples-compact-height .apples-lock-bar {
+html.shell-short .apples-lock-bar {
   padding: 5px 4px 1px;
   border-top-width: 2px;
 }
 
-html.apples-compact-height .apples-lock-bar .ui-btn {
+html.shell-short .apples-lock-bar .ui-btn {
   min-height: 44px;
   padding: 7px 10px;
   font-size: 1.125rem;

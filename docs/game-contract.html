@@ -326,6 +326,7 @@
             <a href="#shell-how">How the shells work</a>
             <a href="#shell-register">grabbagShell.register</a>
             <a href="#shell-ctx">ctx</a>
+            <a href="#shell-layout">grabbagShell.layout</a>
             <a href="#shell-no-reload">No reloads</a>
             <a href="#shell-trigger">Changing the tenant</a>
           </div>
@@ -876,12 +877,13 @@ func (g *Game) ID() string { return id }</pre>
 type Assets struct {
     CSS      []string
     JS       []string
+    Layout   []string
     External []string
 }</div>
         <h4>Parameters</h4>
         <p>None.</p>
         <h4>Return value</h4>
-        <p>One list covers both surfaces. <code>CSS</code> and <code>JS</code> are usually <code>game.css</code> and <code>game.js</code> under <code>games.StaticPath(id)</code> (<code>/games/&lt;id&gt;/static/</code>) with a version query. Host serves that path from your <code>Play()</code> static files whichever game is loaded, so a slow phone never gets another game's script. <code>External</code> is third-party stylesheets such as web fonts.</p>
+        <p>One list covers both surfaces. <code>CSS</code> and <code>JS</code> are usually <code>game.css</code> and <code>game.js</code> under <code>games.StaticPath(id)</code> (<code>/games/&lt;id&gt;/static/</code>) with a version query. Host serves that path from your <code>Play()</code> static files whichever game is loaded, so a slow phone never gets another game's script. <code>Layout</code> is an optional <code>layout.js</code> with pure sizing functions (see <a href="#shell-layout">grabbagShell.layout</a>). <code>External</code> is third-party stylesheets such as web fonts.</p>
         <h4>Description</h4>
         <p>The shell loads each file once per visit. It removes your CSS when it unmounts you and keeps External sheets. Your JS must call <a href="#shell-register">grabbagShell.register</a> and do nothing else at the top level. <code>runtimekit.Assets(id, version)</code> builds the usual pair.</p>
         <h4>Examples</h4>
@@ -904,7 +906,7 @@ type Assets struct {
         <h4>Return value</h4>
         <p>One <code>ui.Scenario</code> per page state. Each has a Surface and Name, a Viewer, a Frame (phone, TV, or page), an optional Shell, a seated-count range, and a <code>Render(w, ui.Preview)</code> func. Host passes the theme, seated count, JSON merge patches, and an asset URL prefix in <code>ui.Preview</code>.</p>
         <h4>Description</h4>
-        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. A board fragment uses <code>Shell: ui.ShellBoard</code>, and host wraps it in the static board shell with your Assets. The static shell loads no htmx, no SSE, and no heartbeat, and timers hold their rendered value. It does mount your tenant once, so layout code in your script runs; check <code>window.grabbagStatic</code> before starting animations. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
+        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. A board fragment uses <code>Shell: ui.ShellBoard</code>, and host wraps it in the static board shell with your Assets. The static shell loads no htmx, no SSE, no heartbeat, and no <code>game.js</code>, so nothing mounts, and timers hold their rendered value. Your CSS and your <a href="#shell-layout">layout</a> still apply. <code>&lt;html data-static&gt;</code> lets CSS freeze an animation that would make screenshots differ run to run. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
         <h4>Examples</h4>
         <h5>A board at every table size</h5>
         <pre class="ex">func (g *Game) Scenarios() []ui.Scenario {
@@ -1009,6 +1011,27 @@ ctx.audio                          reserved for board audio</div>
   });
   sync();
 }</pre>
+      </article>
+
+      <article class="method" id="shell-layout">
+        <div class="tags"><span class="tag">client</span><span class="tag">optional</span></div>
+        <h3>grabbagShell.layout</h3>
+        <p>Registers sizing CSS cannot do, such as fitting text to a box.</p>
+        <h4>Syntax</h4>
+        <div class="sig">grabbagShell.layout(id, {
+  board: function (root) {},
+  phone: function (root) {},
+})</div>
+        <h4>Description</h4>
+        <p>Put this in a <code>layout.js</code> listed in <a href="#game-assets">Assets</a>.Layout. Each function only measures and sets styles inside <code>root</code>. The shell runs it after mount, after every swap, on resize, and once fonts load, and also in static previews, where <code>game.js</code> does not load. A Go guard rejects listeners, timers, frames, observers, network, htmx, and navigation in layout files.</p>
+        <p>Try CSS first. The shell sets <code>--shell-visual-height</code> (the visible height, which shrinks when a phone keyboard opens) and <code>html.shell-short</code> (under 760px) on <code>&lt;html&gt;</code>, and a grid can follow its item count with <code>:has(&gt; :nth-child(n))</code>.</p>
+        <h4>Examples</h4>
+        <h5>Fit Apples answer cards</h5>
+        <pre class="ex">grabbagShell.layout("apples", {
+  board: function (root) {
+    root.querySelectorAll(".apples-tv .apples-slots &gt; .apples-slot").forEach(fitCard);
+  },
+});</pre>
       </article>
 
       <article class="method" id="shell-no-reload">

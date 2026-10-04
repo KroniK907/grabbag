@@ -142,3 +142,35 @@ func getJSON(t *testing.T, u string, out any) {
 		t.Fatalf("GET %s: %v", u, err)
 	}
 }
+
+// TestLayoutScriptsArePure checks every tenant layout file registers its own
+// id and only measures and styles: no listeners, timers, frames, network,
+// htmx, or navigation. The shell owns when layout runs.
+func TestLayoutScriptsArePure(t *testing.T) {
+	t.Parallel()
+	forbidden := regexp.MustCompile(`addEventListener|setInterval|setTimeout|requestAnimationFrame|ResizeObserver|MutationObserver|fetch\(|XMLHttpRequest|EventSource|htmx|location\.|grabbagShell\.register`)
+	checked := 0
+	for _, f := range games.Catalog() {
+		g := f.New()
+		play := http.StripPrefix(strings.TrimSuffix(games.StaticPath(f.ID), "/static/"), g.Play())
+		for _, u := range g.Assets().Layout {
+			rec := httptest.NewRecorder()
+			play.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, u, nil))
+			if rec.Code != http.StatusOK {
+				t.Errorf("%s: GET %s = %d", f.ID, u, rec.Code)
+				continue
+			}
+			body := rec.Body.String()
+			if !regexp.MustCompile(`grabbagShell\.layout\(\s*"` + regexp.QuoteMeta(f.ID) + `"`).MatchString(body) {
+				t.Errorf("%s: %s does not call grabbagShell.layout(%q, ...)", f.ID, u, f.ID)
+			}
+			if m := forbidden.FindString(body); m != "" {
+				t.Errorf("%s: %s uses %q; layout only measures and sets styles", f.ID, u, m)
+			}
+			checked++
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no layout scripts checked; Apples ships one")
+	}
+}
