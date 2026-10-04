@@ -28,6 +28,7 @@ var previewStages = []previewStage{
 	{name: "write-locked", minPlayer: 3},
 	{name: "parade-wait", minPlayer: 2},
 	{name: "reveal", minPlayer: 2},
+	{name: "vote-intro", minPlayer: 2},
 	{name: "vote", minPlayer: 2},
 	{name: "hold", minPlayer: 2},
 	{name: "last-quip", minPlayer: 2},
@@ -252,7 +253,10 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 	case "reveal":
 		e.Do(Command{Kind: CmdHostNextSegment, Actor: "host"}, previewNow)
 		e.Do(Command{Kind: CmdHostReveal, Actor: "host"}, previewNow)
+	case "vote-intro":
+		cast.seated = previewVoter(e, rows)
 	case "vote", "hold", "last-quip":
+		previewOpenVote(e)
 		cast.seated = previewVoter(e, rows)
 		previewVotes(e, rows)
 		if stage == "hold" {
@@ -265,6 +269,21 @@ func previewMatch(stage string, n int) (*Game, previewCast, error) {
 		e.enterFinalScores(previewNow, Outcome{})
 	}
 	return g, cast, nil
+}
+
+// previewOpenVote runs the vote-ready and versus intros the way their
+// timers would, so the engine sits on an open vote. The preview clock never
+// moves, so Advance cannot fire them.
+func previewOpenVote(e *engine) {
+	if e.Timer.Kind == timerVoteIntro {
+		e.clearTimer()
+		e.startCurrentSegment(previewNow, Outcome{PhoneErr: map[string]string{}})
+	}
+	if e.Timer.Kind == timerVersusIntro {
+		e.clearTimer()
+		e.Phase = phaseVote
+		e.openVoteTimer(previewNow)
+	}
 }
 
 // previewVoter picks a seated player who is not writing the live segment,
