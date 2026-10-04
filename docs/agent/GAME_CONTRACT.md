@@ -30,6 +30,7 @@ Operator playbook is `/docs`.
 - [HTTP mounts](#http-mounts)
 - [Extra pages](#extra-pages)
 - [Shells](#shells)
+- [Board audio](#board-audio)
 - [Live SSE](#live-sse)
 - [Player record](#player-record)
 - [Disconnect policy](#disconnect-policy)
@@ -79,6 +80,7 @@ shells:
   js: grabbagShell.register(id, {board: {mount, unmount}, phone: {mount, unmount}})
   layout: grabbagShell.layout(id, {board(root), phone(root)})  # optional; pure sizing, runs in previews too
   viewport: --shell-visual-height and html.shell-short on <html>
+  audio: ctx.audio on the board only (audio.js); phones and static previews get none
   phone_frame: shell owns toolbar, gutters, Help, Leave, Help sheet, Host panel; tenant owns #shell-stage
   column: 720px, or 1200px with data-column="wide"; 64px gutters or it fills the width
   tiers: "@container column: compact <560px, regular 560-959px, wide >=960px (wide opt-in only)"
@@ -100,7 +102,7 @@ sse:
   connect: the shell owns the one EventSource; operator pages use ui-start
   locked_board: GET /shell/events/locked  # tenant and theme only
   helper: Publish(name)  # data payload is always "update"
-  reserved: [roster, round, tenant, pause, theme, log, notice]
+  reserved: [roster, round, tenant, pause, theme, log, notice, audio, audio-test, audio-status]
   pattern: named event then hx-get current HTML, not a delta
   drop: slow pages miss events (non-blocking send, buffer 16)
 ```
@@ -295,9 +297,9 @@ Layout functions only measure and set styles. The shell runs them after mount, a
 | `every(ms, fn)`, `after(ms, fn)` | Timers cleared on unmount. Return `cancel()`. |
 | `frame(fn)` | `requestAnimationFrame` loop. Return `false` to stop. Stops on unmount. |
 | `cleanup(fn)` | Your own teardown. |
-| `audio` | Reserved for board audio. |
+| `audio` | Board only: your scope in the audio engine. `undefined` on phones. See [Board audio](#board-audio). |
 
-Unmount order: abort `signal`, cancel ctx timers and frames, run `cleanup` callbacks newest first, call your `unmount()`, then the shell removes your CSS and swaps the markup. Listeners on elements inside your fragment and `hx-*` attributes need nothing. A `document` or `window` listener, timer, or frame you start outside ctx fails the browser suite's leak check.
+Unmount order: abort `signal`, cancel ctx timers and frames, run `cleanup` callbacks newest first (the audio scope is released last), call your `unmount()`, then the shell removes your CSS and swaps the markup. Listeners on elements inside your fragment and `hx-*` attributes need nothing. A `document` or `window` listener, timer, or frame you start outside ctx fails the browser suite's leak check.
 
 ### No reloads
 
@@ -314,6 +316,67 @@ If a mount throws, the shell logs it to `/settings/log` through `POST /shell/err
 ### Locked board
 
 With admin-only board on, a board request with no admin session gets the `locked` tenant (a "Host screen only" card). The locked shell connects to `GET /shell/events/locked`, which carries only `tenant` and `theme`, never `log`, `notice`, or `roster`. Turning the switch off, or signing in from that browser, swaps it live and moves it to the full stream.
+
+## Board audio
+
+The board shell loads one Web Audio engine, `internal/ui/static/audio.js`. Phones load no audio code, and static previews and uishots never play. The mixer is a master level plus two layers, Music and Effects. The operator sets their volume and mute on `/settings`. Games never see those routes or events.
+
+A board `mount` gets `ctx.audio`, a scope. Define the tenant's audio once in `mount`, then call it directly. The engine does not read markup. Unmount releases the scope: playing cues fade to silence over 1.5s, a snapshot the tenant set clears, layer filters it set go back, and its buffers are dropped. A Lobby to game swap fades the outgoing music with the board (`--shell-fade-out`).
+
+```js
+board: {
+  mount(root, ctx) {
+    if (!ctx.audio) return;
+    ctx.audio.define({
+      files: { timer: "audio/timer.ogg" },          // relative to the folder of your game.js
+      regions: {
+        intro: { file: "timer", start: 0, end: 4 },
+        calm:  { file: "timer", start: 4, end: 36 },
+        tense: { file: "timer", start: 36, end: 68 },
+        drums: { file: "timer", start: 68, end: 100, markers: { hit: 2.5 } },
+        outro: { file: "timer", start: 100, end: 106 },
+      },
+      cues: {
+        timer: {
+          layer: "music", bpm: 120, beatsPerBar: 4, end: { at: "bar" },
+          intro: "intro", outro: "outro",
+          variants: { calm: ["calm"], tense: ["tense"] },
+          channels: { drums: { region: "drums", volume: 0 } },
+          timelines: {
+            answer:  { kind: "countdown", steps: { 30: { to: "tense", over: 3 }, 10: { fade: "drums", to: 1, over: 2 } } },
+            judging: { kind: "free", script: { 0: { to: "calm" } },
+                       then: { shuffle: [{ to: "tense", bars: 8 }, { to: "calm", bars: 8 }] } },
+          },
+        },
+      },
+      stings: { reveal: { region: "outro", layer: "effects" } },
+      snapshots: { paused: { music: { lowpass: 900 }, "timer.drums": { volume: 0 } } },
+    });
+    const cue = ctx.audio.cue("timer").start({ timeline: "answer", countdown: root.querySelector("[data-countdown]") });
+  },
+},
+```
+
+| Piece | Rule |
+|-------|------|
+| files | Any format the browser decodes. Put them in your `static/audio/`. Each file is fetched and decoded once per mount. Budget: 3 MB per game, 2 MB for the Lobby (`internal/host/audio_budget_test.go`). |
+| regions | Audio sprites: `{file, start, end}` in seconds. `end` defaults to the file length. Optional `loopStart`, `loopEnd`, and `markers` are seconds from the region start. Stems that play together must have the same loop length; `define` logs one that differs. |
+| cues | Optional `intro`, then `variants` (each a list of stems that loop together), then optional `outro`. `channels` are extra looping layers with a starting `volume`. `bpm` and `beatsPerBar` (default 4) give beats and bars. `layer` is `music` (default) or `effects`. |
+| Music slot | One music cue plays at a time. Starting another crossfades over 1.5s (`{over}`), quantized with `{at}` against the old cue. |
+| Sync points | `at` is `"now"`, `"beat"`, `"bar"`, `{bars: N}`, or `"loop"`, measured from the loop start. Without `bpm`, beat and bar fall back to `"loop"`. During an intro, changes land on the loop start. |
+| Variants | `cue.to(name, {at = "bar", over = 1})`. If every variant and channel has the same loop length, they all run and the switch is a crossfade in place. Otherwise the new variant starts from its beginning at the sync point. |
+| Channels | `cue.channel(name).fadeTo(volume, {at = "now", over = 1})` and `.filter({highpass, lowpass, q}, {at, over})`. |
+| End | `cue.end({at})` plays the outro at the sync point (default: the cue's `end.at`, else `"bar"`), or fades out over `over` (0.5s) with no outro. `cue.stop({over})` fades the whole cue now. |
+| Countdown timeline | Steps keyed by seconds left, driven by `grabbag:countdown-tick` from the countdown you pass (an element, a selector, or `{kind}`). A late start applies passed steps at once. If time is added above a step, the cue goes back to the state the remaining steps imply and the step runs again when crossed. It is frozen when the countdown is. |
+| Free timeline | Keyed in bars from the loop start. `script` runs first; `then.shuffle` entries play for their `bars`, picked at random, never the same twice in a row. `then.from` sets the bar the shuffle starts (default 8 bars after the last script step). Bars do not count while `held()` is true; by default that is a `[data-audio-hold]` or `[data-countdown-frozen]` inside your root. |
+| Steps | `{to: variant}`, `{fade: channel, to: volume}`, `{snapshot: name or null}`, `{sting: name}`, each with optional `over` and `at`. A step may be a list. |
+| Stings | `ctx.audio.sting(name, {volume})`. They overlap freely. A global cap of 32 voices drops the oldest. |
+| Snapshots | `ctx.audio.snapshot(name, seconds)`, `snapshot(null, seconds)` to clear. Targets are `music`, `effects`, `<cue>`, or `<cue>.<variant or channel>`, with `volume`, `highpass`, `lowpass`, `q`. Built in: `telephone` (300 Hz to 3.4 kHz on Music). `ctx.audio.filter(target, values, {over})` sets filters directly. |
+| Pause | Audio has no pause signal of its own. Pick what pausing sounds like, for example `snapshot("telephone")` when your board shows paused. Countdown and free timelines freeze as above. |
+| Sync | Every change returns a promise that resolves with the context time when the change is heard. `cue.started` and `cue.finished` are promises too. The root gets `grabbag:audio-beat`, `grabbag:audio-bar` (cues with `bpm`), and `grabbag:audio-marker`, with `detail {cue, region, beat, bar}` or `{cue, region, marker}`, corrected for output latency. |
+| Failures | A missing or broken file, or an unknown cue, region, or sting, logs to the console and plays nothing. Promises still resolve. Never wait on audio for game logic. |
+
+`-dev-bench` has a Board audio panel: the playing cue, variant, channels, timeline step, levels, an event log, and buttons for every cue, variant, channel, timeline, sting, and snapshot the mounted tenant defined. Countdown timelines started there follow its seconds box.
 
 ## Live SSE
 
@@ -340,6 +403,9 @@ Do not publish these for game ticks. Host already owns them.
 | `theme` | host | `html[data-theme]` |
 | `log` | host log ring | settings log tail |
 | `notice` | host via `Helper.Notify` | chrome toast; client filters by target |
+| `audio` | host on a `/settings` mixer change, levels JSON | board shell sets the mixer |
+| `audio-test` | host on a `/settings` test button, the layer | board shell plays a sample |
+| `audio-status` | host when a board reports its sound state | `/settings` status line |
 
 Publishing `roster` is fine when a settings knob changes a board that also shows Lobby facts. Publishing `round` or `tenant` from a game makes every shell refetch its tenant. Do not do that for a score tick.
 

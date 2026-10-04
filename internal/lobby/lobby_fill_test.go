@@ -271,10 +271,13 @@ func testKickAndLeave(t *testing.T, handler http.Handler, room *lobby.Lobby) {
 	}
 	openAt := strings.Index(settings, `action="/settings/open"`)
 	kickAt := strings.Index(settings, "Kick Players")
+	// The knobs repaint after every write. The Audio sliders below them
+	// post without a swap on purpose.
+	knobs, _, _ := strings.Cut(settings, `id="settings-audio"`)
 	if openAt < 0 || kickAt < 0 || kickAt < openAt ||
 		!strings.Contains(settings, `hx-post="/settings/kick"`) ||
 		!strings.Contains(settings, `hx-target="#settings-knobs"`) ||
-		strings.Contains(settings, `hx-swap="none"`) ||
+		strings.Contains(knobs, `hx-swap="none"`) ||
 		!strings.Contains(settings, "Host") {
 		t.Fatalf("settings stub = %q", settings)
 	}

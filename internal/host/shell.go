@@ -21,8 +21,8 @@ const (
 	lockedTenantID = "locked"
 )
 
-// Shell SSE streams. A locked board only hears tenant changes and theme
-// flips, so it never sees the roster, the log, or a notice.
+// Shell SSE streams. A locked board only hears tenant changes, theme flips,
+// and the audio mixer, so it never sees the roster, the log, or a notice.
 const (
 	streamRoom   = "/lobby/events"
 	streamLocked = "/shell/events/locked"
@@ -33,18 +33,20 @@ const (
 // On the phone, help shows the Help button, player shows Leave, and host is
 // the claimed host's panel for the frame.
 type tenantFrame struct {
-	Tenant     string    `json:"tenant"`
-	Generation uint64    `json:"generation"`
-	Boot       string    `json:"boot"`
-	Theme      string    `json:"theme"`
-	Notices    string    `json:"notices"`
-	Stream     string    `json:"stream"`
-	Player     bool      `json:"player"`
-	Kicked     bool      `json:"kicked"`
-	Help       bool      `json:"help"`
-	Host       string    `json:"host"`
-	Assets     ui.Assets `json:"assets"`
-	HTML       string    `json:"html"`
+	Tenant     string `json:"tenant"`
+	Generation uint64 `json:"generation"`
+	Boot       string `json:"boot"`
+	Theme      string `json:"theme"`
+	Notices    string `json:"notices"`
+	Stream     string `json:"stream"`
+	Player     bool   `json:"player"`
+	Kicked     bool   `json:"kicked"`
+	Help       bool   `json:"help"`
+	Host       string `json:"host"`
+	// Audio is the board mixer levels. Board frames only.
+	Audio  json.RawMessage `json:"audio,omitempty"`
+	Assets ui.Assets       `json:"assets"`
+	HTML   string          `json:"html"`
 }
 
 // shellTenant is the tenant one request sees on one surface.
@@ -75,7 +77,7 @@ func (rt *runtime) registerShellRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /tenant", rt.shellTenantFrame(ui.SurfacePhone))
 	mux.HandleFunc("GET /board/tenant", rt.shellTenantFrame(ui.SurfaceBoard))
 	mux.HandleFunc("GET /help", rt.shellHelp)
-	mux.Handle("GET "+streamLocked, rt.events.Only("tenant", "theme"))
+	mux.Handle("GET "+streamLocked, rt.events.Only("tenant", "theme", "audio", "audio-test"))
 	mux.HandleFunc("POST /shell/error", rt.postShellError)
 }
 
@@ -208,6 +210,10 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			http.Error(w, "Could not render the page.", http.StatusInternalServerError)
 			return
 		}
+		var audio string
+		if surface == ui.SurfaceBoard {
+			audio = rt.room.AudioLevelsJSON(r.Context())
+		}
 		host, err := rt.renderHostPanel(surface, r)
 		if err != nil {
 			rt.log.Write("shell: " + err.Error())
@@ -227,6 +233,7 @@ func (rt *runtime) shellDocument(surface string) http.HandlerFunc {
 			Boot:       rt.boot,
 			Stream:     st.stream,
 			Player:     st.player,
+			Audio:      audio,
 			Help:       hasHelp(surface, st),
 			HostPanel:  host,
 			Assets:     st.tenant.Assets(),
@@ -273,6 +280,9 @@ func (rt *runtime) shellTenantFrame(surface string) http.HandlerFunc {
 			Host:       string(host),
 			Assets:     st.tenant.Assets(),
 			HTML:       string(body),
+		}
+		if surface == ui.SurfaceBoard {
+			frame.Audio = json.RawMessage(rt.room.AudioLevelsJSON(r.Context()))
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")

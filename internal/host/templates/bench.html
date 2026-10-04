@@ -13,7 +13,7 @@
   .bar select, .bar button { font: inherit; padding: 3px 8px; border: 1px solid #c9ccd6; border-radius: 4px; background: #fff; cursor: pointer; }
   .meta { color: #6a6f80; }
   .bar a.nav { padding: 3px 8px; border: 1px solid #c9ccd6; border-radius: 4px; color: inherit; text-decoration: none; }
-  .top { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 10px; padding: 10px 10px 0; min-height: 0; }
+  .top { display: grid; grid-template-columns: minmax(0, 1fr) 420px 380px; gap: 10px; padding: 10px 10px 0; min-height: 0; }
   .seats { display: grid; grid-template-columns: repeat({{.Count}}, minmax(0, 1fr)); gap: 10px; padding: 10px; min-height: 0; }
   .pane { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min-height: 0; }
   .pane header { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 600; color: #3b3f4d; padding: 0 2px 3px; }
@@ -23,6 +23,14 @@
   .fit { position: relative; overflow: hidden; background: #11121a; border-radius: 8px; min-height: 0; }
   .fit iframe { position: absolute; left: 0; top: 0; border: 0; background: #fff; transform-origin: 0 0; }
   .plain iframe { width: 100%; height: 100%; }
+  .audio { overflow: auto; background: #fff; border: 1px solid #d4d7e0; border-radius: 8px; padding: 8px; display: grid; gap: 8px; align-content: start; }
+  .audio h3 { margin: 0; font-size: 12px; color: #3b3f4d; }
+  .audio .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .audio button { font: inherit; font-size: 12px; padding: 2px 6px; border: 1px solid #c9ccd6; border-radius: 4px; background: #f6f7fa; cursor: pointer; }
+  .audio input[type=number] { width: 4.5em; font: inherit; }
+  .audio pre { margin: 0; font: 11px/1.35 ui-monospace, monospace; white-space: pre-wrap; }
+  .audio .log { max-height: 220px; overflow: auto; background: #11121a; color: #9ef08a; padding: 6px; border-radius: 4px; }
+  .audio .muted { color: #6a6f80; }
 </style>
 </head>
 <body>
@@ -43,6 +51,20 @@
   <section class="pane">
     <header>Settings <span><button type="button" class="reload-one">reload</button><a href="/dev/bench/settings" target="_blank">open</a></span></header>
     <div class="fit plain"><iframe src="/dev/bench/settings" title="Settings"></iframe></div>
+  </section>
+  <section class="pane">
+    <header>Board audio <span><button type="button" id="audio-clear">clear log</button></span></header>
+    <div class="audio" id="audio-panel">
+      <pre id="audio-state" class="muted">Waiting for the board...</pre>
+      <div id="audio-controls"></div>
+      <div class="row">
+        <label>Seconds left <input type="number" id="audio-seconds" value="45" min="0"></label>
+        <button type="button" id="audio-tick">tick</button>
+        <label><input type="checkbox" id="audio-hold"> hold free timelines</label>
+      </div>
+      <h3>Events</h3>
+      <pre class="log" id="audio-log"></pre>
+    </div>
   </section>
 </div>
 <div class="seats">
@@ -82,6 +104,100 @@
   document.querySelectorAll(".reload-one").forEach((b) => b.addEventListener("click", () => {
     reload(b.closest(".pane").querySelector("iframe"));
   }));
+
+  // Audio panel: reads the board iframe's engine (same origin) and drives
+  // the mounted tenant's scope. Countdown timelines started here follow the
+  // seconds box (kind "bench"), and free timelines follow the hold box.
+  const boardFrame = document.querySelector('iframe[title="Board"]');
+  const stateEl = document.getElementById("audio-state");
+  const controls = document.getElementById("audio-controls");
+  const logEl = document.getElementById("audio-log");
+  const secondsEl = document.getElementById("audio-seconds");
+  const holdEl = document.getElementById("audio-hold");
+  let engine = null, untap = null, shape = "", lines = [];
+  const log = (text) => {
+    lines.push(text);
+    if (lines.length > 200) lines = lines.slice(-200);
+    logEl.textContent = lines.join("\n");
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+  document.getElementById("audio-clear").addEventListener("click", () => { lines = []; logEl.textContent = ""; });
+  const scope = () => engine && engine.scopes.length ? engine.scopes[engine.scopes.length - 1] : null;
+  const btn = (label, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.addEventListener("click", fn);
+    return b;
+  };
+  const row = (title, items) => {
+    const r = document.createElement("div");
+    r.className = "row";
+    if (title) { const s = document.createElement("strong"); s.textContent = title; r.append(s); }
+    r.append(...items);
+    return r;
+  };
+  const tick = () => {
+    const stage = boardFrame.contentDocument && boardFrame.contentDocument.getElementById("shell-stage");
+    if (!stage) return;
+    stage.dispatchEvent(new boardFrame.contentWindow.CustomEvent("grabbag:countdown-tick", {
+      bubbles: true, detail: { seconds: Number(secondsEl.value), kind: "bench" },
+    }));
+  };
+  document.getElementById("audio-tick").addEventListener("click", tick);
+  secondsEl.addEventListener("change", tick);
+  const build = (info) => {
+    controls.textContent = "";
+    const sc = scope();
+    const now = info.scopes.find((s) => s.tenant === info.current);
+    if (!sc || !now) return;
+    const a = sc.api;
+    for (const cue of now.cues) {
+      const c = a.cue(cue.name);
+      const start = [btn("start", () => c.start())];
+      for (const tl of cue.timelines) {
+        start.push(btn(tl.name + " (" + tl.kind + ")", () => c.start(tl.kind === "free"
+          ? { timeline: tl.name, held: () => holdEl.checked }
+          : { timeline: tl.name, countdown: { kind: "bench" }, seconds: Number(secondsEl.value) })));
+      }
+      start.push(btn("end bar", () => c.end({ at: "bar" })), btn("end now", () => c.end({ at: "now" })), btn("stop", () => c.stop()));
+      controls.append(row(cue.name + " [" + cue.layer + "]", start));
+      if (cue.variants.length > 1) controls.append(row("  to", cue.variants.map((v) => btn(v, () => c.to(v, { at: "bar", over: 2 })))));
+      for (const ch of cue.channels) {
+        controls.append(row("  " + ch, [0, 0.5, 1].map((v) => btn(String(v), () => c.channel(ch).fadeTo(v, { at: "bar", over: 2 })))));
+      }
+    }
+    if (now.stings.length) controls.append(row("stings", now.stings.map((n) => btn(n, () => a.sting(n)))));
+    controls.append(row("snapshots", now.snapshots.map((n) => btn(n, () => a.snapshot(n, 0.8))).concat([btn("clear", () => a.snapshot(null, 0.8))])));
+  };
+  const poll = () => {
+    const w = boardFrame.contentWindow;
+    const next = w && w.grabbagAudio && w.grabbagAudio.board;
+    if (next !== engine) {
+      if (untap) untap();
+      engine = next || null;
+      shape = "";
+      untap = engine ? engine.tap((type, d) => {
+        const t = engine.now().toFixed(2);
+        log(t + "  " + type.replace("grabbag:audio-", "") + "  " + JSON.stringify(d));
+      }) : null;
+    }
+    if (!engine) { stateEl.textContent = "No audio engine on the board."; return; }
+    const info = engine.inspect();
+    const lv = info.levels;
+    const lvl = (k) => k + " " + lv[k].volume + "%" + (lv[k].muted ? " muted" : "");
+    stateEl.textContent = [
+      "context " + info.state + "  t=" + info.time.toFixed(2) + "  tenant " + info.current,
+      [lvl("master"), lvl("music"), lvl("effects")].join(" | "),
+      "snapshot " + (info.snapshot || "none") + "  voices " + info.voices,
+    ].concat(info.playing.map((p) => "> " + p.cue + " " + p.state + " " + p.mode + " variant=" + p.variant +
+      " " + JSON.stringify(p.channels) + (p.timeline ? " timeline=" + p.timeline : "") +
+      (p.seconds !== null ? " seconds=" + p.seconds : "") + (p.bars !== null ? " bars=" + p.bars : "") +
+      (p.step ? " step=" + p.step : ""))).join("\n");
+    const nextShape = JSON.stringify(info.scopes.map((s) => [s.tenant, s.cues, s.stings, s.snapshots]).concat(info.current));
+    if (nextShape !== shape) { shape = nextShape; build(info); }
+  };
+  setInterval(poll, 250);
 </script>
 </body>
 </html>

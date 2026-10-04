@@ -160,6 +160,8 @@ type Lobby struct {
 	live            *liveMem
 	restoreMu       sync.Mutex
 	restorePending  bool
+	audioMu         sync.Mutex
+	audioStatus     string
 }
 
 // New creates Lobby and its SQLite tables.
@@ -236,6 +238,10 @@ func (l *Lobby) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /settings/close", l.closeRoom)
 	mux.HandleFunc("POST /settings/kick", l.kick)
 	mux.HandleFunc("POST /settings/theme", l.toggleTheme)
+	mux.HandleFunc("POST /settings/audio", l.setAudio)
+	mux.HandleFunc("POST /settings/audio/test", l.testAudio)
+	mux.HandleFunc("GET /settings/audio/status", l.audioStatusPartial)
+	mux.HandleFunc("POST /board/audio", l.boardAudio)
 	mux.HandleFunc("POST /settings/seat-cap", l.setSeatCap)
 	mux.HandleFunc("POST /settings/hostname", l.setHostname)
 	mux.HandleFunc("POST /settings/cycle-mode", l.setCycleMode)
@@ -401,6 +407,7 @@ type settingsData struct {
 	RestorePending     bool
 	AdminOnlyBoard     bool
 	StayOnSettings     bool
+	Audio              audioView
 }
 
 type joinView struct {
@@ -1513,6 +1520,12 @@ INSERT OR IGNORE INTO room_state (id, open) VALUES (1, 0);
 		`ALTER TABLE room_state ADD COLUMN seat_disconnected_waiters INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE room_state ADD COLUMN reset_ready TEXT NOT NULL DEFAULT 'switch'`,
 		`ALTER TABLE room_state ADD COLUMN admin_only_board INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN audio_master_volume INTEGER NOT NULL DEFAULT 80`,
+		`ALTER TABLE room_state ADD COLUMN audio_master_muted INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN audio_music_volume INTEGER NOT NULL DEFAULT 60`,
+		`ALTER TABLE room_state ADD COLUMN audio_music_muted INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE room_state ADD COLUMN audio_effects_volume INTEGER NOT NULL DEFAULT 75`,
+		`ALTER TABLE room_state ADD COLUMN audio_effects_muted INTEGER NOT NULL DEFAULT 0`,
 	} {
 		if _, err := l.sql.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return fmt.Errorf("lobby: schema: %w", err)

@@ -79,8 +79,11 @@ type Shell struct {
 	// HelpSheet opens the Help sheet with this body. Only static previews
 	// set it; a live shell fetches GET /help when Help is tapped.
 	HelpSheet template.HTML
-	Assets    Assets
-	Body      template.HTML
+	// Audio is the board's mixer levels as JSON, read by audio.js. Board
+	// only; phones load no audio.
+	Audio  string
+	Assets Assets
+	Body   template.HTML
 }
 
 var shellTemplates = template.Must(template.New("shell").Funcs(Funcs()).ParseFS(chromeTemplates, "templates/chrome.html", "templates/shell.html"))

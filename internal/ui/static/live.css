@@ -224,6 +224,57 @@ button {
   display: none;
 }
 
+/* Board sound card: bottom right, over the board but not blocking it. */
+.shell-sound {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  z-index: 950;
+  width: min(28rem, calc(100vw - 4rem));
+  gap: 12px;
+  font-size: 1.25rem;
+  box-shadow: 6px 6px 0 var(--ui-accent);
+}
+
+.shell-sound[hidden] {
+  display: none;
+}
+
+.shell-sound-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shell-sound-icon {
+  display: flex;
+  font-size: 2rem;
+  color: var(--ui-accent);
+}
+
+.ui-icon {
+  display: block;
+}
+
+.shell-sound-head h2 {
+  flex: 1;
+}
+
+.shell-sound-close {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 1.75rem;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.shell-sound .ui-btn:focus-visible,
+.shell-sound-close:focus-visible {
+  outline: 4px solid var(--ui-brand);
+  outline-offset: 3px;
+}
+
 @keyframes ui-spin {
   to {
     transform: rotate(360deg);
@@ -656,6 +707,46 @@ button {
   align-items: center;
   border: 3px solid var(--ui-accent);
   background: var(--ui-row-bg);
+}
+
+/* /settings Audio rows: label, mute, slider and percent, test. */
+.ui-audio-row {
+  display: grid;
+  grid-template-columns: 5.5rem auto minmax(0, 1fr) 2.75rem;
+  align-items: center;
+  gap: 10px;
+}
+
+.ui-audio-row form {
+  margin: 0;
+}
+
+.ui-audio-row .ui-icon {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.ui-audio-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ui-audio-slider input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--ui-accent);
+}
+
+.ui-audio-slider output {
+  width: 3.25rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-audio-status {
+  margin: 0;
 }
 
 .ui-log {

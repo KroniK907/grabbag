@@ -11,7 +11,9 @@
 //   });
 //
 // ctx gives a tenant scoped helpers that clean up on unmount: signal, on,
-// every, after, frame, and cleanup. ctx.audio is reserved for board audio.
+// every, after, frame, and cleanup. On the board, ctx.audio is the tenant's
+// scope in the audio engine (audio.js). Unmount releases it, and a Lobby to
+// game swap fades its music out with the board.
 //
 // The shell refetches its tenant on the round and tenant SSE events and on
 // an HX-Trigger of grabbag:tenant. Transitions run one at a time, the latest
@@ -66,6 +68,7 @@
 
   var tenantTrigger = "grabbag:tenant";
   var baseNames = ["round", "tenant", "roster", "theme", "notice"];
+  var boardNames = ["audio", "audio-test"];
   var retryNoticeKey = "shell-retry";
 
   var stage = null;
@@ -83,6 +86,7 @@
   var loadedJS = {};
   var scriptOwners = {};
   var mounted = null;
+  var audio = null;
   var busy = false;
   var dirty = false;
   var forceNext = false;
@@ -295,19 +299,26 @@
 
   // ---- ctx -----------------------------------------------------------------
 
-  function makeCtx(root, tenant) {
+  function makeCtx(root, tenant, base) {
     var abort = new AbortController();
     var timers = [];
     var frames = [];
     var cleanups = [];
     var stopped = false;
+    // The audio scope is released last, after the tenant's own cleanups,
+    // which may still call it.
+    var sound = audio ? audio.scope(tenant, root, base) : null;
+    if (sound) {
+      cleanups.push(function () {
+        sound.release();
+      });
+    }
     var ctx = {
       root: root,
       surface: surface,
       tenant: tenant,
       signal: abort.signal,
-      // ctx.audio is reserved for board audio (#147).
-      audio: undefined,
+      audio: sound ? sound.api : undefined,
       on: function (target, type, fn, opts) {
         var o = typeof opts === "object" && opts ? Object.assign({}, opts) : { capture: !!opts };
         o.signal = abort.signal;
@@ -392,7 +403,7 @@
       }
       return;
     }
-    var ctx = makeCtx(stage, id);
+    var ctx = makeCtx(stage, id, mounted.base);
     try {
       life.mount(stage, ctx);
       mounted.ctx = ctx;
@@ -487,6 +498,17 @@
   }
 
   // ---- Assets ---------------------------------------------------------------
+
+  // scriptBase is the folder of a tenant's first script. Audio file paths
+  // in ctx.audio.define resolve against it.
+  function scriptBase(list) {
+    var src = list && list[0];
+    if (!src) {
+      return "";
+    }
+    var path = absolute(src).split(/[?#]/)[0];
+    return path.slice(0, path.lastIndexOf("/") + 1);
+  }
 
   function absolute(url) {
     try {
@@ -769,6 +791,9 @@
       }
       applyTheme(frame.theme);
       setTargets(frame.notices);
+      if (audio && frame.audio) {
+        audio.levels(frame.audio);
+      }
       if (frame.generation < mounted.generation) {
         return;
       }
@@ -796,6 +821,11 @@
     var ready = loadAssets(frame).catch(function (err) {
       report(frame.tenant, "assets", err);
     });
+    // The outgoing tenant's music fades with the board (GM-013). With no
+    // fade, unmount releases it with the default crossfade.
+    if (audio && fade.out) {
+      audio.leave(fade.out / 1000);
+    }
     return fadeOut(fade.out)
       .then(function () {
         var spin = later(400, function () {
@@ -831,6 +861,7 @@
           html: frame.html,
           player: !!frame.player,
           needsJS: !!(frame.assets && frame.assets.js && frame.assets.js.length),
+          base: scriptBase(frame.assets && frame.assets.js),
         };
         scanNames(stage);
         mountCurrent();
@@ -931,6 +962,18 @@
         refetchTargets();
         checkPresence();
         break;
+      case "audio":
+        if (audio) {
+          try {
+            audio.levels(JSON.parse(data));
+          } catch (e) {}
+        }
+        break;
+      case "audio-test":
+        if (audio) {
+          audio.test(data);
+        }
+        break;
     }
     dispatch(name, data);
   }
@@ -956,6 +999,9 @@
     source.onopen = onOpen;
     source.onerror = onError;
     baseNames.forEach(subscribe);
+    if (surface === "board") {
+      boardNames.forEach(subscribe);
+    }
     scanNames(document.body);
   }
 
@@ -1250,18 +1296,28 @@
     document.querySelectorAll("script[data-shell-layout]").forEach(function (script) {
       loadedJS["layout " + script.getAttribute("data-shell-layout") + " " + script.getAttribute("src")] = Promise.resolve();
     });
+    var firstJS = [];
     document.querySelectorAll("script[data-shell-js]").forEach(function (script) {
       var tenant = script.getAttribute("data-shell-js");
       loadedJS[tenant + " " + script.getAttribute("src")] = Promise.resolve();
       scriptOwners[script.src] = tenant;
+      firstJS.push(script.src);
     });
     mounted = {
       tenant: stage.getAttribute("data-tenant"),
       generation: Number(stage.getAttribute("data-generation")) || 0,
       html: null,
       player: stage.hasAttribute("data-player"),
-      needsJS: !!document.querySelector("script[data-shell-js]"),
+      needsJS: firstJS.length > 0,
+      base: scriptBase(firstJS),
     };
+    if (surface === "board" && window.grabbagAudio) {
+      var levels = null;
+      try {
+        levels = JSON.parse(stage.getAttribute("data-audio") || "null");
+      } catch (e) {}
+      audio = grabbagAudio.boot(levels);
+    }
 
     listen(document, tenantTrigger, function () {
       request(false);

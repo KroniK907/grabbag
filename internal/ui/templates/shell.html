@@ -17,6 +17,9 @@ stage in shell-phone-frame. */}}
   {{else}}
   <script defer src="{{static "htmx.min.js"}}"></script>
   {{end}}
+  {{if and (eq .Surface "board") (not .Static)}}
+  <script defer src="{{static "audio.js"}}"></script>
+  {{end}}
   <script defer src="{{static "shell.js"}}"></script>
   {{range .Assets.Layout}}
   <script defer src="{{.}}" data-shell-layout="{{$.Tenant}}"></script>
@@ -37,8 +40,23 @@ stage in shell-phone-frame. */}}
 {{template "shell-phone-frame" .}}
 {{else}}
 {{template "shell-stage" .}}
+{{if not .Static}}{{template "shell-sound"}}{{end}}
 {{end}}
 {{template "ui-end"}}
+{{end}}
+
+{{/* shell-sound is the board's unlock card. audio.js shows it when the
+browser blocks sound, and only its button turns sound on. */}}
+{{define "shell-sound"}}
+<aside id="shell-sound" class="shell-sound ui-card" aria-labelledby="shell-sound-title" hidden>
+  <div class="shell-sound-head">
+    <span class="shell-sound-icon">{{template "ui-icon-sound" true}}</span>
+    <h2 id="shell-sound-title" data-sound-title>Sound is off</h2>
+    <button type="button" class="shell-sound-close" data-sound-dismiss aria-label="Keep sound off">&#x2715;</button>
+  </div>
+  <p>Browsers need a tap before sound can play.</p>
+  <button type="button" class="ui-btn" data-sound-on>Turn on sound</button>
+</aside>
 {{end}}
 
 {{define "shell-stage"}}
@@ -50,6 +68,7 @@ stage in shell-phone-frame. */}}
   data-generation="{{.Generation}}"
   data-boot="{{.Boot}}"
   data-stream="{{.Stream}}"
+  {{if .Audio}}data-audio="{{.Audio}}"{{end}}
   {{if .Player}}data-player{{end}}
 >{{.Body}}</div>
 {{end}}

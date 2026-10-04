@@ -224,6 +224,7 @@
         <li><a href="#games">The games</a></li>
         <li><a href="#round">Play a round</a></li>
         <li><a href="#host-phone">The Host button</a></li>
+        <li><a href="#sound">Sound on the TV</a></li>
         <li><a href="#settings">Settings</a></li>
         <li><a href="#hosting">Hosting on the internet</a></li>
         <li><a href="#restart">If you quit and come back</a></li>
@@ -328,6 +329,16 @@
       <h3>Room settings</h3>
       <p>Opens the same settings page as the gear on the board.</p>
 
+      <h2 id="sound">Sound on the TV</h2>
+      <p>The board plays lobby music and game sound. Phones stay silent. Browsers block sound on a page until someone taps it, so the first time the board opens you see a <strong>Sound is off</strong> card in the bottom-right corner. Click <strong>Turn on sound</strong>, or press OK on a TV remote, since the button already has focus. Tapping anywhere else does not turn sound on. The card's &#x2715; keeps the board silent until you reload it.</p>
+      <p>The board never reloads during play, so one tap lasts the night. If the board browser crashes and reloads, the card comes back as <strong>Tap to resume sound</strong>.</p>
+      <p>To skip the tap entirely:</p>
+      <ul>
+        <li>In Firefox, click the icon left of the address on the board tab, find Autoplay, and choose Allow Audio and Video. Firefox remembers it for this address.</li>
+        <li>On a kiosk PC, start Chromium or Chrome with <code>--autoplay-policy=no-user-gesture-required</code>, for example <code>chromium --kiosk --autoplay-policy=no-user-gesture-required http://127.0.0.1:8654/board</code>.</li>
+      </ul>
+      <p>Levels live in <a href="#settings">Settings</a> under Audio. The <strong>Board sound</strong> line there says whether the TV's sound is on, waiting for a tap, or turned off.</p>
+
       <h2 id="settings">Settings</h2>
       <p>Open <code>/settings</code> from the board gear, the Host panel, or by typing the address. Sign in with the admin password if this tab is not already signed in.</p>
       <p>You can ignore most of this on night one. The table is for the labels people stare at and guess wrong.</p>
@@ -398,6 +409,10 @@
           <tr>
             <td>Clear game data</td>
             <td>Wipes that game's saved options. It does not wipe seats, names, or host.log.</td>
+          </tr>
+          <tr>
+            <td>Audio: Master, Music, Effects</td>
+            <td>Mute button, volume slider, and percent for each layer. The TV hears a change as you drag. The &#x25B6; buttons play a short sample on the TV. Board sound tells you whether the TV still needs a tap. See <a href="#sound">Sound on the TV</a>.</td>
           </tr>
           <tr>
             <td>Make host</td>

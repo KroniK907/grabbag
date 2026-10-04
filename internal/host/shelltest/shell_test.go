@@ -154,7 +154,15 @@ func (r *room) openSized(name, path string, w, h int64) *tab {
 // openURL is open for a full URL. before runs ahead of the navigation.
 func (r *room) openURL(name, target string, before ...chromedp.Action) *tab {
 	r.t.Helper()
-	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(r.chrome))
+	return r.openTab(name, target, "", before...)
+}
+
+// openTab is openURL with preload run before any page script, after test
+// mode is on. Audio may play without a gesture, as on a kiosk TV.
+func (r *room) openTab(name, target, preload string, before ...chromedp.Action) *tab {
+	r.t.Helper()
+	opts := append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ExecPath(r.chrome),
+		chromedp.Flag("autoplay-policy", "no-user-gesture-required"))
 	if os.Getenv("CI") != "" {
 		// GitHub's Ubuntu runners block the user namespaces Chromium's sandbox
 		// needs. The test browser only loads this test's own local server.
@@ -167,7 +175,7 @@ func (r *room) openURL(name, target string, before ...chromedp.Action) *tab {
 	tb := &tab{r: r, name: name, ctx: ctx}
 	actions := append([]chromedp.Action{
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			_, err := page.AddScriptToEvaluateOnNewDocument(testModeJS).Do(ctx)
+			_, err := page.AddScriptToEvaluateOnNewDocument(testModeJS + preload).Do(ctx)
 			return err
 		}),
 		emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-reduced-motion", Value: "reduce"}}),

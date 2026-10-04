@@ -7,6 +7,10 @@
       {{template "theme-toggle" .}}
     </div>
     {{template "settings-knobs" .}}
+    <div class="ui-stack">
+      <h2>Audio</h2>
+      {{template "settings-audio" .Audio}}
+    </div>
     {{if .LoadedGameID}}
     <div class="ui-stack">
       <h2>Game Settings</h2>
@@ -246,4 +250,53 @@
   <button class="ui-btn ui-btn-inline ui-btn-toggle" type="submit">Light</button>
   {{end}}
 </form>
+{{end}}
+
+
+{{/* settings-audio is the board mixer. A slider posts as it moves and gets
+204, so the thumb is never swapped out under a finger. Mute swaps the
+group. Test plays a short sample on the board. */}}
+{{define "settings-audio"}}
+<div id="settings-audio" class="ui-list">
+  {{range .Rows}}
+  <div class="ui-row ui-audio-row">
+    <span class="ui-audio-label">{{.Label}}</span>
+    <form method="post" action="/settings/audio" hx-post="/settings/audio" hx-target="#settings-audio" hx-swap="outerHTML">
+      <input type="hidden" name="layer" value="{{.Layer}}">
+      {{if .Muted}}
+      <input type="hidden" name="muted" value="0">
+      <button class="ui-btn ui-btn-inline ui-btn-toggle" type="submit" aria-label="Unmute {{.Label}}" title="Unmute">{{template "ui-icon-sound" true}}</button>
+      {{else}}
+      <input type="hidden" name="muted" value="1">
+      <button class="ui-btn ui-btn-inline" type="submit" aria-label="Mute {{.Label}}" title="Mute">{{template "ui-icon-sound" false}}</button>
+      {{end}}
+    </form>
+    <form class="ui-audio-slider" method="post" action="/settings/audio" hx-post="/settings/audio" hx-trigger="input throttle:120ms, change" hx-swap="none">
+      <input type="hidden" name="layer" value="{{.Layer}}">
+      <input type="range" name="volume" min="0" max="100" step="1" value="{{.Volume}}" aria-label="{{.Label}} volume"
+        oninput="this.form.querySelector('output').value = this.value + '%'">
+      <output>{{.Volume}}%</output>
+    </form>
+    {{if .Test}}
+    <form method="post" action="/settings/audio/test" hx-post="/settings/audio/test" hx-swap="none">
+      <input type="hidden" name="layer" value="{{.Layer}}">
+      <button class="ui-btn ui-btn-inline" type="submit" aria-label="Play a {{.Label}} sample on the board" title="Test on the board">&#x25B6;</button>
+    </form>
+    {{else}}
+    <span class="ui-audio-spacer" aria-hidden="true"></span>
+    {{end}}
+  </div>
+  {{end}}
+  {{template "settings-audio-status" .}}
+</div>
+{{end}}
+
+{{define "settings-audio-status"}}
+<p id="settings-audio-status" class="ui-row ui-audio-status" hx-get="/settings/audio/status" hx-trigger="sse:audio-status" hx-swap="outerHTML" role="status">
+  <span>Board sound</span>
+  {{if eq .Status "unlocked"}}<strong>On</strong>
+  {{else if eq .Status "waiting"}}<strong>Waiting for a tap on the TV</strong>
+  {{else if eq .Status "dismissed"}}<strong>Turned off on the TV</strong>
+  {{else}}<strong>No board open</strong>{{end}}
+</p>
 {{end}}

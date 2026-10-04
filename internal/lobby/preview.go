@@ -224,5 +224,6 @@ func previewSettings(n int, gameID string) settingsData {
 		ResetReadyWhen: "switch", SeatCap: max(n, 8), AdvertisedHostname: "grabbag.local",
 		CanMakeHost: true, Players: append(previewPlayers(n), previewWaiting(2, n)...),
 		GameIDs: []string{"apples", "quips", "testing"}, LoadedGameID: gameID, LiveKick: true,
+		Audio: audioView{Rows: DefaultAudioLevels.rows(), Status: AudioUnlocked},
 	}
 }
