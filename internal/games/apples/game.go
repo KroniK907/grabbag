@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "shell-4"
+	assetVersion = "frame-1"
 )
 
 //go:embed templates/*.html

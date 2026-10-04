@@ -92,3 +92,21 @@ func TestScenariosRenderAtEverySweepCount(t *testing.T) {
 	t.Parallel()
 	uitest.RenderTenant(t, "apples", apples.New())
 }
+
+// TestWideColumnOnlyForCardScreens checks the GM-008 opt-in: a hand or a
+// packet list asks for the wide column; waiting and the winner do not.
+func TestWideColumnOnlyForCardScreens(t *testing.T) {
+	t.Parallel()
+	for name, want := range map[string]bool{
+		"submit-seated":    true,
+		"judge-pick-judge": true,
+		"favorites-seated": true,
+		"draw-seated":      false,
+		"over-seated":      false,
+	} {
+		body := renderNamed(t, "phone", name)
+		if got := strings.Contains(body, `data-column="wide"`); got != want {
+			t.Errorf("%s: wide column = %v, want %v", name, got, want)
+		}
+	}
+}
