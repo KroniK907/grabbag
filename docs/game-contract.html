@@ -310,6 +310,7 @@
             <a href="#game-board">Board</a>
             <a href="#game-boardbuttons">BoardButtons</a>
             <a href="#game-phone">Phone</a>
+            <a href="#game-help">Help</a>
             <a href="#game-play">Play</a>
             <a href="#game-pause">Pause</a>
             <a href="#game-resume">Resume</a>
@@ -324,6 +325,7 @@
           <a class="group" href="#shell">Shells</a>
           <div class="sub">
             <a href="#shell-how">How the shells work</a>
+            <a href="#shell-frame">Phone frame</a>
             <a href="#shell-register">grabbagShell.register</a>
             <a href="#shell-ctx">ctx</a>
             <a href="#shell-layout">grabbagShell.layout</a>
@@ -511,6 +513,7 @@ func init() {
           <tr><td><a href="#game-board"><code>Board</code></a></td><td>board shell after Start</td></tr>
           <tr><td><a href="#game-boardbuttons"><code>BoardButtons</code></a></td><td>Lobby TV rail after Load, before Start</td></tr>
           <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>phone shell after Start, any signed-in player</td></tr>
+          <tr><td><a href="#game-help"><code>Help</code></a></td><td>phone shell Help button, through <code>GET /help</code></td></tr>
           <tr><td><a href="#game-play"><code>Play</code></a></td><td><code>/play/</code> mux</td></tr>
           <tr><td><a href="#game-pause"><code>Pause</code></a></td><td>operator or auto-pause</td></tr>
           <tr><td><a href="#game-resume"><code>Resume</code></a></td><td>operator Resume</td></tr>
@@ -719,27 +722,50 @@ func (g *Game) ID() string { return id }</pre>
       <article class="method" id="game-phone">
         <div class="tags"><span class="tag">Game</span><span class="tag">after Start</span></div>
         <h3>Phone</h3>
-        <p>Writes the inner phone column for a signed-in player after Start. Seated, wait-list, and audience phones all reach this method.</p>
+        <p>Writes the phone column for a signed-in player after Start. Seated, wait-list, and audience phones all reach this method.</p>
         <h4>Syntax</h4>
         <div class="sig">Phone(w http.ResponseWriter, r *http.Request)</div>
         <h4>Parameters</h4>
         <dl>
           <dt>w</dt>
-          <dd>Host captures these bytes, wraps Leave and the claimed-host drawer around them, and the phone shell shows the result.</dd>
+          <dd>Host captures these bytes and the phone shell shows them in its centered column. Leave, Help, and the claimed host's panel are in the shell frame.</dd>
           <dt>r</dt>
           <dd>The phone request. Read the player with <a href="#helper-playerfromrequest">PlayerFromRequest</a>.</dd>
         </dl>
         <h4>Return value</h4>
         <p>None.</p>
         <h4>Description</h4>
-        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;script&gt;</code>. The shell has the notch and your assets, and host adds Leave and maybe the Host drawer. Unknown cookies never reach this method. Lobby still renders join.</p>
-        <p>A claimed-host phone gets the drawer from host, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
+        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;script&gt;</code>. The shell has the toolbar, Help, Leave, and your assets. Do not draw your own Help or Leave button. Size the column with the tiers in <a href="#shell-frame">Phone frame</a>. Unknown cookies never reach this method. Lobby still renders join.</p>
+        <p>A claimed-host phone gets the Host panel from the shell, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
         <h4>Examples</h4>
         <h5>Tap button plus optional End game</h5>
         <pre class="ex">func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
     g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
 }</pre>
         <p>The template is a <code>&lt;div&gt;</code> with <code>hx-post="/play/tap"</code>. Host wraps it in the Lobby <code>play-phone</code> fragment.</p>
+      </article>
+
+      <article class="method" id="game-help">
+        <div class="tags"><span class="tag">Game</span><span class="tag">ui.HelpTenant</span></div>
+        <h3>Help</h3>
+        <p>Writes the rules for the phone shell's Help sheet.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Help(w http.ResponseWriter, r *http.Request)</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>w</dt>
+          <dd>The sheet body: an HTML fragment. The shell owns the sheet, its "How to play" title, and its close button.</dd>
+          <dt>r</dt>
+          <dd>The phone's <code>GET /help</code>. Host forwards it only while your game is the phone's tenant.</dd>
+        </dl>
+        <h4>Return value</h4>
+        <p>None.</p>
+        <h4>Description</h4>
+        <p><code>games.Game</code> embeds <code>ui.HelpTenant</code>, so every game must provide help. The shell draws Help only when the tenant fetch says <code>"help": true</code>. The sheet opens over your phone, which stays mounted, and closes with ✕, Esc, or a tap on the backdrop. The Lobby and the locked board are plain tenants and show no Help. Keep <code>/play/howto</code> as the full page for the board's How to play button; share the sections through one template. Add a preview with <code>Shell: ui.ShellHelp</code>.</p>
+        <h4>Examples</h4>
+        <pre class="ex">func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+    g.run.Render(w, "help", nil, http.StatusOK)
+}</pre>
       </article>
 
       <article class="method" id="game-play">
@@ -754,7 +780,7 @@ func (g *Game) ID() string { return id }</pre>
         <p>An <code>http.Handler</code>, or nil. Nil makes every <code>/play</code> request 404.</p>
         <h4>Description</h4>
         <p>Host strips <code>/play</code>. Register <code>POST /tap</code>, not <code>/play/tap</code>. GET is allowed after Load so info pages and CSS can load from a Lobby rail button. POST is 404 until Start, and 404 again after Stop. After Stop the Game value is still loaded, so GET handlers should tolerate a paused or stopped round.</p>
-        <p>Full extra documents after Load are Play GET routes. Mutations that must run before Start POST through <a href="#game-settings">Settings</a> at <code>/settings/game/</code>. Do not add a Game method or host mount for extra pages. Do not open Play POST before Start. Operator-only extra GET pages check <a href="#helper-hasadmin">HasAdmin</a> in the game. Signed-out GET is plain <code>401</code> text. Host does not make every Play GET admin-only. Hiding a <code>HostOnly</code> BoardButton does not protect the URL. Apples for Humanity ships the first extra operator page: <code>GET /play/picker</code>, pack toggles POST to <code>/settings/game/</code>, success is <code>303</code> back to the picker. A failed write or a refused-after-Start toggle returns <code>200</code> HTML so the checkboxes match stored state. <code>GET /play/howto</code> is public. The in-round phone sheet is <code>GET /play/howto-sheet</code>. Quick Quips uses the same picker mount as Prompt Library.</p>
+        <p>Full extra documents after Load are Play GET routes. Mutations that must run before Start POST through <a href="#game-settings">Settings</a> at <code>/settings/game/</code>. Do not add a Game method or host mount for extra pages. Do not open Play POST before Start. Operator-only extra GET pages check <a href="#helper-hasadmin">HasAdmin</a> in the game. Signed-out GET is plain <code>401</code> text. Host does not make every Play GET admin-only. Hiding a <code>HostOnly</code> BoardButton does not protect the URL. Apples for Humanity ships the first extra operator page: <code>GET /play/picker</code>, pack toggles POST to <code>/settings/game/</code>, success is <code>303</code> back to the picker. A failed write or a refused-after-Start toggle returns <code>200</code> HTML so the checkboxes match stored state. <code>GET /play/howto</code> is public. In a round the shell's Help sheet shows <a href="#game-help">Help</a>. Quick Quips uses the same picker mount as Prompt Library.</p>
         <h4>Examples</h4>
         <h5>Tap, end, partials, and CSS</h5>
         <pre class="ex">func (g *Game) Play() http.Handler {
@@ -906,7 +932,7 @@ type Assets struct {
         <h4>Return value</h4>
         <p>One <code>ui.Scenario</code> per page state. Each has a Surface and Name, a Viewer, a Frame (phone, TV, or page), an optional Shell, a seated-count range, and a <code>Render(w, ui.Preview)</code> func. Host passes the theme, seated count, JSON merge patches, and an asset URL prefix in <code>ui.Preview</code>.</p>
         <h4>Description</h4>
-        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. A board fragment uses <code>Shell: ui.ShellBoard</code>, and host wraps it in the static board shell with your Assets. The static shell loads no htmx, no SSE, no heartbeat, and no <code>game.js</code>, so nothing mounts, and timers hold their rendered value. Your CSS and your <a href="#shell-layout">layout</a> still apply. <code>&lt;html data-static&gt;</code> lets CSS freeze an animation that would make screenshots differ run to run. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
+        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. A board fragment uses <code>Shell: ui.ShellBoard</code>, and host wraps it in the static board shell with your Assets. The static shell loads no htmx, no SSE, no heartbeat, and no <code>game.js</code>, so nothing mounts, and timers hold their rendered value. Your CSS and your <a href="#shell-layout">layout</a> still apply. <code>&lt;html data-static&gt;</code> lets CSS freeze an animation that would make screenshots differ run to run. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone and the phone frame the way it wraps a live phone. A <code>Shell: ui.ShellHelp</code> scenario shows your Help body in the open sheet. The gallery and <code>cmd/grabbag-uishots</code> also show phone scenarios at iPad portrait, iPad landscape, and desktop sizes. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
         <h4>Examples</h4>
         <h5>A board at every table size</h5>
         <pre class="ex">func (g *Game) Scenarios() []ui.Scenario {
@@ -954,6 +980,16 @@ func (g *Game) PauseOnDisconnect() bool { return false }</pre>
         <p><code>GET /board</code> and <code>GET /</code> return the shell with the current tenant already inside <code>#shell-stage</code>. The shell owns the document, the one SSE connection, the theme, notices, the connection overlay, and the heartbeat. Tenants never own those.</p>
         <p>When the tenant may have changed, the shell fetches <a href="#http-tenant">GET /board/tenant or /tenant</a>. It loads any assets it has not loaded, fades out, unmounts the old tenant, swaps the fragment, mounts the new one, and fades in. Lobby to game and back on the TV fades out over 1.5s and in over 0.5s. Other TV swaps take 200ms, and phones 150ms. <code>prefers-reduced-motion</code> swaps instantly.</p>
         <p>Swaps run one at a time and the latest wins. A response for an older generation is dropped. If the fetch fails, the current tenant stays on screen and the shell retries. If your <code>mount</code> throws, the shell logs it to <code>/settings/log</code> and leaves your server-rendered fragment in place.</p>
+      </article>
+
+      <article class="method" id="shell-frame">
+        <h3>Phone frame</h3>
+        <p>The phone shell goes edge to edge on every device. The shell owns the frame: a 44px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. Your tenant owns only the column, <code>#shell-stage</code>.</p>
+        <p>The column is centered and 720px wide, with at least a 64px gutter each side. Without room for that the frame is in phone mode and the column fills the width. Help and Leave sit at the ends of the toolbar in phone mode and in the gutters in gutter mode. A screen that wants more room puts <code>data-column="wide"</code> on its outer element and gets a 1200px column. That is markup only and survives htmx swaps. A game that would rather have bigger elements stays at 720px.</p>
+        <p><code>#shell-stage</code> is a size container named <code>column</code>. Design against three tiers of its width, never the viewport's: <code>compact</code> under 560px, <code>regular</code> 560 to 959px, and <code>wide</code> from 960px, which only the wide opt-in reaches.</p>
+        <pre class="ex">@container column (min-width: 560px) { .wordbox-hand { grid-template-columns: repeat(2, 1fr); } }
+@container column (min-width: 960px) { .wordbox-hand { grid-template-columns: repeat(4, 1fr); } }</pre>
+        <p>The shell sets <code>data-frame="phone"</code> or <code>"gutter"</code> on <code>#shell-frame</code> for its own controls. Do not style against it, and do not put anything in the gutters. From 1170px the claimed host's panel stays open on the left (320px) and collapses to a strip the browser remembers. Below that it is the slide-out drawer.</p>
       </article>
 
       <article class="method" id="shell-register">
@@ -1604,9 +1640,9 @@ graceful=1</div>
         <h3>GET /tenant, /board/tenant</h3>
         <p>The shell's tenant fetch. No admin session needed; it uses the same cookie and admin checks as <code>/</code> and <code>/board</code>.</p>
         <h4>Return value</h4>
-        <p>JSON: <code>tenant</code> (id), <code>generation</code>, <code>boot</code>, <code>theme</code>, <code>notices</code>, <code>stream</code>, <code>player</code>, <code>kicked</code>, <code>assets</code>, and <code>html</code> (the fragment).</p>
+        <p>JSON: <code>tenant</code> (id), <code>generation</code>, <code>boot</code>, <code>theme</code>, <code>notices</code>, <code>stream</code>, <code>player</code> (shows Leave), <code>kicked</code>, <code>help</code> (shows Help), <code>host</code> (the claimed host's panel for the frame), <code>assets</code>, and <code>html</code> (the fragment).</p>
         <h4>Description</h4>
-        <p>The board gets the locked tenant when the admin-only board is on and the request has no admin session. A locked board connects to <code>/shell/events/locked</code>, which carries only <code>tenant</code> and <code>theme</code>. <code>POST /shell/error</code> takes the shell's error reports and writes them to the host log.</p>
+        <p>The board gets the locked tenant when the admin-only board is on and the request has no admin session. A locked board connects to <code>/shell/events/locked</code>, which carries only <code>tenant</code> and <code>theme</code>. <code>POST /shell/error</code> takes the shell's error reports and writes them to the host log. <code>GET /help</code> forwards to the phone's mounted tenant's <a href="#game-help">Help</a>, or is 404 for a tenant without one.</p>
       </article>
 
       <article class="method" id="http-mounts">

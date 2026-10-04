@@ -12,7 +12,8 @@ import (
 
 // RenderAll renders every scenario at each Sweep count (or once without a
 // player dimension) in both themes and fails on any error or empty page.
-// Board and phone fragments are also rendered inside the static shell.
+// Board and phone fragments are also rendered inside the static shell, and
+// phone fragments inside its phone frame.
 func RenderAll(t *testing.T, list []ui.Scenario) {
 	t.Helper()
 	renderAll(t, "preview", list, ui.Assets{})
@@ -73,14 +74,30 @@ func renderAll(t *testing.T, id string, list []ui.Scenario, assets ui.Assets) {
 				if strings.Contains(body, "<script") || strings.Contains(body, "<link") {
 					t.Errorf("%s players=%d: tenant fragment carries a script or stylesheet; list it in Assets", key, n)
 				}
+				var host bytes.Buffer
+				if s.HostPanel != nil {
+					if err := s.HostPanel(&host, p); err != nil {
+						t.Errorf("%s players=%d: host panel: %v", key, n, err)
+						continue
+					}
+					if strings.Contains(host.String(), "<script") || strings.Contains(host.String(), "<link") {
+						t.Errorf("%s players=%d: host panel carries a script or stylesheet", key, n)
+					}
+				}
 				var doc bytes.Buffer
-				if err := ui.RenderShell(&doc, ui.StaticShell(surface, id, p, assets, template.HTML(body))); err != nil {
+				if err := ui.RenderShell(&doc, s.ScenarioShell(id, p, assets, template.HTML(body), template.HTML(host.String()))); err != nil {
 					t.Errorf("%s players=%d: shell: %v", key, n, err)
 					continue
 				}
 				page := doc.String()
 				if !strings.Contains(page, `id="shell-stage"`) || !strings.Contains(page, "window.grabbagStatic") || strings.Contains(page, "htmx.min.js") || strings.Contains(page, "data-shell-js") {
 					t.Errorf("%s players=%d: tenant did not render inside the static shell", key, n)
+				}
+				if surface == ui.SurfacePhone && (!strings.Contains(page, `id="shell-frame"`) || !strings.Contains(page, `class="shell-column"`)) {
+					t.Errorf("%s players=%d: phone tenant did not render inside the phone frame", key, n)
+				}
+				if s.Shell == ui.ShellHelp && strings.Contains(page, `id="shell-help" class="shell-sheet" hidden`) {
+					t.Errorf("%s players=%d: help scenario did not open the Help sheet", key, n)
 				}
 			}
 		}

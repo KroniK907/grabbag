@@ -327,25 +327,9 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
   align-content: start;
   gap: 14px;
   padding: 22px 18px 18px;
-  padding-top: 48px;
   min-height: 100%;
   border-radius: 18px;
   box-sizing: border-box;
-}
-.bt-help {
-  position: absolute;
-  left: 10px;
-  top: 30px;
-  z-index: 8;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--bt-truth);
-  color: var(--bt-on-truth);
-  font-family: var(--bt-display);
-  text-decoration: none;
 }
 .bt-phone .bt-timer { justify-self: start; font-size: 14px; padding: 4px 14px; }
 .bt-kick { margin: 0; font-size: 12px; color: var(--bt-muted); }
@@ -480,8 +464,12 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-howto { min-height: 100dvh; padding: 24px; box-sizing: border-box; display: grid; gap: 18px; align-content: start; max-width: 720px; margin: 0 auto; }
 .bt-howto header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .bt-howto .bt-headline { font-size: 34px; flex: 1 0 100%; }
+.bt-help { display: grid; gap: 12px; }
+.bt-help section,
 .bt-howto section { background: var(--bt-sticker); color: var(--bt-sink); border-radius: 16px; padding: 14px 18px; box-shadow: 4px 4px 0 var(--bt-truth); }
+.bt-help h2,
 .bt-howto h2 { margin: 0 0 6px; font-family: var(--bt-display); font-weight: 400; }
+.bt-help p,
 .bt-howto p { margin: 0; line-height: 1.5; }
 
 /* Motion is there for the reveal. */

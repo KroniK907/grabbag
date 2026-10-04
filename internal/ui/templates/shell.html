@@ -1,6 +1,7 @@
 {{/* ui-shell is the persistent /board or / document. The current tenant is
 rendered inside #shell-stage. static/shell.js swaps tenants in place after
-that, so this document only loads once per visit. */}}
+that, so this document only loads once per visit. The phone shell wraps the
+stage in shell-phone-frame. */}}
 {{define "ui-shell"}}
 {{template "ui-head" .}}
   {{range .Assets.External}}
@@ -33,12 +34,7 @@ that, so this document only loads once per visit. */}}
   <div class="ui-spin" aria-hidden="true"></div>
 </div>
 {{if eq .Surface "phone"}}
-<div class="ui-phone-wrap">
-  <div class="ui-phone">
-    <div class="ui-notch">GrabBag.gg</div>
-    {{template "shell-stage" .}}
-  </div>
-</div>
+{{template "shell-phone-frame" .}}
 {{else}}
 {{template "shell-stage" .}}
 {{end}}
@@ -56,4 +52,66 @@ that, so this document only loads once per visit. */}}
   data-stream="{{.Stream}}"
   {{if .Player}}data-player{{end}}
 >{{.Body}}</div>
+{{end}}
+
+{{/* shell-phone-frame is the edge-to-edge phone frame. The shell owns the
+toolbar, the gutters, Help, Leave, the Help sheet, and the Host panel. The
+tenant owns only #shell-stage, the centered column. Help and Leave sit in the
+toolbar in phone mode and in the gutters in gutter mode; live.css picks the
+mode from the frame width, and shell.js copies it to data-frame. */}}
+{{define "shell-phone-frame"}}
+<div id="shell-frame" class="shell-frame" data-frame="phone">
+  {{if not .Static}}
+  <script>
+  try {
+    if (localStorage.getItem("grabbag:host-panel") === "collapsed") {
+      document.getElementById("shell-frame").setAttribute("data-host-panel", "collapsed");
+    }
+  } catch (e) {}
+  </script>
+  {{end}}
+  <div id="shell-host" class="shell-host"{{if .HelpSheet}} inert{{end}}>{{.HostPanel}}</div>
+  <div class="shell-main"{{if .HelpSheet}} inert{{end}}>
+    <header class="shell-bar">
+      <div class="shell-brand">GrabBag.gg</div>
+      <button
+        type="button"
+        id="shell-help-button"
+        class="shell-help-button"
+        aria-label="How to play"
+        aria-controls="shell-help"
+        onclick="grabbagShell.openHelp()"
+        {{if not .Help}}hidden{{end}}
+      >?</button>
+      <form
+        id="shell-leave"
+        class="shell-leave"
+        hx-post="/lobby/leave"
+        hx-swap="none"
+        hx-confirm="Leave this room?"
+        {{if not .Player}}hidden{{end}}
+      >
+        <button class="ui-leave-button" type="submit" aria-label="Leave room" title="Leave room">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"></path>
+          </svg>
+          <span class="ui-sr-only">Leave</span>
+        </button>
+      </form>
+    </header>
+    <div class="shell-column">
+      {{template "shell-stage" .}}
+    </div>
+  </div>
+  <div id="shell-help" class="shell-sheet" {{if not .HelpSheet}}hidden{{end}}>
+    <button type="button" class="shell-sheet-scrim" aria-label="Close help" tabindex="-1" onclick="grabbagShell.closeHelp()"></button>
+    <section class="shell-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="shell-help-title">
+      <header class="shell-sheet-bar">
+        <h2 id="shell-help-title">How to play</h2>
+        <button type="button" class="shell-sheet-close" aria-label="Close help" onclick="grabbagShell.closeHelp()">✕</button>
+      </header>
+      <div id="shell-help-body" class="shell-sheet-body">{{.HelpSheet}}</div>
+    </section>
+  </div>
+</div>
 {{end}}

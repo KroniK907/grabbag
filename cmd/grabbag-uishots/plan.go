@@ -111,6 +111,11 @@ func plan(cfg config, index host.PreviewIndex) []job {
 				add("sweep", s, n, cfg.themes[0], frame, false, 1)
 			}
 		}
+		if cfg.sets["screens"] && s.Frame == "phone" {
+			for _, d := range index.Screens {
+				add("screens", s, s.DefaultPlayers, cfg.themes[0], d, false, 1)
+			}
+		}
 		if cfg.sets["devices"] && s.Sample {
 			for _, d := range index.Devices {
 				for _, text := range index.TextScales {

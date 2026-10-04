@@ -118,6 +118,11 @@ func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
 }
 
+// Help writes the phone shell's help sheet: what each Testing control checks.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "help", nil, http.StatusOK)
+}
+
 // Play mounts tap, end, and live partials after Start.
 func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()

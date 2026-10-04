@@ -9,7 +9,6 @@
   hx-sync="this:queue all"
   hx-swap="outerHTML"
 >
-  <a class="bt-help" href="/play/howto" aria-label="How to play">?</a>
   {{if .Paused}}<p class="bt-kick">Paused</p>{{end}}
   {{if .Error}}<p class="ui-alert" role="alert">{{.Error}}</p>{{end}}
   {{template "bt-timer" .Timer}}

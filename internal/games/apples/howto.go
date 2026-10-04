@@ -4,7 +4,6 @@ import "github.com/KroniK907/grabbag/internal/games/runtimekit"
 
 type howtoView struct {
 	runtimekit.Page
-	Sheet      bool
 	Skip       bool
 	Multi      bool
 	Voting     bool
@@ -13,11 +12,10 @@ type howtoView struct {
 	Timers     bool
 }
 
-func (g *Game) howtoView(sheet bool) howtoView {
+func (g *Game) howtoView() howtoView {
 	s := g.currentSettings()
 	view := howtoView{
 		Page:       g.chromeView("How to play"),
-		Sheet:      sheet,
 		Skip:       s.PromptMode == modeSkip,
 		Multi:      s.PromptMode == modeMulti,
 		Voting:     s.Voting != voteOff,

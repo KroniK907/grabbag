@@ -826,11 +826,11 @@
   letter-spacing: 0.08em;
 }
 
-.ui-phone:has(.ui-drawer-handle) .quips-burn-handle {
+.shell-frame:has(.ui-drawer-handle) .quips-burn-handle {
   bottom: calc(var(--ui-side-tab-bottom, 28px) + var(--ui-side-tab-span, 8rem) + var(--ui-side-tab-gap, 10px));
 }
 
-.ui-phone:has(.ui-drawer.is-open) .quips-burn-handle {
+.shell-frame:has(.ui-drawer.is-open) .quips-burn-handle {
   visibility: hidden;
 }
 
@@ -921,25 +921,13 @@
   border-top: 3px solid var(--ui-accent);
 }
 
-.ui-phone:has(.quips-phone) .ui-phone-body {
+.ui-phone-body:has(.quips-phone) {
   padding-left: 0;
   padding-right: 0;
 }
 
 .quips-help {
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  z-index: 8;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--ui-accent);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 800;
+  text-align: left;
 }
 
 .quips-howto {
@@ -965,23 +953,7 @@
   font-size: clamp(2.5rem, 8vw, 4.5rem);
 }
 
-@media (max-width: 520px), (hover: none) and (pointer: coarse) {
-  .ui-phone-wrap:has(.quips-phone) {
-    min-height: var(--shell-visual-height, 100dvh);
-  }
-
-  .ui-phone:has(.quips-phone) {
-    height: var(--shell-visual-height, 100dvh);
-    min-height: 0;
-  }
-
-  .ui-phone:has(.quips-phone) .ui-phone-body {
-    height: calc(var(--shell-visual-height, 100dvh) - 22px);
-    min-height: 0;
-  }
-}
-
-html.shell-short .ui-phone:has(.quips-phone) .ui-phone-body {
+html.shell-short .ui-phone-body:has(.quips-phone) {
   padding-top: 8px;
   padding-bottom: 8px;
 }

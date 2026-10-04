@@ -62,10 +62,12 @@ func TestJoinMintsPlayerAndReconnects(t *testing.T) {
 	if reconnected.Code != http.StatusOK {
 		t.Fatalf("reconnect status = %d, want %d", reconnected.Code, http.StatusOK)
 	}
-	if !strings.Contains(reconnected.Body.String(), "Alice") ||
-		!strings.Contains(reconnected.Body.String(), `hx-post="/lobby/leave"`) ||
-		!strings.Contains(reconnected.Body.String(), `class="ui-leave-button"`) {
+	if !strings.Contains(reconnected.Body.String(), "Alice") {
 		t.Fatalf("reconnect body = %q", reconnected.Body.String())
+	}
+	// Leave is in the shell frame, not the Lobby tenant.
+	if strings.Contains(reconnected.Body.String(), `hx-post="/lobby/leave"`) {
+		t.Fatalf("Lobby tenant renders Leave: %q", reconnected.Body.String())
 	}
 	if strings.Contains(reconnected.Body.String(), `hx-post="/lobby/join"`) {
 		t.Fatal("live player cookie still showed Join")
@@ -488,6 +490,7 @@ func testLobby(t *testing.T) (*store.DB, http.Handler, *lobby.Lobby) {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", room.Phone)
+	mux.HandleFunc("GET /host-panel", room.HostPanel)
 	mux.HandleFunc("GET /board", room.Board)
 	room.Register(mux)
 	return db, mux, room

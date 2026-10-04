@@ -269,7 +269,7 @@ func TestPhoneUsesCompactVisualViewportLayout(t *testing.T) {
 		path string
 		want []string
 	}{
-		{path: "/static/game.css", want: []string{".apples-lock-bar .ui-btn", "min-height: 44px", "var(--shell-visual-height, 100dvh)", "html.shell-short .apples-phone"}},
+		{path: "/static/game.css", want: []string{".apples-lock-bar .ui-btn", "min-height: 44px", "html.shell-short .apples-phone"}},
 	} {
 		rec := httptest.NewRecorder()
 		g.Play().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, tt.path, nil))

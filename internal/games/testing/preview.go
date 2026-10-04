@@ -50,6 +50,12 @@ func (g *Game) Scenarios() []ui.Scenario {
 		phone("live", "host", false),
 		phone("paused", "seated", true),
 		{
+			Surface: "phone", Name: "help", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellHelp,
+			Render: func(w io.Writer, p ui.Preview) error {
+				return ui.RenderScenario(w, pages, "help", phoneView{}, p)
+			},
+		},
+		{
 			Surface: "page", Name: "info", Viewer: "guest", Frame: ui.FramePage,
 			Render: func(w io.Writer, p ui.Preview) error {
 				view := boardView{Chrome: ui.Chrome{Title: "About Testing"}, GameCSS: p.Asset("game.css?v=" + cssVersion)}
