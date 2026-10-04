@@ -1,7 +1,9 @@
 package host
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"net"
@@ -21,6 +23,12 @@ const BenchPath = "/dev/bench/"
 
 // BenchPassword is the admin password of every -dev-bench room.
 const BenchPassword = "devbench"
+
+// benchAutofillPath serves the seat script that fills game text boxes.
+const benchAutofillPath = BenchPath + "autofill.js"
+
+//go:embed bench_autofill.js
+var benchAutofillJS []byte
 
 // Bench seat limits. Seat 1 is always the host.
 const (
@@ -139,13 +147,41 @@ func benchSeatHandler(seat int, next http.Handler) http.Handler {
 		}
 		benchFinish(w, r, rec)
 	})
-	mux.Handle("/", next)
+	mux.HandleFunc("GET "+benchAutofillPath, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		_, _ = w.Write(benchAutofillJS)
+	})
+	mux.Handle("/", benchInjectAutofill(next))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.Clone(r.Context())
 		scopeRequestCookies(r, suffix)
 		sw := &seatCookieWriter{ResponseWriter: w, suffix: suffix}
 		mux.ServeHTTP(sw, r)
 		sw.rename()
+	})
+}
+
+// benchInjectAutofill adds the autofill script to full HTML page loads.
+// htmx swaps and the SSE stream pass through untouched.
+func benchInjectAutofill(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.Header.Get("HX-Request") != "" || !strings.Contains(r.Header.Get("Accept"), "text/html") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		rec := httptest.NewRecorder()
+		next.ServeHTTP(rec, r)
+		body := rec.Body.Bytes()
+		if strings.HasPrefix(rec.Header().Get("Content-Type"), "text/html") {
+			tag := []byte(`<script src="` + benchAutofillPath + `" defer></script></body>`)
+			body = bytes.Replace(body, []byte("</body>"), tag, 1)
+		}
+		for k, v := range rec.Header() {
+			w.Header()[k] = v
+		}
+		w.Header().Del("Content-Length")
+		w.WriteHeader(rec.Code)
+		_, _ = w.Write(body)
 	})
 }
 

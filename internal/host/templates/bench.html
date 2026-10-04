@@ -35,6 +35,23 @@
   .audio pre { margin: 0; font: 11px/1.35 ui-monospace, monospace; white-space: pre-wrap; }
   .audio .log { max-height: 220px; overflow: auto; background: #11121a; color: #9ef08a; padding: 6px; border-radius: 4px; }
   .audio .muted { color: #6a6f80; }
+  .carousel, .mobile-only { display: none; }
+  /* Phone layout: board on top, one seat below, seat carousel at the bottom. */
+  @media (max-width: 800px) {
+    html, body { height: 100dvh; }
+    body { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+    .bar { gap: 6px 10px; padding: 6px 8px; }
+    .bar .meta, #reload, .bar label.toggle, .top > .pane:not(.board) { display: none; }
+    .mobile-only { display: inline-block; }
+    .top { grid-template-columns: minmax(0, 1fr); padding: 8px 8px 0; }
+    .top .board .fit { aspect-ratio: 16 / 9; }
+    .seats { grid-template-columns: minmax(0, 1fr); padding: 8px; }
+    .seats .pane:not(.is-active) { display: none; }
+    .carousel { display: flex; gap: 6px; align-items: center; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #d4d7e0; overflow-x: auto; scrollbar-width: none; }
+    .carousel button { font: inherit; flex: 0 0 auto; padding: 8px 12px; border: 1px solid #c9ccd6; border-radius: 999px; background: #f6f7fa; cursor: pointer; }
+    .carousel button[aria-current="true"] { background: #7a3fd0; border-color: #7a3fd0; color: #fff; }
+    .carousel .step { padding: 8px 14px; }
+  }
 </style>
 </head>
 <body>
@@ -47,10 +64,11 @@
   <label class="toggle"><input type="checkbox" data-pane="pane-settings" checked> Settings</label>
   <label class="toggle"><input type="checkbox" data-pane="pane-audio" checked> Audio</label>
   <a class="nav" href="/dev/ui/">UI gallery</a>
+  <a class="nav mobile-only" href="/dev/bench/settings" target="_blank">Settings</a>
   <span class="meta">Player 1 is the host. Admin password <code>{{.Password}}</code>. The room resets when the process restarts. Lowering the count leaves the extra players in the room until they leave.</span>
 </div>
 <div class="top">
-  <section class="pane">
+  <section class="pane board">
     <header>Board <span><button type="button" class="reload-one">reload</button><a href="/board" target="_blank">open</a></span></header>
     <div class="fit" data-w="1920" data-h="1080"><iframe src="/board" title="Board"></iframe></div>
   </section>
@@ -75,12 +93,17 @@
 </div>
 <div class="seats">
   {{range .Seats}}
-  <section class="pane{{if eq .Seat 1}} host{{end}}">
+  <section class="pane seat{{if eq .Seat 1}} host is-active{{end}}" data-seat="{{.Seat}}">
     <header>{{.Name}} <span><button type="button" class="reload-one">reload</button><a data-port="{{.Port}}" data-path="/" target="_blank">open</a></span></header>
     <div class="fit" data-w="393" data-h="852"><iframe data-port="{{.Port}}" data-path="/dev/bench/join" title="{{.Name}}"></iframe></div>
   </section>
   {{end}}
 </div>
+<nav class="carousel" aria-label="Phones">
+  <button type="button" class="step" data-step="-1" aria-label="Previous phone">&lsaquo;</button>
+  {{range .Seats}}<button type="button" data-seat="{{.Seat}}"{{if eq .Seat 1}} aria-current="true"{{end}}>{{.Name}}</button>{{end}}
+  <button type="button" class="step" data-step="1" aria-label="Next phone">&rsaquo;</button>
+</nav>
 <script>
   for (const el of document.querySelectorAll("[data-port]")) {
     const url = location.protocol + "//" + location.hostname + ":" + el.dataset.port + el.dataset.path;
@@ -96,6 +119,18 @@
   };
   const ro = new ResizeObserver((entries) => entries.forEach((e) => fit(e.target)));
   document.querySelectorAll(".fit[data-w]").forEach((b) => ro.observe(b));
+  // Phone layout shows one seat at a time. Every seat stays loaded.
+  const seatPanes = [...document.querySelectorAll(".seats .pane")];
+  const seatTabs = [...document.querySelectorAll(".carousel [data-seat]")];
+  let activeSeat = 0;
+  const showSeat = (i) => {
+    activeSeat = (i + seatPanes.length) % seatPanes.length;
+    seatPanes.forEach((p, n) => p.classList.toggle("is-active", n === activeSeat));
+    seatTabs.forEach((t, n) => t.setAttribute("aria-current", String(n === activeSeat)));
+    seatTabs[activeSeat].scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
+  seatTabs.forEach((t, n) => t.addEventListener("click", () => showSeat(n)));
+  document.querySelectorAll(".carousel [data-step]").forEach((b) => b.addEventListener("click", () => showSeat(activeSeat + Number(b.dataset.step))));
   // The Settings and Audio panes can be hidden to give the board room. The
   // choice is saved per browser; a narrow screen starts with both hidden.
   for (const box of document.querySelectorAll("[data-pane]")) {
