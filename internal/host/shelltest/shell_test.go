@@ -16,9 +16,11 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
+	"github.com/chromedp/chromedp/kb"
 
 	"github.com/KroniK907/grabbag/internal/games"
 	"github.com/KroniK907/grabbag/internal/host"
@@ -870,8 +872,28 @@ func TestHelpSheetKeepsTheTenantMounted(t *testing.T) {
 	} {
 		bea.run(`document.getElementById("shell-help-button").click()`)
 		bea.waitFor(`!document.getElementById("shell-help").hidden && document.getElementById("shell-help-body").textContent.includes("Latency")`)
+		bea.waitFor(`document.querySelector(".shell-main").inert && document.getElementById("shell-host").inert`)
+		// Tab and Shift+Tab from Close must not reach a control behind the sheet.
+		for _, keys := range []string{kb.Tab, kb.Shift + kb.Tab} {
+			for i := 0; i < 4; i++ {
+				opt := chromedp.KeyModifiers()
+				key := keys
+				if strings.HasPrefix(keys, kb.Shift) {
+					opt, key = chromedp.KeyModifiers(input.ModifierShift), kb.Tab
+				}
+				if err := chromedp.Run(bea.ctx, chromedp.KeyEvent(key, opt)); err != nil {
+					t.Fatal(err)
+				}
+				var behind bool
+				bea.eval(`!!document.activeElement && !!document.activeElement.closest(".shell-main, #shell-host")`, &behind)
+				if behind {
+					t.Fatalf("focus left the Help sheet for a control behind it")
+				}
+			}
+		}
 		bea.run(closer)
 		bea.waitFor(`document.getElementById("shell-help").hidden && !!document.querySelector("#shell-stage #testing-phone")`)
+		bea.waitFor(`!document.querySelector(".shell-main").inert && !document.getElementById("shell-host").inert`)
 	}
 	var after int
 	bea.eval(`grabbagShell.record.mounts.length`, &after)
