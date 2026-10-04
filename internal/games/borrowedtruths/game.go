@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "borrowedtruths"
-	assetVersion = "intro-1"
+	assetVersion = "intro-4"
 	// event is the one SSE name this game publishes after any run state change.
 	event = "borrowedtruths"
 	// eventFacts is a facts tick. Only the board listens, so phones mid-write

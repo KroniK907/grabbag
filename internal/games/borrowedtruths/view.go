@@ -50,6 +50,8 @@ type boardView struct {
 	Facts     []face
 	CardText  string
 	Prompt    string
+	KnewOpen  bool // I knew it is open: the board asks who already knows
+	KnewCount int
 	Voters    []face
 	Locked    int
 	Timer     runtimekit.TimerView
@@ -148,6 +150,9 @@ func (g *Game) boardViewLocked() boardView {
 	switch e.Phase {
 	case phasePublic, phaseQuestion:
 		view.Prompt = "Grill " + view.Teller.Name + "."
+		if e.Phase == phasePublic && e.Settings.KnewIt {
+			view.KnewOpen, view.KnewCount = true, len(e.Knew)
+		}
 	case phaseVote:
 		view.Prompt = "True or lie? Lock it in."
 		view.Voters, view.Locked = e.lockFaces(e.Votes)

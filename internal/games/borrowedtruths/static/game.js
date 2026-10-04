@@ -39,15 +39,30 @@
   var introSec = 22.9;
   var introWindow = 15;
 
+  // Four scenes on one spot: the rules, a truth, a lie, the question.
+  // game.css times each piece in seconds of the theme.
   var introHTML =
-    '<div class="bt-intro-logo"><span>BORROWED</span><span>TRUTHS</span></div>' +
+    '<div class="bt-intro-scene is-rules">' +
+    '<div class="bt-intro-logo"><span class="bt-intro-in">BORROWED</span><span class="bt-intro-in">TRUTHS</span></div>' +
     '<div class="bt-intro-cards">' +
-    '<div class="bt-intro-card is-true">TRUTH</div>' +
-    '<div class="bt-intro-card is-true">TRUTH</div>' +
-    '<div class="bt-intro-card is-lie">LIE</div>' +
+    '<div class="bt-intro-card bt-intro-in is-true">TRUTH</div>' +
+    '<div class="bt-intro-card bt-intro-in is-true">TRUTH</div>' +
+    '<div class="bt-intro-card bt-intro-in is-lie">LIE</div>' +
     "</div>" +
-    '<div class="bt-tape bt-intro-tape">ONE OF THEM IS BORROWED</div>' +
-    '<div class="bt-intro-ask">Who\'s lying?</div>';
+    '<div class="bt-tape bt-intro-tape bt-intro-in">ONE OF THEM IS BORROWED</div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-truth">' +
+    '<div class="bt-card bt-intro-fact bt-intro-in"><p>I once got stuck in a revolving door for an hour.</p>' +
+    '<b class="bt-intro-stamp bt-intro-in is-true">TRUTH</b></div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-lie">' +
+    '<div class="bt-card bt-intro-fact bt-intro-in"><p>I can name every country in Africa.</p>' +
+    '<b class="bt-intro-stamp bt-intro-in is-lie">LIE</b></div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-ask">' +
+    '<div class="bt-intro-ask bt-intro-in">Who\'s telling the truth?</div>' +
+    '<div class="bt-intro-ask bt-intro-in is-lie">Who\'s lying?</div>' +
+    "</div>";
 
   function intro(root, ctx) {
     var board = document.getElementById("bt-board");
