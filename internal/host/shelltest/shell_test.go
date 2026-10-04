@@ -571,3 +571,20 @@ func TestReconnectKeepsThePageAndRestartReloads(t *testing.T) {
 		}
 	}
 }
+
+// TestJoinWhileTheFormIsReplaced submits Join and removes the form before
+// the response, as a roster refetch of #phone-inner can. The phone must
+// still swap to the room.
+func TestJoinWhileTheFormIsReplaced(t *testing.T) {
+	r := newRoom(t)
+	bea := r.open("Bea", "/")
+	bea.waitFor(`!!document.querySelector('form[hx-post="/lobby/join"]')`)
+	bea.run(`(() => {
+		const f = document.querySelector('form[hx-post="/lobby/join"]');
+		f.querySelector('[name=display_name]').value = "Bea";
+		f.requestSubmit();
+		f.closest("#phone-inner").remove();
+	})()`)
+	bea.waitFor(`document.getElementById("shell-stage").hasAttribute("data-player") && document.querySelector(".ui-you").textContent === "Bea"`)
+	bea.assertSteady()
+}

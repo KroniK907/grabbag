@@ -965,6 +965,19 @@
       } else if (path === "/lobby/join") {
         left = false;
       }
+      // htmx fires HX-Trigger events on the element that sent the request.
+      // A roster refetch can replace that element (the Join form) while the
+      // POST is in flight, and then the event never reaches document. So
+      // read the tenant trigger off the response itself.
+      var xhr = evt.detail && evt.detail.xhr;
+      if (xhr) {
+        native.add.call(xhr, "loadend", function () {
+          var trigger = xhr.getResponseHeader("HX-Trigger") || "";
+          if (trigger.indexOf(tenantTrigger) >= 0) {
+            request(false);
+          }
+        });
+      }
     });
     listen(document.body, "htmx:afterSettle", function (evt) {
       scanNames(evt.target);
