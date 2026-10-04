@@ -18,8 +18,10 @@
 // wins, and stale generations are dropped. Only two things reload the page,
 // both through hardReload: a kick and a host restart (a new boot ID).
 //
-// In a static preview (window.grabbagStatic) the shell only mounts the
-// tenant once, so layout code runs.
+// The shell tracks the visible viewport for every tenant: --shell-visual-height
+// on <html> is the visual viewport height (it shrinks when a phone keyboard
+// opens), and html.shell-short is set below 760px. A static preview
+// (window.grabbagStatic) does only that: no stream and no mount.
 //
 // Test mode (window.grabbagShellTest set before this file runs) records
 // mounts, SSE event names, reloads, errors, and leaks: document and window
@@ -931,6 +933,21 @@
     fetch("/lobby/heartbeat", { method: "POST", credentials: "same-origin" }).catch(function () {});
   }
 
+  // ---- Viewport ---------------------------------------------------------------------
+
+  // syncViewport publishes the visible height. Phone tenants size against it
+  // so the keyboard does not push their controls off screen.
+  function syncViewport() {
+    var viewport = window.visualViewport;
+    var height = viewport ? viewport.height : window.innerHeight;
+    if (!height) {
+      return;
+    }
+    var root = document.documentElement;
+    root.style.setProperty("--shell-visual-height", Math.round(height) + "px");
+    root.classList.toggle("shell-short", height < 760);
+  }
+
   // ---- Start ------------------------------------------------------------------------
 
   function requestPath(evt) {
@@ -946,12 +963,14 @@
     }
     surface = stage.getAttribute("data-surface");
     boot = stage.getAttribute("data-boot");
+    syncViewport();
     if (window.grabbagStatic) {
-      // A frozen preview mounts the tenant so its layout code runs, and
-      // nothing else: no stream, no heartbeat, no transitions.
-      mounted = { tenant: stage.getAttribute("data-tenant"), generation: 0, html: null, player: false };
-      mountCurrent();
       return;
+    }
+    listen(window, "resize", syncViewport);
+    listen(window, "orientationchange", syncViewport);
+    if (window.visualViewport) {
+      listen(window.visualViewport, "resize", syncViewport);
     }
     // Process swapped markup in the same tick as the swap. With htmx's 20ms
     // settle delay a tap in that gap submits an unprocessed form natively,

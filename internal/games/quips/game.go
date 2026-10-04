@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "shell-1"
+	assetVersion = "shell-2"
 )
 
 //go:embed templates/*.html

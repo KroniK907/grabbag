@@ -1125,66 +1125,66 @@ html:has(.apples-tv) {
 
 @media (max-width: 520px), (hover: none) and (pointer: coarse) {
   .ui-phone-wrap:has(.apples-phone) {
-    min-height: var(--apples-visual-height, 100dvh);
+    min-height: var(--shell-visual-height, 100dvh);
   }
 
   .ui-phone:has(.apples-phone) {
-    height: var(--apples-visual-height, 100dvh);
+    height: var(--shell-visual-height, 100dvh);
     min-height: 0;
   }
 
   .ui-phone:has(.apples-phone) .ui-phone-body {
-    height: calc(var(--apples-visual-height, 100dvh) - 22px);
+    height: calc(var(--shell-visual-height, 100dvh) - 22px);
     min-height: 0;
   }
 }
 
-html.apples-compact-height .ui-phone:has(.apples-phone) .ui-phone-body {
+html.shell-short .ui-phone:has(.apples-phone) .ui-phone-body {
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-html.apples-compact-height .apples-phone {
+html.shell-short .apples-phone {
   padding-bottom: 4px;
 }
 
-html.apples-compact-height .apples-phone-scroll {
+html.shell-short .apples-phone-scroll {
   gap: 6px;
   padding-bottom: 5px;
 }
 
-html.apples-compact-height .apples-play-dock {
+html.shell-short .apples-play-dock {
   gap: 5px;
   padding-bottom: 3px;
 }
 
-html.apples-compact-height .apples-phone .apples-prompt {
+html.shell-short .apples-phone .apples-prompt {
   padding: 7px 10px;
   font-size: clamp(1rem, 4.8vw, 1.25rem);
   line-height: 1.12;
 }
 
-html.apples-compact-height .apples-phone .apples-hole {
+html.shell-short .apples-phone .apples-hole {
   min-height: 54px;
   padding: 8px;
 }
 
-html.apples-compact-height .apples-hand {
+html.shell-short .apples-hand {
   gap: 6px;
 }
 
-html.apples-compact-height .apples-card-button {
+html.shell-short .apples-card-button {
   min-height: 50px;
   padding: 7px 10px;
   box-shadow: 0 3px 0 var(--ui-accent-2-shadow);
 }
 
-html.apples-compact-height .apples-lock-bar {
+html.shell-short .apples-lock-bar {
   padding: 5px 4px 1px;
   border-top-width: 2px;
 }
 
-html.apples-compact-height .apples-lock-bar .ui-btn {
+html.shell-short .apples-lock-bar .ui-btn {
   min-height: 44px;
   padding: 7px 10px;
   font-size: 1.125rem;

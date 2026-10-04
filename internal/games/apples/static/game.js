@@ -1,18 +1,8 @@
 // Apples for Humanity tenant. The board fits the answer cards to the screen
-// and cues the judge and the favorite vote. The phone tracks the visual
-// viewport and keeps the hand's scroll across repaints.
+// and cues the judge and the favorite vote. The phone keeps the hand's scroll
+// across repaints. The shell tracks the visual viewport.
 (function () {
   "use strict";
-
-  function syncVisualViewport() {
-    var viewport = window.visualViewport;
-    var height = viewport ? viewport.height : window.innerHeight;
-    if (!height) {
-      return;
-    }
-    document.documentElement.style.setProperty("--apples-visual-height", Math.round(height) + "px");
-    document.documentElement.classList.toggle("apples-compact-height", height < 760);
-  }
 
   function boardGrid(count) {
     if (count < 6) {
@@ -181,11 +171,6 @@
     phone: {
       mount: function (root, ctx) {
         var savedScroll = 0;
-        ctx.on(window, "resize", syncVisualViewport);
-        ctx.on(window, "orientationchange", syncVisualViewport);
-        if (window.visualViewport) {
-          ctx.on(window.visualViewport, "resize", syncVisualViewport);
-        }
         // Keep the hand scrolled where it was across a phone repaint.
         ctx.on(document.body, "htmx:beforeSwap", function (evt) {
           var target = evt.detail && evt.detail.target;
@@ -207,11 +192,6 @@
             scroll.scrollTop = savedScroll;
           }
         });
-        ctx.cleanup(function () {
-          document.documentElement.style.removeProperty("--apples-visual-height");
-          document.documentElement.classList.remove("apples-compact-height");
-        });
-        syncVisualViewport();
       },
     },
   });
