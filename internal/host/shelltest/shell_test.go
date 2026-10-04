@@ -904,3 +904,56 @@ func TestHelpSheetKeepsTheTenantMounted(t *testing.T) {
 	bea.waitFor(`document.getElementById("shell-help-button").hidden`)
 	bea.assertSteady()
 }
+
+// TestTestingControlsReachInShortWindows loads the Testing host phone in
+// short and landscape windows. Tap and End game must each be reachable:
+// fully inside the column, scrolling only what a player can scroll.
+func TestTestingControlsReachInShortWindows(t *testing.T) {
+	bin := chromeBinary()
+	if bin == "" || testing.Short() {
+		t.Skip("no Chromium, or -short")
+	}
+	server := httptest.NewServer(host.PreviewHandler())
+	t.Cleanup(server.Close)
+	tb := previewTab(t, bin)
+	if err := chromedp.Run(tb.ctx, chromedp.EmulateViewport(560, 600),
+		chromedp.Navigate(server.URL+"/dev/ui/s/testing/phone/live-host")); err != nil {
+		t.Fatal(err)
+	}
+	for _, sz := range []struct{ w, h int64 }{{560, 600}, {844, 390}, {667, 375}, {393, 852}, {1180, 820}} {
+		if err := chromedp.Run(tb.ctx, chromedp.EmulateViewport(sz.w, sz.h)); err != nil {
+			t.Fatal(err)
+		}
+		tb.waitFor(fmt.Sprintf(`document.documentElement.clientWidth === %d && getComputedStyle(document.documentElement).getPropertyValue("--shell-visual-height") === "%dpx"`, sz.w, sz.h))
+		for _, sel := range []string{".ui-plunger", ".ui-btn-danger"} {
+			var where string
+			// Only boxes a player can scroll (overflow auto or scroll) may
+			// move; script could scroll an overflow: hidden box, a finger
+			// cannot.
+			tb.eval(fmt.Sprintf(`(() => {
+				const el = document.querySelector("#shell-stage %s");
+				const column = document.querySelector(".shell-column");
+				column.querySelectorAll("*").forEach((n) => { n.scrollTop = 0; });
+				for (let a = el.parentElement; a && a !== column; a = a.parentElement) {
+					const oy = getComputedStyle(a).overflowY;
+					if (oy !== "auto" && oy !== "scroll") continue;
+					const over = el.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom;
+					if (over > 0) a.scrollTop += over;
+				}
+				const r = el.getBoundingClientRect(), c = column.getBoundingClientRect();
+				return JSON.stringify({ok: r.height > 0 && r.top >= c.top - 1 && r.bottom <= Math.min(c.bottom, innerHeight) + 1,
+					at: [r.top, r.bottom, c.top, c.bottom, innerHeight].map(Math.round).join(" ")});
+			})()`, sel), &where)
+			var res struct {
+				OK bool   `json:"ok"`
+				At string `json:"at"`
+			}
+			if err := json.Unmarshal([]byte(where), &res); err != nil {
+				t.Fatal(err)
+			}
+			if !res.OK {
+				t.Errorf("%dx%d: %s is not reachable inside the column (top bottom, column top bottom, window: %s)", sz.w, sz.h, sel, res.At)
+			}
+		}
+	}
+}

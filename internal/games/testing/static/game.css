@@ -81,14 +81,21 @@
 
 /* Phone. It sizes against the shell's column (container "column"), not the
    viewport: compact under 560px, regular from 560px. Testing has no wide
-   screen; it stays in the 720px column. */
+   screen; it stays in the 720px column. Tap is also capped by the visible
+   height, and the phone scrolls inside the column when a short window
+   (a landscape phone) still cannot fit it all. Paused stops the scroll so
+   its overlay covers what shows. */
 .testing-phone {
+  --testing-tap: min(220px, 64cqi, calc(var(--shell-visual-height, 100dvh) * 0.36));
   position: relative;
   isolation: isolate;
   align-self: stretch;
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-sizing: border-box;
-  min-height: 100%;
   padding: 12px 16px 24px;
   display: flex;
   flex-direction: column;
@@ -111,11 +118,20 @@
   margin: 0;
 }
 
+.testing-phone.is-paused {
+  overflow: hidden;
+}
+
 .testing-phone .ui-plunger {
-  width: min(220px, 64cqi);
-  height: min(220px, 64cqi);
+  flex: none;
+  width: var(--testing-tap);
+  height: var(--testing-tap);
   margin: 16px auto 32px;
-  font-size: min(3.25rem, 14cqi);
+  font-size: calc(var(--testing-tap) * 0.24);
+}
+
+html.shell-short .testing-phone .ui-plunger {
+  margin: 8px auto 24px;
 }
 
 .testing-paused {
@@ -152,11 +168,20 @@
     font-size: 1.375rem;
   }
 
+  .testing-phone {
+    --testing-tap: min(300px, calc(var(--shell-visual-height, 100dvh) * 0.4));
+  }
+
   .testing-phone .ui-plunger {
-    width: 300px;
-    height: 300px;
     margin: 32px auto 48px;
-    font-size: 4.25rem;
+  }
+
+  html.shell-short .testing-phone {
+    padding: 16px 32px 24px;
+  }
+
+  html.shell-short .testing-phone .ui-plunger {
+    margin: 16px auto 32px;
   }
 
   .testing-phone form:has(.ui-btn-danger) {
