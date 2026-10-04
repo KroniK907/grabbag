@@ -17,6 +17,9 @@ that, so this document only loads once per visit. */}}
   <script defer src="{{static "htmx.min.js"}}"></script>
   {{end}}
   <script defer src="{{static "shell.js"}}"></script>
+  {{range .Assets.Layout}}
+  <script defer src="{{.}}" data-shell-layout="{{$.Tenant}}"></script>
+  {{end}}
   {{if not .Static}}
   {{range .Assets.JS}}
   <script defer src="{{.}}" data-shell-js="{{$.Tenant}}"></script>

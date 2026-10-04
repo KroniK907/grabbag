@@ -35,18 +35,20 @@ type Tenant interface {
 }
 
 // Assets is a tenant's browser files. JS files call grabbagShell.register.
-// External is third-party stylesheets such as web fonts. Those stay loaded
-// once the shell has them.
+// Layout files call grabbagShell.layout with pure sizing functions; they also
+// run in static previews, where JS does not. External is third-party
+// stylesheets such as web fonts. Those stay loaded once the shell has them.
 type Assets struct {
 	CSS      []string `json:"css"`
 	JS       []string `json:"js"`
+	Layout   []string `json:"layout"`
 	External []string `json:"external"`
 }
 
 // Shell is one persistent shell document with its first tenant already
 // rendered inside it. Static renders a frozen preview: no htmx, no SSE, no
-// heartbeat, no transitions, and no tenant scripts, so nothing mounts. The
-// shell still sets the viewport height and size class.
+// heartbeat, no transitions, and no tenant JS, so nothing mounts. The shell
+// still sets the viewport height and size class and runs the tenant's layout.
 type Shell struct {
 	Chrome
 	Surface    string
@@ -74,13 +76,14 @@ func RenderShell(w io.Writer, s Shell) error {
 }
 
 // StaticShell is the frozen preview shell around one scenario fragment. It
-// links the tenant's stylesheets and no scripts, so nothing mounts.
+// links the tenant's stylesheets and layout scripts, and no JS, so nothing
+// mounts.
 func StaticShell(surface, tenant string, p Preview, assets Assets, body template.HTML) Shell {
 	return Shell{
 		Chrome:  Chrome{Title: "GrabBag.gg preview", Theme: NormalizeTheme(p.Theme), Static: true, OpenIDs: p.Open},
 		Surface: surface,
 		Tenant:  tenant,
-		Assets:  Assets{CSS: assets.CSS, External: assets.External},
+		Assets:  Assets{CSS: assets.CSS, Layout: assets.Layout, External: assets.External},
 		Body:    body,
 	}
 }

@@ -252,7 +252,7 @@ func previewAssets(id string, a ui.Assets) ui.Assets {
 		}
 		return out
 	}
-	return ui.Assets{CSS: rewrite(a.CSS), JS: rewrite(a.JS), External: a.External}
+	return ui.Assets{CSS: rewrite(a.CSS), JS: rewrite(a.JS), Layout: rewrite(a.Layout), External: a.External}
 }
 
 func (s *previewServer) asset(w http.ResponseWriter, r *http.Request) {

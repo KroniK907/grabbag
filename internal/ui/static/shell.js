@@ -20,8 +20,18 @@
 //
 // The shell tracks the visible viewport for every tenant: --shell-visual-height
 // on <html> is the visual viewport height (it shrinks when a phone keyboard
-// opens), and html.shell-short is set below 760px. A static preview
-// (window.grabbagStatic) does only that: no stream and no mount.
+// opens), and html.shell-short is set below 760px.
+//
+// Layout that CSS cannot do, such as fitting text to a box, goes in a
+// tenant's layout.js:
+//
+//   grabbagShell.layout("apples", { board: function (root) {}, phone: ... });
+//
+// Layout functions only measure and set styles inside root. The shell runs
+// them after mount, after every swap, on resize, and once fonts load, so they
+// add no listeners or timers of their own. A static preview
+// (window.grabbagStatic) sets the viewport and runs layout, and nothing else:
+// no stream and no mount.
 //
 // Test mode (window.grabbagShellTest set before this file runs) records
 // mounts, SSE event names, reloads, errors, and leaks: document and window
@@ -55,6 +65,8 @@
   var surface = "";
   var boot = "";
   var registry = {};
+  var layouts = {};
+  var layoutQueued = false;
   var loadedJS = {};
   var scriptOwners = {};
   var mounted = null;
@@ -407,6 +419,43 @@
     registry[id] = def;
   }
 
+  function registerLayout(id, fns) {
+    if (!id || !fns) {
+      return;
+    }
+    layouts[id] = fns;
+    scheduleLayout();
+  }
+
+  // runLayout calls the mounted tenant's layout for this surface. A throw is
+  // reported and the fragment keeps whatever styles it had.
+  function runLayout() {
+    layoutQueued = false;
+    if (!stage) {
+      return;
+    }
+    var id = stage.getAttribute("data-tenant");
+    var fn = layouts[id] && layouts[id][surface];
+    if (typeof fn !== "function") {
+      return;
+    }
+    try {
+      fn(stage);
+    } catch (err) {
+      report(id, "layout", err);
+    }
+  }
+
+  // scheduleLayout coalesces layout requests into one run. It uses a timer,
+  // not a frame: a background or headless tab may not draw frames for a while.
+  function scheduleLayout() {
+    if (layoutQueued || !stage) {
+      return;
+    }
+    layoutQueued = true;
+    later(0, runLayout);
+  }
+
   // ---- Assets ---------------------------------------------------------------
 
   function absolute(url) {
@@ -435,13 +484,15 @@
     });
   }
 
-  function addScript(src, tenant) {
-    scriptOwners[absolute(src)] = tenant;
+  function addScript(src, tenant, attr) {
+    if (!attr) {
+      scriptOwners[absolute(src)] = tenant;
+    }
     return new Promise(function (resolve, reject) {
       var script = document.createElement("script");
       script.src = src;
       script.async = false;
-      script.setAttribute("data-shell-js", tenant);
+      script.setAttribute(attr || "data-shell-js", tenant);
       script.onload = resolve;
       script.onerror = function () {
         script.remove();
@@ -479,6 +530,13 @@
           delete loadedJS[key];
           throw err;
         });
+      }
+      jobs.push(loadedJS[key]);
+    });
+    (assets.layout || []).forEach(function (src) {
+      var key = "layout " + frame.tenant + " " + src;
+      if (!loadedJS[key]) {
+        loadedJS[key] = addScript(src, frame.tenant, "data-shell-layout");
       }
       jobs.push(loadedJS[key]);
     });
@@ -742,6 +800,7 @@
         };
         scanNames(stage);
         mountCurrent();
+        runLayout();
         return fadeIn(fade.in);
       });
   }
@@ -946,6 +1005,7 @@
     var root = document.documentElement;
     root.style.setProperty("--shell-visual-height", Math.round(height) + "px");
     root.classList.toggle("shell-short", height < 760);
+    scheduleLayout();
   }
 
   // ---- Start ------------------------------------------------------------------------
@@ -964,7 +1024,11 @@
     surface = stage.getAttribute("data-surface");
     boot = stage.getAttribute("data-boot");
     syncViewport();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(scheduleLayout);
+    }
     if (window.grabbagStatic) {
+      runLayout();
       return;
     }
     listen(window, "resize", syncViewport);
@@ -978,6 +1042,9 @@
     if (window.htmx) {
       htmx.config.defaultSettleDelay = 0;
     }
+    document.querySelectorAll("script[data-shell-layout]").forEach(function (script) {
+      loadedJS["layout " + script.getAttribute("data-shell-layout") + " " + script.getAttribute("src")] = Promise.resolve();
+    });
     document.querySelectorAll("script[data-shell-js]").forEach(function (script) {
       var tenant = script.getAttribute("data-shell-js");
       loadedJS[tenant + " " + script.getAttribute("src")] = Promise.resolve();
@@ -1017,6 +1084,7 @@
     });
     listen(document.body, "htmx:afterSettle", function (evt) {
       scanNames(evt.target);
+      runLayout();
     });
     listen(document.body, "htmx:responseError", function (evt) {
       var xhr = evt.detail && evt.detail.xhr;
@@ -1033,10 +1101,12 @@
     beat();
     native.setInterval.call(window, beat, 2000);
     mountCurrent();
+    runLayout();
   }
 
   window.grabbagShell = {
     register: register,
+    layout: registerLayout,
     hardReload: hardReload,
     // current reports the mounted tenant and the stream: its URL and
     // whether it is open now.
