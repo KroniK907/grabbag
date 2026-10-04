@@ -315,8 +315,19 @@
             <a href="#game-resume">Resume</a>
             <a href="#game-stop">Stop</a>
             <a href="#game-shutdown">Shutdown</a>
-            <a href="#game-scenarios">Scenarios (optional)</a>
+            <a href="#game-assets">Assets</a>
+            <a href="#game-scenarios">Scenarios</a>
             <a href="#game-pauseondisconnect">PauseOnDisconnect (optional)</a>
+          </div>
+        </li>
+        <li>
+          <a class="group" href="#shell">Shells</a>
+          <div class="sub">
+            <a href="#shell-how">How the shells work</a>
+            <a href="#shell-register">grabbagShell.register</a>
+            <a href="#shell-ctx">ctx</a>
+            <a href="#shell-no-reload">No reloads</a>
+            <a href="#shell-trigger">Changing the tenant</a>
           </div>
         </li>
         <li>
@@ -358,6 +369,7 @@
             <a href="#http-pause">POST /settings/pause</a>
             <a href="#http-resume">POST /settings/resume</a>
             <a href="#http-clear">POST /settings/clear-game-data</a>
+            <a href="#http-tenant">GET /tenant, /board/tenant</a>
             <a href="#http-mounts">Mounts</a>
           </div>
         </li>
@@ -396,7 +408,7 @@
 
       <h2 id="overview">Overview</h2>
       <p>Lobby owns roster, join, wait list, audience, seats, identity, operator knobs, and the start gate. A game reads those facts through <a href="#helper"><code>games.Helper</code></a>. It never writes them.</p>
-      <p>A game owns run logic, per-player run state keyed by Lobby player id, optional extra pages, the full <code>/board</code> document after Start, and the inner phone body on <code>/</code> after Start.</p>
+      <p>A game owns run logic, per-player run state keyed by Lobby player id, optional extra pages, and after Start the board and phone fragments that the <code>/board</code> and <code>/</code> shells show. See <a href="#shell">Shells</a>.</p>
       <p>Host drives Load, Start, Stop, and Shutdown. Load constructs the selected package in-process. There is no folder scan and no child process.</p>
       <p>This build ships Apples for Humanity (<code>internal/games/apples</code>), Quick Quips (<code>internal/games/quips</code>), and Testing (<code>internal/games/testing</code>). Testing remains the copyable wiring sample on this page.</p>
       <div class="note">Package <code>games</code> cannot import a child game. The child imports <code>games</code> for Helper and Register. Host blank-imports each child so Catalog fills in.</div>
@@ -484,7 +496,7 @@ func init() {
       </article>
 
       <h2 id="game">Game</h2>
-      <p>Host calls these methods on your value. Implement the whole interface. <code>Settings</code> and <code>Play</code> may return nil.</p>
+      <p>Host calls these methods on your value. Implement the whole interface. <code>Settings</code> and <code>Play</code> may return nil. <code>Board</code>, <code>Phone</code>, <code>Assets</code>, and <code>Scenarios</code> come from <code>ui.Tenant</code>, which <code>games.Game</code> embeds. The Lobby and the host's locked board are tenants too.</p>
       <table>
         <thead><tr><th>Method</th><th>Host calls it</th></tr></thead>
         <tbody>
@@ -495,14 +507,16 @@ func init() {
           <tr><td><a href="#game-load"><code>Load</code></a></td><td>after <code>Factory.New()</code></td></tr>
           <tr><td><a href="#game-settings"><code>Settings</code></a></td><td>after Load, inlined on <code>/settings</code></td></tr>
           <tr><td><a href="#game-start"><code>Start</code></a></td><td>operator Start or auto-start</td></tr>
-          <tr><td><a href="#game-board"><code>Board</code></a></td><td>GET <code>/board</code> after Start</td></tr>
+          <tr><td><a href="#game-board"><code>Board</code></a></td><td>board shell after Start</td></tr>
           <tr><td><a href="#game-boardbuttons"><code>BoardButtons</code></a></td><td>Lobby TV rail after Load, before Start</td></tr>
-          <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>GET <code>/</code> after Start, any signed-in player</td></tr>
+          <tr><td><a href="#game-phone"><code>Phone</code></a></td><td>phone shell after Start, any signed-in player</td></tr>
           <tr><td><a href="#game-play"><code>Play</code></a></td><td><code>/play/</code> mux</td></tr>
           <tr><td><a href="#game-pause"><code>Pause</code></a></td><td>operator or auto-pause</td></tr>
           <tr><td><a href="#game-resume"><code>Resume</code></a></td><td>operator Resume</td></tr>
           <tr><td><a href="#game-stop"><code>Stop</code></a></td><td>round end</td></tr>
           <tr><td><a href="#game-shutdown"><code>Shutdown</code></a></td><td>unload</td></tr>
+          <tr><td><a href="#game-assets"><code>Assets</code></a></td><td>whenever a shell shows the game</td></tr>
+          <tr><td><a href="#game-scenarios"><code>Scenarios</code></a></td><td><code>/dev/ui/</code> gallery and tests</td></tr>
         </tbody>
       </table>
 
@@ -640,7 +654,7 @@ func (g *Game) ID() string { return id }</pre>
         <h4>Return value</h4>
         <p><code>nil</code> to proceed. A non-nil error keeps Lobby on <code>/</code> and <code>/board</code>. Host logs a generic start failure unless the gate refused first (no seated players, or below MinPlayers).</p>
         <h4>Description</h4>
-        <p>Host already checked seated count. Start the ticker, deal cards, or seed scores here. Host then marks the round active, publishes <code>roster</code> then <code>round</code>, and reloads open pages. A second Start while already started is a no-op on the host side.</p>
+        <p>Host already checked seated count. Start the ticker, deal cards, or seed scores here. Host then marks the round active, publishes <code>roster</code> then <code>round</code>, and every shell swaps to your tenant. A second Start while already started is a no-op on the host side.</p>
         <h4>Examples</h4>
         <h5>Start the Testing tick</h5>
         <pre class="ex">func (g *Game) Start(h games.Helper) error {
@@ -656,27 +670,27 @@ func (g *Game) ID() string { return id }</pre>
       <article class="method" id="game-board">
         <div class="tags"><span class="tag">Game</span><span class="tag">after Start</span></div>
         <h3>Board</h3>
-        <p>Writes the TV document for GET <code>/board</code> after Start.</p>
+        <p>Writes the TV fragment the board shell shows after Start.</p>
         <h4>Syntax</h4>
         <div class="sig">Board(w http.ResponseWriter, r *http.Request)</div>
         <h4>Parameters</h4>
         <dl>
           <dt>w</dt>
-          <dd>Response writer. Send a full HTML document, not a fragment.</dd>
+          <dd>Response writer. Send a fragment, not a document: no <code>&lt;html&gt;</code>, no <code>&lt;link&gt;</code>, no <code>&lt;script&gt;</code>.</dd>
           <dt>r</dt>
           <dd>The board request. Use <a href="#helper-hasadmin">HasAdmin</a> if End game should only show for a signed-in operator tab.</dd>
         </dl>
         <h4>Return value</h4>
         <p>None. Write the body yourself.</p>
         <h4>Description</h4>
-        <p>Before Start, host never calls this. Lobby still owns the TV. After Start, this is the whole page. Stamp <a href="#helper-theme">Theme</a> on <code>html[data-theme]</code> so the first paint matches <code>/settings</code>. Include host chrome if you use <code>ui-start</code>, including the round-swap node so <code>sse:round</code> reloads when Stop returns the room to Lobby.</p>
-        <p>Listen for your own SSE names with HTMX. Do not open a second EventSource. Host chrome already connected one. Details are under <a href="#sse">Live SSE</a>.</p>
+        <p>Before Start, host never calls this. The Lobby is the board tenant. After Start, the shell swaps your fragment into its stage, and back to the Lobby on Stop. The shell owns the document, the theme, the stream, and the overlay, and it loads your CSS and JS from <a href="#game-assets">Assets</a>. Host also renders the fragment inside the first <code>GET /board</code> when a round is already running.</p>
+        <p>Listen for your own SSE names with HTMX. Do not open an EventSource. Details are under <a href="#sse">Live SSE</a>.</p>
         <h4>Examples</h4>
         <h5>Render board.html with seated rows</h5>
         <pre class="ex">func (g *Game) Board(w http.ResponseWriter, r *http.Request) {
     g.render(w, "board.html", g.boardData(r), http.StatusOK)
 }</pre>
-        <p>Testing lists <code>h.Seated()</code>, flashes a row on tap, and shows End game when <code>h.HasAdmin(r)</code> is true.</p>
+        <p>Testing lists <code>h.Seated()</code>, flashes a row on tap, and shows End game when <code>h.HasAdmin(r)</code> is true. End game is an <code>hx-post</code> form that answers 204.</p>
       </article>
 
       <article class="method" id="game-boardbuttons">
@@ -690,7 +704,7 @@ func (g *Game) ID() string { return id }</pre>
         <h4>Return value</h4>
         <p>Zero or more <a href="#type-boardbutton">BoardButton</a> values. Host skips empty Label or Path. Host keeps the first three. <code>HostOnly</code> buttons are omitted unless the board request has an admin session.</p>
         <h4>Description</h4>
-        <p>After Start the game owns <code>/board</code>, so these controls go away. Point Path at a GET under <code>/play</code> if the page should work after Load. POST <code>/play</code> is still 404 until Start.</p>
+        <p>After Start the game is the board tenant, so these controls go away. Point Path at a GET under <code>/play</code> if the page should work after Load. POST <code>/play</code> is still 404 until Start.</p>
         <h4>Examples</h4>
         <h5>About Testing on the rail</h5>
         <pre class="ex">func (g *Game) BoardButtons() []games.BoardButton {
@@ -710,21 +724,21 @@ func (g *Game) ID() string { return id }</pre>
         <h4>Parameters</h4>
         <dl>
           <dt>w</dt>
-          <dd>Host captures these bytes, then wraps Leave and the claimed-host drawer around them.</dd>
+          <dd>Host captures these bytes, wraps Leave and the claimed-host drawer around them, and the phone shell shows the result.</dd>
           <dt>r</dt>
           <dd>The phone request. Read the player with <a href="#helper-playerfromrequest">PlayerFromRequest</a>.</dd>
         </dl>
         <h4>Return value</h4>
         <p>None.</p>
         <h4>Description</h4>
-        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>. Host already sent chrome, the notch, Leave, and maybe the Host drawer. Unknown cookies never reach this method. Lobby still renders join.</p>
+        <p>Do not send a full HTML document. No <code>&lt;html&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;script&gt;</code>. The shell has the notch and your assets, and host adds Leave and maybe the Host drawer. Unknown cookies never reach this method. Lobby still renders join.</p>
         <p>A claimed-host phone gets the drawer from host, not from you. Put End game in the body if that player should end the round from the play column, as Testing does with <code>ClaimedHost</code>.</p>
         <h4>Examples</h4>
         <h5>Tap button plus optional End game</h5>
         <pre class="ex">func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
     g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
 }</pre>
-        <p>The template is a <code>&lt;div&gt;</code> with <code>hx-post="/play/tap"</code>. Host wraps it in <code>play-phone.html</code>.</p>
+        <p>The template is a <code>&lt;div&gt;</code> with <code>hx-post="/play/tap"</code>. Host wraps it in the Lobby <code>play-phone</code> fragment.</p>
       </article>
 
       <article class="method" id="game-play">
@@ -852,28 +866,53 @@ func (g *Game) ID() string { return id }</pre>
 }</pre>
       </article>
 
-      <article class="method" id="game-scenarios">
-        <div class="tags"><span class="tag">Game</span><span class="tag">optional</span><span class="tag">-dev-preview</span></div>
-        <h3>Scenarios</h3>
-        <p>Lists UI states the host gallery at <code>/dev/ui/</code> can show without anyone playing to them. Implement <code>games.Previewer</code> to opt in.</p>
+      <article class="method" id="game-assets">
+        <div class="tags"><span class="tag">Game</span><span class="tag">ui.Tenant</span></div>
+        <h3>Assets</h3>
+        <p>Lists the stylesheets and scripts the shells load for your board and phone.</p>
         <h4>Syntax</h4>
-        <div class="sig">type Previewer interface {
-    Scenarios() []ui.Scenario
+        <div class="sig">Assets() ui.Assets
+
+type Assets struct {
+    CSS      []string
+    JS       []string
+    External []string
 }</div>
+        <h4>Parameters</h4>
+        <p>None.</p>
+        <h4>Return value</h4>
+        <p>One list covers both surfaces. <code>CSS</code> and <code>JS</code> are usually <code>/play/static/game.css</code> and <code>game.js</code> with a version query. <code>External</code> is third-party stylesheets such as web fonts.</p>
+        <h4>Description</h4>
+        <p>The shell loads each file once per visit. It removes your CSS when it unmounts you and keeps External sheets. Your JS must call <a href="#shell-register">grabbagShell.register</a> and do nothing else at the top level. Put the game id in the query so two games never share a URL. <code>runtimekit.Assets(id, version)</code> builds the usual pair.</p>
+        <h4>Examples</h4>
+        <h5>Runtime kit game with web fonts</h5>
+        <pre class="ex">func (g *Game) Assets() ui.Assets {
+    a := runtimekit.Assets(id, assetVersion)
+    a.External = []string{fontsURL}
+    return a
+}</pre>
+      </article>
+
+      <article class="method" id="game-scenarios">
+        <div class="tags"><span class="tag">Game</span><span class="tag">ui.Tenant</span><span class="tag">-dev-preview</span></div>
+        <h3>Scenarios</h3>
+        <p>Lists UI states the host gallery at <code>/dev/ui/</code> can show without anyone playing to them.</p>
+        <h4>Syntax</h4>
+        <div class="sig">Scenarios() []ui.Scenario</div>
         <h4>Parameters</h4>
         <p>None. Host calls it on a fresh <code>New()</code> value. There is no Load and no Helper.</p>
         <h4>Return value</h4>
         <p>One <code>ui.Scenario</code> per page state. Each has a Surface and Name, a Viewer, a Frame (phone, TV, or page), an optional Shell, a seated-count range, and a <code>Render(w, ui.Preview)</code> func. Host passes the theme, seated count, JSON merge patches, and an asset URL prefix in <code>ui.Preview</code>.</p>
         <h4>Description</h4>
-        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. That sets <code>Chrome.Static</code>, so the page loads no htmx, no SSE, and no heartbeat, and timers hold their rendered value. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
+        <p>Render builds the same view struct <code>Board</code> or <code>Phone</code> would build, then calls <code>ui.RenderScenario</code>. A board fragment uses <code>Shell: ui.ShellBoard</code>, and host wraps it in the static board shell with your Assets. The static shell loads no htmx, no SSE, and no heartbeat, and timers hold their rendered value. It does mount your tenant once, so layout code in your script runs; check <code>window.grabbagStatic</code> before starting animations. Where the game has an engine, drive it to the state with fixed names, cards, seed, and clock. Then a preview cannot show a state the game never reaches. A phone body uses <code>Shell: ui.ShellPlayPhone</code>, and host wraps it in the Lobby phone the way it wraps a live phone. Players with <code>MinPlayers &gt; 0</code> are swept at min, middle, 12, and max. <code>MaxPlayers 0</code> sweeps to 64 so stress cases show. Only host started with <code>-dev-preview</code> serves these, along with <code>cmd/grabbag-uishots</code>.</p>
         <h4>Examples</h4>
         <h5>A board at every table size</h5>
         <pre class="ex">func (g *Game) Scenarios() []ui.Scenario {
     return []ui.Scenario{{
         Surface: "board", Group: "live", Name: "live", Viewer: "tv",
-        Frame: ui.FrameTV, MinPlayers: 1,
+        Frame: ui.FrameTV, Shell: ui.ShellBoard, MinPlayers: 1,
         Render: func(w io.Writer, p ui.Preview) error {
-            view := boardView{Chrome: ui.Chrome{Title: "Testing"}, GameCSS: p.Asset("game.css")}
+            view := boardView{}
             for _, name := range ui.PreviewNames(p.Players) {
                 view.Players = append(view.Players, playerRow{DisplayName: name})
             }
@@ -903,6 +942,92 @@ func (g *Game) ID() string { return id }</pre>
         <h5>Keep playing when a phone sleeps</h5>
         <pre class="ex">// Borrowed Truths: the host's Continue covers every teller action.
 func (g *Game) PauseOnDisconnect() bool { return false }</pre>
+      </article>
+
+      <h2 id="shell">Shells</h2>
+      <p><code>/board</code> and <code>/</code> are persistent shells. Each loads once. After that the shell swaps tenants (the Lobby, a game, the locked board) in place, so the TV never flashes and nothing a page holds is lost.</p>
+
+      <article class="method" id="shell-how">
+        <h3>How the shells work</h3>
+        <p><code>GET /board</code> and <code>GET /</code> return the shell with the current tenant already inside <code>#shell-stage</code>. The shell owns the document, the one SSE connection, the theme, notices, the connection overlay, and the heartbeat. Tenants never own those.</p>
+        <p>When the tenant may have changed, the shell fetches <a href="#http-tenant">GET /board/tenant or /tenant</a>. It loads any assets it has not loaded, fades out, unmounts the old tenant, swaps the fragment, mounts the new one, and fades in. Lobby to game and back on the TV fades out over 1.5s and in over 0.5s. Other TV swaps take 200ms, and phones 150ms. <code>prefers-reduced-motion</code> swaps instantly.</p>
+        <p>Swaps run one at a time and the latest wins. A response for an older generation is dropped. If the fetch fails, the current tenant stays on screen and the shell retries. If your <code>mount</code> throws, the shell logs it to <code>/settings/log</code> and leaves your server-rendered fragment in place.</p>
+      </article>
+
+      <article class="method" id="shell-register">
+        <div class="tags"><span class="tag">client</span></div>
+        <h3>grabbagShell.register</h3>
+        <p>Gives the shell your board and phone lifecycles.</p>
+        <h4>Syntax</h4>
+        <div class="sig">grabbagShell.register(id, {
+  board: { mount(root, ctx), unmount() },
+  phone: { mount(root, ctx), unmount() },
+})</div>
+        <h4>Parameters</h4>
+        <dl>
+          <dt>id</dt>
+          <dd>Your catalog id. The Lobby registers as <code>lobby</code>.</dd>
+          <dt>board, phone</dt>
+          <dd>The shell calls the lifecycle for its own surface. <code>unmount</code> is optional.</dd>
+        </dl>
+        <h4>Description</h4>
+        <p>The shell calls <code>mount</code> after your fragment is in the stage. <code>root</code> is the stage. Use <a href="#shell-ctx">ctx</a> for every listener, timer, and frame loop, and they stop by themselves. <code>hx-*</code> attributes and listeners on elements inside your fragment need nothing, because they go away with the markup.</p>
+        <h4>Examples</h4>
+        <h5>Before and after</h5>
+        <pre class="ex">// before
+document.addEventListener("htmx:afterSwap", onSwap);
+setInterval(tick, 1000);
+
+// after
+grabbagShell.register("quips", {
+  board: { mount(root, ctx) { ctx.on(document, "htmx:afterSwap", onSwap); ctx.every(1000, tick); } },
+  phone: { mount(root, ctx) { ctx.on(document, "htmx:afterSwap", onPhoneSwap); } },
+});</pre>
+      </article>
+
+      <article class="method" id="shell-ctx">
+        <div class="tags"><span class="tag">client</span></div>
+        <h3>ctx</h3>
+        <p>Scoped helpers that clean up when the shell unmounts you.</p>
+        <h4>Syntax</h4>
+        <div class="sig">ctx.root, ctx.surface, ctx.tenant
+ctx.signal                         AbortSignal, aborts when unmount begins
+ctx.on(target, type, fn, opts)     addEventListener with signal; returns off()
+ctx.every(ms, fn)                  setInterval; returns cancel()
+ctx.after(ms, fn)                  setTimeout; returns cancel()
+ctx.frame(fn)                      requestAnimationFrame loop; return false to stop
+ctx.cleanup(fn)                    your own teardown
+ctx.audio                          reserved for board audio</div>
+        <h4>Description</h4>
+        <p>Unmount runs in this order: abort <code>signal</code>, cancel timers and frames, run <code>cleanup</code> callbacks newest first, call your <code>unmount</code>, then the shell removes your CSS and swaps the markup. A listener on <code>document</code> or <code>window</code>, or a timer or frame you start without ctx, outlives you, and the browser suite fails on it. Undo anything you set on <code>html</code> or <code>body</code> in <code>ctx.cleanup</code>.</p>
+        <h4>Examples</h4>
+        <h5>Viewport tracking that leaves no trace</h5>
+        <pre class="ex">mount(root, ctx) {
+  ctx.on(window, "resize", sync);
+  ctx.cleanup(function () {
+    document.documentElement.style.removeProperty("--quips-visual-height");
+  });
+  sync();
+}</pre>
+      </article>
+
+      <article class="method" id="shell-no-reload">
+        <h3>No reloads</h3>
+        <p>Inside a shell nothing reloads the page. Every form is <code>hx-post</code>, never <code>&lt;form method="post"&gt;</code>, and no script calls <code>location.reload</code>. Answer an htmx POST with a partial, or with 204 when an SSE event or the tenant trigger repaints. A redirect is wrong: htmx follows it and fetches a whole shell document.</p>
+        <p>The shell reloads only through <code>grabbagShell.hardReload(reason)</code>, for two reasons: <code>kicked</code> (the host kicked this phone or cleared the room) and <code>host-restarted</code> (the host's boot ID changed while the stream was down). A short network drop reconnects, refetches the tenant, and remounts without a reload.</p>
+        <p>Extra pages such as <code>/play/howto</code>, pickers, and <code>/settings</code> are normal documents and may reload.</p>
+      </article>
+
+      <article class="method" id="shell-trigger">
+        <h3>Changing the tenant</h3>
+        <p>The shell refetches its tenant on the <code>round</code> and <code>tenant</code> events, after an SSE reconnect, and when a response carries <code>HX-Trigger: grabbag:tenant</code>. Host already sends those for Start, Stop, Load, Unload, Join, Leave, Stand, Sit, sign-in, and the admin-only board switch. A game ends its round with <a href="#helper-finish">Finish</a>, which publishes <code>round</code>.</p>
+        <h4>Examples</h4>
+        <h5>An htmx End game</h5>
+        <pre class="ex">h.Finish()
+if r.Header.Get("HX-Request") != "" {
+    w.WriteHeader(http.StatusNoContent)
+    return
+}</pre>
       </article>
 
       <h2 id="helper">Helper</h2>
@@ -1101,7 +1226,7 @@ if err := h.KVSet("hide-latency", value); err != nil {
         <h4>Return value</h4>
         <p>None. Host swallows Stop errors.</p>
         <h4>Description</h4>
-        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a>. If After a game is Cycle seats, the table rotates. Empty seats still fill when Keep seats is on. Then Lobby owns <code>/</code> and <code>/board</code> again. Call this from a <code>/play/end</code> POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>. Then redirect. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
+        <p>This is End game. Host calls <a href="#game-stop">Game.Stop</a>. If After a game is Cycle seats, the table rotates. Empty seats still fill when Keep seats is on. Host publishes <code>round</code>, and every shell swaps back to the Lobby. Call this from a <code>/play/end</code> htmx POST after you check <a href="#helper-hasadmin">HasAdmin</a> or <code>ClaimedHost</code>, then answer 204. Finish does not Shutdown. The package stays loaded so the operator can Start again.</p>
         <h4>Examples</h4>
         <h5>End from the phone or the board</h5>
         <pre class="ex">if !g.mayEnd(h, r) {
@@ -1109,11 +1234,7 @@ if err := h.KVSet("hide-latency", value); err != nil {
     return
 }
 h.Finish()
-next := "/"
-if r.FormValue("return") == "/board" {
-    next = "/board"
-}
-http.Redirect(w, r, next, http.StatusSeeOther)</pre>
+w.WriteHeader(http.StatusNoContent)</pre>
       </article>
 
       <article class="method" id="helper-pause">
@@ -1229,7 +1350,7 @@ h.Publish("tap")</pre>
       <article class="method" id="helper-theme">
         <div class="tags"><span class="tag">Helper</span></div>
         <h3>Theme</h3>
-        <p>Returns the room palette id so full documents match <code>/settings</code> on first paint.</p>
+        <p>Returns the room palette id so extra documents match <code>/settings</code> on first paint.</p>
         <h4>Syntax</h4>
         <div class="sig">Theme() string</div>
         <h4>Parameters</h4>
@@ -1237,7 +1358,7 @@ h.Publish("tap")</pre>
         <h4>Return value</h4>
         <p><code>neon-dark</code> (the default) or <code>neon-light</code>. Stamp it on <code>html[data-theme]</code>. Host also publishes <code>theme</code> when the operator flips palettes. <code>ui.NormalizeTheme</code> maps unknown values to <code>neon-dark</code>.</p>
         <h4>Description</h4>
-        <p>Phone inner bodies inherit the host document theme. Board and extra full pages you serve from Play (such as <code>/play/info</code>) must set this themselves.</p>
+        <p>Board and phone fragments inherit the shell's theme. Extra full pages you serve from Play (such as <code>/play/info</code>) must set this themselves.</p>
         <h4>Examples</h4>
         <h5>Chrome on About Testing</h5>
         <pre class="ex">view := boardView{
@@ -1381,9 +1502,9 @@ game_id=testing</div>
           <dd>Catalog id. Unknown id or a started round returns 409.</dd>
         </dl>
         <h4>Return value</h4>
-        <p>303 to <code>/</code> on success.</p>
+        <p>204 with <code>HX-Trigger: grabbag:tenant</code> for an htmx request, otherwise 303 to <code>/</code>.</p>
         <h4>Description</h4>
-        <p>The Host drawer posts this. You do not. After success, Settings and BoardButtons are live. Board is still Lobby.</p>
+        <p>The game library posts this. You do not. After success, Settings and BoardButtons are live. Board is still Lobby.</p>
       </article>
 
       <article class="method" id="http-start">
@@ -1394,7 +1515,7 @@ game_id=testing</div>
         <h4>Parameters</h4>
         <p>None.</p>
         <h4>Return value</h4>
-        <p>303 to <code>/</code>. 409 if not loaded or seated count fails the gate.</p>
+        <p>204 with the tenant trigger for htmx, otherwise 303 to <code>/</code>. When the gate refuses, the host gets a notice.</p>
         <h4>Description</h4>
         <p>Auto-start on Lobby can call the same runtime method without this POST. Second Start while running succeeds as a no-op redirect.</p>
       </article>
@@ -1411,7 +1532,7 @@ graceful=1</div>
           <dd><code>1</code> lets Lobby cycle seats. Finish uses this path inside host. A bare Stop from the drawer may omit it.</dd>
         </dl>
         <h4>Return value</h4>
-        <p>303 to <code>/</code>.</p>
+        <p>204 with the tenant trigger for htmx, otherwise 303 to <code>/</code>.</p>
       </article>
 
       <article class="method" id="http-shutdown">
@@ -1422,7 +1543,7 @@ graceful=1</div>
         <h4>Parameters</h4>
         <p>None.</p>
         <h4>Return value</h4>
-        <p>303 to <code>/</code>.</p>
+        <p>204 with the tenant trigger for htmx, otherwise 303 to <code>/</code>.</p>
       </article>
 
       <article class="method" id="http-pause">
@@ -1456,16 +1577,25 @@ graceful=1</div>
         <p>Lobby seats and <code>host.log</code> stay. Stop and Shutdown do not do this. Games must not impersonate this route.</p>
       </article>
 
+      <article class="method" id="http-tenant">
+        <h3>GET /tenant, /board/tenant</h3>
+        <p>The shell's tenant fetch. No admin session needed; it uses the same cookie and admin checks as <code>/</code> and <code>/board</code>.</p>
+        <h4>Return value</h4>
+        <p>JSON: <code>tenant</code> (id), <code>generation</code>, <code>boot</code>, <code>theme</code>, <code>notices</code>, <code>stream</code>, <code>player</code>, <code>kicked</code>, <code>assets</code>, and <code>html</code> (the fragment).</p>
+        <h4>Description</h4>
+        <p>The board gets the locked tenant when the admin-only board is on and the request has no admin session. A locked board connects to <code>/shell/events/locked</code>, which carries only <code>tenant</code> and <code>theme</code>. <code>POST /shell/error</code> takes the shell's error reports and writes them to the host log.</p>
+      </article>
+
       <article class="method" id="http-mounts">
         <h3>Mounts</h3>
-        <p>Public paths stay host-owned. Lobby vs game is a state swap on <code>/</code> and <code>/board</code>.</p>
+        <p>Public paths stay host-owned. Lobby vs game is a tenant swap inside the <code>/</code> and <code>/board</code> shells.</p>
         <table>
           <thead>
             <tr><th>Path</th><th>After Load</th><th>After Start</th></tr>
           </thead>
           <tbody>
-            <tr><td><code>/</code></td><td>Lobby phone</td><td>Game Phone body inside host chrome, any signed-in player</td></tr>
-            <tr><td><code>/board</code></td><td>Lobby TV plus BoardButtons</td><td>Game Board document</td></tr>
+            <tr><td><code>/</code></td><td>phone shell, Lobby tenant</td><td>phone shell, game Phone wrapped by host, any signed-in player</td></tr>
+            <tr><td><code>/board</code></td><td>board shell, Lobby tenant plus BoardButtons</td><td>board shell, game Board</td></tr>
             <tr><td><code>/settings</code></td><td>Host operator</td><td>same, Game Settings inlined</td></tr>
             <tr><td><code>/settings/game/*</code></td><td>Settings() mux</td><td>same</td></tr>
             <tr><td><code>/play/*</code></td><td>Play() GET</td><td>Play() GET and POST</td></tr>
@@ -1480,13 +1610,7 @@ graceful=1</div>
 
       <article class="method" id="sse-how">
         <h3>How it works</h3>
-        <p>Host chrome template <code>ui-start</code> puts HTMX's SSE extension on <code>body</code>.</p>
-        <pre class="ex">&lt;body
-  class="ui-app"
-  hx-ext="sse"
-  sse-connect="/lobby/events"
-&gt;</pre>
-        <p><code>GET /lobby/events</code> is one in-process hub for the room. Every phone, the TV, and <code>/settings</code> share it. <code>ui-start-quiet</code> (setup and these docs pages) does not connect. Phone inner HTML from <a href="#game-phone">Phone</a> sits inside host <code>play-phone.html</code>, which already used <code>ui-start</code>. Full board documents should use <code>ui-start</code> too, plus <code>{{template "round-swap" "/board"}}</code> so Stop reloads Lobby.</p>
+        <p>The shells open one EventSource on <code>GET /lobby/events</code>, the in-process hub for the room. For each named event the shell fires <code>sse:&lt;name&gt;</code> on every element whose <code>hx-trigger</code> lists it, the same as HTMX's SSE extension, so your fragments listen with plain <code>hx-trigger</code>. <code>/settings</code> and other operator pages use <code>ui-start</code>, which puts the SSE extension on <code>body</code>. <code>ui-start-quiet</code> (setup and these docs pages) does not connect.</p>
         <p><a href="#helper-publish">Helper.Publish</a> sends an SSE frame like this.</p>
         <pre class="ex">event: tap
 data: update</pre>
@@ -1501,14 +1625,15 @@ data: update</pre>
           <thead><tr><th>Name</th><th>Who publishes</th><th>What pages do</th></tr></thead>
           <tbody>
             <tr><td><code>roster</code></td><td>join, leave, ready, seats, disconnect, Load, and similar</td><td>Swap roster partials</td></tr>
-            <tr><td><code>round</code></td><td>host on Start, Stop, Shutdown</td><td>Reload <code>/</code> or <code>/board</code> (Lobby vs game swap)</td></tr>
+            <tr><td><code>round</code></td><td>host on Start, Stop, Shutdown</td><td>Shells refetch their tenant (Lobby vs game swap)</td></tr>
+            <tr><td><code>tenant</code></td><td>host and Lobby when what shells show changed: Load, sign-in, admin-only board, Keep</td><td>Shells refetch their tenant</td></tr>
             <tr><td><code>pause</code></td><td>host on Pause and Resume</td><td>Swap pause chrome and paused game frames</td></tr>
             <tr><td><code>theme</code></td><td>host when the palette flips</td><td>Set <code>html[data-theme]</code></td></tr>
             <tr><td><code>log</code></td><td>host log ring</td><td>Refresh the settings log tail</td></tr>
             <tr><td><code>notice</code></td><td>host via Helper.Notify</td><td>Toast in host chrome; the page keeps or ignores it from <code>target</code></td></tr>
           </tbody>
         </table>
-        <p>If you publish <code>round</code> because a prompt advanced, every open TV and phone reloads as if the round ended. Use your own name.</p>
+        <p>If you publish <code>round</code> or <code>tenant</code> because a prompt advanced, every open TV and phone refetches its whole tenant. Use your own name.</p>
       </article>
 
       <article class="method" id="sse-own">
@@ -1529,7 +1654,7 @@ h.Publish("tap")</pre>
 
       <article class="method" id="sse-listen">
         <h3>Listen in HTML</h3>
-        <p>HTMX turns a named event into <code>sse:that-name</code> on the same EventSource. Point <code>hx-get</code> at a <a href="#game-play">Play</a> partial. Swap the node that holds the live bits, not the whole document, unless you really want a reload.</p>
+        <p>HTMX turns a named event into <code>sse:that-name</code> on the same EventSource. Point <code>hx-get</code> at a <a href="#game-play">Play</a> partial. Swap the node that holds the live bits, not your whole fragment.</p>
         <h4>Examples</h4>
         <h5>Refresh a list on tick, tap, roster, and reconnect</h5>
         <pre class="ex">&lt;div
@@ -1539,7 +1664,7 @@ h.Publish("tap")</pre>
   hx-trigger="sse:testing, sse:tap, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 &gt;</pre>
-        <p><code>htmx:sseOpen from:body</code> runs when the EventSource connects, including after a drop. Use it so a phone that slept still catches up. The first HTML response already has the list, so the extra GET on first open is cheap insurance, not the first paint.</p>
+        <p><code>htmx:sseOpen from:body</code> runs when the shell's stream first connects. After a drop the shell remounts the whole tenant instead. The first HTML already has the list, so the extra GET on first open is cheap insurance, not the first paint.</p>
         <h5>Swap the outer frame only on pause</h5>
         <pre class="ex">&lt;div
   id="testing-board"
@@ -1548,7 +1673,7 @@ h.Publish("tap")</pre>
   hx-swap="outerHTML"
 &gt;</pre>
         <p>Testing keeps pause on the outer frame and ticks on the inner list so a 1s tick does not rebuild End game and the heading.</p>
-        <p>Register those GET paths on your Play mux (<code>GET /partials/board-list</code>, not <code>/play/partials/board-list</code>). Do not add another <code>sse-connect</code>. Do not construct <code>new EventSource("/lobby/events")</code> in a script. A second connection still shares the hub, but the lost-host overlay and theme-sync are wired to the body one.</p>
+        <p>Register those GET paths on your Play mux (<code>GET /partials/board-list</code>, not <code>/play/partials/board-list</code>). Do not add <code>sse-connect</code>. Do not construct <code>new EventSource("/lobby/events")</code> in a script. The overlay, theme, reconnect, and the locked board's restricted stream all hang on the shell's one connection.</p>
       </article>
 
       <article class="method" id="sse-drops">
@@ -1832,7 +1957,7 @@ func (v TimerView) Clock() string
 {{template "ui-countdown" .Timer}}   inside the element's opening tag
 data-countdown-value                 on the text node</div>
         <h4>Description</h4>
-        <p><code>ui-start</code> loads <code>/static/countdown.js</code> on every game document and phone. It paints <code>m:ss</code> into each <code>[data-countdown-value]</code> every 250ms and after every swap. While <code>data-countdown-frozen</code> is set, or in a static preview, it shows the rendered seconds. Seconds round up, so the last second shows <code>0:01</code>.</p>
+        <p>The shells and <code>ui-start</code> load <code>/static/countdown.js</code>. It paints <code>m:ss</code> into each <code>[data-countdown-value]</code> every 250ms and after every swap. While <code>data-countdown-frozen</code> is set, or in a static preview, it shows the rendered seconds. Seconds round up, so the last second shows <code>0:01</code>.</p>
         <p>It sets <code>--countdown-left</code> (1 to 0) and <code>--countdown-turn</code> on the element for bars and conic rings. A running countdown fires <code>grabbag:countdown-tick</code> when the shown second changes and <code>grabbag:countdown-done</code> once at zero. Both bubble with <code>detail.seconds</code> and <code>detail.kind</code>. A repaint of the same countdown fires nothing new, and a page that loads after the end fires nothing. Hook sound or animation cues there. Do not write a second timer loop in <code>game.js</code>.</p>
         <h4>Examples</h4>
         <h5>A timer pill with a ring</h5>
@@ -1847,7 +1972,7 @@ data-countdown-value                 on the text node</div>
   background: conic-gradient(var(--ui-accent-2) var(--countdown-turn, 1turn), transparent 0);
 }</pre>
         <h5>Beep in the last three seconds</h5>
-        <pre class="ex">document.addEventListener("grabbag:countdown-tick", function (ev) {
+        <pre class="ex">ctx.on(document, "grabbag:countdown-tick", function (ev) {
   if (ev.detail.kind === "vote" &amp;&amp; ev.detail.seconds &lt;= 3) {
     beep();
   }
@@ -1870,7 +1995,7 @@ func (r *Runner[E]) PageLocked(title string) Page
 func (r *Runner[E]) Render(w http.ResponseWriter, name string, data any, status int)
 func Static(files fs.FS) http.Handler</div>
         <h4>Description</h4>
-        <p>Embed <code>Page</code> in board, phone, and settings views. It stamps <a href="#helper-theme">Theme</a> and links <code>/play/static/game.css</code> and <code>game.js</code> at <code>AssetVersion</code>. <code>Render</code> buffers the template, so a template error is a clean 500 and not half a page. <code>Static</code> serves the <code>static/</code> folder of your embedded FS.</p>
+        <p>Embed <code>Page</code> in board, phone, settings, and extra-page views. It stamps <a href="#helper-theme">Theme</a> and the <code>/play/static/game.css</code> and <code>game.js</code> links at <code>AssetVersion</code> for extra pages; board and phone fragments get their assets from <a href="#game-assets">Assets</a>. <code>Render</code> buffers the template, so a template error is a clean 500 and not half a page. <code>Static</code> serves the <code>static/</code> folder of your embedded FS.</p>
         <h4>Examples</h4>
         <h5>Mount static assets</h5>
         <pre class="ex">//go:embed static/*
@@ -1909,7 +2034,10 @@ func (r *Runner[E]) Tick()</div>
         <li>Clear KV on Stop or Shutdown.</li>
         <li>Scan a games folder at runtime.</li>
         <li>Treat <code>/docs</code> as this contract. That URL is how to run the binary.</li>
-        <li>Open a second EventSource on a page host already wired.</li>
+        <li>Open an EventSource. The shell has the only one.</li>
+        <li>Send a full document, <code>&lt;link&gt;</code>, or <code>&lt;script&gt;</code> from Board or Phone. List files in <a href="#game-assets">Assets</a>.</li>
+        <li>Use <code>&lt;form method="post"&gt;</code> or <code>location.reload</code> inside a shell. See <a href="#shell-no-reload">No reloads</a>.</li>
+        <li>Add a <code>document</code> or <code>window</code> listener, timer, or frame loop outside <a href="#shell-ctx">ctx</a>.</li>
         <li>Write a second timer loop in <code>game.js</code>. Use <a href="#kit-countdown">Countdown</a>.</li>
       </ul>
       <p>The live package that exercises almost every hook is Testing in <code>internal/games/testing</code>.</p>

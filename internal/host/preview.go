@@ -115,17 +115,7 @@ func withPreview(next http.Handler) http.Handler {
 }
 
 func newPreviewHandler(catalog []games.Factory) http.Handler {
-	s := &previewServer{}
-	s.packages = append(s.packages,
-		previewPackage{id: lobbyTenantID, name: "Lobby", scenarios: lobby.Scenarios(), tenant: (&lobby.Lobby{}).Assets()},
-		previewPackage{id: lockedTenantID, name: "Locked board", scenarios: lockedTenant{}.Scenarios()},
-	)
-	for _, f := range catalog {
-		g := f.New()
-		pkg := previewPackage{id: f.ID, name: g.Name(), scenarios: g.Scenarios(), static: g.Play()}
-		pkg.tenant = previewAssets(f.ID, g.Assets())
-		s.packages = append(s.packages, pkg)
-	}
+	s := newPreviewServer(catalog)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", ui.StaticHandler()))
 	mux.Handle("GET /lobby/static/", lobby.StaticHandler())
@@ -353,4 +343,21 @@ func (s *previewServer) render(w http.ResponseWriter, name string, data any) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = buf.WriteTo(w)
+}
+
+// newPreviewServer lists the Lobby, the locked board, and every catalog
+// game with their scenarios and assets.
+func newPreviewServer(catalog []games.Factory) *previewServer {
+	s := &previewServer{}
+	s.packages = append(s.packages,
+		previewPackage{id: lobbyTenantID, name: "Lobby", scenarios: lobby.Scenarios(), tenant: (&lobby.Lobby{}).Assets()},
+		previewPackage{id: lockedTenantID, name: "Locked board", scenarios: lockedTenant{}.Scenarios()},
+	)
+	for _, f := range catalog {
+		g := f.New()
+		pkg := previewPackage{id: f.ID, name: g.Name(), scenarios: g.Scenarios(), static: g.Play()}
+		pkg.tenant = previewAssets(f.ID, g.Assets())
+		s.packages = append(s.packages, pkg)
+	}
+	return s
 }

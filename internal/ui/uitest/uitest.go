@@ -70,6 +70,9 @@ func renderAll(t *testing.T, id string, list []ui.Scenario, assets ui.Assets) {
 				if strings.Contains(strings.ToLower(body), "<html") || strings.Contains(body, "<body") {
 					t.Errorf("%s players=%d: tenant fragment is a full document", key, n)
 				}
+				if strings.Contains(body, "<script") || strings.Contains(body, "<link") {
+					t.Errorf("%s players=%d: tenant fragment carries a script or stylesheet; list it in Assets", key, n)
+				}
 				var doc bytes.Buffer
 				if err := ui.RenderShell(&doc, ui.StaticShell(surface, id, p, assets, template.HTML(body))); err != nil {
 					t.Errorf("%s players=%d: shell: %v", key, n, err)
