@@ -1,5 +1,6 @@
 // Borrowed Truths tenant: the host's elapsed clock, slap animations that
-// settle on a repaint of the same moment, and phone photo uploads.
+// settle on a repaint of the same moment, the opening theme and intro on the
+// board, and phone photo uploads.
 (function () {
   "use strict";
 
@@ -30,6 +31,77 @@
       board.classList.add("is-settled");
     }
     window.btMoment = key;
+  }
+
+  // The intro runs once, as the game opens, timed to the theme. The facts
+  // phase repaints the board on every submit, so the overlay lives outside
+  // #bt-board. It is keyed by the phase start so a remount does not replay it.
+  var introSec = 22.9;
+  var introWindow = 15;
+
+  // Four scenes on one spot: the rules, a truth, a lie, the question.
+  // game.css times each piece in seconds of the theme.
+  var introHTML =
+    '<div class="bt-intro-scene is-rules">' +
+    '<div class="bt-intro-logo"><span class="bt-intro-in">BORROWED</span><span class="bt-intro-in">TRUTHS</span></div>' +
+    '<div class="bt-intro-cards">' +
+    '<div class="bt-intro-card bt-intro-in is-true">TRUTH</div>' +
+    '<div class="bt-intro-card bt-intro-in is-true">TRUTH</div>' +
+    '<div class="bt-intro-card bt-intro-in is-lie">LIE</div>' +
+    "</div>" +
+    '<div class="bt-tape bt-intro-tape bt-intro-in">ONE OF THEM IS BORROWED</div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-truth">' +
+    '<div class="bt-card bt-intro-fact bt-intro-in"><p>I once got stuck in a revolving door for an hour.</p>' +
+    '<b class="bt-intro-stamp bt-intro-in is-true">TRUTH</b></div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-lie">' +
+    '<div class="bt-card bt-intro-fact bt-intro-in"><p>I can name every country in Africa.</p>' +
+    '<b class="bt-intro-stamp bt-intro-in is-lie">LIE</b></div>' +
+    "</div>" +
+    '<div class="bt-intro-scene is-ask">' +
+    '<div class="bt-intro-ask bt-intro-in">Who\'s telling the truth?</div>' +
+    '<div class="bt-intro-ask bt-intro-in is-lie">Who\'s lying?</div>' +
+    "</div>";
+
+  function intro(root, ctx) {
+    var board = document.getElementById("bt-board");
+    var started = board ? Number(board.dataset.intro) || 0 : 0;
+    if (!started || Date.now() / 1000 - started > introWindow || window.btIntro === started) {
+      return;
+    }
+    window.btIntro = started;
+    var el = document.createElement("div");
+    el.className = "bt-intro bt-wall";
+    el.style.setProperty("--bt-intro", introSec + "s");
+    el.innerHTML = introHTML;
+    var shown = false;
+    var show = function () {
+      if (shown) {
+        return;
+      }
+      shown = true;
+      root.appendChild(el);
+      ctx.after(introSec * 1000, function () {
+        el.remove();
+      });
+    };
+    if (!ctx.audio) {
+      show();
+      return;
+    }
+    ctx.audio.define({
+      files: { theme: "audio/theme.ogg" },
+      regions: { theme: { file: "theme" } },
+      stings: { theme: { region: "theme", layer: "music" } },
+    });
+    // Start the picture with the sound, but a slow decode does not hold the
+    // intro back for more than a moment.
+    ctx.audio.ready().then(function () {
+      ctx.audio.sting("theme");
+      show();
+    });
+    ctx.after(1500, show);
   }
 
   // Photos are downscaled to 1600px on the long edge and re-encoded as JPEG
@@ -112,7 +184,12 @@
   }
 
   grabbagShell.register("borrowedtruths", {
-    board: { mount: mount },
+    board: {
+      mount: function (root, ctx) {
+        mount(root, ctx);
+        intro(root, ctx);
+      },
+    },
     phone: {
       mount: function (root, ctx) {
         ctx.on(document, "change", function (ev) {

@@ -192,6 +192,41 @@ html[data-theme="neon-light"] .bt-sub { text-decoration-color: var(--bt-lie); }
 .bt-ask { grid-column: 1; grid-row: 2; display: grid; gap: .8cqw; align-self: end; }
 .bt-ask span { font-size: 1.8cqw; text-decoration: underline wavy var(--bt-truth); text-underline-offset: .5cqw; }
 html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie); }
+
+/* I knew it, open during the read: a sticker that asks the room. */
+.bt-knew {
+  position: relative;
+  justify-self: start;
+  display: grid;
+  gap: .4cqw;
+  margin-top: 1.2cqw;
+  background: var(--bt-truth);
+  color: var(--bt-on-truth);
+  border: .35cqw solid #fff;
+  outline: .15cqw solid var(--bt-edge);
+  border-radius: 1.6cqw;
+  padding: 1.2cqw 2cqw;
+  transform: rotate(-2deg);
+  box-shadow: .5cqw .6cqw 0 rgb(0 0 0 / .35);
+  animation: bt-slap .35s ease-out both;
+}
+.bt-ask .bt-knew b { color: inherit; font-size: 2.8cqw; }
+.bt-knew b { font-family: var(--bt-display); font-weight: 400; font-size: 2.8cqw; line-height: 1.05; }
+.bt-knew span { font-size: 1.5cqw; }
+.bt-knew em { font-style: normal; font-weight: 700; }
+.bt-knew i {
+  position: absolute;
+  right: -1.6cqw;
+  top: -1.4cqw;
+  background: rgb(255 255 255 / .9);
+  color: var(--bt-sink);
+  font-style: normal;
+  font-size: 1.3cqw;
+  letter-spacing: .08em;
+  padding: .4cqw 1.2cqw;
+  transform: rotate(6deg);
+  animation: bt-tape .25s ease-out both;
+}
 .bt-ask b { font-family: var(--bt-display); font-weight: 400; font-size: 3cqw; color: var(--bt-count); }
 
 .bt-stickers {
@@ -233,8 +268,10 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .phase-facts .bt-stk.is-locked::after { content: "DONE"; }
 
 /* Reveal: split, pause, then the answer word. */
-.bt-reveal { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: 58cqw 1fr; gap: 1.5cqw 4cqw; align-items: start; justify-items: start; }
+.bt-tell:has(.bt-reveal) { min-height: calc(var(--shell-visual-height, 100dvh) - 12.5cqw); }
+.bt-reveal { grid-column: 1 / -1; grid-row: 2; align-self: end; padding-bottom: 1.5cqw; display: grid; grid-template-columns: 58cqw 1fr; gap: 1.5cqw 4cqw; align-items: start; justify-items: start; }
 .bt-reveal > .bt-split, .bt-reveal > .bt-owner-split { grid-column: 1; grid-row: 1 / span 3; }
+.bt-reveal > .bt-split { align-self: end; }
 .bt-reveal > :not(.bt-split, .bt-owner-split, .bt-answer) { grid-column: 2; }
 .bt-reveal > .bt-owner-split { grid-row: 1 / span 2; }
 .bt-split { display: grid; gap: .8cqw; width: 58cqw; animation: bt-slap .3s ease-out both; }
@@ -247,8 +284,9 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-answer {
   font-family: var(--bt-display);
   position: absolute;
-  left: 30cqw;
-  top: 16cqw;
+  left: 29cqw; /* centred on the 58cqw card */
+  top: 11cqw;
+  translate: -50% -50%;
   z-index: 2;
   font-size: 9cqw;
   line-height: 1;
@@ -262,7 +300,7 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 }
 .bt-answer.is-true { background: var(--bt-truth); color: var(--bt-on-truth); }
 .bt-answer.is-lie { background: var(--bt-lie); color: var(--bt-on-lie); }
-.bt-reveal > .bt-owner-name { position: static; grid-column: 2; font-size: 4cqw; }
+.bt-reveal > .bt-owner-name { position: static; translate: none; grid-column: 2; font-size: 4cqw; }
 
 .bt-but, .bt-author {
   background: var(--bt-sticker);
@@ -479,6 +517,160 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-help p,
 .bt-howto p { margin: 0; line-height: 1.5; }
 
+/* Opening intro. game.js lays it over the board once, as the game starts,
+   for the length of the theme (--bt-intro). Times are seconds of the
+   22.9s theme (--s), so a re-cut theme only changes --bt-intro. Each piece
+   sets --d, when it lands, and each scene sets --out, when it clears. */
+.bt-intro {
+  --s: calc(var(--bt-intro, 22.9s) / 22.9);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  container-type: inline-size;
+  display: grid;
+  overflow: hidden;
+  pointer-events: none;
+  animation: bt-fade-out calc(var(--s) * 1.3) ease-in calc(var(--s) * 21.6) both;
+}
+.bt-intro-scene {
+  grid-area: 1 / 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2cqw;
+  animation: bt-intro-exit .45s ease-in var(--out) both;
+}
+.bt-intro-scene.is-rules { --out: calc(var(--s) * 7.8); }
+.bt-intro-scene.is-truth { --out: calc(var(--s) * 12); }
+.bt-intro-scene.is-lie { --out: calc(var(--s) * 16.2); }
+.bt-intro-scene.is-ask { animation: none; gap: 3.5cqw; }
+.bt-intro-in { animation: bt-slap .35s cubic-bezier(.2, .9, .3, 1.3) var(--d) both; }
+
+.bt-intro-logo { display: grid; justify-items: center; gap: .6cqw; }
+.bt-intro-logo span {
+  --d: calc(var(--s) * .2);
+  background: var(--bt-truth);
+  color: var(--bt-on-truth);
+  font-family: var(--bt-display);
+  font-size: 5.5cqw;
+  line-height: 1;
+  padding: 1cqw 2.4cqw;
+  border: .6cqw solid #fff;
+  outline: .2cqw solid var(--bt-edge);
+  border-radius: 2cqw;
+  box-shadow: .8cqw 1cqw 0 rgb(0 0 0 / .35);
+  rotate: -4deg;
+}
+.bt-intro-logo span + span { --d: calc(var(--s) * .7); rotate: 3deg; }
+
+.bt-intro-cards { display: flex; gap: 2.5cqw; }
+.bt-intro-card {
+  --d: calc(var(--s) * 1.6);
+  display: grid;
+  place-items: center;
+  width: 12cqw;
+  aspect-ratio: 3 / 4;
+  box-sizing: border-box;
+  padding: 1cqw;
+  font-family: var(--bt-display);
+  font-size: 1.9cqw;
+  border: .5cqw solid #fff;
+  outline: .15cqw solid var(--bt-edge);
+  border-radius: 2cqw;
+  box-shadow: .6cqw .7cqw 0 rgb(0 0 0 / .35);
+  animation:
+    bt-slap .35s cubic-bezier(.2, .9, .3, 1.3) var(--d) both,
+    bt-intro-shuffle calc(var(--s) * 3.2) ease-in-out calc(var(--s) * 4) both;
+}
+.bt-intro-card.is-true { background: var(--bt-truth); color: var(--bt-on-truth); rotate: -3deg; }
+.bt-intro-card.is-true + .is-true { --d: calc(var(--s) * 2); rotate: 2deg; animation-direction: normal, reverse; }
+.bt-intro-card.is-lie {
+  --d: calc(var(--s) * 2.4);
+  background: var(--bt-lie);
+  color: var(--bt-on-lie);
+  rotate: 4deg;
+  animation:
+    bt-slap .35s cubic-bezier(.2, .9, .3, 1.3) var(--d) both,
+    bt-intro-borrow calc(var(--s) * 3.2) ease-in-out calc(var(--s) * 4) both;
+}
+.bt-intro-tape { --d: calc(var(--s) * 3.2); font-size: 2.4cqw; }
+
+/* The examples are the real card, then a True or Lie stamp slams on. */
+.bt-intro-fact { --d: calc(var(--s) * 8.2); width: 56cqw; box-sizing: border-box; }
+.is-lie .bt-intro-fact { --d: calc(var(--s) * 12.4); }
+.bt-intro-stamp {
+  --d: calc(var(--s) * 9.6);
+  position: absolute;
+  z-index: 1;
+  right: -3cqw;
+  bottom: -3.5cqw;
+  font-family: var(--bt-display);
+  font-weight: 400;
+  font-size: 5cqw;
+  line-height: 1;
+  padding: .6cqw 2.4cqw;
+  border: .5cqw solid #fff;
+  outline: .2cqw solid var(--bt-edge);
+  border-radius: 1.6cqw;
+  rotate: -8deg;
+  box-shadow: .6cqw .7cqw 0 rgb(0 0 0 / .35);
+  animation: bt-intro-stamp .3s cubic-bezier(.3, 1.4, .5, 1) var(--d) both;
+}
+.bt-intro-stamp.is-true { background: var(--bt-truth); color: var(--bt-on-truth); }
+.bt-intro-stamp.is-lie { --d: calc(var(--s) * 13.8); background: var(--bt-lie); color: var(--bt-on-lie); rotate: 6deg; }
+
+.bt-intro-ask {
+  --d: calc(var(--s) * 16.8);
+  font-family: var(--bt-hand);
+  font-size: 7.5cqw;
+  line-height: 1;
+  color: var(--bt-truth);
+  rotate: -3deg;
+}
+/* The answer to the first question, slammed on like the LIE stamp. */
+.bt-intro-ask.is-lie {
+  --d: calc(var(--s) * 18.3);
+  font-family: var(--bt-display);
+  font-size: 8cqw;
+  color: var(--bt-on-lie);
+  background: var(--bt-lie);
+  padding: .8cqw 3cqw;
+  border: .6cqw solid #fff;
+  outline: .2cqw solid var(--bt-edge);
+  border-radius: 2cqw;
+  box-shadow: .8cqw 1cqw 0 rgb(0 0 0 / .35);
+  rotate: 3deg;
+  animation:
+    bt-intro-stamp .3s cubic-bezier(.3, 1.4, .5, 1) var(--d) both,
+    bt-intro-pulse calc(var(--s) * .5) ease-out calc(var(--s) * 19.1) 5;
+}
+
+@keyframes bt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bt-intro-exit { to { opacity: 0; scale: .8; translate: 0 -4cqw; } }
+@keyframes bt-intro-stamp {
+  0% { opacity: 0; scale: 2.6; }
+  60% { opacity: 1; scale: .9; }
+  100% { opacity: 1; scale: 1; }
+}
+@keyframes bt-intro-pulse {
+  0% { scale: 1.08; }
+  100% { scale: 1; }
+}
+@keyframes bt-intro-shuffle {
+  0%, 100% { translate: 0 0; }
+  25% { translate: 14.5cqw -2cqw; }
+  50% { translate: -14.5cqw 2cqw; }
+  75% { translate: 14.5cqw 0; }
+}
+/* The lie trades places with the truths and comes out wearing yellow. */
+@keyframes bt-intro-borrow {
+  0% { translate: 0 0; }
+  25% { translate: -29cqw 2cqw; }
+  50% { translate: -14.5cqw -2cqw; background: var(--bt-lie); color: var(--bt-on-lie); }
+  75% { translate: -29cqw 0; }
+  100% { translate: 0 0; background: var(--bt-truth); color: var(--bt-on-truth); }
+}
+
 /* Motion is there for the reveal. */
 @keyframes bt-slap {
   0% { opacity: 0; scale: 1.25; }
@@ -494,6 +686,12 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 
 @media (prefers-reduced-motion: reduce) {
   .bt-wall *, .bt-wall *::after { animation: none !important; transition: none !important; }
+}
+/* With reduced motion the intro keeps its beats as plain fades: no slaps,
+   stamps, shuffle, or pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .bt-intro .bt-intro-in { animation: bt-fade .4s ease-out var(--d) both !important; }
+  .bt-intro .bt-intro-scene:not(.is-ask) { animation: bt-fade-out .4s ease-in var(--out) both !important; }
 }
 
 .bt-board.is-settled *,

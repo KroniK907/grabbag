@@ -42,6 +42,7 @@ type boardView struct {
 	runtimekit.Page
 	Paused    bool
 	Phase     string
+	Started   int64 // facts phase start, Unix seconds; drives the intro
 	TellNum   int
 	TellTotal int
 	Teller    face
@@ -49,6 +50,8 @@ type boardView struct {
 	Facts     []face
 	CardText  string
 	Prompt    string
+	KnewOpen  bool // I knew it is open: the board asks who already knows
+	KnewCount int
 	Voters    []face
 	Locked    int
 	Timer     runtimekit.TimerView
@@ -93,6 +96,9 @@ func (g *Game) boardViewLocked() boardView {
 		return view
 	}
 	view.Phase = string(e.Phase)
+	if e.Phase == phaseFacts {
+		view.Started = e.PhaseStart.Unix()
+	}
 	view.Notice = e.Notice
 	view.Timer = e.Timer.View(g.run.Now())
 	view.TellTotal = e.TellCount()
@@ -144,6 +150,9 @@ func (g *Game) boardViewLocked() boardView {
 	switch e.Phase {
 	case phasePublic, phaseQuestion:
 		view.Prompt = "Grill " + view.Teller.Name + "."
+		if e.Phase == phasePublic && e.Settings.KnewIt {
+			view.KnewOpen, view.KnewCount = true, len(e.Knew)
+		}
 	case phaseVote:
 		view.Prompt = "True or lie? Lock it in."
 		view.Voters, view.Locked = e.lockFaces(e.Votes)

@@ -24,6 +24,18 @@ the same as fontsURL in game.go. */}}
 </div>
 {{end}}
 
+{{/* bt-knew asks the room, while I knew it is open, who already knows
+this one. The count says how many called it, never who or what. */}}
+{{define "bt-knew"}}
+{{if .KnewOpen}}
+<div class="bt-knew">
+  <b>Already know this one?</b>
+  <span>Say so: tap <em>I knew it</em> on your phone.</span>
+  {{if .KnewCount}}<i>{{.KnewCount}} knew it</i>{{end}}
+</div>
+{{end}}
+{{end}}
+
 {{define "bt-timer"}}
 {{if .On}}<div class="bt-tape bt-timer" {{template "ui-countdown" .}}><span data-countdown-value>{{.Clock}}</span></div>{{end}}
 {{end}}
@@ -32,6 +44,7 @@ the same as fontsURL in game.go. */}}
 <div
   id="bt-board"
   class="bt-wall bt-board phase-{{.Phase}}{{if .Paused}} is-paused{{end}}"
+  {{if .Started}}data-intro="{{.Started}}"{{end}}
   data-moment="{{.Phase}} {{.TellNum}} {{.CardText}} {{.PhotoURL}} {{.Notice}}"
   hx-get="/play/partials/board"
   hx-trigger="sse:borrowedtruths, sse:borrowedtruths-facts, sse:pause, sse:roster, htmx:sseOpen from:body"
@@ -103,6 +116,7 @@ the same as fontsURL in game.go. */}}
     <div class="bt-ask bt-tim-ask">
       <span>{{.Prompt}}</span>
       {{if .Voters}}<b>{{.Locked}}/{{len .Voters}} LOCKED</b>{{end}}
+      {{template "bt-knew" .}}
     </div>
     {{if .Voters}}
     <div class="bt-stickers bt-tim-stickers">
@@ -187,6 +201,7 @@ the same as fontsURL in game.go. */}}
     <div class="bt-ask">
       <span>{{.Prompt}}</span>
       {{if .Voters}}<b>{{.Locked}}/{{len .Voters}} LOCKED</b>{{end}}
+      {{template "bt-knew" .}}
     </div>
     {{if .Voters}}
     <div class="bt-stickers">

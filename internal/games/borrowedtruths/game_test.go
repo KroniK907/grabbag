@@ -315,3 +315,40 @@ func TestZeroLiesDealsFromTheBank(t *testing.T) {
 		t.Fatalf("phase %s card %+v, want a bank lie in the private read", e.Phase, e.Card)
 	}
 }
+
+// TestBoardAsksWhoKnewIt: while I knew it is open, the board asks the room
+// and counts the calls. Moving on to questions closes it and the ask goes.
+func TestBoardAsksWhoKnewIt(t *testing.T) {
+	// Eight players, so one call stays under the Too well known share.
+	g, _, mux := startGame(t, 8)
+	for _, p := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"} {
+		post(t, mux, p, "/facts", url.Values{"truth": {p + " t1", p + " t2"}, "lie": {p + " lie"}})
+	}
+	g.run.Lock()
+	teller := g.run.Engine().teller().ID
+	var voter string
+	for _, p := range g.run.Engine().voters() {
+		voter = p.ID
+	}
+	g.run.Unlock()
+	board := func() string {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/partials/board", nil))
+		return rec.Body.String()
+	}
+	if strings.Contains(board(), "Already know this one?") {
+		t.Fatal("board asks before the public read")
+	}
+	post(t, mux, teller, "/lock-in", nil)
+	if body := board(); !strings.Contains(body, "Already know this one?") || strings.Contains(body, "knew it</i>") {
+		t.Fatal("public read board is missing the ask, or counts before anyone called it")
+	}
+	post(t, mux, voter, "/knew", url.Values{"pick": {pickTrue}})
+	if !strings.Contains(board(), "1 knew it") {
+		t.Fatal("board does not count the I knew it call")
+	}
+	post(t, mux, "p1", "/host/continue", nil)
+	if strings.Contains(board(), "Already know this one?") {
+		t.Fatal("board still asks after the host moved on")
+	}
+}

@@ -37,6 +37,9 @@ func (g *Game) fillTIMBoard(view *boardView) {
 	switch e.Phase {
 	case phaseLook:
 		view.Prompt = "One of them took this photo. Maybe."
+		if e.Settings.KnewIt {
+			view.KnewOpen, view.KnewCount = true, len(e.Knew)
+		}
 	case phaseClaims:
 		view.Prompt = e.player(r.Claimants[r.Speaker]).Name + " is telling you about it."
 	case phaseTIMQuestion:
