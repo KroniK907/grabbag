@@ -20,7 +20,7 @@ const (
 	eventTick     = "testing"
 	eventTap      = "tap"
 	flashFor      = 700 * time.Millisecond
-	cssVersion    = "shell-1"
+	cssVersion    = "frame-2"
 )
 
 // tickEvery is the room-wide SSE interval while Started. Tests may shorten it.
@@ -116,6 +116,11 @@ func (g *Game) Assets() ui.Assets {
 // Phone is the signed-in phone body. Host wraps Leave and the host drawer around it.
 func (g *Game) Phone(w http.ResponseWriter, r *http.Request) {
 	g.render(w, "phone.html", g.phoneData(r), http.StatusOK)
+}
+
+// Help writes the phone shell's help sheet: what each Testing control checks.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.render(w, "help", nil, http.StatusOK)
 }
 
 // Play mounts tap, end, and live partials after Start.

@@ -373,34 +373,32 @@ button {
   z-index: 20;
 }
 
-.ui-phone > .ui-modal,
-.ui-phone > .shell-stage > .ui-modal {
-  position: absolute;
-}
-
 .ui-modal[hidden],
 .ui-sheet[hidden] {
   display: none;
 }
 
+/* The Host drawer lives in the phone frame (#shell-host), outside the
+   stage. Under 1170px it slides out over everything from the left. From
+   1170px it is a panel that stays open; see the Host panel block below. */
 .ui-drawer-handle {
-  position: absolute;
+  position: fixed;
   left: 0;
   bottom: var(--ui-side-tab-bottom);
-  z-index: 5;
+  z-index: 25;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   letter-spacing: 0.08em;
 }
 
-.ui-phone:has(.ui-drawer.is-open) .ui-drawer-handle {
+.shell-host:has(.ui-drawer.is-open) .ui-drawer-handle {
   visibility: hidden;
 }
 
 .ui-drawer-scrim {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 5;
+  z-index: 26;
   margin: 0;
   padding: 0;
   border: 0;
@@ -409,18 +407,18 @@ button {
   visibility: hidden;
 }
 
-.ui-phone:has(.ui-drawer.is-open) .ui-drawer-scrim {
+.shell-host:has(.ui-drawer.is-open) .ui-drawer-scrim {
   visibility: visible;
   pointer-events: auto;
   background: var(--ui-overlay);
 }
 
 .ui-drawer {
-  position: absolute;
-  top: 22px;
+  position: fixed;
+  top: 0;
   left: 0;
   bottom: 0;
-  z-index: 6;
+  z-index: 27;
   width: min(100%, 320px);
   padding: 16px;
   display: flex;
@@ -435,6 +433,16 @@ button {
 
 .ui-drawer.is-open {
   transform: translateX(0);
+}
+
+.ui-drawer-top {
+  display: flex;
+  gap: 8px;
+}
+
+.ui-drawer-collapse,
+.ui-drawer-expand {
+  display: none;
 }
 
 .ui-drawer-live {
@@ -1024,55 +1032,316 @@ button {
   text-decoration: none;
 }
 
-.ui-phone .ui-help {
-  top: 30px;
-  left: 10px;
-  right: auto;
-  width: 36px;
-  height: 36px;
-  font-size: 1.125rem;
-}
-
-.ui-phone-wrap {
-  min-height: 100vh;
-  display: grid;
-  place-items: start center;
-  padding: 24px 16px;
-}
-
-.ui-phone {
+/* Phone frame. The shell fills the visible viewport edge to edge: a
+   toolbar, then a centered column (#shell-stage) the tenant owns. The column
+   is 720px, or 1200px when the screen has data-column="wide", and keeps a
+   64px gutter each side. Without room for that the frame is in phone mode
+   and the column fills the width. --shell-gutter is 1 in gutter mode and 0
+   in phone mode; Help and Leave use it to sit in the toolbar or the gutters.
+   Tenants size against the column with container queries (container name
+   "column"), never against the frame mode. */
+.shell-frame {
+  --shell-bar: 48px;
+  --shell-control: 44px;
   --ui-side-tab-bottom: 28px;
   --ui-side-tab-span: 8rem;
   --ui-side-tab-gap: 10px;
-  width: min(390px, 92vw);
-  min-height: 720px;
-  border-radius: 36px;
+  height: var(--shell-visual-height, 100dvh);
+  display: flex;
   overflow: hidden;
-  position: relative;
   background: var(--ui-phone-bg);
   color: var(--ui-fg);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
-.ui-notch {
-  height: 22px;
+body.ui-shell:has(.shell-frame) {
+  height: var(--shell-visual-height, 100dvh);
+  overflow: hidden;
+}
+
+.shell-host:empty {
+  display: none;
+}
+
+.shell-main {
+  --shell-column: 720px;
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  container: shell-main / inline-size;
+}
+
+.shell-main:has(#shell-stage [data-column="wide"]) {
+  --shell-column: 1200px;
+}
+
+/* 848px is 720 + 2 x 64, and 1328px is 1200 + 2 x 64. */
+@container shell-main (min-width: 848px) {
+  .shell-main:not(:has(#shell-stage [data-column="wide"])) > * {
+    --shell-gutter: 1;
+  }
+}
+
+@container shell-main (min-width: 1328px) {
+  .shell-main > * {
+    --shell-gutter: 1;
+  }
+}
+
+.shell-bar {
+  flex: 0 0 var(--shell-bar);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.625rem;
-  letter-spacing: 0.12em;
   background: var(--ui-notch-bg);
   color: var(--ui-notch-fg);
 }
 
+.shell-brand {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+
+/* Help and Leave: in the toolbar's ends in phone mode, and in the gutters
+   level with the top of the column in gutter mode. The offsets are relative
+   to .shell-main, whose middle is the column's middle. */
+.shell-help-button,
+.shell-leave {
+  --shell-control-inset: calc((var(--shell-bar) - var(--shell-control)) / 2);
+  --shell-control-gutter: calc(50% - var(--shell-column) / 2 - 32px - var(--shell-control) / 2);
+  position: absolute;
+  top: calc(var(--shell-control-inset) + var(--shell-gutter, 0) * (var(--shell-bar) + 12px - var(--shell-control-inset)));
+  z-index: 10;
+  margin: 0;
+}
+
+.shell-help-button {
+  left: calc(var(--shell-control-inset) + var(--shell-gutter, 0) * (var(--shell-control-gutter) - var(--shell-control-inset)));
+  width: var(--shell-control);
+  height: var(--shell-control);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ui-gear-border);
+  border-radius: 50%;
+  background: var(--ui-accent);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.shell-leave {
+  right: calc(var(--shell-control-inset) + var(--shell-gutter, 0) * (var(--shell-control-gutter) - var(--shell-control-inset)));
+  width: auto;
+}
+
+.shell-leave .ui-leave-button {
+  width: var(--shell-control);
+  height: var(--shell-control);
+  padding: 9px;
+}
+
+.shell-leave .ui-leave-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-help-button[hidden],
+.shell-leave[hidden] {
+  display: none;
+}
+
+.shell-column {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: max(var(--shell-column), (1 - var(--shell-gutter, 0)) * 100%);
+  margin: 0 auto;
+}
+
+.shell-column > .shell-stage {
+  display: block;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  container: column / inline-size;
+}
+
+/* Help sheet: the shell's, over the mounted tenant. It slides up and covers
+   most of the screen in phone mode, and is a centered panel the width of
+   the column in gutter mode. */
+.shell-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  container: shell-sheet / inline-size;
+}
+
+.shell-sheet[hidden] {
+  display: none;
+}
+
+.shell-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--ui-overlay);
+}
+
+.shell-sheet-panel {
+  position: relative;
+  width: 100%;
+  max-height: calc(var(--shell-visual-height, 100dvh) - 48px);
+  display: flex;
+  flex-direction: column;
+  border-top: 4px solid var(--ui-accent);
+  border-radius: 18px 18px 0 0;
+  background: var(--ui-sheet-bg);
+  color: var(--ui-fg);
+  animation: shell-sheet-up 0.18s ease;
+}
+
+.shell-sheet-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 8px 20px;
+}
+
+.shell-sheet-bar h2 {
+  margin: 0;
+  font-family: var(--ui-font-display);
+}
+
+.shell-sheet-close {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ui-btn-bg);
+  color: var(--ui-btn-fg);
+  font-size: 1.25rem;
+}
+
+.shell-sheet-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 24px;
+}
+
+@container shell-sheet (min-width: 848px) {
+  .shell-sheet-panel {
+    align-self: center;
+    width: 720px;
+    max-height: calc(var(--shell-visual-height, 100dvh) - 128px);
+    border: 4px solid var(--ui-accent);
+    border-radius: 18px;
+  }
+}
+
+@keyframes shell-sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+html[data-static] .shell-sheet-panel {
+  animation: none;
+}
+
+/* Host panel. From 1170px (320 + 720 + 2 x 64) the claimed host's drawer is
+   a panel on the left that stays open. It collapses to an edge strip, and
+   the frame remembers that per browser (data-host-panel="collapsed"). */
+@media (min-width: 1170px) {
+  .shell-host:not(:empty) {
+    position: relative;
+    flex: 0 0 320px;
+    min-width: 0;
+    border-right: 3px solid var(--ui-accent);
+    background: var(--ui-sheet-bg);
+  }
+
+  .shell-host .ui-drawer {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    border-right: 0;
+    transform: none;
+    transition: none;
+  }
+
+  .shell-host .ui-drawer-handle,
+  .shell-host .ui-drawer-scrim,
+  .shell-host .ui-drawer-back {
+    display: none;
+  }
+
+  .shell-host .ui-drawer-collapse {
+    display: block;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    padding: 0;
+    border: 2px solid var(--ui-accent);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ui-fg);
+    font-size: 1.25rem;
+  }
+
+  .shell-frame[data-host-panel="collapsed"] .shell-host:not(:empty) {
+    flex-basis: 44px;
+  }
+
+  .shell-frame[data-host-panel="collapsed"] .shell-host .ui-drawer {
+    display: none;
+  }
+
+  .shell-frame[data-host-panel="collapsed"] .shell-host .ui-drawer-expand {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-fg);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    writing-mode: vertical-rl;
+  }
+}
+
+/* Tenant column content. The Lobby and the play-phone wrapper use these. */
 .ui-phone-body {
-  padding: 20px 36px 28px;
+  min-height: 100%;
+  padding: 16px 16px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  min-height: 698px;
   text-align: center;
+}
+
+/* A game phone body fills the column and handles its own overflow. */
+.ui-phone-body.ui-play-body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
 }
 
 .ui-phone-stack {
@@ -1086,6 +1355,10 @@ button {
   text-align: center;
 }
 
+.ui-play-body > .ui-phone-stack {
+  overflow: hidden;
+}
+
 .ui-sr-only {
   position: absolute;
   width: 1px;
@@ -1096,14 +1369,6 @@ button {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-.ui-leave-control {
-  position: absolute;
-  top: 30px;
-  right: 10px;
-  z-index: 8;
-  width: auto !important;
 }
 
 .ui-leave-button {
@@ -1126,34 +1391,6 @@ button {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-body:has(.ui-leave-control) {
-  height: 100dvh;
-  overflow: hidden;
-}
-
-.ui-phone-wrap:has(.ui-leave-control) {
-  height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.ui-phone:has(.ui-leave-control) {
-  height: min(720px, calc(100dvh - 48px));
-  min-height: 0;
-}
-
-.ui-phone:has(.ui-leave-control) .ui-phone-body {
-  height: calc(100% - 22px);
-  min-height: 0;
-  overflow: hidden;
-  padding-top: 0;
-}
-
-.ui-phone:has(.ui-leave-control) .ui-phone-stack {
-  min-height: 0;
-  overflow: hidden;
 }
 
 .ui-phone-body form,
@@ -1309,31 +1546,6 @@ body:has(.ui-leave-control) {
 }
 
 @media (max-width: 520px) {
-  .ui-phone-wrap {
-    padding: 0;
-  }
-
-  .ui-phone {
-    width: 100%;
-    min-height: 100dvh;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .ui-phone-body {
-    min-height: calc(100dvh - 22px);
-  }
-
-  .ui-phone:has(.ui-leave-control) {
-    height: 100dvh;
-    min-height: 0;
-  }
-
-  .ui-phone:has(.ui-leave-control) .ui-phone-body {
-    height: calc(100dvh - 22px);
-    min-height: 0;
-  }
-
   .ui-seat,
   .ui-token {
     --token-size: clamp(76px, 30vw, 110px);
@@ -1347,36 +1559,6 @@ body:has(.ui-leave-control) {
     width: min(220px, 70vw);
     height: min(220px, 70vw);
     font-size: 2.75rem;
-  }
-}
-
-@media (hover: none) and (pointer: coarse) and (min-width: 521px) {
-  .ui-phone-wrap {
-    padding: 0;
-    min-height: 100dvh;
-    place-items: stretch center;
-  }
-
-  .ui-phone {
-    width: min(720px, 100vw);
-    min-height: 100dvh;
-    height: 100dvh;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .ui-phone-body {
-    min-height: calc(100dvh - 22px);
-  }
-
-  .ui-phone:has(.ui-leave-control) {
-    height: 100dvh;
-    min-height: 0;
-  }
-
-  .ui-phone:has(.ui-leave-control) .ui-phone-body {
-    height: calc(100dvh - 22px);
-    min-height: 0;
   }
 }
 
@@ -1537,10 +1719,6 @@ body:has(.ui-leave-control) {
   overflow: auto;
   padding: 4px 2px 12px;
   flex: 1;
-}
-
-.ui-phone .ui-game-library-grid {
-  grid-template-columns: 1fr;
 }
 
 .ui-game-card-form {

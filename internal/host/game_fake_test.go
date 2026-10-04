@@ -72,6 +72,10 @@ func (f *fakeGame) Phone(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("FAKE-PHONE"))
 }
 
+func (f *fakeGame) Help(w http.ResponseWriter, r *http.Request) {
+	_, _ = w.Write([]byte("FAKE-HELP"))
+}
+
 func (f *fakeGame) Assets() ui.Assets { return ui.Assets{CSS: []string{"/games/fake/static/fake.css"}} }
 
 func (f *fakeGame) Scenarios() []ui.Scenario { return nil }

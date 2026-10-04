@@ -412,6 +412,7 @@ func openTestLobby(t *testing.T, dir string, wrap func(*lobby.Config)) (*store.D
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", room.Phone)
+	mux.HandleFunc("GET /host-panel", room.HostPanel)
 	mux.HandleFunc("GET /board", room.Board)
 	room.Register(mux)
 	return db, mux, room

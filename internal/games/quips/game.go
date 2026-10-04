@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "quips"
-	assetVersion = "shell-2"
+	assetVersion = "frame-1"
 )
 
 //go:embed templates/*.html
@@ -238,4 +238,9 @@ func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.run.Render(w, "howto.html", g.run.Page("How to play Quick Quips"), http.StatusOK)
+}
+
+// Help writes the phone shell's help sheet.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.run.Render(w, "help", nil, http.StatusOK)
 }

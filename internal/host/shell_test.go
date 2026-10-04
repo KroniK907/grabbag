@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -71,14 +72,27 @@ func TestShellDocumentsRenderTheCurrentTenant(t *testing.T) {
 	}
 
 	phone := requestWithCookie(t, handler, http.MethodGet, "/", nil, admin).Body.String()
-	for _, want := range []string{`data-surface="phone"`, `data-tenant="lobby"`, "data-player", `class="ui-notch"`, `id="phone-inner"`, `data-notice-targets="host seated"`} {
+	for _, want := range []string{
+		`data-surface="phone"`, `data-tenant="lobby"`, "data-player", `id="shell-frame"`, `class="shell-bar"`,
+		`id="phone-inner"`, `data-notice-targets="host seated"`, `id="shell-help"`,
+	} {
 		if !strings.Contains(phone, want) {
 			t.Fatalf("phone shell missing %q: %s", want, phone)
 		}
 	}
+	frame := shellFrameParts(t, phone)
+	if frame.leaveHidden || !frame.helpHidden || !strings.Contains(frame.host, `id="host-drawer"`) {
+		t.Fatalf("host's Lobby frame = %+v", frame)
+	}
+	if strings.Contains(frame.stage, `id="host-drawer"`) || strings.Contains(frame.stage, `hx-post="/lobby/leave"`) {
+		t.Fatalf("Lobby tenant renders the host drawer or Leave: %s", frame.stage)
+	}
 	stranger := request(t, handler, http.MethodGet, "/", nil, "").Body.String()
 	if strings.Contains(stranger, "data-player") || !strings.Contains(stranger, `hx-post="/lobby/join"`) {
 		t.Fatalf("stranger phone shell = %s", stranger)
+	}
+	if frame := shellFrameParts(t, stranger); !frame.leaveHidden || !frame.helpHidden || frame.host != "" {
+		t.Fatalf("stranger frame = %+v", frame)
 	}
 }
 
@@ -132,8 +146,11 @@ func TestTenantFrameFollowsStartAndStop(t *testing.T) {
 		t.Fatalf("lobby assets = %+v", lobbyBoard.Assets)
 	}
 	lobbyPhone := getFrame(t, handler, "/tenant", admin)
-	if lobbyPhone.Tenant != "lobby" || !lobbyPhone.Player || lobbyPhone.Kicked {
+	if lobbyPhone.Tenant != "lobby" || !lobbyPhone.Player || lobbyPhone.Kicked || lobbyPhone.Help || !strings.Contains(lobbyPhone.Host, `id="host-drawer"`) {
 		t.Fatalf("lobby phone frame = %+v", lobbyPhone)
+	}
+	if help := requestWithCookie(t, handler, http.MethodGet, "/help", nil, admin); help.Code != http.StatusNotFound {
+		t.Fatalf("GET /help on the Lobby = %d", help.Code)
 	}
 
 	load := hxPost(t, handler, "/settings/load", url.Values{"game_id": {"fake"}}, admin)
@@ -160,8 +177,15 @@ func TestTenantFrameFollowsStartAndStop(t *testing.T) {
 		t.Fatalf("game assets = %+v", game.Assets)
 	}
 	gamePhone := getFrame(t, handler, "/tenant", admin)
-	if gamePhone.Tenant != "fake" || !strings.Contains(gamePhone.HTML, "FAKE-PHONE") || !strings.Contains(gamePhone.HTML, `id="host-drawer"`) {
+	if gamePhone.Tenant != "fake" || !strings.Contains(gamePhone.HTML, "FAKE-PHONE") || !gamePhone.Help ||
+		!strings.Contains(gamePhone.Host, `id="host-drawer"`) || strings.Contains(gamePhone.HTML, `id="host-drawer"`) {
 		t.Fatalf("started phone frame = %+v", gamePhone)
+	}
+	if game.Help || game.Host != "" {
+		t.Fatalf("board frame has phone chrome: %+v", game)
+	}
+	if help := requestWithCookie(t, handler, http.MethodGet, "/help", nil, admin); help.Code != http.StatusOK || help.Body.String() != "FAKE-HELP" {
+		t.Fatalf("GET /help during the round = %d %q", help.Code, help.Body.String())
 	}
 	stranger := getFrame(t, handler, "/tenant", nil)
 	if stranger.Tenant != "lobby" || stranger.Player || stranger.Kicked || !strings.Contains(stranger.HTML, `hx-post="/lobby/join"`) {
@@ -369,5 +393,36 @@ func TestGameStaticServesTheRequestedGame(t *testing.T) {
 	}
 	if rec := requestWithCookie(t, handler, http.MethodGet, "/games/nope/static/game.js", nil, admin); rec.Code != http.StatusNotFound {
 		t.Fatalf("unknown game static = %d", rec.Code)
+	}
+}
+
+// frameParts is what the phone shell document shows around the stage.
+type frameParts struct {
+	helpHidden  bool
+	leaveHidden bool
+	host        string
+	stage       string
+}
+
+var (
+	helpButtonRe = regexp.MustCompile(`(?s)<button\s[^>]*id="shell-help-button"[^>]*>`)
+	leaveFormRe  = regexp.MustCompile(`(?s)<form\s[^>]*id="shell-leave"[^>]*>`)
+	hostPanelRe  = regexp.MustCompile(`(?s)<div id="shell-host" class="shell-host">(.*?)</div>\s*<div class="shell-main">`)
+	stageRe      = regexp.MustCompile(`(?s)<div\s+id="shell-stage".*?>(.*)</div>\s*</div>\s*</div>\s*<div id="shell-help"`)
+)
+
+func shellFrameParts(t *testing.T, page string) frameParts {
+	t.Helper()
+	help, leave := helpButtonRe.FindString(page), leaveFormRe.FindString(page)
+	host, stage := hostPanelRe.FindStringSubmatch(page), stageRe.FindStringSubmatch(page)
+	if help == "" || leave == "" || host == nil || stage == nil {
+		t.Fatalf("phone shell has no frame: %s", page)
+	}
+	hidden := regexp.MustCompile(`\shidden[\s>]`)
+	return frameParts{
+		helpHidden:  hidden.MatchString(help),
+		leaveHidden: hidden.MatchString(leave),
+		host:        strings.TrimSpace(host[1]),
+		stage:       stage[1],
 	}
 }

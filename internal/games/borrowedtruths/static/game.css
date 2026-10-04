@@ -322,30 +322,21 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 
 /* ---------- Phone ---------- */
 
+/* The phone fills the shell's column and scrolls inside it. It sizes
+   against the column (container "column"): compact under 560px, regular
+   from 560px. Borrowed Truths stays in the 720px column. */
 .bt-phone {
+  align-self: stretch;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
   align-content: start;
   gap: 14px;
   padding: 22px 18px 18px;
-  padding-top: 48px;
-  min-height: 100%;
-  border-radius: 18px;
   box-sizing: border-box;
-}
-.bt-help {
-  position: absolute;
-  left: 10px;
-  top: 30px;
-  z-index: 8;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--bt-truth);
-  color: var(--bt-on-truth);
-  font-family: var(--bt-display);
-  text-decoration: none;
 }
 .bt-phone .bt-timer { justify-self: start; font-size: 14px; padding: 4px 14px; }
 .bt-kick { margin: 0; font-size: 12px; color: var(--bt-muted); }
@@ -480,8 +471,12 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-howto { min-height: 100dvh; padding: 24px; box-sizing: border-box; display: grid; gap: 18px; align-content: start; max-width: 720px; margin: 0 auto; }
 .bt-howto header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .bt-howto .bt-headline { font-size: 34px; flex: 1 0 100%; }
+.bt-help { display: grid; gap: 12px; }
+.bt-help section,
 .bt-howto section { background: var(--bt-sticker); color: var(--bt-sink); border-radius: 16px; padding: 14px 18px; box-shadow: 4px 4px 0 var(--bt-truth); }
+.bt-help h2,
 .bt-howto h2 { margin: 0 0 6px; font-family: var(--bt-display); font-weight: 400; }
+.bt-help p,
 .bt-howto p { margin: 0; line-height: 1.5; }
 
 /* Motion is there for the reveal. */
@@ -504,7 +499,8 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-board.is-settled *,
 .bt-board.is-settled *::after,
 html[data-static] .bt-board *,
-html[data-static] .bt-board *::after { animation: none !important; }
+html[data-static] .bt-board *::after,
+html[data-static] .bt-phone * { animation: none !important; }
 
 /* Big rooms: shrink the voter stickers and the standings so 20 fit. */
 .bt-stickers:has(> :nth-child(9)) { grid-template-columns: repeat(auto-fill, minmax(5.6cqw, 1fr)); gap: .6cqw .5cqw; }
@@ -572,8 +568,8 @@ html[data-static] .bt-board *::after { animation: none !important; }
 .bt-tim-answer { grid-column: 2; grid-row: 2; position: relative; display: grid; gap: 1.2cqw; justify-items: start; }
 .bt-tim-answer .bt-answer { position: static; font-size: 4cqw; }
 
-.bt-photo.is-mini { padding: 8px 8px 22px; border-radius: 14px; transform: rotate(-1.5deg); box-shadow: 5px 5px 0 var(--bt-lie), -3px -3px 0 var(--bt-truth); }
-.bt-photo.is-mini img { max-height: 34vh; border-radius: 8px; }
+.bt-photo.is-mini { margin: 0 10px; padding: 8px 8px 22px; border-width: 2px; border-radius: 14px; transform: rotate(-1.5deg); box-shadow: 5px 5px 0 var(--bt-lie), -3px -3px 0 var(--bt-truth); }
+.bt-photo.is-mini img { max-height: calc(var(--shell-visual-height, 100dvh) * .34); border-radius: 8px; }
 .bt-name.is-none { justify-content: center; background: transparent; color: var(--bt-fg); border-style: dashed; border-color: var(--bt-lie); font-family: var(--bt-display); font-weight: 400; }
 
 .bt-fact.is-photo { box-shadow: 4px 4px 0 var(--bt-lie); }
@@ -594,3 +590,29 @@ html[data-static] .bt-board *::after { animation: none !important; }
 .bt-tim-stickers { margin-top: 6cqw; }
 .phase-tim-reveal .bt-tim-answer .bt-answer { font-size: 3.2cqw; }
 .phase-tim-reveal .bt-tim-answer .bt-but { font-size: 1.8cqw; }
+
+/* Regular tier: a 560px or wider column (tablets, desktops). */
+@container column (min-width: 560px) {
+  .bt-phone { gap: 18px; padding: 28px 28px 24px; }
+  .bt-phone .bt-timer { font-size: 16px; }
+  .bt-kick { font-size: 14px; }
+  .bt-big { font-size: 28px; }
+  .bt-mini { font-size: 24px; padding: 18px; }
+  .bt-btn { font-size: 30px; min-height: 72px; }
+  .bt-btn small { font-size: 13px; }
+  .bt-vote-stack { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); align-items: stretch; }
+  .bt-vote-stack .bt-btn { height: 100%; }
+  .bt-names { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bt-names:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bt-name { min-height: 64px; font-size: 14px; }
+  .bt-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bt-facts > :not(.bt-fact),
+  .bt-facts > .bt-fact.is-photo,
+  .bt-facts > .bt-fact.is-lie { grid-column: 1 / -1; }
+  .bt-fact span { font-size: 20px; }
+  .bt-fact small { font-size: 12px; }
+  .bt-photo.is-mini { justify-self: center; width: min(100% - 20px, 520px); box-sizing: border-box; }
+  .bt-phone-standings li { padding: 12px 18px; font-size: 18px; }
+  .bt-host-row form { flex: 1 1 140px; }
+  .bt-host-row form:first-child { flex: 1 0 100%; }
+}

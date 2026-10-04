@@ -94,7 +94,6 @@ type phoneView struct {
 	WinnerName  string
 	RoundWinner string
 	JudgeName   string
-	Help        bool
 	ClaimedHost bool
 	BurnFaces   []burnFace
 	BurnErr     string
@@ -212,7 +211,6 @@ func (g *Game) phoneViewLocked(p games.Player) phoneView {
 	view.Sudden = m.Phase == phaseSudden
 	view.Over = m.Phase == phaseOver
 	view.Error = m.PhoneErr[p.ID]
-	view.Help = true
 	view.TimerLabel, view.Timer = g.timerViewLocked(m)
 	view.ClaimedHost = p.ClaimedHost
 	view.BurnErr = g.burnErr

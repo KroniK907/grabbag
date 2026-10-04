@@ -17,7 +17,7 @@ import (
 
 const (
 	id           = "borrowedtruths"
-	assetVersion = "shell-2"
+	assetVersion = "frame-1"
 	// event is the one SSE name this game publishes after any run state change.
 	event = "borrowedtruths"
 	// eventFacts is a facts tick. Only the board listens, so phones mid-write
@@ -222,4 +222,9 @@ func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	g.run.Render(w, "howto.html", g.run.Page("How to play Borrowed Truths"), http.StatusOK)
+}
+
+// Help writes the phone shell's help sheet.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.run.Render(w, "help", nil, http.StatusOK)
 }

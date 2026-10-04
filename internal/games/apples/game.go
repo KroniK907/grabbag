@@ -13,7 +13,7 @@ import (
 
 const (
 	id           = "apples"
-	assetVersion = "shell-4"
+	assetVersion = "frame-1"
 )
 
 //go:embed templates/*.html
@@ -214,7 +214,6 @@ func (g *Game) Play() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /picker", g.getPicker)
 	mux.HandleFunc("GET /howto", g.getHowto)
-	mux.HandleFunc("GET /howto-sheet", g.getHowtoSheet)
 	mux.HandleFunc("GET /partials/board", g.getBoardPartial)
 	mux.HandleFunc("GET /partials/phone", g.getPhonePartial)
 	mux.HandleFunc("POST /burn", g.postBurn)

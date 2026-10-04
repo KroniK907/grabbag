@@ -85,15 +85,13 @@ func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	g.run.Render(w, "howto.html", g.howtoView(false), http.StatusOK)
+	g.run.Render(w, "howto.html", g.howtoView(), http.StatusOK)
 }
 
-func (g *Game) getHowtoSheet(w http.ResponseWriter, r *http.Request) {
-	if g.run.Helper() == nil {
-		http.NotFound(w, r)
-		return
-	}
-	g.run.Render(w, "howto-sheet", g.howtoView(true), http.StatusOK)
+// Help writes the phone shell's help sheet: the how-to rules for the
+// current settings, or the running match's.
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.run.Render(w, "help", g.howtoView(), http.StatusOK)
 }
 
 func (g *Game) postBurn(w http.ResponseWriter, r *http.Request) {

@@ -65,6 +65,7 @@ host_calls_on_game:
   - ID Name MinPlayers MaxPlayers
   - Load Settings Start
   - Board BoardButtons Phone Play   # Board and Phone write fragments
+  - Help                            # ui.HelpTenant: the phone shell's Help sheet body
   - Assets Scenarios                # ui.Tenant, embedded in games.Game
   - Pause Resume Stop Shutdown
 game_calls_on_helper:
@@ -80,6 +81,10 @@ shells:
   layout: grabbagShell.layout(id, {board(root), phone(root)})  # optional; pure sizing, runs in previews too
   viewport: --shell-visual-height and html.shell-short on <html>
   audio: ctx.audio on the board only (audio.js); phones and static previews get none
+  phone_frame: shell owns toolbar, gutters, Help, Leave, Help sheet, Host panel; tenant owns #shell-stage
+  column: 720px, or 1200px with data-column="wide"; 64px gutters or it fills the width
+  tiers: "@container column: compact <560px, regular 560-959px, wide >=960px (wide opt-in only)"
+  help: GET /help -> mounted HelpTenant's Help; tenant fetch "help": true|false
   refetch_on: [sse round, sse tenant, "HX-Trigger: grabbag:tenant", sse reconnect]
   reloads_only: [hardReload("kicked"), hardReload("host-restarted")]
 mounts:
@@ -170,7 +175,8 @@ Host calls these on the Game value.
 | `Start(h Helper) error` | operator or auto-start | Store `h` again. Begin ticks or round state. |
 | `Board(w, r)` | board shell after Start | HTML fragment. No `<html>`, `<link>`, or `<script>`. The shell owns the document and the theme. |
 | `BoardButtons() []BoardButton` | Lobby `/board` after Load, before Start | Up to three `{Label, Path, HostOnly}`. Paths are usually under `/play`. |
-| `Phone(w, r)` | phone shell after Start, any signed-in player | Inner body fragment. Host wraps Leave and the claimed-host drawer. Unknown cookies stay on Lobby join. |
+| `Phone(w, r)` | phone shell after Start, any signed-in player | The column's fragment. Leave, Help, and the claimed host's panel are in the shell frame, not here. Unknown cookies stay on Lobby join. |
+| `Help(w, r)` | phone shell Help button, through `GET /help` | The rules as a fragment. The shell owns the sheet, its title, and its close button. Required: `games.Game` embeds `ui.HelpTenant`. |
 | `Play() http.Handler` | `/play/` | Game POSTs, partials, static. Nil is fine. StripPrefix leaves paths like `/tap`. |
 | `Pause() error` | operator or auto-pause on seated disconnect (unless the game opts out, see [Disconnect policy](#disconnect-policy)) | Stop accepting play if that is the game's rule. May no-op. |
 | `Resume() error` | operator | Restart ticks. May no-op. |
@@ -227,11 +233,30 @@ Do not add a Game method or host mount for extra pages. Do not open `Play()` POS
 
 Operator-only extra GET pages check `HasAdmin` in the game. Signed-out GET is plain `401` text, the same idea as host Settings with no admin session. Host does not make every `Play()` GET admin-only. Public extra pages (Testing `/play/info`) stay unsigned. Hiding a `HostOnly` `BoardButton` does not protect the URL.
 
-Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby `HostOnly` button `Deck Library`, pack enable POSTs to `/settings/game/`. Success is `303` to `/play/picker`. A failed write or a refused-after-Start toggle returns `200` HTML so the checkboxes match stored state. `GET /play/howto` is a public extra document (Lobby `How to play` button, no `HasAdmin`). The in-round phone `?` loads `GET /play/howto-sheet`. Quick Quips uses the same picker mount as Prompt Library (`GET /play/picker`, `HostOnly`).
+Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby `HostOnly` button `Deck Library`, pack enable POSTs to `/settings/game/`. Success is `303` to `/play/picker`. A failed write or a refused-after-Start toggle returns `200` HTML so the checkboxes match stored state. `GET /play/howto` is a public extra document (Lobby `How to play` button, no `HasAdmin`). In a round the shell's Help button opens the game's `Help` sheet instead. Quick Quips uses the same picker mount as Prompt Library (`GET /play/picker`, `HostOnly`).
 
 ## Shells
 
-`/board` (TV) and `/` (phones) are persistent shell documents. They load once. The shell owns the document, the one SSE connection, theme, notices, the connection overlay, and the heartbeat. Tenants (the Lobby, each game, and the host's `locked` board) swap in and out of `#shell-stage`. Go side: `ui.Tenant` is `Board`, `Phone`, `Assets`, `Scenarios`.
+`/board` (TV) and `/` (phones) are persistent shell documents. They load once. The shell owns the document, the one SSE connection, theme, notices, the connection overlay, and the heartbeat. Tenants (the Lobby, each game, and the host's `locked` board) swap in and out of `#shell-stage`. Go side: `ui.Tenant` is `Board`, `Phone`, `Assets`, `Scenarios`. `ui.HelpTenant` adds `Help`. Every game is one; the Lobby and `locked` are not.
+
+### Phone frame
+
+The phone shell goes edge to edge on every device. The shell owns the frame: a 48px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. A tenant owns only the column, `#shell-stage`.
+
+- **Column.** Centered, 720px wide. It keeps a 64px gutter each side. Without room for that (under 848px of frame), the frame is in phone mode and the column fills the width. Help and Leave sit at the ends of the toolbar in phone mode and in the gutters, level with the column top, in gutter mode.
+- **Wide opt-in.** Put `data-column="wide"` on the outer element of a screen that wants a 1200px column. The shell reacts with `:has()`, so it needs no Go or JS and survives htmx swaps. Phone mode for a wide screen starts under 1328px. A game that prefers bigger elements stays in 720px and scales within its tiers.
+- **Tiers.** `#shell-stage` is a size container named `column`. Design against its width, never the viewport's:
+
+```css
+/* compact: under 560px is the default */
+@container column (min-width: 560px) { .wordbox-hand { grid-template-columns: repeat(2, 1fr); } } /* regular */
+@container column (min-width: 960px) { .wordbox-hand { grid-template-columns: repeat(4, 1fr); } } /* wide, opt-in only */
+```
+
+- **Frame mode.** The shell publishes `data-frame="phone|gutter"` on `#shell-frame` for its own controls. Tenants must not style against it, and must not position anything in the gutters.
+- **Help.** The shell draws Help only when the tenant fetch says `"help": true`. Tapping it fetches `GET /help`, which host forwards to the mounted tenant's `Help`, and opens the sheet over the tenant, which stays mounted. It slides up over most of the screen in phone mode and is a centered panel in gutter mode. ✕, Esc, or a tap on the backdrop closes it. Full how-to pages (`/play/howto`) stay ordinary documents for the board's How to play button.
+- **Host panel.** The claimed host's controls render in the frame outside `#shell-stage`, so tenant fades never touch them. Under 1170px they are the slide-out drawer from the left. From 1170px they are a 320px panel on the left that stays open and collapses to an edge strip, remembered per browser in `localStorage`. The tenant fetch carries the panel as `host`.
+- **Leave** keeps its "Leave this room?" confirmation and posts with htmx. The fetch's `player` shows it.
 
 A transition fetches `GET /board/tenant` or `GET /tenant`: JSON with the fragment, assets, tenant id, a host generation, and the host boot ID. The shell loads assets it lacks, fades out, unmounts, swaps, mounts, and fades in (TV Lobby to game and back: 1.5s out, 0.5s in; other TV swaps 200ms; phones 150ms; instant under `prefers-reduced-motion`). Transitions run one at a time, the latest wins, older generations are dropped, and a fetch for the same id and generation (or the same HTML) swaps nothing.
 
@@ -433,7 +458,7 @@ Operator Pause from `/settings` and `Helper.Pause` still reach every game.
 
 Every tenant lists `ui.Scenario` values from `Scenarios()`. Host serves them at `/dev/ui/` when started with `-dev-preview`, and `cmd/grabbag-uishots` screenshots them. Host calls `Scenarios()` on a fresh `New()` value. There is no Load, no Helper, and no data dir.
 
-Board and phone scenarios are tenant fragments. Host wraps each in the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, transitions, or `game.js`, so nothing mounts. It links the tenant's CSS and runs its [layout](#layout), and `<html data-static>` lets CSS freeze an animation that would make screenshots differ run to run. `uitest.RenderTenant` renders every scenario inside the shell and fails on a fragment that is a full document or carries `<script>` or `<link>`.
+Board and phone scenarios are tenant fragments. Host wraps each in the real shell template in static mode (`ui.Chrome.Static`): no htmx, SSE, heartbeat, transitions, or `game.js`, so nothing mounts. It links the tenant's CSS and runs its [layout](#layout), and `<html data-static>` lets CSS freeze an animation that would make screenshots differ run to run. `uitest.RenderTenant` renders every scenario inside the shell, phone scenarios inside the phone frame, and fails on a fragment that is a full document or carries `<script>` or `<link>`. Add a `ui.ShellHelp` scenario for your `Help`. The gallery and `cmd/grabbag-uishots` (set `screens`) also show phone scenarios at iPad portrait (820×1180), iPad landscape (1180×820), and desktop (1440×900).
 
 | Scenario field | Rule |
 |----------------|------|
@@ -441,7 +466,8 @@ Board and phone scenarios are tenant fragments. Host wraps each in the real shel
 | `Group` | Same value on the board and every phone of one moment. Drives the table view. |
 | `Viewer` | `tv`, `judge`, `seated`, `host`, `audience`, `guest`, or `operator`. |
 | `Frame` | `ui.FramePhone`, `ui.FrameTV`, or `ui.FramePage`. |
-| `Shell` | Empty for a full document (extra pages). `ui.ShellBoard` for a board fragment. `ui.ShellPhone` for a whole phone tenant fragment (the Lobby). `ui.ShellPlayPhone` for a game phone body host wraps in the Lobby play-phone fragment. `ui.ShellSettings` for a settings fragment host inlines on `/settings`. |
+| `Shell` | Empty for a full document (extra pages). `ui.ShellBoard` for a board fragment. `ui.ShellPhone` for a whole phone tenant fragment (the Lobby). `ui.ShellPlayPhone` for a game phone body host wraps in the Lobby play-phone fragment; a `host` Viewer also gets the Host panel. `ui.ShellHelp` for a `Help` body, shown in the open Help sheet. `ui.ShellSettings` for a settings fragment host inlines on `/settings`. |
+| `HostPanel` | Optional. Writes the Host panel for the frame of this moment (the Lobby's host scenarios). |
 | `Open` | Element ids the static shell opens when the request names none, such as a drawer. |
 | `MinPlayers`, `MaxPlayers` | `MinPlayers > 0` turns on the seated sweep: min, middle, 12, max. `MaxPlayers 0` sweeps to the Lobby cap, 64. |
 | `Sample` | Include in the phone and tablet device matrix. Keep it to one or two phone screens per game. |
@@ -568,7 +594,13 @@ The live package that does this is Testing (`internal/games/testing`).
 
 ### Phone and board fragments
 
-`Phone` writes the inner column. Do not send `<html>`. Host wraps Leave and the Host drawer.
+`Phone` writes the column. Do not send `<html>`. Do not draw Help, Leave, or a host control; the shell frame has them. `Help` writes the rules for the shell's sheet:
+
+```go
+func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
+	g.run.Render(w, "help", nil, http.StatusOK)
+}
+```
 
 `Board` writes a fragment too. Testing's listens for `sse:pause` plus its own `sse:tap` / `sse:testing` events. The shell loads `game.css` and `game.js` from `Assets`.
 
@@ -613,6 +645,7 @@ The Testing list listens with `hx-trigger="sse:testing, sse:tap, sse:roster, htm
 - Send a full document, `<link>`, or `<script>` from `Board` or `Phone`.
 - Use `<form method="post">` or `location.reload` inside a shell.
 - Leave a `document` or `window` listener, timer, or frame running after unmount. Use `ctx`.
+- Draw your own Help or Leave button, position content in the gutters, or style against `data-frame`.
 - Clear KV on Stop or Shutdown (operator clear does that).
 - Scan a games folder at runtime.
 - Treat `/docs` as this contract. That URL is how to run the binary. The human API reference is `/docs/game-contract.html`.

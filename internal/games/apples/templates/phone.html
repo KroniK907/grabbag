@@ -1,16 +1,16 @@
 {{template "phone-frame" .}}
 
 {{define "phone-frame"}}
+{{/* Screens with a hand or a packet list opt into the shell's wide
+column; the rest stay in the default one. */}}
 <div
   id="apples-phone"
   class="apples-phone{{if .Paused}} is-paused{{end}}"
+  {{if and (not .Overlay) (not .Over) (or (eq .Role "submit") (eq .Role "locked") (eq .Role "preview") .Packets)}}data-column="wide"{{end}}
   hx-get="/play/partials/phone"
   hx-trigger="sse:apples, sse:pause, sse:roster, htmx:sseOpen from:body"
   hx-swap="outerHTML"
 >
-  {{if .Help}}
-  <a class="apples-help" href="/play/howto-sheet" hx-get="/play/howto-sheet" hx-target="#apples-phone" hx-swap="outerHTML" aria-label="How to play">?</a>
-  {{end}}
   {{if .Overlay}}
   <div class="apples-reshuffle-sheet">
     <p>{{.OverlayCopy}}</p>
