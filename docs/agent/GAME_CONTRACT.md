@@ -239,7 +239,7 @@ Apples for Humanity is the first extra operator page: `GET /play/picker`, Lobby 
 
 ### Phone frame
 
-The phone shell goes edge to edge on every device. The shell owns the frame: a 44px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. A tenant owns only the column, `#shell-stage`.
+The phone shell goes edge to edge on every device. The shell owns the frame: a 48px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. A tenant owns only the column, `#shell-stage`.
 
 - **Column.** Centered, 720px wide. It keeps a 64px gutter each side. Without room for that (under 848px of frame), the frame is in phone mode and the column fills the width. Help and Leave sit at the ends of the toolbar in phone mode and in the gutters, level with the column top, in gutter mode.
 - **Wide opt-in.** Put `data-column="wide"` on the outer element of a screen that wants a 1200px column. The shell reacts with `:has()`, so it needs no Go or JS and survives htmx swaps. Phone mode for a wide screen starts under 1328px. A game that prefers bigger elements stays in 720px and scales within its tiers.

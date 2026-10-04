@@ -984,7 +984,7 @@ func (g *Game) PauseOnDisconnect() bool { return false }</pre>
 
       <article class="method" id="shell-frame">
         <h3>Phone frame</h3>
-        <p>The phone shell goes edge to edge on every device. The shell owns the frame: a 44px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. Your tenant owns only the column, <code>#shell-stage</code>.</p>
+        <p>The phone shell goes edge to edge on every device. The shell owns the frame: a 48px toolbar, the side gutters, Help, Leave, the Help sheet, and the claimed host's panel. Your tenant owns only the column, <code>#shell-stage</code>.</p>
         <p>The column is centered and 720px wide, with at least a 64px gutter each side. Without room for that the frame is in phone mode and the column fills the width. Help and Leave sit at the ends of the toolbar in phone mode and in the gutters in gutter mode. A screen that wants more room puts <code>data-column="wide"</code> on its outer element and gets a 1200px column. That is markup only and survives htmx swaps. A game that would rather have bigger elements stays at 720px.</p>
         <p><code>#shell-stage</code> is a size container named <code>column</code>. Design against three tiers of its width, never the viewport's: <code>compact</code> under 560px, <code>regular</code> 560 to 959px, and <code>wide</code> from 960px, which only the wide opt-in reaches.</p>
         <pre class="ex">@container column (min-width: 560px) { .wordbox-hand { grid-template-columns: repeat(2, 1fr); } }
