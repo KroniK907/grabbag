@@ -224,6 +224,12 @@
     if (now.stings.length) controls.append(row("stings", now.stings.map((n) => btn(n, () => a.sting(n)))));
     controls.append(row("snapshots", now.snapshots.map((n) => btn(n, () => a.snapshot(n, 0.8))).concat([btn("clear", () => a.snapshot(null, 0.8))])));
   };
+  // The board's sound card is tiny on a phone, so any tap on the bench page
+  // unlocks the board's audio. Taps inside the seats are on other ports and
+  // never reach this page.
+  document.addEventListener("pointerdown", () => {
+    if (engine && engine.audio && engine.audio.state !== "running") engine.audio.resume().catch(() => {});
+  }, true);
   const poll = () => {
     const w = boardFrame.contentWindow;
     const next = w && w.grabbagAudio && w.grabbagAudio.board;

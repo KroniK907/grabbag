@@ -28,7 +28,7 @@
         lobby: { file: "lobby" },
       },
       cues: {
-        lobby: { layer: "music", variants: { main: ["lobby"] } },
+        lobby: { layer: "music", bpm: 120, beatsPerBar: 4, variants: { main: ["lobby"] } },
       },
     });
     // A Lobby repaint (picking a game) remounts with the same scope, so the

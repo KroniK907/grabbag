@@ -55,7 +55,7 @@
     remove: EventTarget.prototype.removeEventListener,
   };
 
-  var LOOKAHEAD = 0.15; // seconds of events and timeline steps scheduled ahead
+  var LOOKAHEAD = 0.5; // seconds of events and timeline steps scheduled ahead; phones throttle timers
   var TICK_MS = 25;
   var START_DELAY = 0.04; // "now" lands this far ahead so the first samples are not late
   var EPS = 1e-6;
@@ -1231,17 +1231,29 @@
     return strip;
   };
 
+  // source starts geo at t. A start already in the past, from a throttled
+  // timer, joins at the position the playhead would have reached, so the
+  // loop stays on the grid instead of restarting late.
   Instance.prototype.source = function (geo, dest, t, loop) {
     var a = this.engine.audio;
     var src = a.createBufferSource();
     src.buffer = geo.buffer;
+    var now = this.engine.now();
+    var late = Math.max(0, now - t);
+    var when = late > 0 ? now : t;
     if (loop) {
       src.loop = true;
       src.loopStart = geo.start + geo.ls;
       src.loopEnd = geo.start + geo.le;
-      src.start(t, geo.start);
+      var pos = late;
+      if (pos >= geo.le && geo.len > 0) {
+        pos = geo.ls + ((pos - geo.le) % geo.len);
+      }
+      src.start(when, geo.start + pos);
+    } else if (late < geo.dur) {
+      src.start(when, geo.start + late, geo.dur - late);
     } else {
-      src.start(t, geo.start, geo.dur);
+      src.start(when, geo.start, 0);
     }
     src.connect(dest);
     var rec = { src: src, stopAt: null };
@@ -1981,13 +1993,14 @@
   // ---- Free timeline (GM-023) -----------------------------------------------------
 
   // Free timelines are keyed in bars from the loop start. The script runs
-  // first. Then each shuffle entry plays for its bars, picked at random but
+  // first, and repeats every loop bars when loop is set. Then each shuffle entry plays for its bars, picked at random but
   // never the same entry twice in a row. Bars do not count while held.
   function Free(inst, def, opts) {
     this.inst = inst;
     this.def = def;
     this.script = def.script || {};
     this.count = 0;
+    this.loop = Math.max(0, Math.floor(num(def.loop, 0)));
     this.next = inst.seg ? inst.seg.t0 : inst.startAt;
     this.last = -1;
     var shuffle = (def.then && def.then.shuffle) || [];
@@ -2027,8 +2040,9 @@
   Free.prototype.bar = function (t) {
     var n = this.count;
     var inst = this.inst;
-    if (this.script[n] !== undefined) {
-      inst.applyStep(this.script[n], t, false);
+    var s = this.loop ? n % this.loop : n;
+    if (this.script[s] !== undefined) {
+      inst.applyStep(this.script[s], t, false);
     }
     if (this.shuffle.length && n >= this.shuffleAt && n === this.nextPick) {
       var i = this.pick();
@@ -2077,6 +2091,13 @@
   // boot starts the board engine, shows the sound card when the browser
   // blocks audio, and reports the board's sound state to the host.
   function boot(levels) {
+    // Safari mutes web audio with the ring switch unless the page asks for
+    // playback. The board is a speaker, so it does.
+    try {
+      if (navigator.audioSession) {
+        navigator.audioSession.type = "playback";
+      }
+    } catch (e) {}
     var engine = new Engine({});
     engine.levels(levels);
     api.board = engine;
