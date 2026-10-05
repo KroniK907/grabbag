@@ -1,6 +1,6 @@
 // Borrowed Truths tenant: the host's elapsed clock, slap animations that
 // settle on a repaint of the same moment, the opening theme and intro on the
-// board, and phone photo uploads.
+// board, the writing music, and phone photo uploads.
 (function () {
   "use strict";
 
@@ -36,6 +36,7 @@
   // The intro runs once, as the game opens, timed to the theme. The facts
   // phase repaints the board on every submit, so the overlay lives outside
   // #bt-board. It is keyed by the phase start so a remount does not replay it.
+  // The theme is 110 bpm in 4/4 and opens on beat 3 of bar 1.
   var introSec = 22.9;
   var introWindow = 15;
 
@@ -64,11 +65,13 @@
     '<div class="bt-intro-ask bt-intro-in is-lie">Who\'s lying?</div>' +
     "</div>";
 
+  // intro returns a promise that resolves when the theme has finished, or
+  // at once when there is no intro to play.
   function intro(root, ctx) {
     var board = document.getElementById("bt-board");
     var started = board ? Number(board.dataset.intro) || 0 : 0;
     if (!started || Date.now() / 1000 - started > introWindow || window.btIntro === started) {
-      return;
+      return Promise.resolve();
     }
     window.btIntro = started;
     var el = document.createElement("div");
@@ -88,7 +91,7 @@
     };
     if (!ctx.audio) {
       show();
-      return;
+      return Promise.resolve();
     }
     ctx.audio.define({
       files: { theme: "audio/theme.ogg" },
@@ -97,11 +100,112 @@
     });
     // Start the picture with the sound, but a slow decode does not hold the
     // intro back for more than a moment.
-    ctx.audio.ready().then(function () {
+    var done = ctx.audio.ready().then(function () {
       ctx.audio.sting("theme");
       show();
+      return new Promise(function (resolve) {
+        ctx.after(introSec * 1000, resolve);
+      });
     });
     ctx.after(1500, show);
+    return done;
+  }
+
+  // The writing music plays while players write their facts. Five stems of
+  // one 8-bar loop at 100 bpm; each variant is the set of stems heard. The
+  // free timeline walks the arrangement and repeats it every 138 bars.
+  // "break" is 2 bars of drums alone. It and the variant after it restart
+  // every stem from the top of the loop, so the next section lands on bar 1.
+  var writingSpec = {
+    files: {
+      drums: "audio/timer-drums.ogg",
+      bass: "audio/timer-bass.ogg",
+      low: "audio/timer-guitar-low.ogg",
+      riff: "audio/timer-guitar-riff.ogg",
+      high: "audio/timer-guitar-high.ogg",
+    },
+    regions: {
+      drums: { file: "drums" },
+      bass: { file: "bass" },
+      low: { file: "low" },
+      riff: { file: "riff" },
+      high: { file: "high" },
+      drumBreak: { file: "drums", start: 0, end: 4.8 },
+    },
+    cues: {
+      writing: {
+        layer: "music", bpm: 100, beatsPerBar: 4, end: { at: "bar" },
+        variants: {
+          groove: ["drums", "bass"],
+          low: ["drums", "bass", "low"],
+          riff: ["drums", "bass", "low", "riff"],
+          "break": ["drumBreak"],
+          full: ["drums", "bass", "low", "riff", "high"],
+          quiet: ["bass", "low"],
+        },
+        timelines: {
+          writing: {
+            kind: "free",
+            loop: 138,
+            script: {
+              0: { to: "groove", over: 0.05 },
+              16: { to: "low", over: 0.05 },
+              32: { to: "riff", over: 0.05 },
+              48: { to: "break", over: 0.05 },
+              50: { to: "full", over: 0.05 },
+              82: { to: "quiet", over: 0.05 },
+              90: { to: "low", over: 0.05 },
+              98: { to: "riff", over: 0.05 },
+              114: { to: "full", over: 0.05 },
+              130: { to: "low", over: 0.05 },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  // writingMusic starts the writing music in the facts phase, after the
+  // theme, and ends it on the next bar when the phase moves on. While the
+  // game is paused the music sounds muffled, and the arrangement keeps going
+  // so it stays on the loop.
+  function writingMusic(root, ctx, themeDone) {
+    if (!ctx.audio) {
+      return;
+    }
+    ctx.audio.define(writingSpec);
+    var cue = ctx.audio.cue("writing");
+    var wanted = false;
+    var muffled = false;
+    var held = function () {
+      return false;
+    };
+    var sync = function () {
+      var board = document.getElementById("bt-board");
+      var on = !!board && board.classList.contains("phase-facts");
+      var paused = !!board && board.classList.contains("is-paused");
+      if (paused !== muffled) {
+        muffled = paused;
+        ctx.audio.snapshot(paused ? "telephone" : null, 0.4);
+      }
+      if (on && !wanted) {
+        wanted = true;
+        themeDone.then(function () {
+          if (wanted && !cue.playing) {
+            cue.start({ timeline: "writing", held: held });
+          }
+        });
+      } else if (!on) {
+        wanted = false;
+        if (cue.playing) {
+          cue.end({ at: "bar" });
+        }
+      }
+    };
+    // The board's new classes land at settle. At afterSwap htmx still shows
+    // the old ones for its transitions.
+    ctx.on(document.body, "htmx:afterSettle", sync);
+    sync();
   }
 
   // Photos are downscaled to 1600px on the long edge and re-encoded as JPEG
@@ -187,7 +291,7 @@
     board: {
       mount: function (root, ctx) {
         mount(root, ctx);
-        intro(root, ctx);
+        writingMusic(root, ctx, intro(root, ctx));
       },
     },
     phone: {

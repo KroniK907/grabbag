@@ -212,7 +212,7 @@ func TestAudioScheduling(t *testing.T) {
 }
 
 // schedulingCases is how many check() calls schedulingHarness makes.
-const schedulingCases = 13
+const schedulingCases = 15
 
 // schedulingHarness runs every case and returns [{name, ok, msg}] as JSON.
 // render() suspends the offline context every 48 ms of render time, runs the
@@ -379,6 +379,20 @@ const schedulingHarness = `(async () => {
     if (!near(after, 0.5, 0.05)) return "after the switch heard " + after;
   });
 
+  await check("a switch scheduled in the past joins on the grid", async () => {
+    const env = await render(4, (e) => {
+      e.audio.define({
+        files: { m: tone(e.ctx, [{ secs: 3, amp: 0.3 }, { secs: 1, amp: 0.5 }, { secs: 4, amp: 0.2 }]) },
+        regions: { a: { file: "m", start: 0, end: 3 }, b: { file: "m", start: 3, end: 8 } },
+        cues: { song: { variants: { a: ["a"], b: ["b"] } } },
+      });
+      e.at(0.1, () => e.audio.cue("song").start());
+      e.at(1.0, () => e.audio.cue("song").to("b", { at: 0.5, over: 0 }));
+    });
+    const late = amp(env.data, 1.6, 1.9);
+    if (!near(late, 0.2, 0.05)) return "0.6 s into b heard " + late + ", want its second part 0.2";
+  });
+
   await check("end plays the outro on the next bar", async () => {
     let started, ended;
     const env = await render(7, (e) => {
@@ -443,6 +457,18 @@ const schedulingHarness = `(async () => {
     }
     if (new Set(picks.map((p) => p.key)).size !== 3) return "not every step was picked";
     if (steps.some((s) => s.at > 20.2 && s.at < 26)) return "a step ran while held";
+  });
+
+  await check("free timeline loop repeats the script", async () => {
+    const env = await render(12, (e) => {
+      e.audio.define(layered(e.ctx, {
+        bpm: 240,
+        timelines: { t: { kind: "free", loop: 3, script: { 0: { to: "calm", over: 0 }, 2: { to: "tense", over: 0 } } } },
+      }));
+      e.at(0.1, () => e.audio.cue("timer").start({ timeline: "t" }));
+    });
+    const bars = env.log.filter((x) => x.type === "audio-step").map((x) => x.d.step[0].to);
+    if (bars.slice(0, 6).join(",") !== "calm,tense,calm,tense,calm,tense") return "steps " + bars.join(",");
   });
 
   await check("a step's sting and snapshot land on its bar", async () => {
