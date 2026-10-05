@@ -118,6 +118,9 @@ type engine struct {
 	Votes      map[string]string
 	Crowd      map[string]string
 	OwnerVotes map[string]string
+	// HelpCall is the teller's answer on a borrowed truth or player lie: did
+	// the owner or author help sell it? "", "yes", or "no".
+	HelpCall   string
 	VoteClosed bool
 	Awards     []award
 	Notice     string
@@ -189,6 +192,7 @@ func (e *engine) resetCard() {
 	e.Votes = map[string]string{}
 	e.Crowd = map[string]string{}
 	e.OwnerVotes = map[string]string{}
+	e.HelpCall = ""
 	e.VoteClosed = false
 	e.Awards = nil
 }
@@ -505,10 +509,13 @@ func (e *engine) CallKnew(id, pick, owner string, now time.Time) string {
 		return e.knewTIM(id, pick, now)
 	}
 	if !e.Settings.KnewIt || e.Phase != phasePublic {
-		return "I knew it is closed."
+		return "I already know this is closed."
 	}
 	if !e.isVoter(id) {
 		return "You cannot call this one."
+	}
+	if id == e.insider() {
+		return "This one is yours."
 	}
 	if _, done := e.Knew[id]; done {
 		return "You already called it."
@@ -626,6 +633,9 @@ func (e *engine) Reveal(id string, now time.Time) string {
 	if e.Phase != phaseVote || !e.VoteClosed || e.teller() == nil || e.teller().ID != id {
 		return "You cannot reveal now."
 	}
+	if e.helpPhase() == phaseVote && e.HelpCall == "" {
+		return "Say whether they helped first."
+	}
 	e.reveal(now)
 	return ""
 }
@@ -649,14 +659,56 @@ func (e *engine) OwnerVote(id, target string, now time.Time) string {
 	if _, done := e.OwnerVotes[id]; done {
 		return "Your pick is in."
 	}
-	if t := e.player(target); t == nil || t.ID == id || t.ID == e.teller().ID {
+	if t := e.player(target); t == nil || t.ID == e.teller().ID {
 		return "Pick a player."
 	}
 	e.OwnerVotes[id] = target
-	if e.allIn(e.OwnerVotes) {
+	if e.ownerVoteDone() {
 		e.ownerReveal(now)
 	}
 	return ""
+}
+
+// helpPhase is the phase where the teller says whether the insider helped:
+// the owner vote for a borrowed truth, the vote for a player lie. "" means
+// this card has nobody to help.
+func (e *engine) helpPhase() phase {
+	switch {
+	case e.Card == nil || e.Round != nil:
+		return ""
+	case e.Card.Kind == kindBorrowed:
+		return phaseOwnerVote
+	case e.Card.Kind == kindLie && e.insider() != "":
+		return phaseVote
+	}
+	return ""
+}
+
+// CallHelp records the teller's answer on whether the owner of a borrowed
+// truth, or the author of a player lie, helped sell it and earned the bonus.
+func (e *engine) CallHelp(id string, helped bool, now time.Time) string {
+	if hp := e.helpPhase(); hp == "" || e.Phase != hp {
+		return "Not now."
+	}
+	if t := e.teller(); t == nil || t.ID != id {
+		return "Only the teller decides."
+	}
+	if e.HelpCall != "" {
+		return "Your call is in."
+	}
+	e.HelpCall = "no"
+	if helped {
+		e.HelpCall = "yes"
+	}
+	if e.Phase == phaseOwnerVote && e.ownerVoteDone() {
+		e.ownerReveal(now)
+	}
+	return ""
+}
+
+// ownerVoteDone is every voter's pick plus the teller's help call.
+func (e *engine) ownerVoteDone() bool {
+	return e.HelpCall != "" && e.allIn(e.OwnerVotes)
 }
 
 func (e *engine) ownerReveal(now time.Time) {

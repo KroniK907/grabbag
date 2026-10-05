@@ -64,9 +64,9 @@
   {{if eq .Phase "tim-look"}}
   {{if .CanKnew}}
   <details class="bt-knew">
-    <summary class="bt-btn is-ghost">I knew it<small>Know whose photo this is? Tap it and score without the vote.</small></summary>
+    <summary class="bt-btn is-ghost">I already know this<small>Know whose photo this is? Call it privately instead of voting.</small></summary>
     <div class="bt-knew-sheet">
-      <p class="bt-kick">Private. Whose is it?</p>
+      <p class="bt-kick">Private. Right gets you 1 point, wrong gets you nothing, and you sit out the vote. Whose is it?</p>
       <div class="bt-names">
         {{range .TIMOptions}}
         <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML">
@@ -95,7 +95,7 @@
   {{end}}
 
   {{else if eq .Phase "tim-questioning"}}
-  <p class="bt-big">{{if .TIMClaimant}}Answer their questions.{{else}}Grill all three.{{end}}</p>
+  <p class="bt-big">{{if .TIMClaimant}}Answer their questions.{{else}}Ask all three questions.{{end}}</p>
 
   {{else if eq .Phase "tim-vote"}}
   {{if .TIMClaimant}}
@@ -160,9 +160,9 @@
   {{else if or (eq .Phase "public-read") (eq .Phase "questioning")}}
   {{if .CanKnew}}
   <details class="bt-knew">
-    <summary class="bt-btn is-ghost">I knew it<small>Know this one? Tap it and score without the vote.</small></summary>
+    <summary class="bt-btn is-ghost">I already know this<small>Know this one? Call it privately instead of voting.</small></summary>
     <div class="bt-knew-sheet">
-      <p class="bt-kick">Private. What is it?</p>
+      <p class="bt-kick">Private. Right gets you 1 point, wrong gets you nothing, and you sit out the vote. What is it?</p>
       <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="pick" value="true"><button class="bt-btn is-true" type="submit">Theirs</button></form>
       <form hx-post="/play/knew" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="pick" value="lie"><button class="bt-btn is-lie" type="submit">Pure lie</button></form>
       <p class="bt-kick">Someone else's. Whose?</p>
@@ -181,7 +181,10 @@
   {{end}}
 
   {{else if eq .Phase "vote"}}
-  {{if .CanReveal}}
+  {{if .CanHelpCall}}
+  {{template "bt-help-call" .}}
+  {{if not .CanReveal}}<p class="bt-kick">The room is voting.</p>{{end}}
+  {{else if .CanReveal}}
   <p class="bt-kick">Say it out loud:</p>
   <p class="bt-big">"{{.RevealLine}}"</p>
   <form hx-post="/play/reveal" hx-target="#bt-phone" hx-swap="outerHTML"><button class="bt-btn is-true" type="submit">Reveal</button></form>
@@ -219,6 +222,11 @@
   <p class="bt-big">Locked: {{.MyVote}}</p>
   {{else if .SatOut}}
   <p class="bt-big">You called it: {{.KnewPicked}}</p>
+  {{else if .CanHelpCall}}
+  {{template "bt-help-call" .}}
+  {{else if .HelpCall}}
+  <p class="bt-big">{{if eq .HelpCall "yes"}}{{.OwnerName}} gets the bonus.{{else}}No bonus for {{.OwnerName}}.{{end}}</p>
+  <p class="bt-kick">The room is guessing whose truth it is.</p>
   {{else}}
   <p class="bt-big">The room is guessing whose truth it is.</p>
   {{end}}
@@ -251,5 +259,16 @@
     </div>
   </div>
   {{end}}
+</div>
+{{end}}
+
+{{/* bt-help-call asks the teller whether the borrowed truth's owner or the
+lie's author helped sell it. Yes is a bonus point. */}}
+{{define "bt-help-call"}}
+<p class="bt-big">Did {{.OwnerName}} help you sell it?</p>
+<p class="bt-kick">Yes gives them a bonus point.</p>
+<div class="bt-row">
+  <form hx-post="/play/help" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="helped" value="0"><button class="bt-btn is-lie" type="submit">No</button></form>
+  <form hx-post="/play/help" hx-target="#bt-phone" hx-swap="outerHTML"><input type="hidden" name="helped" value="1"><button class="bt-btn is-true" type="submit">Yes, bonus</button></form>
 </div>
 {{end}}

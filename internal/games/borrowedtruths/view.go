@@ -149,7 +149,7 @@ func (g *Game) boardViewLocked() boardView {
 	view.CardText = e.Facts[e.Card.Fact].Text
 	switch e.Phase {
 	case phasePublic, phaseQuestion:
-		view.Prompt = "Grill " + view.Teller.Name + "."
+		view.Prompt = "Ask " + view.Teller.Name + " questions and see if you can determine if this is true or a lie."
 		if e.Phase == phasePublic && e.Settings.KnewIt {
 			view.KnewOpen, view.KnewCount = true, len(e.Knew)
 		}
@@ -215,7 +215,10 @@ func (e *engine) fillReveal(view *boardView) {
 		return
 	}
 	counts := map[string]int{}
-	for _, target := range e.OwnerVotes {
+	for id, target := range e.OwnerVotes {
+		if id == f.Owner {
+			continue // the owner's own pick is cover, not a guess
+		}
 		counts[target]++
 	}
 	for _, p := range e.voters() {
@@ -322,7 +325,11 @@ type phoneView struct {
 	VoteOptions  []pickOption
 	MyVote       string
 	CanOwnerVote bool
-	SatOut       bool
+	// CanHelpCall asks the teller whether the owner helped sell it.
+	CanHelpCall bool
+	HelpCall    string
+	OwnerName   string
+	SatOut      bool
 
 	Answer     string
 	AnswerTrue bool
@@ -460,12 +467,12 @@ func (g *Game) phoneViewFor(p games.Player, now time.Time) phoneView {
 		}
 	case phasePublic, phaseQuestion:
 		if insider {
-			view.Badge = badgeView{Small: "that's yours.", Marker: "Sell it."}
+			view.Badge = badgeView{Small: "that's yours.", Marker: "Help " + e.teller().Name + " convince the rest for a bonus"}
 		}
 		if isTeller {
 			view.Hint = "Read it out loud. Then answer their questions."
 		}
-		if me != nil && !isTeller && e.Phase == phasePublic && e.Settings.KnewIt && !didKnew {
+		if me != nil && !isTeller && !insider && e.Phase == phasePublic && e.Settings.KnewIt && !didKnew {
 			view.CanKnew = true
 			view.Names = e.nameList(me.ID)
 		}
@@ -474,6 +481,11 @@ func (g *Game) phoneViewFor(p games.Player, now time.Time) phoneView {
 		case isTeller:
 			view.CanReveal = e.VoteClosed
 			view.RevealLine = e.revealLine()
+			if e.helpPhase() == phaseVote {
+				view.CanHelpCall = e.HelpCall == ""
+				view.HelpCall = e.HelpCall
+				view.OwnerName = e.player(f.Owner).Name
+			}
 		case didKnew:
 			view.SatOut = true
 		case e.VoteClosed:
@@ -489,7 +501,11 @@ func (g *Game) phoneViewFor(p games.Player, now time.Time) phoneView {
 		}
 	case phaseOwnerVote:
 		switch {
-		case isTeller, me == nil:
+		case isTeller:
+			view.CanHelpCall = e.HelpCall == ""
+			view.HelpCall = e.HelpCall
+			view.OwnerName = e.player(f.Owner).Name
+		case me == nil:
 		case didKnew:
 			view.SatOut = true
 		default:
@@ -498,7 +514,8 @@ func (g *Game) phoneViewFor(p games.Player, now time.Time) phoneView {
 			if o := e.player(target); o != nil {
 				view.MyVote = o.Name
 			}
-			view.Names = e.nameList(me.ID)
+			// Everyone sees themselves, so the owner's screen looks like the rest.
+			view.Names = e.nameList("")
 		}
 	case phaseReveal, phaseOwnerReveal:
 		view.AnswerTrue = !e.Card.isLie()

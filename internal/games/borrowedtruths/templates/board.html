@@ -30,8 +30,8 @@ this one. The count says how many called it, never who or what. */}}
 {{if .KnewOpen}}
 <div class="bt-knew">
   <b>Already know this one?</b>
-  <span>Say so: tap <em>I knew it</em> on your phone.</span>
-  {{if .KnewCount}}<i>{{.KnewCount}} knew it</i>{{end}}
+  <span>Say so: tap <em>I already know this</em> on your phone.</span>
+  {{if .KnewCount}}<i>{{.KnewCount}} already know</i>{{end}}
 </div>
 {{end}}
 {{end}}
@@ -181,13 +181,16 @@ this one. The count says how many called it, never who or what. */}}
       {{if .Author}}<div class="bt-author">Written by {{.Author}}</div>{{end}}
       {{else}}
       <div class="bt-owner-split">
-        {{range .OwnerSplit}}
-        <div class="bt-stk{{if .Owner}} is-owner{{end}}">
-          <span class="bt-av">{{avatar .Seed}}</span>
-          <span class="bt-stk-name">{{.Name}}</span>
-          <b>{{.Count}}</b>
+        <p class="bt-owner-split-label">Room's Guesses:</p>
+        <div class="bt-owner-split-row">
+          {{range .OwnerSplit}}
+          <div class="bt-stk{{if .Owner}} is-owner{{end}}">
+            <span class="bt-av">{{avatar .Seed}}</span>
+            <span class="bt-stk-name">{{.Name}}</span>
+            <b>{{.Count}}</b>
+          </div>
+          {{end}}
         </div>
-        {{end}}
       </div>
       <div class="bt-answer is-true bt-owner-name">{{.Owner.Name}}, stand up.</div>
       {{end}}

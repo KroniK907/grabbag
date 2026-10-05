@@ -81,6 +81,12 @@ func (g *Game) postOwnerVote(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (g *Game) postHelp(w http.ResponseWriter, r *http.Request) {
+	g.withEngine(w, r, func(e *engine, p games.Player, r *http.Request, now time.Time) string {
+		return e.CallHelp(p.ID, r.FormValue("helped") == "1", now)
+	})
+}
+
 func (g *Game) postReveal(w http.ResponseWriter, r *http.Request) {
 	g.withEngine(w, r, func(e *engine, p games.Player, _ *http.Request, now time.Time) string {
 		return e.Reveal(p.ID, now)

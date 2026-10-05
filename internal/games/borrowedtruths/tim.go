@@ -189,10 +189,13 @@ func (e *engine) timAnswer() string {
 // knewTIM records an I knew it pick during the look: a claimant or none.
 func (e *engine) knewTIM(id, pick string, now time.Time) string {
 	if !e.Settings.KnewIt || e.Phase != phaseLook {
-		return "I knew it is closed."
+		return "I already know this is closed."
 	}
 	if !e.isVoter(id) {
 		return "You cannot call this one."
+	}
+	if id == e.insider() {
+		return "This one is yours."
 	}
 	if _, done := e.Knew[id]; done {
 		return "You already called it."
@@ -210,7 +213,7 @@ func (e *engine) scoreTIMKnew() {
 	for _, p := range e.voters() {
 		if k, ok := e.Knew[p.ID]; ok && p.ID != in && k.Pick == answer {
 			p.Calls++
-			e.give(p.ID, 1, "Knew it")
+			e.give(p.ID, 1, "Already knew")
 		}
 	}
 }

@@ -193,8 +193,8 @@ html[data-theme="neon-light"] .bt-sub { text-decoration-color: var(--bt-lie); }
 .bt-ask span { font-size: 1.8cqw; text-decoration: underline wavy var(--bt-truth); text-underline-offset: .5cqw; }
 html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie); }
 
-/* I knew it, open during the read: a sticker that asks the room. */
-.bt-knew {
+/* I already know this, open during the read: a sticker that asks the room. */
+.bt-board .bt-knew {
   position: relative;
   justify-self: start;
   display: grid;
@@ -211,10 +211,10 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
   animation: bt-slap .35s ease-out both;
 }
 .bt-ask .bt-knew b { color: inherit; font-size: 2.8cqw; }
-.bt-knew b { font-family: var(--bt-display); font-weight: 400; font-size: 2.8cqw; line-height: 1.05; }
-.bt-knew span { font-size: 1.5cqw; }
-.bt-knew em { font-style: normal; font-weight: 700; }
-.bt-knew i {
+.bt-board .bt-knew b { font-family: var(--bt-display); font-weight: 400; font-size: 2.8cqw; line-height: 1.05; }
+.bt-board .bt-knew span { font-size: 1.5cqw; }
+.bt-board .bt-knew em { font-style: normal; font-weight: 700; }
+.bt-board .bt-knew i {
   position: absolute;
   right: -1.6cqw;
   top: -1.4cqw;
@@ -314,7 +314,10 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
   animation: bt-slap .35s 2.6s ease-out both;
 }
 
-.bt-owner-split { display: flex; flex-wrap: wrap; gap: 1.4cqw; }
+.bt-owner-split { display: grid; gap: 1cqw; align-content: start; }
+.bt-owner-split-label { margin: 0; font-family: var(--bt-display); font-size: 2.2cqw; }
+.bt-owner-split-row { display: flex; flex-wrap: wrap; gap: 1.4cqw; }
+.bt-owner-split .bt-stk-name { font-size: 1.6cqw; }
 .bt-owner-split .bt-stk b { font-family: var(--bt-display); font-size: 2cqw; color: var(--bt-count); }
 .bt-owner-split .bt-stk.is-owner .bt-av { outline: .5cqw solid var(--bt-truth); animation: bt-stand .5s 1.4s ease-out both; }
 
@@ -468,7 +471,7 @@ html[data-theme="neon-light"] .bt-ask span { text-decoration-color: var(--bt-lie
 .bt-fact { text-align: left; }
 .bt-fact textarea { font: 16px var(--bt-mono); background: #fff; color: var(--bt-sink); border: 2px solid var(--bt-sink); border-radius: 10px; padding: 8px; resize: vertical; }
 
-.bt-answer.is-small { position: static; justify-self: start; margin: 0; font-size: 44px; padding: 4px 20px; border-width: 4px; border-radius: 16px; animation-delay: 0s; }
+.bt-answer.is-small { position: static; translate: none; justify-self: start; margin: 0; font-size: 44px; padding: 4px 20px; border-width: 4px; border-radius: 16px; animation-delay: 0s; }
 
 .bt-phone-standings { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .bt-phone-standings li { display: flex; justify-content: space-between; background: var(--bt-sticker); color: var(--bt-sink); border-radius: 14px; padding: 10px 14px; font-weight: 600; }
@@ -705,8 +708,9 @@ html[data-static] .bt-phone * { animation: none !important; }
 .bt-stickers:has(> :nth-child(9)) .bt-av { width: 3.6cqw; height: 3.6cqw; border-width: .3cqw; }
 .bt-stickers:has(> :nth-child(9)) .bt-stk { font-size: .9cqw; }
 .bt-stickers:has(> :nth-child(9)) .bt-stk.is-locked::after { top: 1.4cqw; font-size: .7cqw; }
-.bt-owner-split:has(> :nth-child(9)) .bt-av { width: 4cqw; height: 4cqw; }
-.bt-owner-split:has(> :nth-child(9)) { gap: .8cqw; }
+.bt-owner-split-row:has(> :nth-child(9)) .bt-av { width: 4cqw; height: 4cqw; }
+.bt-owner-split-row:has(> :nth-child(9)) { gap: .8cqw; }
+.bt-owner-split-row:has(> :nth-child(9)) .bt-stk-name { font-size: 1.2cqw; }
 .bt-standings:has(> :nth-child(10)) { grid-template-columns: repeat(4, 1fr); gap: .8cqw 1.2cqw; }
 .bt-standings:has(> :nth-child(10)) .bt-standing { font-size: 1.3cqw; padding: .5cqw 1cqw; }
 .bt-standings:has(> :nth-child(10)) .bt-av { width: 2.6cqw; height: 2.6cqw; }
@@ -764,7 +768,7 @@ html[data-static] .bt-phone * { animation: none !important; }
 .bt-tim-stickers { grid-column: 2; grid-row: 2; margin-top: 7cqw; }
 
 .bt-tim-answer { grid-column: 2; grid-row: 2; position: relative; display: grid; gap: 1.2cqw; justify-items: start; }
-.bt-tim-answer .bt-answer { position: static; font-size: 4cqw; }
+.bt-tim-answer .bt-answer { position: static; translate: none; font-size: 4cqw; }
 
 .bt-photo.is-mini { margin: 0 10px; padding: 8px 8px 22px; border-width: 2px; border-radius: 14px; transform: rotate(-1.5deg); box-shadow: 5px 5px 0 var(--bt-lie), -3px -3px 0 var(--bt-truth); }
 .bt-photo.is-mini img { max-height: calc(var(--shell-visual-height, 100dvh) * .34); border-radius: 8px; }

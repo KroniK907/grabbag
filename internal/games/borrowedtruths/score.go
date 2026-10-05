@@ -44,7 +44,7 @@ func (e *engine) scoreKnew() {
 		}
 		if right {
 			p.Calls++
-			e.give(p.ID, 1, "Knew it")
+			e.give(p.ID, 1, "Already knew")
 		}
 	}
 }
@@ -83,10 +83,13 @@ func (e *engine) scoreVote() {
 		e.player(in).Straight++
 		e.give(in, 2, "Wrote the lie")
 	}
+	if e.Card.Kind == kindLie && in != "" && e.HelpCall == "yes" {
+		e.give(in, 1, "Helped sell it")
+	}
 }
 
-// scoreOwnerVote pays voters who named the owner, and the owner if fewer than
-// half of them did.
+// scoreOwnerVote pays voters who named the owner, the owner if fewer than
+// half of them did, and the owner again if the teller says they helped.
 func (e *engine) scoreOwnerVote() {
 	e.Awards = nil
 	owner := e.insider()
@@ -106,6 +109,9 @@ func (e *engine) scoreOwnerVote() {
 	if picked > 0 && named*2 < picked {
 		e.player(owner).Straight++
 		e.give(owner, 2, "Straight face")
+	}
+	if e.HelpCall == "yes" {
+		e.give(owner, 1, "Helped sell it")
 	}
 }
 

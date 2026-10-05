@@ -193,6 +193,7 @@ func (g *Game) Play() http.Handler {
 	mux.HandleFunc("POST /knew", g.postKnew)
 	mux.HandleFunc("POST /vote", g.postVote)
 	mux.HandleFunc("POST /owner-vote", g.postOwnerVote)
+	mux.HandleFunc("POST /help", g.postHelp)
 	mux.HandleFunc("POST /reveal", g.postReveal)
 	mux.HandleFunc("POST /host/continue", g.postHostContinue)
 	mux.HandleFunc("POST /host/void", g.postHostVoid)
@@ -221,10 +222,26 @@ func (g *Game) getHowto(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	g.run.Render(w, "howto.html", g.run.Page("How to play Borrowed Truths"), http.StatusOK)
+	view := newHowtoView(g.run.Page("How to play Borrowed Truths"), g.loadSettings(g.run.Helper()))
+	g.run.Render(w, "howto.html", view, http.StatusOK)
+}
+
+// howtoView is the how-to page with the saved match settings it describes.
+type howtoView struct {
+	runtimekit.Page
+	KnewIt bool
+	Void   string
+}
+
+func newHowtoView(page runtimekit.Page, s matchSettings) howtoView {
+	return howtoView{Page: page, KnewIt: s.KnewIt, Void: s.voidLabel()}
 }
 
 // Help writes the phone shell's help sheet.
 func (g *Game) Help(w http.ResponseWriter, r *http.Request) {
-	g.run.Render(w, "help", nil, http.StatusOK)
+	s := factorySettings()
+	if h := g.run.Helper(); h != nil {
+		s = g.loadSettings(h)
+	}
+	g.run.Render(w, "help", newHowtoView(runtimekit.Page{}, s), http.StatusOK)
 }

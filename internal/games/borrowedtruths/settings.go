@@ -129,6 +129,18 @@ func (s matchSettings) voidShare() (num, den int) {
 	}
 }
 
+// voidLabel is the void threshold in words for the how-to page.
+func (s matchSettings) voidLabel() string {
+	switch s.KnewVoid {
+	case voidThird:
+		return "a third of"
+	case voidTwoThirds:
+		return "two thirds of"
+	default:
+		return "half"
+	}
+}
+
 type settingsErr struct {
 	Field string
 	Msg   string
