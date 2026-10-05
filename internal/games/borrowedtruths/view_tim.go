@@ -43,7 +43,7 @@ func (g *Game) fillTIMBoard(view *boardView) {
 	case phaseClaims:
 		view.Prompt = e.player(r.Claimants[r.Speaker]).Name + " is telling you about it."
 	case phaseTIMQuestion:
-		view.Prompt = "Grill all three."
+		view.Prompt = "Ask all three questions."
 	case phaseTIMVote:
 		view.Prompt = "Whose photo is it?"
 		view.Voters, view.Locked = e.lockFaces(e.Votes)
@@ -107,7 +107,7 @@ func (g *Game) fillTIMPhone(view *phoneView, p games.Player) {
 	}
 	switch e.Phase {
 	case phaseLook:
-		view.CanKnew = me != nil && !claimant && e.Settings.KnewIt && !didKnew
+		view.CanKnew = me != nil && !claimant && me.ID != e.insider() && e.Settings.KnewIt && !didKnew
 	case phaseTIMVote:
 		switch {
 		case claimant:

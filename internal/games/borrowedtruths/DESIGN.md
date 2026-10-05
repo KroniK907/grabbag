@@ -60,7 +60,7 @@ Avatars stay `ui.AvatarSVG`, set in a round sticker.
 | Card | public read, questioning, vote, reveal | Absent during the private read (#137 leak rule). |
 | Teller name tag | every tell phase | "Reading their card" under it during the private read. |
 | Tell tape | all | `Tell 5 of 14`. |
-| Prompt and count | vote, owner vote | "True or lie? Grill Marisol." and `4/6 LOCKED`. |
+| Prompt and count | vote, owner vote | "Ask Marisol questions and see if you can determine if this is true or a lie." and `4/6 LOCKED`. |
 | Voter stickers | vote, owner vote | Waiting or locked. |
 | Standings | between tells | The full leaderboard as a wall of stickers. |
 | Timer | only with timers on | A tape strip. Hidden by default. |

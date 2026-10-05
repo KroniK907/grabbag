@@ -194,15 +194,24 @@ func TestBorrowedScoringAndOwnerVote(t *testing.T) {
 	e.OwnerVote(others[0].ID, owner.ID, t0)
 	e.OwnerVote(others[1].ID, others[2].ID, t0)
 	e.OwnerVote(others[2].ID, others[1].ID, t0)
-	e.OwnerVote(owner.ID, others[0].ID, t0)
+	if msg := e.OwnerVote(owner.ID, owner.ID, t0); msg != "" {
+		t.Fatalf("owner could not pick themselves: %s", msg)
+	}
+	if e.Phase != phaseOwnerVote {
+		t.Fatalf("phase = %s, want owner vote until the teller makes the help call", e.Phase)
+	}
+	if msg := e.CallHelp(owner.ID, true, t0); msg == "" {
+		t.Fatal("a non-teller made the help call")
+	}
+	e.CallHelp(teller.ID, true, t0)
 	if e.Phase != phaseOwnerReveal {
 		t.Fatalf("phase = %s, want owner reveal once everyone picked", e.Phase)
 	}
 	if others[0].Score != 5 {
 		t.Fatalf("owner namer = %d, want 3 + 2", others[0].Score)
 	}
-	if owner.Score != 2 || owner.Straight != 1 {
-		t.Fatalf("owner = %d straight %d, want the 2 point bonus", owner.Score, owner.Straight)
+	if owner.Score != 3 || owner.Straight != 1 {
+		t.Fatalf("owner = %d straight %d, want 2 straight face + 1 helped", owner.Score, owner.Straight)
 	}
 }
 
@@ -216,9 +225,17 @@ func TestPlayerLieAuthorBonus(t *testing.T) {
 	for _, p := range e.voters() {
 		e.Vote(p.ID, pickTrue, true)
 	}
-	e.Continue(t0)
-	if author.Score != 2 {
-		t.Fatalf("author = %d, want 2 when nobody called Lie", author.Score)
+	if msg := e.Reveal(e.teller().ID, t0); msg == "" {
+		t.Fatal("the teller revealed before the help call")
+	}
+	if msg := e.CallHelp(e.teller().ID, true, t0); msg != "" {
+		t.Fatal(msg)
+	}
+	if msg := e.Reveal(e.teller().ID, t0); msg != "" {
+		t.Fatal(msg)
+	}
+	if author.Score != 3 {
+		t.Fatalf("author = %d, want 2 when nobody called Lie + 1 helped", author.Score)
 	}
 	if e.teller().Score != 2 {
 		t.Fatalf("teller = %d, want 2: the author's vote is ignored", e.teller().Score)
@@ -242,6 +259,14 @@ func TestKnewItScoresAndVoids(t *testing.T) {
 	}
 	if voters[0].Score != 1 || voters[1].Score != 0 {
 		t.Fatalf("knew it scores = %d %d", voters[0].Score, voters[1].Score)
+	}
+}
+
+func TestInsiderCannotCallKnew(t *testing.T) {
+	e := testEngine(t, 4, [3]int{0, 1, 0})
+	e.LockIn(e.teller().ID, t0)
+	if msg := e.CallKnew(e.insider(), pickTrue, "", t0); msg == "" {
+		t.Fatal("the borrowed truth's owner called I already know this")
 	}
 }
 

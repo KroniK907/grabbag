@@ -141,7 +141,7 @@ const board = () => `
   <div class="tape">${tell.toUpperCase()}</div>
   <div class="card"><p>${card}</p></div>
   <div class="hello"><h4>HELLO</h4><small>my name is</small><div>${av(teller)}${teller.name}</div></div>
-  <div class="ask"><span>True or lie? Grill ${teller.name}.</span><b>${nVoted}/${voters.length} LOCKED</b></div>
+  <div class="ask"><span>Ask ${teller.name} questions and see if you can determine if this is true or a lie.</span><b>${nVoted}/${voters.length} LOCKED</b></div>
   <div class="stickers">${voters.map(v => `<div class="stk ${v.voted ? "on" : ""}">${av(v)}${v.name}</div>`).join("")}</div>`;
 
 const voter = () => `

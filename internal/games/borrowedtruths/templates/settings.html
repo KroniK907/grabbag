@@ -30,8 +30,8 @@
     </label>
     {{template "bt-num" index .Nums "max_tells"}}
 
-    <h2>I knew it</h2>
-    <label class="ui-row"><input type="checkbox" name="knew_it" value="1" {{if .Settings.KnewIt}}checked{{end}}> I knew it is on</label>
+    <h2>I already know this</h2>
+    <label class="ui-row"><input type="checkbox" name="knew_it" value="1" {{if .Settings.KnewIt}}checked{{end}}> I already know this is on</label>
     <label class="ui-field"><span>Void the card when this share taps it</span>
       <select name="knew_void">
         <option value="third" {{if eq .Settings.KnewVoid "third"}}selected{{end}}>A third</option>

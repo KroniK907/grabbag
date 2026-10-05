@@ -327,7 +327,7 @@ func TestBoardAsksWhoKnewIt(t *testing.T) {
 	g.run.Lock()
 	teller := g.run.Engine().teller().ID
 	var voter string
-	for _, p := range g.run.Engine().voters() {
+	for _, p := range g.run.Engine().countedVoters() {
 		voter = p.ID
 	}
 	g.run.Unlock()
@@ -340,11 +340,11 @@ func TestBoardAsksWhoKnewIt(t *testing.T) {
 		t.Fatal("board asks before the public read")
 	}
 	post(t, mux, teller, "/lock-in", nil)
-	if body := board(); !strings.Contains(body, "Already know this one?") || strings.Contains(body, "knew it</i>") {
+	if body := board(); !strings.Contains(body, "Already know this one?") || strings.Contains(body, "already know</i>") {
 		t.Fatal("public read board is missing the ask, or counts before anyone called it")
 	}
 	post(t, mux, voter, "/knew", url.Values{"pick": {pickTrue}})
-	if !strings.Contains(board(), "1 knew it") {
+	if !strings.Contains(board(), "1 already know") {
 		t.Fatal("board does not count the I knew it call")
 	}
 	post(t, mux, "p1", "/host/continue", nil)

@@ -121,13 +121,13 @@ func (g *Game) Scenarios() []ui.Scenario {
 		ui.Scenario{
 			Surface: "phone", Name: "help", Viewer: "seated", Frame: ui.FramePhone, Shell: ui.ShellHelp,
 			Render: func(w io.Writer, p ui.Preview) error {
-				return ui.RenderScenario(w, pages, "help", previewPage(p, "Borrowed Truths"), p)
+				return ui.RenderScenario(w, pages, "help", newHowtoView(previewPage(p, "Borrowed Truths"), factorySettings()), p)
 			},
 		},
 		ui.Scenario{
 			Surface: "page", Name: "howto", Viewer: "guest", Frame: ui.FramePage,
 			Render: func(w io.Writer, p ui.Preview) error {
-				return ui.RenderScenario(w, pages, "howto.html", previewPage(p, "How to play Borrowed Truths"), p)
+				return ui.RenderScenario(w, pages, "howto.html", newHowtoView(previewPage(p, "How to play Borrowed Truths"), factorySettings()), p)
 			},
 		},
 		ui.Scenario{
